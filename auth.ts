@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import type { NextAuthConfig, Session } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
-import { userRoleEnum, userStatusEnum, type UserRole, type UserStatus } from "@/db/schema";
 import {
   ensureBootstrapAdmin,
   getUserForAuth,
@@ -82,8 +81,8 @@ const authConfig = {
       }
 
       session.user.id = token.sub;
-      session.user.role = parseUserRole(token.role);
-      session.user.status = parseUserStatus(token.status);
+      session.user.role = token.role as Session["user"]["role"];
+      session.user.status = token.status as Session["user"]["status"];
 
       return session;
     },
@@ -114,15 +113,3 @@ const authConfig = {
 } satisfies NextAuthConfig;
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
-
-function parseUserRole(value: Session["user"]["role"] | unknown): UserRole | undefined {
-  return typeof value === "string" && userRoleEnum.enumValues.includes(value as UserRole)
-    ? (value as UserRole)
-    : undefined;
-}
-
-function parseUserStatus(value: Session["user"]["status"] | unknown): UserStatus | undefined {
-  return typeof value === "string" && userStatusEnum.enumValues.includes(value as UserStatus)
-    ? (value as UserStatus)
-    : undefined;
-}
