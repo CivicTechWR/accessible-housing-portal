@@ -15,19 +15,12 @@ const PROTECTED_API_PATTERNS = ["/api/admin/:path*"] as const;
 
 const LISTING_WRITE_API_PATTERNS = ["/api/listings/:path*"] as const;
 
-function isListingWriteApiPath({ pathname, method }: RouteRequest) {
-  return method !== "GET" && matchesAnyRoutePattern(pathname, LISTING_WRITE_API_PATTERNS);
-}
-
-function isProtectedPagePath(pathname: string) {
-  return matchesAnyRoutePattern(pathname, PROTECTED_PAGE_PATTERNS);
-}
-
 export function requiresAuthSessionForRequest(request: RouteRequest) {
   return (
-    isProtectedPagePath(request.pathname) ||
+    matchesAnyRoutePattern(request.pathname, PROTECTED_PAGE_PATTERNS) ||
     matchesAnyRoutePattern(request.pathname, PROTECTED_API_PATTERNS) ||
-    isListingWriteApiPath(request)
+    (request.method !== "GET" &&
+      matchesAnyRoutePattern(request.pathname, LISTING_WRITE_API_PATTERNS))
   );
 }
 
