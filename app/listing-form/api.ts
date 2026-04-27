@@ -70,19 +70,19 @@ export function mapListingFormToAutosaveUpdateInput(
   assignTrimmedString(patch, "buildingType", data.buildingType);
   assignTrimmedString(patch, "leaseTerm", data.leaseTerm);
 
-  if (typeof data.bedrooms === "number" && Number.isFinite(data.bedrooms)) {
+  if (Number.isFinite(data.bedrooms)) {
     unit.bedrooms = data.bedrooms;
   }
 
-  if (typeof data.bathrooms === "number" && Number.isFinite(data.bathrooms)) {
+  if (Number.isFinite(data.bathrooms)) {
     unit.bathrooms = data.bathrooms;
   }
 
-  if (typeof data.squareFeet === "number" && Number.isFinite(data.squareFeet)) {
+  if (Number.isFinite(data.squareFeet)) {
     unit.sqft = data.squareFeet;
   }
 
-  if (typeof data.monthlyRentCents === "number" && Number.isFinite(data.monthlyRentCents)) {
+  if (Number.isFinite(data.monthlyRentCents)) {
     unit.rent = Math.round(data.monthlyRentCents / 100);
   }
 
@@ -104,7 +104,7 @@ export function mapListingFormToAutosaveUpdateInput(
     patch.units = [unit];
   }
 
-  if (typeof data.unitStory === "number" && Number.isFinite(data.unitStory)) {
+  if (Number.isFinite(data.unitStory)) {
     patch.unitStory = data.unitStory;
   }
 
