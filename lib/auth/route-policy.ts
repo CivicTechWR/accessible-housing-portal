@@ -15,27 +15,11 @@ const PROTECTED_API_PATTERNS = ["/api/admin/:path*"] as const;
 
 const LISTING_WRITE_API_PATTERNS = ["/api/listings/:path*"] as const;
 
-export function isAdminPath(pathname: string) {
-  return matchesRoutePattern(pathname, "/admin/:path*");
-}
-
-export function isAdminApiPath(pathname: string) {
-  return matchesRoutePattern(pathname, "/api/admin/:path*");
-}
-
-export function isListingAuthorPath(pathname: string) {
-  return matchesRoutePattern(pathname, "/listing-form/:path*");
-}
-
-export function isMyListingsPath(pathname: string) {
-  return matchesRoutePattern(pathname, "/my-listings/:path*");
-}
-
-export function isListingWriteApiPath({ pathname, method }: RouteRequest) {
+function isListingWriteApiPath({ pathname, method }: RouteRequest) {
   return method !== "GET" && matchesAnyRoutePattern(pathname, LISTING_WRITE_API_PATTERNS);
 }
 
-export function isProtectedPagePath(pathname: string) {
+function isProtectedPagePath(pathname: string) {
   return matchesAnyRoutePattern(pathname, PROTECTED_PAGE_PATTERNS);
 }
 
