@@ -31,7 +31,7 @@ export function listingNeighborhoodSpecification(
 }
 
 export function listingBedroomsSpecification(bedrooms: number | null): ListingFilterSpecification {
-  if (typeof bedrooms !== "number") {
+  if (bedrooms === null) {
     return undefined;
   }
 
@@ -41,7 +41,7 @@ export function listingBedroomsSpecification(bedrooms: number | null): ListingFi
 export function listingBedroomsAtLeastSpecification(
   bedrooms: number | null,
 ): ListingFilterSpecification {
-  if (typeof bedrooms !== "number") {
+  if (bedrooms === null) {
     return undefined;
   }
 
@@ -51,7 +51,7 @@ export function listingBedroomsAtLeastSpecification(
 export function listingBathroomsSpecification(
   bathrooms: number | null,
 ): ListingFilterSpecification {
-  if (typeof bathrooms !== "number") {
+  if (bathrooms === null) {
     return undefined;
   }
 
@@ -61,7 +61,7 @@ export function listingBathroomsSpecification(
 export function listingBathroomsAtLeastSpecification(
   bathrooms: number | null,
 ): ListingFilterSpecification {
-  if (typeof bathrooms !== "number") {
+  if (bathrooms === null) {
     return undefined;
   }
 
