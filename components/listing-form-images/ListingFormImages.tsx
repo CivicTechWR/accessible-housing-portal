@@ -55,23 +55,6 @@ async function uploadFile(
   return uploadImageResponseSchema.parse(await response.json()).data;
 }
 
-function updateImageCaption(
-  images: ListingFormImage[],
-  index: number,
-  caption: string,
-): ListingFormImage[] {
-  return images.map((image, imageIndex) => {
-    if (imageIndex === index) {
-      return {
-        ...image,
-        caption,
-      };
-    }
-
-    return image;
-  });
-}
-
 export function ListingFormImages({
   control,
   listingId,
@@ -176,7 +159,16 @@ export function ListingFormImages({
                             placeholder="Write an image caption"
                             value={image.caption}
                             onChange={(event) => {
-                              field.onChange(updateImageCaption(images, index, event.target.value));
+                              field.onChange(
+                                images.map((currentImage, imageIndex) =>
+                                  imageIndex === index
+                                    ? {
+                                        ...currentImage,
+                                        caption: event.target.value,
+                                      }
+                                    : currentImage,
+                                ),
+                              );
                             }}
                           />
                         </div>
