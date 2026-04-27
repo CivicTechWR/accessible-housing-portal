@@ -679,7 +679,13 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     const definition =
       (feature.id ? featureDefinitionLookup.byKey.get(feature.id) : undefined) ??
       featureDefinitionLookup.byToken.get(normalizeListingFeatureToken(feature.name));
-    const featureId = definition?.key ?? slugifyFeatureName(feature.name);
+    const featureId =
+      definition?.key ??
+      feature.name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
 
     if (!customFeatures.has(featureId)) {
       customFeatures.set(featureId, {
@@ -762,12 +768,4 @@ function resolveNextApplicationUrl(input: {
     ok: true as const,
     nextApplicationUrl,
   };
-}
-
-function slugifyFeatureName(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
 }
