@@ -223,38 +223,41 @@ export function sortVisibleFields(
   const factor = direction === "asc" ? 1 : -1;
 
   return [...fields].sort((a, b) => {
-    const compare = compareBySortKey(a, b, sortKey);
+    let compare: number;
+
+    switch (sortKey) {
+      case "label":
+        compare = a.label.localeCompare(b.label);
+        break;
+      case "key":
+        compare = a.key.localeCompare(b.key);
+        break;
+      case "category":
+        compare = formatCategoryLabel(a.category).localeCompare(formatCategoryLabel(b.category));
+        break;
+      case "description":
+        compare = (a.description ?? "").localeCompare(b.description ?? "");
+        break;
+      case "helpText":
+        compare = (a.helpText ?? "").localeCompare(b.helpText ?? "");
+        break;
+      case "visibility":
+        compare = Number(a.publicOnly) - Number(b.publicOnly);
+        break;
+      case "filterable":
+        compare = Number(a.filterableOnly) - Number(b.filterableOnly);
+        break;
+      case "required":
+        compare = Number(a.required) - Number(b.required);
+        break;
+    }
+
     if (compare !== 0) {
       return compare * factor;
     }
 
     return (a.sortOrder - b.sortOrder || a.label.localeCompare(b.label)) * factor;
   });
-}
-
-export function compareBySortKey(
-  a: AdminCustomListingField,
-  b: AdminCustomListingField,
-  sortKey: SortKey,
-) {
-  switch (sortKey) {
-    case "label":
-      return a.label.localeCompare(b.label);
-    case "key":
-      return a.key.localeCompare(b.key);
-    case "category":
-      return formatCategoryLabel(a.category).localeCompare(formatCategoryLabel(b.category));
-    case "description":
-      return (a.description ?? "").localeCompare(b.description ?? "");
-    case "helpText":
-      return (a.helpText ?? "").localeCompare(b.helpText ?? "");
-    case "visibility":
-      return Number(a.publicOnly) - Number(b.publicOnly);
-    case "filterable":
-      return Number(a.filterableOnly) - Number(b.filterableOnly);
-    case "required":
-      return Number(a.required) - Number(b.required);
-  }
 }
 
 export function nextSortOrder(fields: AdminCustomListingField[], category: string) {
