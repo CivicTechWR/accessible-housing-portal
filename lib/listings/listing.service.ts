@@ -470,10 +470,7 @@ export async function updateListingByIdService(input: {
     archivedAt: listing.archivedAt,
   });
   const nextPrimaryUnitRentCents = dollarsToCents(primaryUnit?.rent ?? undefined);
-  const monthlyRentCents =
-    typeof nextPrimaryUnitRentCents === "number" && Number.isFinite(nextPrimaryUnitRentCents)
-      ? nextPrimaryUnitRentCents
-      : listing.monthlyRentCents;
+  const monthlyRentCents = nextPrimaryUnitRentCents ?? listing.monthlyRentCents;
 
   await updateListingGraph({
     actorUserId: actorResult.value.actor.userId,
