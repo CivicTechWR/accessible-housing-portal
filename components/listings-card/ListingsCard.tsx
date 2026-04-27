@@ -49,10 +49,6 @@ const variants = {
   },
 };
 
-function isProtectedUploadedImageUrl(imageUrl: string) {
-  return imageUrl.startsWith("/api/image-uploads/");
-}
-
 function FeatureBadge({ children }: { children: string }) {
   return (
     <Badge
@@ -102,7 +98,7 @@ export function ListingsCard({
             alt={displayAddress}
             fill
             sizes="(max-width: 640px) 260px, (max-width: 1024px) 290px, 320px"
-            unoptimized={isProtectedUploadedImageUrl(imageUrl)}
+            unoptimized={imageUrl.startsWith("/api/image-uploads/")}
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
