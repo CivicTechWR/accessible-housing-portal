@@ -62,7 +62,7 @@ function getFirstValue(value: string | string[] | undefined) {
 }
 
 function appendQueryParam(params: URLSearchParams, key: string, value: string | undefined) {
-  if (typeof value !== "string" || value.length === 0) {
+  if (!value) {
     return;
   }
 
