@@ -146,7 +146,7 @@ Use `npm run format` and `npm run lint:fix` for automatic formatting and lint fi
 
 - Public listing search is server-first: `app/listings/page.tsx` calls shared listing services directly for the initial render, while client-side filter refinements fetch `/api/listings`.
 - Route handlers should remain thin and delegate business logic to services under `lib/`.
-- Authorization is enforced through NextAuth in `auth.ts` and `proxy.ts`. Admin pages/API routes require an active admin user; listing writes require an active admin or partner user.
+- `auth.ts` and `proxy.ts` provide broad session gating and sign-in redirects for protected routes. Page, server action, service, and API code must still enforce role-specific authorization with shared auth/session and policy helpers.
 - Keep cross-boundary contracts in `shared/schemas/` so page code, services, route handlers, and tests use the same validation rules.
 
 ## Contributing

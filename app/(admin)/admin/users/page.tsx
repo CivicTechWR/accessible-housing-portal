@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { AppPageShell, PageMessage } from "@/components/page-shell/AppPageShell";
@@ -8,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getOptionalSession } from "@/lib/auth/session";
 import { findPendingAccountInvites } from "@/lib/auth/invite-store";
 import { getAccountsService } from "@/lib/accounts/account.service";
 import { cn } from "@/lib/utils";
@@ -222,18 +220,6 @@ function MobileDetail({ label, children }: { label: string; children: ReactNode 
 }
 
 export default async function AdminUsersPage() {
-  const { session, authzUser } = await getOptionalSession();
-
-  if (!session?.user) {
-    redirect("/sign-in");
-  }
-
-  if (authzUser?.role !== "admin") {
-    return (
-      <PageMessage title="Admin access required">Only admin accounts can manage users.</PageMessage>
-    );
-  }
-
   const result = await getAllAccounts();
   const pendingInvites = await findPendingAccountInvites();
 

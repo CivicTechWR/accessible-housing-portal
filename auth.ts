@@ -11,6 +11,7 @@ import {
   recordSuccessfulLogin,
 } from "@/lib/auth/user-store";
 import { verifyPassword } from "@/lib/auth/password";
+import { requiresAuthSessionForRequest } from "@/lib/auth/route-policy";
 import { signInSchema } from "@/lib/auth/validation";
 
 const authConfig = {
@@ -87,16 +88,10 @@ const authConfig = {
       return session;
     },
     async authorized({ auth: currentAuth, request }) {
-      const pathname = request.nextUrl.pathname;
-      const requiresListingAccess =
-        pathname.startsWith("/listings") || pathname.startsWith("/api/listings");
-      const requiresListingAuthorAccess = pathname.startsWith("/listing-form");
-      const requiresAdminAccess =
-        pathname.startsWith("/api/admin") || pathname.startsWith("/admin");
-      const requiresListingWriteAccess =
-        pathname.startsWith("/api/listings") && request.method !== "GET";
-      const requiresSessionCheck =
-        requiresListingAccess || requiresListingAuthorAccess || requiresAdminAccess;
+      const requiresSessionCheck = requiresAuthSessionForRequest({
+        pathname: request.nextUrl.pathname,
+        method: request.method,
+      });
 
       if (!currentAuth?.user?.id) {
         return !requiresSessionCheck;
@@ -111,14 +106,6 @@ const authConfig = {
 
       if (!isActiveUser) {
         return false;
-      }
-
-      if (requiresAdminAccess) {
-        return authzUser?.role === "admin";
-      }
-
-      if (requiresListingWriteAccess) {
-        return authzUser?.role === "admin" || authzUser?.role === "partner";
       }
 
       return true;

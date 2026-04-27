@@ -3,9 +3,8 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { AppPageShell, PageMessage } from "@/components/page-shell/AppPageShell";
-import { getOptionalSession } from "@/lib/auth/session";
 import { getMyListingsService } from "@/lib/listings/listing.service";
-import { MyListingsClient } from "./MyListingsClient";
+import { MyListingsClient } from "@/app/my-listings/MyListingsClient";
 
 export const metadata: Metadata = {
   title: "My Listings | WR Housing Bridge",
@@ -13,36 +12,6 @@ export const metadata: Metadata = {
 
 export default async function MyListingsPage() {
   const renderedAt = new Date().toISOString();
-  const { session, authzUser } = await getOptionalSession();
-
-  if (!session?.user) {
-    return (
-      <PageMessage
-        title="My Listings"
-        width="5xl"
-        className="bg-muted/40 px-4 py-8 sm:px-6"
-        contentClassName="rounded-xl"
-        titleClassName="text-2xl"
-      >
-        Sign in to manage your listings.
-      </PageMessage>
-    );
-  }
-
-  if (authzUser?.role !== "admin" && authzUser?.role !== "partner") {
-    return (
-      <PageMessage
-        title="My Listings"
-        width="5xl"
-        className="bg-muted/40 px-4 py-8 sm:px-6"
-        contentClassName="rounded-xl"
-        titleClassName="text-2xl"
-      >
-        Only partner and admin accounts can manage listings.
-      </PageMessage>
-    );
-  }
-
   const result = await getMyListingsService();
 
   if (!result.ok) {
