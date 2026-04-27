@@ -38,17 +38,6 @@ export type FieldDialogState = {
   category: string;
 };
 
-export type FieldFormState = {
-  key: string;
-  label: string;
-  description: string;
-  category: string;
-  helpText: string;
-  publicOnly: boolean;
-  filterableOnly: boolean;
-  required: boolean;
-};
-
 export type CreateFieldDialogPayload = Omit<
   CreateCustomListingFieldInput,
   "placeholder" | "sortOrder"
@@ -76,19 +65,6 @@ export type DropIndicator = {
   category: string;
   insertionIndex: number;
 };
-
-export function getInitialFormState(state: FieldDialogState): FieldFormState {
-  return {
-    key: "",
-    label: "",
-    description: "",
-    category: state.category,
-    helpText: "",
-    publicOnly: true,
-    filterableOnly: true,
-    required: false,
-  };
-}
 
 export function getCategoryStats(fields: AdminCustomListingField[]) {
   const stats = new Map<string, { category: string; label: string; count: number }>();
