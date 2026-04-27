@@ -2,7 +2,6 @@ import { TypedNextResponse, type TypedNextRequest } from "next-rest-framework";
 
 import { mapDomainErrorToHttpResponse } from "@/lib/http/map-domain-error";
 import { createAccountService, getAccountsService } from "@/lib/accounts/account.service";
-import { accountQuerySchema } from "@/shared/schemas/account-management";
 import type {
   AccountQuery,
   AccountListResponse,
@@ -13,7 +12,14 @@ import type {
 export async function getAccountsHandler(
   request: TypedNextRequest<"GET", string, unknown, AccountQuery>,
 ) {
-  const query = accountQuerySchema.parse(Object.fromEntries(request.nextUrl.searchParams));
+  const searchParams = request.nextUrl.searchParams;
+  const query: AccountQuery = {
+    page: searchParams.get("page") ?? undefined,
+    limit: searchParams.get("limit") ?? undefined,
+    role: (searchParams.get("role") ?? undefined) as AccountQuery["role"],
+    status: (searchParams.get("status") ?? undefined) as AccountQuery["status"],
+    search: searchParams.get("search") ?? undefined,
+  };
   const result = await getAccountsService(query);
 
   if (!result.ok) {
