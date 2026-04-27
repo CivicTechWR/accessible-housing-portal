@@ -1,11 +1,8 @@
 "use server";
 
 import { createAccountService } from "@/lib/accounts/account.service";
-import type { InviteActionResult, InviteRecord } from "@/components/admin-invite/types";
-import {
-  createAccountInviteSchema,
-  type CreateAccountResponse,
-} from "@/shared/schemas/account-management";
+import type { InviteActionResult } from "@/components/admin-invite/types";
+import { createAccountInviteSchema } from "@/shared/schemas/account-management";
 
 export type SendAdminInviteActionState =
   | {
@@ -22,16 +19,6 @@ function normalizeOptionalString(value: FormDataEntryValue | null) {
 
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : null;
-}
-
-function buildInviteRecordFromResponse(data: CreateAccountResponse["data"]): InviteRecord {
-  return {
-    id: data.id,
-    email: data.email.trim().toLowerCase(),
-    role: data.role,
-    invitedAt: new Date().toISOString(),
-    status: "sent",
-  };
 }
 
 export async function sendAdminInviteAction(
@@ -65,12 +52,16 @@ export async function sendAdminInviteAction(
       };
     }
 
-    const invite = buildInviteRecordFromResponse(result.value.data);
-
     return {
       status: "sent",
       message: result.value.message,
-      invite,
+      invite: {
+        id: result.value.data.id,
+        email: result.value.data.email.trim().toLowerCase(),
+        role: result.value.data.role,
+        invitedAt: new Date().toISOString(),
+        status: "sent",
+      },
     };
   } catch (error) {
     return {
