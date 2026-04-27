@@ -95,36 +95,40 @@ function FieldRenderer({
       <FormField
         control={control}
         name={def.key}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>{label}</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                min={0}
-                step={def.key === "bathrooms" ? 0.5 : undefined}
-                placeholder={def.placeholder}
-                {...(isRent
-                  ? {
-                      value: typeof field.value === "number" ? field.value / 100 : "",
-                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                        const val = e.target.value;
-                        field.onChange(val === "" ? undefined : Number(val) * 100);
-                      },
-                    }
-                  : {
-                      value: typeof field.value === "number" ? field.value : "",
-                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                        const val = e.target.value;
-                        field.onChange(val === "" ? undefined : Number(val));
-                      },
-                    })}
-              />
-            </FormControl>
-            {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
-            <FormMessage />
-          </FormItem>
-        )}
+        render={({ field }) => {
+          const numericValue = field.value as number | undefined;
+
+          return (
+            <FormItem>
+              <FormLabel>{label}</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={0}
+                  step={def.key === "bathrooms" ? 0.5 : undefined}
+                  placeholder={def.placeholder}
+                  {...(isRent
+                    ? {
+                        value: numericValue === undefined ? "" : numericValue / 100,
+                        onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                          const val = e.target.value;
+                          field.onChange(val === "" ? undefined : Number(val) * 100);
+                        },
+                      }
+                    : {
+                        value: numericValue ?? "",
+                        onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                          const val = e.target.value;
+                          field.onChange(val === "" ? undefined : Number(val));
+                        },
+                      })}
+                />
+              </FormControl>
+              {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
+              <FormMessage />
+            </FormItem>
+          );
+        }}
       />
     );
   }
