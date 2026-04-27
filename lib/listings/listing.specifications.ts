@@ -224,13 +224,7 @@ function dollarsStringToCents(value: string) {
     return null;
   }
 
-  const dollarsMatch = amountMatch[1];
-
-  if (!dollarsMatch) {
-    return null;
-  }
-
-  const dollars = Number.parseInt(dollarsMatch, 10);
+  const dollars = Number.parseInt(amountMatch[1]!, 10);
   const cents = Number.parseInt((amountMatch[2] ?? "").padEnd(2, "0") || "0", 10);
 
   if (!Number.isSafeInteger(dollars) || !Number.isSafeInteger(cents)) {
