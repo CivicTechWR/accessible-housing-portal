@@ -19,7 +19,7 @@ export function getListingsQueryFromSearchParams(searchParams: RawSearchParams):
     accessibility: getFirstValue(searchParams.accessibility),
     moveInDate: getFirstValue(searchParams.moveInDate),
     sort: getFirstValue(searchParams.sort),
-    features: Array.isArray(rawFeatures) ? rawFeatures : rawFeatures,
+    features: rawFeatures,
     search: getFirstValue(searchParams.search),
   });
 }

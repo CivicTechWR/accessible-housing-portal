@@ -186,7 +186,7 @@ function buildListingPayloadFromForm(data: ListingFormData) {
       {
         bedrooms: data.bedrooms,
         bathrooms: data.bathrooms,
-        sqft: normalizeOptionalFiniteNumber(data.squareFeet) ?? 0,
+        sqft: data.squareFeet ?? 0,
         rent: Math.round(data.monthlyRentCents / 100),
         availableDate: normalizeOptionalString(data.availableOn) ?? getTodayIsoDate(),
       },
@@ -218,7 +218,7 @@ function buildListingPayloadFromForm(data: ListingFormData) {
     unitNumber: normalizeOptionalString(data.unitNumber),
     propertyType: data.propertyType,
     buildingType: data.buildingType,
-    unitStory: normalizeOptionalFiniteNumber(data.unitStory),
+    unitStory: data.unitStory,
     leaseTerm: data.leaseTerm,
     utilitiesIncluded: data.utilitiesIncluded,
   };
@@ -227,10 +227,6 @@ function buildListingPayloadFromForm(data: ListingFormData) {
 function normalizeOptionalString(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
-}
-
-function normalizeOptionalFiniteNumber(value: number | undefined) {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 function assignTrimmedString(

@@ -326,17 +326,6 @@ export function formatListingTimeAgo(publishedAt: Date | null, createdAt: Date) 
   });
 }
 
-export function getListingCoordinates(latitude: number | null, longitude: number | null) {
-  if (typeof latitude !== "number" || typeof longitude !== "number") {
-    return null;
-  }
-
-  return {
-    lat: latitude,
-    lng: longitude,
-  };
-}
-
 export function getListingSquareFeet(squareFeet: number | null, customFields: ListingCustomFields) {
   return squareFeet ?? getStoredUnits(customFields)[0]?.sqft ?? 0;
 }

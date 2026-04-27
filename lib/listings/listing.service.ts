@@ -18,7 +18,6 @@ import {
   formatListingTimeAgo,
   getDisplayAccessibilityFeatures,
   getEnabledBooleanCustomFieldKeys,
-  getListingCoordinates,
   getListingSquareFeet,
   getStoredApplicationMethod,
   getStoredAccessibilityFeatures,
@@ -157,7 +156,6 @@ export async function getListingsService(query: ListingQuery): Promise<ListingLi
 
   return {
     data: rows.map((row) => {
-      const coordinates = getListingCoordinates(row.latitude, row.longitude);
       const accessibilityFeatures = getDisplayAccessibilityFeatures(
         row.customFields,
         publicBooleanDefinitions,
@@ -175,14 +173,14 @@ export async function getListingsService(query: ListingQuery): Promise<ListingLi
         timeAgo: formatListingTimeAgo(row.publishedAt, row.createdAt),
       };
 
-      if (!coordinates) {
+      if (row.latitude === null || row.longitude === null) {
         return listingSummary;
       }
 
       return {
         ...listingSummary,
-        lat: coordinates.lat,
-        lng: coordinates.lng,
+        lat: row.latitude,
+        lng: row.longitude,
       };
     }),
     pagination: {
