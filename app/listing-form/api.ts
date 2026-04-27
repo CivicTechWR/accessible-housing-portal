@@ -201,14 +201,14 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
       },
     ],
     amenities: [],
-    accessibilityFeatures: (data.customFeatures ?? []).map((feature) => ({
+    accessibilityFeatures: data.customFeatures.map((feature) => ({
       id: feature.id,
       name: feature.name,
       description: normalizeOptionalString(feature.description) ?? feature.name,
     })),
     applicationMethod: "internal" as const,
     eligibilityCriteria: {},
-    images: (data.images ?? []).flatMap((image) =>
+    images: data.images.flatMap((image) =>
       image.id
         ? [
             {
