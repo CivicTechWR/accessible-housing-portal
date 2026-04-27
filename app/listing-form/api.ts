@@ -35,7 +35,10 @@ export function mapListingFormToUpdateListingInput(
   };
   const patch: UpdateListingInput = { ...payload };
 
-  if (shouldClearOptionalString(rawInput?.unitNumber)) {
+  if (
+    rawInput?.unitNumber !== undefined &&
+    normalizeOptionalString(rawInput.unitNumber) === undefined
+  ) {
     patch.unitNumber = null;
   }
 
@@ -65,7 +68,11 @@ export function mapListingFormToAutosaveUpdateInput(
     contact.email = contactEmail;
   }
   assignTrimmedString(contact, "phone", data.contactPhone);
-  assignClearableTrimmedString(patch, "unitNumber", data.unitNumber);
+
+  if (data.unitNumber !== undefined) {
+    patch.unitNumber = normalizeOptionalString(data.unitNumber) ?? null;
+  }
+
   assignTrimmedString(patch, "propertyType", data.propertyType);
   assignTrimmedString(patch, "buildingType", data.buildingType);
   assignTrimmedString(patch, "leaseTerm", data.leaseTerm);
@@ -189,7 +196,8 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
         bathrooms: data.bathrooms,
         sqft: data.squareFeet ?? 0,
         rent: Math.round(data.monthlyRentCents / 100),
-        availableDate: normalizeOptionalString(data.availableOn) ?? getTodayIsoDate(),
+        availableDate:
+          normalizeOptionalString(data.availableOn) ?? new Date().toISOString().slice(0, 10),
       },
     ],
     amenities: [],
@@ -240,25 +248,4 @@ function assignTrimmedString(
   if (normalized) {
     target[key] = normalized;
   }
-}
-
-function assignClearableTrimmedString(
-  target: Record<string, unknown>,
-  key: string,
-  value: string | undefined,
-) {
-  if (value === undefined) {
-    return;
-  }
-
-  const normalized = normalizeOptionalString(value);
-  target[key] = normalized ?? null;
-}
-
-function shouldClearOptionalString(value: string | undefined) {
-  return value !== undefined && normalizeOptionalString(value) === undefined;
-}
-
-function getTodayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
 }
