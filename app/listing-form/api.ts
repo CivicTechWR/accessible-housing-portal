@@ -62,7 +62,10 @@ export function mapListingFormToAutosaveUpdateInput(
   assignTrimmedString(address, "province", data.province);
   assignTrimmedString(address, "postalCode", data.postalCode);
   assignTrimmedString(contact, "name", data.contactName);
-  assignAutosaveContactEmail(contact, data.contactEmail);
+  const contactEmail = normalizeOptionalString(data.contactEmail);
+  if (contactEmail && z.email().safeParse(contactEmail).success) {
+    contact.email = contactEmail;
+  }
   assignTrimmedString(contact, "phone", data.contactPhone);
   assignClearableTrimmedString(patch, "unitNumber", data.unitNumber);
   assignTrimmedString(patch, "propertyType", data.propertyType);
@@ -252,24 +255,6 @@ function assignClearableTrimmedString(
 
   const normalized = normalizeOptionalString(value);
   target[key] = normalized ?? null;
-}
-
-function assignAutosaveContactEmail(target: Record<string, unknown>, value: string | undefined) {
-  const normalized = normalizeOptionalString(value);
-
-  if (!normalized) {
-    return;
-  }
-
-  const result = updateListingSchema.safeParse({
-    contact: {
-      email: normalized,
-    },
-  });
-
-  if (result.success && result.data.contact?.email) {
-    target.email = result.data.contact.email;
-  }
 }
 
 function shouldClearOptionalString(value: string | undefined) {
