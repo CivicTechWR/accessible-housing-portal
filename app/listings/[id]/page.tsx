@@ -2,25 +2,20 @@ import { notFound } from "next/navigation";
 
 import { getListingByIdService } from "@/lib/listings/listing.service";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
-import type { ListingDetails as ListingDetailsData } from "@/shared/schemas/listings";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-async function getListingDetails(id: string): Promise<ListingDetailsData> {
+export default async function ListingDetailsPage({ params }: Readonly<PageProps>) {
+  const { id } = await params;
   const result = await getListingByIdService(id);
 
   if (!result.ok) {
     notFound();
   }
 
-  return result.value.data;
-}
-
-export default async function ListingDetailsPage({ params }: Readonly<PageProps>) {
-  const { id } = await params;
-  const details = await getListingDetails(id);
+  const details = result.value.data;
 
   return (
     <ListingDetails
