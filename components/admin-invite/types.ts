@@ -15,10 +15,6 @@ export const inviteRoleOptions = [
 
 export const defaultInviteRole = inviteRoleOptions[0].value;
 
-export function isInviteRole(value: string): value is InviteRole {
-  return value in inviteRoleLabels;
-}
-
 export type InviteFormValues = {
   name: string;
   email: string;
