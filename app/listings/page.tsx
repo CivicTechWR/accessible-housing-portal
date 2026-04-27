@@ -3,19 +3,10 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import ListingsSkeleton from "@/components/listings-skeleton/ListingsSkeleton";
 import { Suspense } from "react";
 import { getListingsService } from "@/lib/listings/listing.service";
-import type { ListingQuery } from "@/shared/schemas/listings";
 
 import ListingsDashboard from "./listings";
 import { getListingsDashboardData } from "./data";
 import { createListingsQueryString, getListingsQueryFromSearchParams } from "./query";
-
-async function getListings(query: ListingQuery) {
-  await connection();
-
-  const payload = await getListingsService(query);
-
-  return payload;
-}
 
 export default async function ListingsPage({
   searchParams,
@@ -29,8 +20,10 @@ export default async function ListingsPage({
     sort: resolvedSearchParams.sort ?? "newest",
   });
 
+  await connection();
+
   const [initialData, { dynamicGroups }] = await Promise.all([
-    getListings(query),
+    getListingsService(query),
     getListingsDashboardData(),
   ]);
 
