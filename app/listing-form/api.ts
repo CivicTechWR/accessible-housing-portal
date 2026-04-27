@@ -3,9 +3,7 @@ import { z } from "zod";
 import { errorMessageSchema } from "@/shared/schemas/common";
 import {
   createDraftListingResponseSchema,
-  createListingSchema,
   listingEditorResponseSchema,
-  updateListingSchema,
   type CreateListingInput,
   type ListingEditorData,
   type UpdateListingInput,
@@ -19,7 +17,7 @@ const listingIdResponseSchema = z.object({
 });
 
 export function mapListingFormToCreateListingInput(data: ListingFormData): CreateListingInput {
-  return createListingSchema.parse(buildListingPayloadFromForm(data));
+  return buildListingPayloadFromForm(data);
 }
 
 export function mapListingFormToUpdateListingInput(
@@ -35,23 +33,23 @@ export function mapListingFormToUpdateListingInput(
     ...buildListingPayloadFromForm(data),
     status,
   };
-  const patch: Record<string, unknown> = payload;
+  const patch: UpdateListingInput = { ...payload };
 
   if (shouldClearOptionalString(rawInput?.unitNumber)) {
     patch.unitNumber = null;
   }
 
-  return updateListingSchema.parse(patch);
+  return patch;
 }
 
 export function mapListingFormToAutosaveUpdateInput(
   data: ListingFormInput,
   status = data.status ?? "draft",
 ): UpdateListingInput | null {
-  const patch: Record<string, unknown> = {};
-  const address: Record<string, unknown> = {};
-  const contact: Record<string, unknown> = {};
-  const unit: Record<string, unknown> = {};
+  const patch: UpdateListingInput = {};
+  const address: NonNullable<UpdateListingInput["address"]> = {};
+  const contact: NonNullable<UpdateListingInput["contact"]> = {};
+  const unit: NonNullable<UpdateListingInput["units"]>[number] = {};
 
   assignTrimmedString(patch, "title", data.title);
   assignTrimmedString(patch, "name", data.name);
@@ -128,7 +126,7 @@ export function mapListingFormToAutosaveUpdateInput(
   );
   patch.status = status;
 
-  return Object.keys(patch).length > 0 ? updateListingSchema.parse(patch) : null;
+  return Object.keys(patch).length > 0 ? patch : null;
 }
 
 export async function parseCreateDraftListingResponse(response: Response): Promise<{ id: string }> {
@@ -173,7 +171,7 @@ async function getApiErrorMessage(response: Response) {
   }
 }
 
-function buildListingPayloadFromForm(data: ListingFormData) {
+function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput {
   return {
     title: data.title,
     name: data.name,
