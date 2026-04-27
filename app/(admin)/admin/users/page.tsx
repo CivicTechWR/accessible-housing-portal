@@ -92,8 +92,6 @@ function roleBadgeVariant(role: AccountListResponse["data"][number]["role"]) {
       return "secondary" as const;
     case "user":
       return "outline" as const;
-    default:
-      return "outline" as const;
   }
 }
 
@@ -107,8 +105,6 @@ function statusBadgeVariant(status: AccountListResponse["data"][number]["status"
       return "destructive" as const;
     case "deactivated":
       return "ghost" as const;
-    default:
-      return "outline" as const;
   }
 }
 
@@ -120,8 +116,6 @@ function formatRole(role: AccountListResponse["data"][number]["role"]) {
       return "Housing Searcher";
     case "admin":
       return "Admin";
-    default:
-      return "Unknown";
   }
 }
 
@@ -135,8 +129,6 @@ function formatStatus(status: AccountListResponse["data"][number]["status"]) {
       return "Suspended";
     case "deactivated":
       return "Deactivated";
-    default:
-      return "Unknown";
   }
 }
 
