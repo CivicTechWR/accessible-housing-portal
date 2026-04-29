@@ -3,6 +3,13 @@ import type {
   CreateCustomListingFieldInput,
   UpdateCustomListingFieldInput,
 } from "@/shared/schemas/custom-listing-fields";
+import {
+  formatCustomListingFieldCategoryLabel,
+  getCanonicalCustomListingFieldCategory,
+  getUniqueCustomListingFieldCategories,
+  isSameCustomListingFieldCategory,
+  normalizeCustomListingFieldCategory,
+} from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 
 export type SortKey =
   | "label"
@@ -270,53 +277,23 @@ export function nextSortOrder(fields: AdminCustomListingField[], category: strin
 }
 
 export function formatCategoryLabel(category: string) {
-  return category
-    .split(/\s*&\s*/)
-    .map((part) =>
-      part
-        .toLowerCase()
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" "),
-    )
-    .join(" & ");
+  return formatCustomListingFieldCategoryLabel(category);
 }
 
 export function getCanonicalCategoryValue(value: string, categories: string[]) {
-  const normalizedValue = normalizeCategoryValue(value);
-  const match = categories.find((category) => isSameCategoryOption(normalizedValue, category));
-  return match ? normalizeCategoryValue(match) : normalizedValue;
+  return getCanonicalCustomListingFieldCategory(value, categories);
 }
 
 export function isSameCategoryOption(value: string, option: string) {
-  const normalizedValue = normalizeCategoryValue(value);
-  const normalizedOption = normalizeCategoryValue(option);
-  return (
-    normalizedValue === normalizedOption ||
-    normalizedValue === normalizeCategoryValue(formatCategoryLabel(option))
-  );
+  return isSameCustomListingFieldCategory(value, option);
 }
 
 export function normalizeCategoryValue(value: string) {
-  return value.trim().toUpperCase();
+  return normalizeCustomListingFieldCategory(value);
 }
 
 export function getUniqueCategoryOptions(categories: string[]) {
-  const seen = new Set<string>();
-  const uniqueCategories: string[] = [];
-
-  for (const category of categories) {
-    const normalizedCategory = normalizeCategoryValue(category);
-    if (!normalizedCategory || seen.has(normalizedCategory)) {
-      continue;
-    }
-
-    seen.add(normalizedCategory);
-    uniqueCategories.push(normalizedCategory);
-  }
-
-  return uniqueCategories;
+  return getUniqueCustomListingFieldCategories(categories);
 }
 
 export function normalizeFieldCategory(field: AdminCustomListingField) {

@@ -14,6 +14,7 @@ import {
   reorderCustomListingFields,
   updateCustomListingFieldById,
 } from "@/lib/custom-listing-fields/custom-listing-field-admin.repository";
+import { normalizeCustomListingFieldCategory } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import { canManageAccounts, type AccountActor } from "@/lib/policies/account-policy";
 import type {
   AdminCustomListingField,
@@ -63,10 +64,6 @@ function toAdminCustomListingField(row: {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
-}
-
-function normalizeCategory(category: string) {
-  return category.trim().toUpperCase();
 }
 
 export async function getAdminCustomListingFieldsService(
@@ -145,7 +142,7 @@ export async function createAdminCustomListingFieldService(
     label: input.label,
     description: input.description,
     fieldType: input.type,
-    category: normalizeCategory(input.category),
+    category: normalizeCustomListingFieldCategory(input.category),
     helpText: input.helpText,
     placeholder: input.placeholder,
     isPublic: input.publicOnly,
@@ -202,7 +199,9 @@ export async function updateAdminCustomListingFieldByIdService(input: {
     label: input.payload.label,
     description: input.payload.description,
     fieldType: input.payload.type,
-    category: input.payload.category ? normalizeCategory(input.payload.category) : undefined,
+    category: input.payload.category
+      ? normalizeCustomListingFieldCategory(input.payload.category)
+      : undefined,
     helpText: input.payload.helpText,
     placeholder: input.payload.placeholder,
     isPublic: input.payload.publicOnly,
@@ -239,7 +238,7 @@ export async function reorderAdminCustomListingFieldsService(
   }
 
   const reorderedFields = await reorderCustomListingFields({
-    category: normalizeCategory(input.category),
+    category: normalizeCustomListingFieldCategory(input.category),
     fields: input.fields,
     actorUserId: actorResult.value.actor.userId,
   });
