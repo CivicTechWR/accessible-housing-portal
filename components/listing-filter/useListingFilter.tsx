@@ -1,4 +1,5 @@
 import { listingSearchParamsParsers } from "@/app/listings/searchParams";
+import { isListingSortOption } from "@/app/listings/query";
 import { useQueryStates } from "nuqs";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FilterButtonProps } from "@/components/filter-button/FilterButton";
@@ -29,7 +30,11 @@ export function useListingFilters() {
         { value: "price_asc", label: "Price: Low to High" },
         { value: "price_desc", label: "Price: High to Low" },
       ],
-      onChange: async (value: string) => await setFilters({ sort: value }),
+      onChange: async (value: string) => {
+        if (isListingSortOption(value)) {
+          await setFilters({ sort: value });
+        }
+      },
     }),
     [filters.sort, setFilters],
   );

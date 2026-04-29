@@ -7,7 +7,7 @@ import {
   parseAsIsoDateTime,
 } from "nuqs/server";
 
-const sortOptions = ["newest", "oldest", "price_asc", "price_desc"];
+import { LISTING_SORT_OPTIONS } from "./query";
 
 // 1. Define the raw parsers as a standalone object
 export const listingSearchParamsParsers = {
@@ -17,7 +17,7 @@ export const listingSearchParamsParsers = {
   bedrooms: parseAsString,
   bathrooms: parseAsString,
   moveInDate: parseAsIsoDateTime,
-  sort: parseAsStringEnum(sortOptions).withDefault("newest"),
+  sort: parseAsStringEnum([...LISTING_SORT_OPTIONS]).withDefault("newest"),
   features: parseAsArrayOf(parseAsString).withDefault([]),
 };
 

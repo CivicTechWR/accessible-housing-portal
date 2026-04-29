@@ -2,9 +2,14 @@ import { listingQuerySchema, type ListingQuery } from "@/shared/schemas/listings
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
-export function getListingsQueryFromSearchParams(searchParams: RawSearchParams): ListingQuery {
-  const rawFeatures = searchParams.features;
+export const LISTING_SORT_OPTIONS = ["newest", "oldest", "price_asc", "price_desc"] as const;
+export type ListingSortOption = (typeof LISTING_SORT_OPTIONS)[number];
 
+export function isListingSortOption(value: string): value is ListingSortOption {
+  return LISTING_SORT_OPTIONS.includes(value as ListingSortOption);
+}
+
+export function getListingsQueryFromSearchParams(searchParams: RawSearchParams): ListingQuery {
   return listingQuerySchema.parse({
     page: getFirstValue(searchParams.page),
     limit: getFirstValue(searchParams.limit),
@@ -19,8 +24,28 @@ export function getListingsQueryFromSearchParams(searchParams: RawSearchParams):
     accessibility: getFirstValue(searchParams.accessibility),
     moveInDate: getFirstValue(searchParams.moveInDate),
     sort: getFirstValue(searchParams.sort),
-    features: rawFeatures,
+    features: normalizeFeatureParams(searchParams.features),
     search: getFirstValue(searchParams.search),
+  });
+}
+
+export function getListingsQueryFromURLSearchParams(searchParams: URLSearchParams): ListingQuery {
+  return getListingsQueryFromSearchParams({
+    page: getSearchParam(searchParams, "page"),
+    limit: getSearchParam(searchParams, "limit"),
+    status: getSearchParam(searchParams, "status"),
+    neighborhood: getSearchParam(searchParams, "neighborhood"),
+    bedrooms: getSearchParam(searchParams, "bedrooms"),
+    bathrooms: getSearchParam(searchParams, "bathrooms"),
+    location: getSearchParam(searchParams, "location"),
+    minPrice: getSearchParam(searchParams, "minPrice"),
+    maxPrice: getSearchParam(searchParams, "maxPrice"),
+    maxRent: getSearchParam(searchParams, "maxRent"),
+    accessibility: getSearchParam(searchParams, "accessibility"),
+    moveInDate: getSearchParam(searchParams, "moveInDate"),
+    sort: getSearchParam(searchParams, "sort"),
+    features: getSearchParams(searchParams, "features"),
+    search: getSearchParam(searchParams, "search"),
   });
 }
 
@@ -53,12 +78,28 @@ export function createListingsQueryString(query: ListingQuery) {
   return params.toString();
 }
 
+function getSearchParam(searchParams: URLSearchParams, key: string) {
+  return searchParams.get(key) ?? undefined;
+}
+
+function getSearchParams(searchParams: URLSearchParams, key: string) {
+  const values = searchParams.getAll(key);
+  return values.length > 0 ? values : undefined;
+}
+
 function getFirstValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) {
     return value[0];
   }
 
   return value;
+}
+
+function normalizeFeatureParams(value: string | string[] | undefined) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  const features = values.flatMap((feature) => feature.split(",")).filter(Boolean);
+
+  return features.length > 0 ? features : undefined;
 }
 
 function appendQueryParam(params: URLSearchParams, key: string, value: string | undefined) {
