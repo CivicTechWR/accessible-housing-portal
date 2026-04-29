@@ -2,34 +2,19 @@ import "server-only";
 
 import { asc, desc, type SQL } from "drizzle-orm";
 
-import { listings, type ListingCustomFields } from "@/db/schema";
+import { listings } from "@/db/schema";
 import type { getOptionalSession } from "@/lib/auth/session";
+import { getListingImageUrl } from "@/lib/listings/store";
 import {
-  buildListingFeatureDefinitionLookup,
-  normalizeListingFeatureToken,
-} from "@/lib/listings/listing-feature-definitions";
+  buildCreateListingGraphInput,
+  buildUpdateListingGraphInput,
+} from "@/lib/listings/listing-intake";
 import {
-  buildListingFeatureCategories,
-  buildListingCustomFields,
-  centsToDollars,
-  dollarsToCents,
-  formatListingAddress,
-  getListingImageUrl,
-  formatListingTimeAgo,
-  getDisplayAccessibilityFeatures,
-  getEnabledBooleanCustomFieldKeys,
-  getListingSquareFeet,
-  getStoredApplicationMethod,
-  getStoredAccessibilityFeatures,
-  getStoredEligibilityCriteria,
-  getStoredExternalApplicationUrl,
-  getStoredNumber,
-  getStoredString,
-  getStoredStringArray,
-  getStoredUnits,
-  mergeListingCustomFields,
-  resolveListingStatusTimestamps,
-} from "@/lib/listings/store";
+  buildListingDetailsResponse,
+  buildListingEditorData,
+  buildListingSummary,
+  buildOwnerListingSummary,
+} from "@/lib/listings/listing-projection";
 import {
   andListingSpecifications,
   listingAccessibilitySpecification,
@@ -51,13 +36,11 @@ import {
   createDraftListing,
   createListing,
   findListingImagesByListingIds,
-  findListingImagesByListingId,
   findOwnerListings,
   findListingRecordById,
   findListingSummaries,
   findPublicBooleanFeatureDefinitions,
   updateListingGraph,
-  type ListingRecord,
 } from "@/lib/listings/listing.repository";
 import { fail, succeed, type DomainResult } from "@/lib/http/domain-result";
 import {
@@ -74,8 +57,6 @@ import type {
   CreateDraftListingResponse,
   DeleteListingResponse,
   ListingByIdResponse,
-  ListingDetails,
-  ListingEditorData,
   ListingEditorResponse,
   ListingIdParam,
   ListingListResponse,
@@ -155,34 +136,13 @@ export async function getListingsService(query: ListingQuery): Promise<ListingLi
   }
 
   return {
-    data: rows.map((row) => {
-      const accessibilityFeatures = getDisplayAccessibilityFeatures(
-        row.customFields,
-        publicBooleanDefinitions,
-      );
-      const listingSummary = {
-        id: row.id,
-        price: centsToDollars(row.monthlyRentCents),
-        address: formatListingAddress(row.street1, row.unitNumber),
-        city: row.city,
-        beds: row.bedrooms,
-        baths: row.bathrooms,
-        sqft: getListingSquareFeet(row.squareFeet, row.customFields),
-        accessibilityFeatures: accessibilityFeatures.length > 0 ? accessibilityFeatures : undefined,
+    data: rows.map((row) =>
+      buildListingSummary({
+        row,
         imageUrl: imageByListingId.get(row.id),
-        timeAgo: formatListingTimeAgo(row.publishedAt, row.createdAt),
-      };
-
-      if (row.latitude === null || row.longitude === null) {
-        return listingSummary;
-      }
-
-      return {
-        ...listingSummary,
-        lat: row.latitude,
-        lng: row.longitude,
-      };
-    }),
+        publicBooleanDefinitions,
+      }),
+    ),
     pagination: {
       page,
       limit,
@@ -369,22 +329,12 @@ export async function getMyListingsService(): Promise<
   }
 
   return succeed({
-    data: rows.map((row) => ({
-      id: row.id,
-      title: row.title || "Untitled draft",
-      status: row.status,
-      price: centsToDollars(row.monthlyRentCents),
-      address: formatListingAddress(row.street1, row.unitNumber) || "Address pending",
-      city: row.city || "Location pending",
-      beds: row.bedrooms,
-      baths: row.bathrooms,
-      sqft: getListingSquareFeet(row.squareFeet, row.customFields),
-      imageUrl: imageByListingId.get(row.id),
-      updatedAt: row.updatedAt.toISOString(),
-      publishedAt: row.publishedAt?.toISOString(),
-      editUrl: `/listing-form/${row.id}`,
-      viewUrl: `/listings/${row.id}`,
-    })),
+    data: rows.map((row) =>
+      buildOwnerListingSummary({
+        row,
+        imageUrl: imageByListingId.get(row.id),
+      }),
+    ),
   });
 }
 
@@ -397,20 +347,12 @@ export async function createListingService(
     return actorResult;
   }
 
-  const primaryUnit = payload.units[0];
-  const primaryUnitRentCents = Math.round(primaryUnit.rent * 100);
-
-  const statusTimestamps = resolveListingStatusTimestamps(payload.status);
-  const customFields = buildListingCustomFields(payload);
-
-  const createdListing = await createListing({
-    actorUserId: actorResult.value.actor.userId,
-    payload,
-    primaryUnitRentCents,
-    customFields,
-    publishedAt: statusTimestamps.publishedAt,
-    archivedAt: statusTimestamps.archivedAt,
-  });
+  const createdListing = await createListing(
+    buildCreateListingGraphInput({
+      actorUserId: actorResult.value.actor.userId,
+      payload,
+    }),
+  );
 
   return succeed({
     message: "Listing created",
@@ -449,72 +391,18 @@ export async function updateListingByIdService(input: {
     return fail("forbidden", "Forbidden");
   }
 
-  const nextCustomFields = mergeListingCustomFields(listing.customFields, input.payload);
-  const nextUnits = getStoredUnits(nextCustomFields);
-  const primaryUnit = nextUnits[0];
-  const nextEligibility = getStoredEligibilityCriteria(nextCustomFields);
-  const nextStatus = input.payload.status ?? listing.status;
-  const nextApplicationUrlResult = resolveNextApplicationUrl({
-    payload: input.payload,
-    listingApplicationUrl: listing.applicationUrl,
-    listingCustomFields: listing.customFields,
-    nextCustomFields,
-  });
-
-  if (!nextApplicationUrlResult.ok) {
-    return fail("validation", nextApplicationUrlResult.message);
-  }
-
-  const statusTimestamps = resolveListingStatusTimestamps(nextStatus, {
-    publishedAt: listing.publishedAt,
-    archivedAt: listing.archivedAt,
-  });
-  const nextPrimaryUnitRentCents = dollarsToCents(primaryUnit?.rent ?? undefined);
-  const monthlyRentCents = nextPrimaryUnitRentCents ?? listing.monthlyRentCents;
-
-  await updateListingGraph({
+  const updateGraphInput = buildUpdateListingGraphInput({
     actorUserId: actorResult.value.actor.userId,
     listingId: input.listingId,
-    propertyId: listing.property.id,
-    property: {
-      name: input.payload.name ?? listing.property.name,
-      street1: input.payload.address?.street ?? listing.property.street1,
-      street2: input.payload.address?.street2 ?? listing.property.street2,
-      city: input.payload.address?.city ?? listing.property.city,
-      province: input.payload.address?.province ?? listing.property.province,
-      postalCode: input.payload.address?.postalCode ?? listing.property.postalCode,
-      neighborhood: input.payload.address?.neighborhood ?? listing.property.neighborhood,
-      latitude: input.payload.address?.latitude ?? listing.property.latitude,
-      longitude: input.payload.address?.longitude ?? listing.property.longitude,
-      contactName: input.payload.contact?.name ?? listing.property.contactName,
-      contactEmail: input.payload.contact?.email ?? listing.property.contactEmail,
-      contactPhone: input.payload.contact?.phone ?? listing.property.contactPhone,
-    },
-    listing: {
-      title: input.payload.title ?? listing.title,
-      description: input.payload.description ?? listing.description,
-      status: nextStatus,
-      unitNumber:
-        input.payload.unitNumber === undefined ? listing.unitNumber : input.payload.unitNumber,
-      bedrooms: primaryUnit?.bedrooms ?? listing.bedrooms,
-      bathrooms: primaryUnit?.bathrooms ?? listing.bathrooms,
-      squareFeet: primaryUnit?.sqft ?? listing.squareFeet,
-      monthlyRentCents,
-      availableOn: primaryUnit?.availableDate ?? listing.availableOn,
-      maxIncomeCents:
-        nextEligibility.maxIncome === null
-          ? null
-          : (dollarsToCents(nextEligibility.maxIncome ?? undefined) ?? listing.maxIncomeCents),
-      applicationUrl: nextApplicationUrlResult.nextApplicationUrl,
-      applicationEmail: input.payload.contact?.email ?? listing.applicationEmail,
-      applicationPhone: input.payload.contact?.phone ?? listing.applicationPhone,
-      customFields: nextCustomFields,
-      publishedAt: statusTimestamps.publishedAt,
-      archivedAt: statusTimestamps.archivedAt,
-    },
-    images: input.payload.images,
-    imageAltTextBase: input.payload.name ?? listing.title,
+    listing,
+    payload: input.payload,
   });
+
+  if (!updateGraphInput.ok) {
+    return updateGraphInput;
+  }
+
+  await updateListingGraph(updateGraphInput.value);
 
   return succeed({
     message: "Listing updated",
@@ -608,164 +496,5 @@ function toListingActor(optionalSession: OptionalSessionResult): ListingActor {
   return {
     userId: optionalSession.session.user.id,
     role: optionalSession.authzUser.role,
-  };
-}
-
-async function buildListingDetailsResponse(listing: ListingRecord): Promise<ListingDetails> {
-  const imageRows = await findListingImagesByListingId(listing.id);
-  const featureDefinitions = await findPublicBooleanFeatureDefinitions();
-
-  return {
-    id: listing.id,
-    title: listing.title,
-    unitNumber: listing.unitNumber ?? undefined,
-    price: centsToDollars(listing.monthlyRentCents),
-    address: {
-      street1: listing.property.street1,
-      street2: listing.property.street2 ?? undefined,
-      city: listing.property.city,
-      province: listing.property.province,
-      postalCode: listing.property.postalCode,
-    },
-    beds: listing.bedrooms,
-    baths: listing.bathrooms,
-    sqft: getListingSquareFeet(listing.squareFeet, listing.customFields),
-    accessibilityFeatures: getDisplayAccessibilityFeatures(
-      listing.customFields,
-      featureDefinitions,
-    ),
-    images: imageRows.map((image) => ({
-      url: getListingImageUrl(image.id, image.imageUrl),
-      caption: image.altText ?? `${listing.title} image`,
-    })),
-    timeAgo: formatListingTimeAgo(listing.publishedAt, listing.createdAt),
-    features: buildListingFeatureCategories(listing.customFields, featureDefinitions),
-    contact:
-      listing.property.contactName && listing.property.contactEmail && listing.property.contactPhone
-        ? {
-            name: listing.property.contactName,
-            email: listing.property.contactEmail,
-            phone: listing.property.contactPhone,
-          }
-        : undefined,
-  };
-}
-
-async function buildListingEditorData(listing: ListingRecord): Promise<ListingEditorData> {
-  const imageRows = await findListingImagesByListingId(listing.id);
-  const storedUnits = getStoredUnits(listing.customFields);
-  const primaryUnit = storedUnits[0];
-  const enabledDefinitionKeys = getEnabledBooleanCustomFieldKeys(listing.customFields);
-  const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
-  const featureDefinitionLookup = buildListingFeatureDefinitionLookup(publicBooleanDefinitions);
-  const customFeatures = new Map<string, ListingEditorData["customFeatures"][number]>();
-
-  for (const key of enabledDefinitionKeys) {
-    const definition = featureDefinitionLookup.byKey.get(key);
-
-    if (!definition) {
-      continue;
-    }
-
-    customFeatures.set(definition.key, {
-      category: definition.category,
-      id: definition.key,
-      name: definition.label,
-      description: definition.description ?? definition.label,
-    });
-  }
-
-  for (const feature of getStoredAccessibilityFeatures(listing.customFields)) {
-    const definition =
-      (feature.id ? featureDefinitionLookup.byKey.get(feature.id) : undefined) ??
-      featureDefinitionLookup.byToken.get(normalizeListingFeatureToken(feature.name));
-    const featureId =
-      definition?.key ??
-      feature.name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-
-    if (!customFeatures.has(featureId)) {
-      customFeatures.set(featureId, {
-        category: definition?.category ?? "Accessibility",
-        id: featureId,
-        name: definition?.label ?? feature.name,
-        description: definition?.description ?? feature.description,
-      });
-    }
-  }
-
-  return {
-    title: listing.title,
-    description: listing.description ?? "",
-    propertyType: getStoredString(listing.customFields, "propertyType") ?? "",
-    buildingType: getStoredString(listing.customFields, "buildingType") ?? "",
-    unitStory: getStoredNumber(listing.customFields, "unitStory"),
-    bedrooms: primaryUnit?.bedrooms ?? listing.bedrooms,
-    bathrooms: primaryUnit?.bathrooms ?? listing.bathrooms,
-    squareFeet: primaryUnit?.sqft ?? listing.squareFeet ?? undefined,
-    monthlyRentCents: listing.monthlyRentCents,
-    leaseTerm: getStoredString(listing.customFields, "leaseTerm") ?? "",
-    utilitiesIncluded: getStoredStringArray(listing.customFields, "utilitiesIncluded"),
-    images: imageRows.map((image) => ({
-      id: image.id,
-      url: getListingImageUrl(image.id, image.imageUrl),
-      caption: image.altText ?? "",
-    })),
-    availableOn: primaryUnit?.availableDate ?? listing.availableOn ?? undefined,
-    status: listing.status,
-    unitNumber: listing.unitNumber ?? undefined,
-    name: listing.property.name,
-    street1: listing.property.street1,
-    street2: listing.property.street2 ?? undefined,
-    city: listing.property.city,
-    province: listing.property.province,
-    postalCode: listing.property.postalCode,
-    contactName: listing.property.contactName ?? "",
-    contactEmail: listing.property.contactEmail ?? "",
-    contactPhone: listing.property.contactPhone ?? "",
-    customFeatures: Array.from(customFeatures.values()),
-  };
-}
-
-function resolveNextApplicationUrl(input: {
-  payload: UpdateListingInput;
-  listingApplicationUrl: string | null;
-  listingCustomFields: ListingCustomFields;
-  nextCustomFields: ListingCustomFields;
-}) {
-  const effectiveApplicationMethod =
-    getStoredApplicationMethod(input.nextCustomFields) ??
-    getStoredApplicationMethod(input.listingCustomFields) ??
-    (input.listingApplicationUrl ? "external_link" : "internal");
-  const hasExplicitExternalApplicationUrlUpdate =
-    input.payload.externalApplicationUrl !== undefined;
-
-  if (effectiveApplicationMethod !== "external_link") {
-    input.nextCustomFields.externalApplicationUrl = null;
-  }
-
-  const nextExternalApplicationUrl = getStoredExternalApplicationUrl(input.nextCustomFields);
-  const nextApplicationUrl =
-    effectiveApplicationMethod === "external_link"
-      ? hasExplicitExternalApplicationUrlUpdate
-        ? (nextExternalApplicationUrl ?? null)
-        : nextExternalApplicationUrl === undefined
-          ? input.listingApplicationUrl
-          : nextExternalApplicationUrl
-      : null;
-
-  if (effectiveApplicationMethod === "external_link" && !nextApplicationUrl) {
-    return {
-      ok: false as const,
-      message: "External application URL is required when applicationMethod is external_link.",
-    };
-  }
-
-  return {
-    ok: true as const,
-    nextApplicationUrl,
   };
 }

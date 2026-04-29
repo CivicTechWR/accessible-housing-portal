@@ -451,14 +451,16 @@ export async function findOwnerListings(ownerUserId: string): Promise<OwnerListi
     );
 }
 
-export async function createListing(input: {
+export type CreateListingGraphInput = {
   actorUserId: string;
   payload: CreateListingInput;
   primaryUnitRentCents: number;
   customFields: ListingCustomFields;
   publishedAt: Date | null;
   archivedAt: Date | null;
-}) {
+};
+
+export async function createListing(input: CreateListingGraphInput) {
   return db.transaction(async (tx) => {
     const [property] = await tx
       .insert(properties)
@@ -548,7 +550,7 @@ export async function createListing(input: {
   });
 }
 
-export async function updateListingGraph(input: {
+export type UpdateListingGraphInput = {
   actorUserId: string;
   listingId: ListingIdParam;
   propertyId: string;
@@ -586,7 +588,9 @@ export async function updateListingGraph(input: {
   };
   images?: NonNullable<UpdateListingInput["images"]>;
   imageAltTextBase: string;
-}) {
+};
+
+export async function updateListingGraph(input: UpdateListingGraphInput) {
   await db.transaction(async (tx) => {
     await tx
       .update(properties)
