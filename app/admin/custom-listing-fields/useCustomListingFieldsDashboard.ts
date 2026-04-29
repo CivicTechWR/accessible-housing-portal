@@ -4,9 +4,13 @@ import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   AdminCustomListingField,
-  CreateCustomListingFieldInput,
   UpdateCustomListingFieldInput,
 } from "@/shared/schemas/custom-listing-fields";
+import {
+  applyCustomListingFieldUpdates,
+  buildCreateCustomListingFieldRequest,
+  getReorderedCustomListingFields,
+} from "./custom-listing-fields-dashboard-workflow";
 import {
   type BulkEditPayload,
   type CreateFieldDialogPayload,
@@ -21,13 +25,10 @@ import {
   getInsertionIndexForPointer,
   groupFields,
   isFormControlTarget,
-  moveItemToInsertionIndex,
-  nextSortOrder,
   normalizeCategoryPayload,
   normalizeFieldCategories,
   normalizeFieldCategory,
   shouldShowDropIndicator,
-  sortCategoryFields,
   sortFields,
   sortVisibleFields,
 } from "./custom-listing-fields-dashboard-utils";
@@ -182,12 +183,7 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
 
   const handleCreateField = async (payload: CreateFieldDialogPayload) => {
     setFeedback(null);
-    const normalizedPayload = normalizeCategoryPayload(payload);
-    const requestPayload = {
-      ...normalizedPayload,
-      placeholder: null,
-      sortOrder: nextSortOrder(fields, normalizedPayload.category),
-    } satisfies CreateCustomListingFieldInput;
+    const requestPayload = buildCreateCustomListingFieldRequest({ fields, payload });
 
     const createdField = await createField(requestPayload);
     if (!createdField) {
@@ -205,27 +201,12 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
     category: string;
     insertionIndex: number;
   }) => {
-    const categoryFields = sortCategoryFields(
-      fields.filter((field) => field.category === input.category),
-    );
-    const draggedIndex = categoryFields.findIndex((field) => field.id === input.fieldId);
+    const reorderedFields = getReorderedCustomListingFields({ fields, ...input });
 
-    if (
-      draggedIndex < 0 ||
-      input.insertionIndex === draggedIndex ||
-      input.insertionIndex === draggedIndex + 1
-    ) {
+    if (!reorderedFields) {
       return;
     }
 
-    const reorderedFields = moveItemToInsertionIndex(
-      categoryFields,
-      draggedIndex,
-      input.insertionIndex,
-    ).map((field, index) => ({
-      ...field,
-      sortOrder: index + 1,
-    }));
     const previousFields = fields;
     const optimisticById = new Map(reorderedFields.map((field) => [field.id, field]));
 
@@ -244,9 +225,11 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
           sortOrder: field.sortOrder,
         })),
       });
-      const updatedById = new Map(updatedFields.map((field) => [field.id, field]));
       setFields((current) =>
-        sortFields(current.map((field) => updatedById.get(field.id) ?? field)),
+        applyCustomListingFieldUpdates({
+          fields: current,
+          updatedFields,
+        }),
       );
       setFeedback({ status: "success", message: "Custom field order updated." });
     } catch (caught) {
@@ -400,9 +383,11 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
 
     try {
       const updatedFields = await updateFields(selectedFields, normalizedPayload);
-      const updatedById = new Map(updatedFields.map((field) => [field.id, field]));
       setFields((current) =>
-        sortFields(current.map((field) => updatedById.get(field.id) ?? field)),
+        applyCustomListingFieldUpdates({
+          fields: current,
+          updatedFields,
+        }),
       );
       setBulkEditOpen(false);
       setFeedback({
