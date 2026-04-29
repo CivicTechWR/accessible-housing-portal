@@ -136,7 +136,7 @@ export async function uploadListingImageService(input: {
     message: "Image upload successful",
     data: {
       id: createdUpload.id,
-      url: buildUploadedImageUrl(createdUpload.id),
+      url: `/api/image-uploads/${createdUpload.id}`,
       width: processedImageResult.value.width,
       height: processedImageResult.value.height,
       fileName: input.file.name,
@@ -224,10 +224,6 @@ function parseListingId(rawListingId: string): ImageServiceResult<string> {
   return parsedListingId.success
     ? succeed(parsedListingId.data)
     : fail(400, parsedListingId.error.issues[0]?.message ?? "Invalid listing id.");
-}
-
-function buildUploadedImageUrl(imageId: string) {
-  return `/api/image-uploads/${imageId}`;
 }
 
 async function processUploadedImage(

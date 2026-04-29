@@ -443,7 +443,7 @@ export function centsToDollars(amountInCents: number) {
 }
 
 export function dollarsToCents(amount: number | undefined) {
-  return typeof amount === "number" ? Math.round(amount * 100) : null;
+  return amount === undefined ? null : Math.round(amount * 100);
 }
 
 function mergeStoredUnits(

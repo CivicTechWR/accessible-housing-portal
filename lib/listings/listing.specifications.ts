@@ -31,7 +31,7 @@ export function listingNeighborhoodSpecification(
 }
 
 export function listingBedroomsSpecification(bedrooms: number | null): ListingFilterSpecification {
-  if (typeof bedrooms !== "number") {
+  if (bedrooms === null) {
     return undefined;
   }
 
@@ -41,7 +41,7 @@ export function listingBedroomsSpecification(bedrooms: number | null): ListingFi
 export function listingBedroomsAtLeastSpecification(
   bedrooms: number | null,
 ): ListingFilterSpecification {
-  if (typeof bedrooms !== "number") {
+  if (bedrooms === null) {
     return undefined;
   }
 
@@ -51,7 +51,7 @@ export function listingBedroomsAtLeastSpecification(
 export function listingBathroomsSpecification(
   bathrooms: number | null,
 ): ListingFilterSpecification {
-  if (typeof bathrooms !== "number") {
+  if (bathrooms === null) {
     return undefined;
   }
 
@@ -61,7 +61,7 @@ export function listingBathroomsSpecification(
 export function listingBathroomsAtLeastSpecification(
   bathrooms: number | null,
 ): ListingFilterSpecification {
-  if (typeof bathrooms !== "number") {
+  if (bathrooms === null) {
     return undefined;
   }
 
@@ -224,13 +224,7 @@ function dollarsStringToCents(value: string) {
     return null;
   }
 
-  const dollarsMatch = amountMatch[1];
-
-  if (!dollarsMatch) {
-    return null;
-  }
-
-  const dollars = Number.parseInt(dollarsMatch, 10);
+  const dollars = Number.parseInt(amountMatch[1]!, 10);
   const cents = Number.parseInt((amountMatch[2] ?? "").padEnd(2, "0") || "0", 10);
 
   if (!Number.isSafeInteger(dollars) || !Number.isSafeInteger(cents)) {

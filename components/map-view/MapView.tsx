@@ -14,8 +14,9 @@ export function MapView({ listings }: { listings: Listing[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const mappableListings = useMemo(
     () =>
-      listings.filter((listing): listing is Listing & { lat: number; lng: number } =>
-        hasCoordinates(listing),
+      listings.filter(
+        (listing): listing is Listing & { lat: number; lng: number } =>
+          listing.lat !== undefined && listing.lng !== undefined,
       ),
     [listings],
   );
@@ -93,8 +94,4 @@ export function MapView({ listings }: { listings: Listing[] }) {
       </div>
     </div>
   );
-}
-
-function hasCoordinates(listing: Listing): listing is Listing & { lat: number; lng: number } {
-  return typeof listing.lat === "number" && typeof listing.lng === "number";
 }

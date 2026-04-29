@@ -5,7 +5,6 @@ import {
   createAdminCustomListingFieldService,
   getAdminCustomListingFieldsService,
 } from "@/lib/custom-listing-fields/custom-listing-field-admin.service";
-import { adminCustomListingFieldQuerySchema } from "@/shared/schemas/custom-listing-fields";
 import type {
   AdminCustomListingFieldListResponse,
   AdminCustomListingFieldQuery,
@@ -16,9 +15,15 @@ import type {
 export async function getAdminCustomListingFieldsHandler(
   request: TypedNextRequest<"GET", string, unknown, AdminCustomListingFieldQuery>,
 ) {
-  const query = adminCustomListingFieldQuerySchema.parse(
-    Object.fromEntries(request.nextUrl.searchParams),
-  );
+  const searchParams = request.nextUrl.searchParams;
+  const query: AdminCustomListingFieldQuery = {
+    category: searchParams.get("category") ?? undefined,
+    type: (searchParams.get("type") ?? undefined) as AdminCustomListingFieldQuery["type"],
+    publicOnly: (searchParams.get("publicOnly") ??
+      undefined) as AdminCustomListingFieldQuery["publicOnly"],
+    filterableOnly: (searchParams.get("filterableOnly") ??
+      undefined) as AdminCustomListingFieldQuery["filterableOnly"],
+  };
   const result = await getAdminCustomListingFieldsService(query);
 
   if (!result.ok) {

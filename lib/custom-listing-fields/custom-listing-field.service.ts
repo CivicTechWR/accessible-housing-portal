@@ -14,13 +14,6 @@ import type {
   CustomListingFieldQuery,
 } from "@/shared/schemas/custom-listing-fields";
 
-function slugifyCategory(category: string): string {
-  return category
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
-
 export async function getCustomListingFieldsService(
   query: CustomListingFieldQuery,
 ): Promise<CustomListingFieldListResponse> {
@@ -51,7 +44,10 @@ export async function getCustomListingFieldsService(
   >();
 
   for (const row of rows) {
-    const groupId = slugifyCategory(row.category);
+    const groupId = row.category
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
 
     if (query.groupId && query.groupId !== groupId) {
       continue;

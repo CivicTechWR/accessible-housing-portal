@@ -12,18 +12,9 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-async function getInitialInvites() {
-  const result = await getRecentAccountInvitesService(8);
-
-  if (!result.ok) {
-    return [];
-  }
-
-  return result.value.data.map(buildInviteRecordFromAccountInvite);
-}
-
 export default async function AdminInvitePage() {
-  const initialInvites = await getInitialInvites();
+  const result = await getRecentAccountInvitesService(8);
+  const initialInvites = result.ok ? result.value.data.map(buildInviteRecordFromAccountInvite) : [];
 
   return (
     <main className="min-h-screen bg-background px-6 py-10">

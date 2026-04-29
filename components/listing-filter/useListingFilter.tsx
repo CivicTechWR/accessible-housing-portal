@@ -59,22 +59,14 @@ export function useListingFilters() {
       max: filters.maxPrice ?? undefined,
       step: 100,
       onMinChange: async (min: number | undefined) => {
-        if (
-          typeof min === "number" &&
-          typeof filters.maxPrice === "number" &&
-          min > filters.maxPrice
-        ) {
+        if (min !== undefined && filters.maxPrice !== null && min > filters.maxPrice) {
           await setFilters({ minPrice: min, maxPrice: min });
           return;
         }
         await setFilters({ minPrice: min ?? null });
       },
       onMaxChange: async (max: number | undefined) => {
-        if (
-          typeof max === "number" &&
-          typeof filters.minPrice === "number" &&
-          max < filters.minPrice
-        ) {
+        if (max !== undefined && filters.minPrice !== null && max < filters.minPrice) {
           await setFilters({ maxPrice: max, minPrice: max });
           return;
         }

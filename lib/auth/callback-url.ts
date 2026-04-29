@@ -19,7 +19,9 @@ export function getSafeCallbackPath(
     }
 
     if (
-      DISALLOWED_CALLBACK_PREFIXES.some((prefix) => isPathOrNestedPath(parsed.pathname, prefix))
+      DISALLOWED_CALLBACK_PREFIXES.some(
+        (prefix) => parsed.pathname === prefix || parsed.pathname.startsWith(`${prefix}/`),
+      )
     ) {
       return FALLBACK_REDIRECT_PATH;
     }
@@ -28,8 +30,4 @@ export function getSafeCallbackPath(
   } catch {
     return FALLBACK_REDIRECT_PATH;
   }
-}
-
-function isPathOrNestedPath(pathname: string, prefix: string) {
-  return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }

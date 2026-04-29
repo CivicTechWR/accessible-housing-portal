@@ -15,27 +15,28 @@ const segmentLabelMap: Record<string, string> = {
   users: "Users",
 };
 
-function formatSegment(segment: string) {
-  if (uuidSegmentPattern.test(segment)) {
-    return "Details";
-  }
-
-  const knownLabel = segmentLabelMap[segment];
-
-  if (knownLabel) {
-    return knownLabel;
-  }
-
-  return segment
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
 export function HeaderBreadcrumbs() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
-  const breadcrumbItems = segments.length > 0 ? segments.map(formatSegment) : ["Home"];
+  const breadcrumbItems =
+    segments.length > 0
+      ? segments.map((segment) => {
+          const knownLabel = segmentLabelMap[segment];
+
+          if (uuidSegmentPattern.test(segment)) {
+            return "Details";
+          }
+
+          if (knownLabel) {
+            return knownLabel;
+          }
+
+          return segment
+            .split("-")
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ");
+        })
+      : ["Home"];
 
   return (
     <nav aria-label="Breadcrumb">

@@ -2,16 +2,6 @@ import "server-only";
 
 import { Resend } from "resend";
 
-function getResendKey() {
-  const apiKey = process.env.RESEND_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not set.");
-  }
-
-  return apiKey;
-}
-
 export function getEmailFromAddress() {
   const from = process.env.EMAIL_FROM;
 
@@ -23,5 +13,11 @@ export function getEmailFromAddress() {
 }
 
 export function createResendClient() {
-  return new Resend(getResendKey());
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not set.");
+  }
+
+  return new Resend(apiKey);
 }

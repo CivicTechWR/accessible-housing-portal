@@ -60,7 +60,7 @@ export function CategoryTab({
       onClick={onClick}
     >
       {label}
-      {typeof count === "number" ? (
+      {count !== undefined ? (
         <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
           {count}
         </span>

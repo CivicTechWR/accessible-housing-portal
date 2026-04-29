@@ -3,9 +3,7 @@ import { z } from "zod";
 import { errorMessageSchema } from "@/shared/schemas/common";
 import {
   createDraftListingResponseSchema,
-  createListingSchema,
   listingEditorResponseSchema,
-  updateListingSchema,
   type CreateListingInput,
   type ListingEditorData,
   type UpdateListingInput,
@@ -19,7 +17,7 @@ const listingIdResponseSchema = z.object({
 });
 
 export function mapListingFormToCreateListingInput(data: ListingFormData): CreateListingInput {
-  return createListingSchema.parse(buildListingPayloadFromForm(data));
+  return buildListingPayloadFromForm(data);
 }
 
 export function mapListingFormToUpdateListingInput(
@@ -35,23 +33,26 @@ export function mapListingFormToUpdateListingInput(
     ...buildListingPayloadFromForm(data),
     status,
   };
-  const patch: Record<string, unknown> = payload;
+  const patch: UpdateListingInput = { ...payload };
 
-  if (shouldClearOptionalString(rawInput?.unitNumber)) {
+  if (
+    rawInput?.unitNumber !== undefined &&
+    normalizeOptionalString(rawInput.unitNumber) === undefined
+  ) {
     patch.unitNumber = null;
   }
 
-  return updateListingSchema.parse(patch);
+  return patch;
 }
 
 export function mapListingFormToAutosaveUpdateInput(
   data: ListingFormInput,
   status = data.status ?? "draft",
 ): UpdateListingInput | null {
-  const patch: Record<string, unknown> = {};
-  const address: Record<string, unknown> = {};
-  const contact: Record<string, unknown> = {};
-  const unit: Record<string, unknown> = {};
+  const patch: UpdateListingInput = {};
+  const address: NonNullable<UpdateListingInput["address"]> = {};
+  const contact: NonNullable<UpdateListingInput["contact"]> = {};
+  const unit: NonNullable<UpdateListingInput["units"]>[number] = {};
 
   assignTrimmedString(patch, "title", data.title);
   assignTrimmedString(patch, "name", data.name);
@@ -62,26 +63,33 @@ export function mapListingFormToAutosaveUpdateInput(
   assignTrimmedString(address, "province", data.province);
   assignTrimmedString(address, "postalCode", data.postalCode);
   assignTrimmedString(contact, "name", data.contactName);
-  assignAutosaveContactEmail(contact, data.contactEmail);
+  const contactEmail = normalizeOptionalString(data.contactEmail);
+  if (contactEmail && z.email().safeParse(contactEmail).success) {
+    contact.email = contactEmail;
+  }
   assignTrimmedString(contact, "phone", data.contactPhone);
-  assignClearableTrimmedString(patch, "unitNumber", data.unitNumber);
+
+  if (data.unitNumber !== undefined) {
+    patch.unitNumber = normalizeOptionalString(data.unitNumber) ?? null;
+  }
+
   assignTrimmedString(patch, "propertyType", data.propertyType);
   assignTrimmedString(patch, "buildingType", data.buildingType);
   assignTrimmedString(patch, "leaseTerm", data.leaseTerm);
 
-  if (typeof data.bedrooms === "number" && Number.isFinite(data.bedrooms)) {
+  if (Number.isFinite(data.bedrooms)) {
     unit.bedrooms = data.bedrooms;
   }
 
-  if (typeof data.bathrooms === "number" && Number.isFinite(data.bathrooms)) {
+  if (Number.isFinite(data.bathrooms)) {
     unit.bathrooms = data.bathrooms;
   }
 
-  if (typeof data.squareFeet === "number" && Number.isFinite(data.squareFeet)) {
+  if (Number.isFinite(data.squareFeet)) {
     unit.sqft = data.squareFeet;
   }
 
-  if (typeof data.monthlyRentCents === "number" && Number.isFinite(data.monthlyRentCents)) {
+  if (Number.isFinite(data.monthlyRentCents)) {
     unit.rent = Math.round(data.monthlyRentCents / 100);
   }
 
@@ -103,7 +111,7 @@ export function mapListingFormToAutosaveUpdateInput(
     patch.units = [unit];
   }
 
-  if (typeof data.unitStory === "number" && Number.isFinite(data.unitStory)) {
+  if (Number.isFinite(data.unitStory)) {
     patch.unitStory = data.unitStory;
   }
 
@@ -125,7 +133,7 @@ export function mapListingFormToAutosaveUpdateInput(
   );
   patch.status = status;
 
-  return Object.keys(patch).length > 0 ? updateListingSchema.parse(patch) : null;
+  return Object.keys(patch).length > 0 ? patch : null;
 }
 
 export async function parseCreateDraftListingResponse(response: Response): Promise<{ id: string }> {
@@ -170,7 +178,7 @@ async function getApiErrorMessage(response: Response) {
   }
 }
 
-function buildListingPayloadFromForm(data: ListingFormData) {
+function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput {
   return {
     title: data.title,
     name: data.name,
@@ -188,18 +196,19 @@ function buildListingPayloadFromForm(data: ListingFormData) {
         bathrooms: data.bathrooms,
         sqft: data.squareFeet ?? 0,
         rent: Math.round(data.monthlyRentCents / 100),
-        availableDate: normalizeOptionalString(data.availableOn) ?? getTodayIsoDate(),
+        availableDate:
+          normalizeOptionalString(data.availableOn) ?? new Date().toISOString().slice(0, 10),
       },
     ],
     amenities: [],
-    accessibilityFeatures: (data.customFeatures ?? []).map((feature) => ({
+    accessibilityFeatures: data.customFeatures.map((feature) => ({
       id: feature.id,
       name: feature.name,
       description: normalizeOptionalString(feature.description) ?? feature.name,
     })),
     applicationMethod: "internal" as const,
     eligibilityCriteria: {},
-    images: (data.images ?? []).flatMap((image) =>
+    images: data.images.flatMap((image) =>
       image.id
         ? [
             {
@@ -239,43 +248,4 @@ function assignTrimmedString(
   if (normalized) {
     target[key] = normalized;
   }
-}
-
-function assignClearableTrimmedString(
-  target: Record<string, unknown>,
-  key: string,
-  value: string | undefined,
-) {
-  if (value === undefined) {
-    return;
-  }
-
-  const normalized = normalizeOptionalString(value);
-  target[key] = normalized ?? null;
-}
-
-function assignAutosaveContactEmail(target: Record<string, unknown>, value: string | undefined) {
-  const normalized = normalizeOptionalString(value);
-
-  if (!normalized) {
-    return;
-  }
-
-  const result = updateListingSchema.safeParse({
-    contact: {
-      email: normalized,
-    },
-  });
-
-  if (result.success && result.data.contact?.email) {
-    target.email = result.data.contact.email;
-  }
-}
-
-function shouldClearOptionalString(value: string | undefined) {
-  return value !== undefined && normalizeOptionalString(value) === undefined;
-}
-
-function getTodayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
 }

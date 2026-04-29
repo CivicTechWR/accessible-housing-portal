@@ -470,10 +470,7 @@ export async function updateListingByIdService(input: {
     archivedAt: listing.archivedAt,
   });
   const nextPrimaryUnitRentCents = dollarsToCents(primaryUnit?.rent ?? undefined);
-  const monthlyRentCents =
-    typeof nextPrimaryUnitRentCents === "number" && Number.isFinite(nextPrimaryUnitRentCents)
-      ? nextPrimaryUnitRentCents
-      : listing.monthlyRentCents;
+  const monthlyRentCents = nextPrimaryUnitRentCents ?? listing.monthlyRentCents;
 
   await updateListingGraph({
     actorUserId: actorResult.value.actor.userId,
@@ -682,7 +679,13 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     const definition =
       (feature.id ? featureDefinitionLookup.byKey.get(feature.id) : undefined) ??
       featureDefinitionLookup.byToken.get(normalizeListingFeatureToken(feature.name));
-    const featureId = definition?.key ?? slugifyFeatureName(feature.name);
+    const featureId =
+      definition?.key ??
+      feature.name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
 
     if (!customFeatures.has(featureId)) {
       customFeatures.set(featureId, {
@@ -765,12 +768,4 @@ function resolveNextApplicationUrl(input: {
     ok: true as const,
     nextApplicationUrl,
   };
-}
-
-function slugifyFeatureName(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
 }

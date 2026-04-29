@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import {
   defaultInviteRole,
   inviteRoleOptions,
-  isInviteRole,
   type InviteRole,
   type InviteActionResult,
 } from "@/components/admin-invite/types";
@@ -50,12 +49,6 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
       setOrganization("");
     }
   }, [onResult, state]);
-
-  function handleRoleChange(nextValue: string) {
-    if (isInviteRole(nextValue)) {
-      setRole(nextValue);
-    }
-  }
 
   return (
     <form className="space-y-4" action={action}>
@@ -104,7 +97,11 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
       <div className="space-y-1.5">
         <Label htmlFor="invite-role">{copy.roleLabel}</Label>
         <input type="hidden" name="role" value={role} />
-        <Select value={role} onValueChange={handleRoleChange} disabled={pending}>
+        <Select
+          value={role}
+          onValueChange={(nextRole) => setRole(nextRole as InviteRole)}
+          disabled={pending}
+        >
           <SelectTrigger id="invite-role" className="w-full justify-between">
             <SelectValue placeholder={copy.rolePlaceholder} />
           </SelectTrigger>
