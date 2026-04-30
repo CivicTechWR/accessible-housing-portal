@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/app/query-keys";
 import type { UpdateListingInput } from "@/shared/schemas/listings";
 import { parseCreateListingResponse } from "./api";
 
@@ -8,14 +9,9 @@ interface EditListingInput {
 }
 
 export function useEditListingQuery() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-
-  const editListing = async ({ listingId, payload }: EditListingInput) => {
-    setIsLoading(true);
-    setIsError(false);
-
-    try {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async ({ listingId, payload }: EditListingInput) => {
       const response = await fetch(`/api/listings/${listingId}`, {
         method: "PUT",
         headers: {
@@ -25,13 +21,19 @@ export function useEditListingQuery() {
       });
 
       return await parseCreateListingResponse(response);
-    } catch (error) {
-      setIsError(true);
-      throw error instanceof Error ? error : new Error("Unable to edit listing");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.listingEditor(variables.listingId),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.myListings() });
+      void queryClient.invalidateQueries({ queryKey: ["listings"] });
+    },
+  });
 
-  return { editListing, isLoading, isError };
+  return {
+    editListing: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    isError: mutation.isError,
+  };
 }

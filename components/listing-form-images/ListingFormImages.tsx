@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { ListingFormControl, ListingFormImage } from "@/app/listing-form/types";
@@ -61,8 +62,10 @@ export function ListingFormImages({
   activateDraftListing,
   prepareDraftListing,
 }: ListingFormImagesProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const uploadMutation = useMutation({
+    mutationFn: async ({ file, listingId }: { file: File; listingId: string }) =>
+      uploadFile(file, listingId),
+  });
 
   const handleImageUpload = async (
     event: ChangeEvent<HTMLInputElement>,
@@ -75,15 +78,15 @@ export function ListingFormImages({
       return;
     }
 
-    setUploadError(null);
-    setIsUploading(true);
-
     try {
       const uploadedImages: ListingFormImage[] = [];
       const resolvedListingId = listingId ?? (await prepareDraftListing());
 
       for (const file of Array.from(files)) {
-        const uploadedImage = await uploadFile(file, resolvedListingId);
+        const uploadedImage = await uploadMutation.mutateAsync({
+          file,
+          listingId: resolvedListingId,
+        });
         uploadedImages.push({
           id: uploadedImage.id,
           url: uploadedImage.url,
@@ -96,12 +99,9 @@ export function ListingFormImages({
       if (!listingId) {
         activateDraftListing(resolvedListingId);
       }
-    } catch (error) {
-      setUploadError(
-        error instanceof Error ? error.message : "Unable to upload image(s). Please try again.",
-      );
+    } catch {
+      // TanStack Query stores the error for rendering beside the input.
     } finally {
-      setIsUploading(false);
       event.target.value = "";
     }
   };
@@ -127,17 +127,23 @@ export function ListingFormImages({
                   multiple
                   accept={acceptedImageTypes}
                   onChange={(event) => handleImageUpload(event, images, field.onChange)}
-                  disabled={isUploading}
+                  disabled={uploadMutation.isPending}
                 />
               </FormControl>
               <FormDescription>
-                {isUploading
+                {uploadMutation.isPending
                   ? "Uploading images..."
                   : !listingId
                     ? "Uploading an image will create a draft automatically."
                     : "You can select multiple files at once. Captions are optional."}
               </FormDescription>
-              {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
+              {uploadMutation.error && (
+                <p className="text-sm text-destructive">
+                  {uploadMutation.error instanceof Error
+                    ? uploadMutation.error.message
+                    : "Unable to upload image(s). Please try again."}
+                </p>
+              )}
 
               {images.length > 0 && (
                 <div className="space-y-4 pt-2">
