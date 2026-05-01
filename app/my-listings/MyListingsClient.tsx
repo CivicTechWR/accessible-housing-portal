@@ -158,6 +158,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
           const isDeleted = listing.status === "archived";
           const isMutating =
             statusMutation.isPending && statusMutation.variables?.listingId === listing.id;
+          const pendingLabel =
+            statusMutation.variables?.nextStatus === "archived" ? "Deleting..." : "Restoring...";
 
           return (
             <Card key={listing.id}>
@@ -238,7 +240,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                             }
                           }}
                         >
-                          {isMutating ? "Deleting..." : "Delete"}
+                          {isMutating ? pendingLabel : "Delete"}
                         </Button>
                       </>
                     ) : (
@@ -257,7 +259,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                             })
                           }
                         >
-                          {isMutating ? "Restoring..." : "Undelete"}
+                          {isMutating ? pendingLabel : "Undelete"}
                         </Button>
                       </>
                     )}
