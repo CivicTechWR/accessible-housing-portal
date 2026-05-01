@@ -1,45 +1,25 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import {
-  customListingFieldListResponseSchema,
-  type CustomListingFieldGroup,
-} from "@/shared/schemas/custom-listing-fields";
+import { queryKeys } from "@/app/query-keys";
+import { customListingFieldListResponseSchema } from "@/shared/schemas/custom-listing-fields";
 
 export function useAccessibilityFeaturesQuery() {
-  const [data, setData] = useState<CustomListingFieldGroup[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+  const result = useQuery({
+    queryKey: queryKeys.accessibilityFeatures(),
+    queryFn: async ({ signal }) => {
+      const response = await fetch(
+        "/api/custom-listing-fields?publicOnly=true&filterableOnly=true&type=boolean",
+        { signal },
+      );
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchFeatures() {
-      try {
-        const response = await fetch(
-          "/api/custom-listing-fields?publicOnly=true&filterableOnly=true&type=boolean",
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch accessibility features");
-        }
-        const payload = customListingFieldListResponseSchema.parse(await response.json());
-        if (!cancelled) {
-          setData(payload.data);
-          setIsLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setIsError(true);
-          setIsLoading(false);
-        }
+      if (!response.ok) {
+        throw new Error("Failed to fetch accessibility features");
       }
-    }
+      const payload = customListingFieldListResponseSchema.parse(await response.json());
+      return payload.data;
+    },
+    staleTime: 5 * 60_000,
+  });
 
-    void fetchFeatures();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { data, isLoading, isError };
+  return { data: result.data ?? null, isLoading: result.isLoading, isError: result.isError };
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { queryKeys } from "@/app/query-keys";
 import type {
   AdminCustomListingField,
   AdminCustomListingFieldListResponse,
@@ -23,30 +24,22 @@ type RequestErrorBody = {
 };
 
 export function useAdminCustomListingFieldsQuery() {
-  const refreshFields = useCallback(async () => {
-    const response = await requestJson<AdminCustomListingFieldListResponse>(
-      "/api/admin/custom-listing-fields",
-      { method: "GET" },
-    );
-    return normalizeFieldCategories(response.data);
-  }, []);
+  const queryClient = useQueryClient();
 
-  return { refreshFields };
+  return {
+    refreshFields: () =>
+      queryClient.fetchQuery({
+        queryKey: queryKeys.adminCustomListingFields(),
+        queryFn: fetchAdminCustomListingFields,
+        staleTime: 0,
+      }),
+  };
 }
 
 export function useCreateAdminCustomListingFieldMutation() {
-  const [isLoading, setIsLoading] = useState(false);
-  const isLoadingRef = useRef(false);
-
-  const createField = useCallback(async (input: CreateCustomListingFieldInput) => {
-    if (isLoadingRef.current) {
-      return null;
-    }
-
-    isLoadingRef.current = true;
-    setIsLoading(true);
-
-    try {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (input: CreateCustomListingFieldInput) => {
       const response = await requestJson<CreateCustomListingFieldResponse>(
         "/api/admin/custom-listing-fields",
         {
@@ -56,76 +49,113 @@ export function useCreateAdminCustomListingFieldMutation() {
         },
       );
       return normalizeFieldCategory(response.data);
-    } finally {
-      isLoadingRef.current = false;
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminCustomListingFields() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accessibilityFeatures() });
+    },
+  });
 
-  return { createField, isLoading };
+  return { createField: mutation.mutateAsync, isLoading: mutation.isPending };
 }
 
 export function useUpdateAdminCustomListingFieldMutation() {
-  const updateField = useCallback(async (fieldId: string, input: UpdateCustomListingFieldInput) => {
-    const response = await requestJson<UpdateCustomListingFieldResponse>(
-      `/api/admin/custom-listing-fields/${fieldId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      },
-    );
-    return normalizeFieldCategory(response.data);
-  }, []);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async ({
+      fieldId,
+      input,
+    }: {
+      fieldId: string;
+      input: UpdateCustomListingFieldInput;
+    }) => {
+      const response = await requestJson<UpdateCustomListingFieldResponse>(
+        `/api/admin/custom-listing-fields/${fieldId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        },
+      );
+      return normalizeFieldCategory(response.data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminCustomListingFields() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accessibilityFeatures() });
+    },
+  });
 
-  return { updateField };
+  return {
+    updateField: (fieldId: string, input: UpdateCustomListingFieldInput) =>
+      mutation.mutateAsync({ fieldId, input }),
+  };
 }
 
 export function useBulkUpdateAdminCustomListingFieldsMutation() {
-  const [isLoading, setIsLoading] = useState(false);
   const { updateField } = useUpdateAdminCustomListingFieldMutation();
+  const mutation = useMutation({
+    mutationFn: async ({
+      fields,
+      input,
+    }: {
+      fields: AdminCustomListingField[];
+      input: UpdateCustomListingFieldInput;
+    }) => Promise.all(fields.map((field) => updateField(field.id, input))),
+  });
 
-  const updateFields = useCallback(
-    async (fields: AdminCustomListingField[], input: UpdateCustomListingFieldInput) => {
-      setIsLoading(true);
-
-      try {
-        return await Promise.all(fields.map((field) => updateField(field.id, input)));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [updateField],
-  );
-
-  return { updateFields, isLoading };
+  return {
+    updateFields: (fields: AdminCustomListingField[], input: UpdateCustomListingFieldInput) =>
+      mutation.mutateAsync({ fields, input }),
+    isLoading: mutation.isPending,
+  };
 }
 
 export function useReorderAdminCustomListingFieldsMutation() {
-  const reorderFields = useCallback(async (input: ReorderCustomListingFieldsInput) => {
-    const response = await requestJson<ReorderCustomListingFieldsResponse>(
-      "/api/admin/custom-listing-fields/reorder",
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      },
-    );
-    return normalizeFieldCategories(response.data);
-  }, []);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (input: ReorderCustomListingFieldsInput) => {
+      const response = await requestJson<ReorderCustomListingFieldsResponse>(
+        "/api/admin/custom-listing-fields/reorder",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        },
+      );
+      return normalizeFieldCategories(response.data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminCustomListingFields() });
+    },
+  });
 
-  return { reorderFields };
+  return { reorderFields: mutation.mutateAsync };
 }
 
 export function useDeleteAdminCustomListingFieldMutation() {
-  const deleteField = useCallback(async (fieldId: string) => {
-    await requestJson<DeleteCustomListingFieldResponse>(
-      `/api/admin/custom-listing-fields/${fieldId}`,
-      { method: "DELETE" },
-    );
-  }, []);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (fieldId: string) => {
+      await requestJson<DeleteCustomListingFieldResponse>(
+        `/api/admin/custom-listing-fields/${fieldId}`,
+        { method: "DELETE" },
+      );
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminCustomListingFields() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accessibilityFeatures() });
+    },
+  });
 
-  return { deleteField };
+  return { deleteField: mutation.mutateAsync };
+}
+
+async function fetchAdminCustomListingFields() {
+  const response = await requestJson<AdminCustomListingFieldListResponse>(
+    "/api/admin/custom-listing-fields",
+    { method: "GET" },
+  );
+  return normalizeFieldCategories(response.data);
 }
 
 async function requestJson<T = unknown>(url: string, init: RequestInit): Promise<T> {

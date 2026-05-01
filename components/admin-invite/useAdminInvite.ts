@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { queryKeys } from "@/app/query-keys";
 import { buildInviteRecordFromAccountInvite } from "@/components/admin-invite/invite-records";
 import type { InviteActionResult, InviteRecord } from "@/components/admin-invite/types";
 import { accountInviteListResponseSchema } from "@/shared/schemas/account-management";
@@ -13,7 +15,7 @@ export function useAdminInvite(input?: {
   initialInvites?: InviteRecord[];
   shouldHydrateInvites?: boolean;
 }) {
-  const [invites, setInvites] = useState<InviteRecord[]>(input?.initialInvites ?? []);
+  const queryClient = useQueryClient();
   const [lastResult, setLastResult] = useState<InviteActionResult | null>(null);
   const shouldHydrateInvites = input?.shouldHydrateInvites ?? true;
 
@@ -30,33 +32,12 @@ export function useAdminInvite(input?: {
     return payload.data.map(buildInviteRecordFromAccountInvite);
   }, []);
 
-  useEffect(() => {
-    if (!shouldHydrateInvites) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function hydrateRecentInvites() {
-      try {
-        const nextInvites = await fetchRecentInvites();
-
-        if (!cancelled) {
-          setInvites(nextInvites);
-        }
-      } catch {
-        if (!cancelled) {
-          setInvites([]);
-        }
-      }
-    }
-
-    void hydrateRecentInvites();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchRecentInvites, shouldHydrateInvites]);
+  const recentInvitesQuery = useQuery({
+    queryKey: queryKeys.recentInvites(),
+    queryFn: fetchRecentInvites,
+    enabled: shouldHydrateInvites,
+    initialData: input?.initialInvites,
+  });
 
   const handleInviteResult = useCallback(
     (result: InviteActionResult) => {
@@ -68,7 +49,7 @@ export function useAdminInvite(input?: {
 
       void fetchRecentInvites()
         .then((nextInvites) => {
-          setInvites(nextInvites);
+          queryClient.setQueryData(queryKeys.recentInvites(), nextInvites);
         })
         .catch(() => {
           if (!result.invite) {
@@ -77,16 +58,16 @@ export function useAdminInvite(input?: {
 
           const invite = result.invite;
 
-          setInvites((previousInvites) => {
-            return [invite, ...previousInvites].slice(0, MAX_RECENT_INVITES);
-          });
+          queryClient.setQueryData<InviteRecord[]>(queryKeys.recentInvites(), (previous = []) =>
+            [invite, ...previous].slice(0, MAX_RECENT_INVITES),
+          );
         });
     },
-    [fetchRecentInvites],
+    [fetchRecentInvites, queryClient],
   );
 
   return {
-    invites,
+    invites: recentInvitesQuery.data ?? [],
     lastResult,
     handleInviteResult,
   };

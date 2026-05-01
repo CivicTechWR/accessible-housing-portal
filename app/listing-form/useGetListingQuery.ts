@@ -1,50 +1,25 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
+import { queryKeys } from "@/app/query-keys";
 import { parseListingEditorResponse } from "./api";
-import type { ListingFormInput } from "./types";
 
 export function useGetListingQuery(listingId?: string) {
-  const [data, setData] = useState<ListingFormInput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-
-  useEffect(() => {
-    if (!listingId) {
-      setData(null);
-      setIsError(false);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsError(false);
-    setIsLoading(true);
-    let cancelled = false;
-
-    async function fetchListing() {
-      try {
-        const response = await fetch(`/api/listings/${listingId}/editor`, {
-          method: "GET",
-        });
-        const payload = await parseListingEditorResponse(response);
-
-        if (!cancelled) {
-          setData(payload.data);
-          setIsLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setIsError(true);
-          setIsLoading(false);
-        }
+  const result = useQuery({
+    queryKey: queryKeys.listingEditor(listingId),
+    queryFn: async ({ signal }) => {
+      if (!listingId) {
+        return null;
       }
-    }
 
-    void fetchListing();
+      const response = await fetch(`/api/listings/${listingId}/editor`, {
+        method: "GET",
+        signal,
+      });
+      const payload = await parseListingEditorResponse(response);
+      return payload.data;
+    },
+    enabled: Boolean(listingId),
+  });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [listingId]);
-
-  return { data, isLoading, isError };
+  return { data: result.data ?? null, isLoading: result.isLoading, isError: result.isError };
 }

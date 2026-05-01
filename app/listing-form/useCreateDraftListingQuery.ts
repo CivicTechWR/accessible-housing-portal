@@ -1,28 +1,26 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { queryKeys } from "@/app/query-keys";
 import { parseCreateDraftListingResponse } from "./api";
 
 export function useCreateDraftListingQuery() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-
-  const createDraftListing = async () => {
-    setIsLoading(true);
-    setIsError(false);
-
-    try {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async () => {
       const response = await fetch("/api/listing-drafts", {
         method: "POST",
       });
 
       return await parseCreateDraftListingResponse(response);
-    } catch (error) {
-      setIsError(true);
-      throw error instanceof Error ? error : new Error("Unable to create draft listing");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.myListings() });
+    },
+  });
 
-  return { createDraftListing, isLoading, isError };
+  return {
+    createDraftListing: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    isError: mutation.isError,
+  };
 }

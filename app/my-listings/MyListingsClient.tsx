@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatDistance } from "date-fns";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { queryKeys } from "@/app/query-keys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,10 +49,71 @@ const statusLabelByValue = {
 
 export function MyListingsClient({ initialListings, renderedAt }: MyListingsClientProps) {
   const router = useRouter();
-  const [listings, setListings] = useState(sortListings(initialListings));
-  const [mutatingListingId, setMutatingListingId] = useState<string | null>(null);
-  const [mutationError, setMutationError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [now, setNow] = useState(() => new Date(renderedAt));
+  const listingsQuery = useQuery({
+    queryKey: queryKeys.myListings(),
+    queryFn: () => sortListings(initialListings),
+    initialData: sortListings(initialListings),
+    enabled: false,
+  });
+  const listings = listingsQuery.data;
+
+  const statusMutation = useMutation({
+    mutationFn: async ({
+      listingId,
+      nextStatus,
+    }: {
+      listingId: string;
+      nextStatus: MyListingItem["status"];
+    }) => {
+      const isDelete = nextStatus === "archived";
+      const response = await fetch(`/api/listings/${listingId}`, {
+        method: isDelete ? "DELETE" : "PUT",
+        headers: isDelete ? undefined : { "content-type": "application/json" },
+        body: isDelete ? undefined : JSON.stringify({ status: nextStatus }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(
+          payload?.message ??
+            (isDelete ? "Unable to delete listing." : "Unable to restore listing."),
+        );
+      }
+
+      return { listingId, nextStatus };
+    },
+    onMutate: async ({ listingId, nextStatus }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.myListings() });
+      const previousListings = queryClient.getQueryData<MyListingItem[]>(queryKeys.myListings());
+
+      queryClient.setQueryData<MyListingItem[]>(queryKeys.myListings(), (current = []) =>
+        sortListings(
+          current.map((listing) =>
+            listing.id === listingId
+              ? {
+                  ...listing,
+                  status: nextStatus,
+                  updatedAt: new Date().toISOString(),
+                }
+              : listing,
+          ),
+        ),
+      );
+
+      return { previousListings };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousListings) {
+        queryClient.setQueryData(queryKeys.myListings(), context.previousListings);
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["listings"] });
+      router.refresh();
+    },
+  });
 
   useEffect(() => {
     setNow(new Date());
@@ -65,86 +128,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
   }, []);
 
   useEffect(() => {
-    setListings(sortListings(initialListings));
-  }, [initialListings]);
-
-  async function handleDelete(listingId: string) {
-    setMutationError(null);
-    setMutatingListingId(listingId);
-
-    try {
-      const response = await fetch(`/api/listings/${listingId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(payload?.message ?? "Unable to delete listing.");
-      }
-
-      setListings((current) =>
-        sortListings(
-          current.map((listing) =>
-            listing.id === listingId
-              ? {
-                  ...listing,
-                  status: "archived",
-                  updatedAt: new Date().toISOString(),
-                }
-              : listing,
-          ),
-        ),
-      );
-      router.refresh();
-    } catch (error) {
-      setMutationError(
-        error instanceof Error ? error.message : "Unable to delete listing. Please try again.",
-      );
-    } finally {
-      setMutatingListingId(null);
-    }
-  }
-
-  async function handleUndelete(listingId: string) {
-    setMutationError(null);
-    setMutatingListingId(listingId);
-
-    try {
-      const response = await fetch(`/api/listings/${listingId}`, {
-        method: "PUT",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ status: "draft" }),
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(payload?.message ?? "Unable to restore listing.");
-      }
-
-      setListings((current) =>
-        sortListings(
-          current.map((listing) =>
-            listing.id === listingId
-              ? {
-                  ...listing,
-                  status: "draft",
-                  updatedAt: new Date().toISOString(),
-                }
-              : listing,
-          ),
-        ),
-      );
-      router.refresh();
-    } catch (error) {
-      setMutationError(
-        error instanceof Error ? error.message : "Unable to restore listing. Please try again.",
-      );
-    } finally {
-      setMutatingListingId(null);
-    }
-  }
+    queryClient.setQueryData(queryKeys.myListings(), sortListings(initialListings));
+  }, [initialListings, queryClient]);
 
   if (listings.length === 0) {
     return (
@@ -160,16 +145,21 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
 
   return (
     <div className="space-y-4">
-      {mutationError ? (
+      {statusMutation.error ? (
         <AlertBanner variant="error" size="default" className="rounded-lg">
-          {mutationError}
+          {statusMutation.error instanceof Error
+            ? statusMutation.error.message
+            : "Unable to update listing. Please try again."}
         </AlertBanner>
       ) : null}
 
       <div className="grid gap-4">
         {listings.map((listing) => {
           const isDeleted = listing.status === "archived";
-          const isMutating = mutatingListingId === listing.id;
+          const isMutating =
+            statusMutation.isPending && statusMutation.variables?.listingId === listing.id;
+          const pendingLabel =
+            statusMutation.variables?.nextStatus === "archived" ? "Deleting..." : "Restoring...";
 
           return (
             <Card key={listing.id}>
@@ -243,11 +233,14 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                                 "Delete this listing? It will be kept in a deleted state and can be recovered later from the database if needed.",
                               )
                             ) {
-                              void handleDelete(listing.id);
+                              statusMutation.mutate({
+                                listingId: listing.id,
+                                nextStatus: "archived",
+                              });
                             }
                           }}
                         >
-                          {isMutating ? "Deleting..." : "Delete"}
+                          {isMutating ? pendingLabel : "Delete"}
                         </Button>
                       </>
                     ) : (
@@ -259,9 +252,14 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                           type="button"
                           variant="outline"
                           disabled={isMutating}
-                          onClick={() => void handleUndelete(listing.id)}
+                          onClick={() =>
+                            statusMutation.mutate({
+                              listingId: listing.id,
+                              nextStatus: "draft",
+                            })
+                          }
                         >
-                          {isMutating ? "Restoring..." : "Undelete"}
+                          {isMutating ? pendingLabel : "Undelete"}
                         </Button>
                       </>
                     )}
