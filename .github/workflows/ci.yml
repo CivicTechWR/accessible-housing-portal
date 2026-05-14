@@ -12,6 +12,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  supply-chain:
+    name: Supply Chain Lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lockfile:check
+      - run: git diff --exit-code -- package.json package-lock.json
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

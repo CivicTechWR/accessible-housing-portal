@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl curl ba
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 RUN npm ci
 
 COPY . .
