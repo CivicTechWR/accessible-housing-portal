@@ -62,12 +62,12 @@ Use `shared/schemas/*.ts` for contracts that must stay consistent across fronten
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 22.6+
-- npm
+- npm, using the committed lockfile
 
 ### Install Dependencies
 
 ```bash
-npm install
+npm ci
 ```
 
 ### Run Locally
