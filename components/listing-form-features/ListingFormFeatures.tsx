@@ -61,8 +61,7 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
                       <ToggleField
                         title={option.label}
                         description={[
-                          option.helpText &&
-                            `Partner guidance: This is shown to partners while creating a listing. ${option.helpText}`,
+                          option.helpText,
                           option.description &&
                             `Public listing text: This is shown to renters and applicants on the listing. ${option.description}`,
                         ]
