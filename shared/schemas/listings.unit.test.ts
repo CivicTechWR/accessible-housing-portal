@@ -182,4 +182,13 @@ describe("listing API schemas", () => {
 
     expect(result.success).toBe(true);
   });
+
+  it("rejects non-http external application URLs", () => {
+    const result = createListingSchema.safeParse({
+      ...validCreatePayload,
+      externalApplicationUrl: "mailto:leasing@example.org",
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

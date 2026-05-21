@@ -84,6 +84,9 @@ const listingEditorImageSchema = z.object({
 });
 
 const listingImageUrlSchema = trimmedUrlString("Invalid image URL.");
+const listingExternalApplicationUrlSchema = trimmedUrlString(
+  "Invalid external application URL.",
+).refine(hasHttpProtocol, "External application URL must start with http:// or https://.");
 const listingDetailsAddressSchema = z.object({
   street1: nonEmptyString,
   street2: nonEmptyString.optional(),
@@ -112,6 +115,7 @@ export const listingDetailsSchema = z.object({
   timeAgo: nonEmptyString,
   features: z.array(listingFeatureCategorySchema),
   contact: listingContactSchema.optional(),
+  applicationUrl: listingExternalApplicationUrlSchema.optional(),
 });
 
 export const listingSummarySchema = z.object({
@@ -156,7 +160,6 @@ const listingEligibilityCriteriaSchema = z.object({
 });
 
 const listingApplicationMethodSchema = z.enum(["internal", "external_link", "paper"]);
-const listingExternalApplicationUrlSchema = trimmedUrlString("Invalid external application URL.");
 const listingPaginationSchema = z.object({
   page: z.number().int().min(1),
   limit: z.number().int().min(1),
@@ -278,6 +281,7 @@ export const listingEditorDataSchema = z.object({
   contactName: z.string(),
   contactEmail: z.string(),
   contactPhone: z.string(),
+  applicationUrl: z.string().optional(),
   customFeatures: z.array(listingEditorFeatureSchema),
 });
 
@@ -333,3 +337,12 @@ export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
 export type UpdateListingResponse = z.infer<typeof updateListingResponseSchema>;
 export type DeleteListingResponse = z.infer<typeof deleteListingResponseSchema>;
+
+function hasHttpProtocol(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}

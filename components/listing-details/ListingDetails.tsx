@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
 import Link from "next/link";
+import { ListingApplyButton } from "./ListingApplyButton";
 
 type ListingFeature = {
   name: string;
@@ -35,6 +36,7 @@ export interface ListingDetailProps {
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  applicationUrl?: string;
   images: ListingImage[];
   timeAgo: string;
   features: ListingFeatureCategory[];
@@ -52,6 +54,7 @@ export function ListingDetails({
   contactName,
   contactEmail,
   contactPhone,
+  applicationUrl,
   images,
   timeAgo,
   features,
@@ -160,13 +163,13 @@ export function ListingDetails({
           </CardContent>
         </Card>
 
-        {contactRows.length > 0 && (
+        {(contactRows.length > 0 || applicationUrl) && (
           <Card>
             <CardHeader>
               <CardTitle>Contact Info</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {contactRows.map((row) => (
                   <div key={row.label} className="bg-background p-3">
                     <dt className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -183,6 +186,16 @@ export function ListingDetails({
                     </dd>
                   </div>
                 ))}
+                {applicationUrl ? (
+                  <div className="bg-background p-3">
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Application
+                    </dt>
+                    <dd className="mt-1">
+                      <ListingApplyButton applicationUrl={applicationUrl} />
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
             </CardContent>
           </Card>

@@ -1,48 +1,11 @@
 services:
-  db:
-    container_name: ahp-db
-    image: postgres:16-alpine
+  ahp:
+    container_name: ahp
+    build: .
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: affordable_housing_portal
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"
-    volumes:
-      - ahp-postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d affordable_housing_portal"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  app:
-    container_name: ahp-app
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
+      - "127.0.0.1:${PORT:-3100}:${PORT:-3100}"
     environment:
-      NODE_ENV: development
-      PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/affordable_housing_portal
-      AUTH_SECRET: ${AUTH_SECRET:-replace-with-a-random-secret}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe123}
-      RESEND_API_KEY: ${RESEND_API_KEY:-re_replace_me}
-      EMAIL_FROM: ${EMAIL_FROM:-Affordable Housing Portal <no-reply@example.com>}
-    ports:
-      - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    command: >
-      sh -c "npm run db:migrate && npm run db:seed && npm run dev -- --hostname 0.0.0.0 --port 3000"
-
-volumes:
-  ahp-postgres-data:
+      INFISICAL_TOKEN: ${INFISICAL_TOKEN}
+      PORT: ${PORT:-3100}
+      AUTH_TRUST_HOST: "true"

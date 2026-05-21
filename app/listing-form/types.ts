@@ -19,6 +19,12 @@ export const listingCustomFeatureSchema = z.object({
   description: requiredTrimmedString("Feature description is required"),
 });
 
+const applicationUrlSchema = z
+  .string()
+  .trim()
+  .url("Invalid application URL")
+  .refine(hasHttpProtocol, "Application URL must start with http:// or https://");
+
 export const listingFormSchema = z.object({
   title: requiredTrimmedString("Title is required"),
   description: optionalTrimmedStringToUndefined(),
@@ -48,6 +54,12 @@ export const listingFormSchema = z.object({
     .toLowerCase()
     .pipe(z.email("Invalid email")),
   contactPhone: requiredTrimmedString("Contact phone is required"),
+  applicationUrl: z
+    .string()
+    .trim()
+    .transform((value) => (value === "" ? undefined : value))
+    .pipe(applicationUrlSchema.optional())
+    .optional(),
 
   // Selected custom features (includes display data for preview/UI rendering)
   customFeatures: z.array(listingCustomFeatureSchema).default([]),
@@ -88,5 +100,15 @@ export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents"> = 
   contactName: "",
   contactEmail: "",
   contactPhone: "",
+  applicationUrl: undefined,
   customFeatures: [],
 };
+
+function hasHttpProtocol(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}

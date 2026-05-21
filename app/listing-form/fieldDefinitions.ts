@@ -1,6 +1,6 @@
 import type { ListingFormInput } from "./types";
 
-export type CoreFieldType = "text" | "number" | "select" | "textarea" | "email" | "tel";
+export type CoreFieldType = "text" | "number" | "select" | "textarea" | "email" | "tel" | "url";
 
 export interface FieldOption {
   label: string;
@@ -26,7 +26,7 @@ interface BaseCoreFieldDefinition {
 
 interface TextLikeFieldDefinition extends BaseCoreFieldDefinition {
   key: ListingStringKey;
-  fieldType: "text" | "textarea" | "email" | "tel";
+  fieldType: "text" | "textarea" | "email" | "tel" | "url";
   options?: never;
 }
 
@@ -248,5 +248,14 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "property_info",
     isRequired: true,
     sortOrder: 20,
+  },
+  {
+    key: "applicationUrl",
+    displayName: "Application URL",
+    fieldType: "url",
+    category: "property_info",
+    isRequired: false,
+    sortOrder: 21,
+    placeholder: "https://example.org/apply",
   },
 ];

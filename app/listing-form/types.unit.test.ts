@@ -32,12 +32,14 @@ describe("listingFormSchema", () => {
       street2: "  Apt 301  ",
       unitNumber: "  301  ",
       contactEmail: "  Leasing@Example.ORG  ",
+      applicationUrl: "  https://example.org/apply  ",
     });
 
     expect(parsed.title).toBe("Accessible Two Bedroom");
     expect(parsed.street2).toBe("Apt 301");
     expect(parsed.unitNumber).toBe("301");
     expect(parsed.contactEmail).toBe("leasing@example.org");
+    expect(parsed.applicationUrl).toBe("https://example.org/apply");
   });
 
   it("normalizes optional blank strings to undefined", () => {
@@ -47,12 +49,14 @@ describe("listingFormSchema", () => {
       street2: "   ",
       unitNumber: "   ",
       availableOn: "   ",
+      applicationUrl: "   ",
     });
 
     expect(parsed.description).toBeUndefined();
     expect(parsed.street2).toBeUndefined();
     expect(parsed.unitNumber).toBeUndefined();
     expect(parsed.availableOn).toBeUndefined();
+    expect(parsed.applicationUrl).toBeUndefined();
   });
 
   it("rejects whitespace-only required fields", () => {
@@ -83,5 +87,31 @@ describe("listingFormSchema", () => {
     });
 
     expect(parsed.images[0]?.url).toBe("/api/image-uploads/ec53dba9-e6c0-491c-9c8c-f63b8fa43c1a");
+  });
+
+  it("rejects invalid application URLs", () => {
+    const result = listingFormSchema.safeParse({
+      ...validFormInput,
+      applicationUrl: "not-a-url",
+    });
+
+    expect(result.success).toBe(false);
+
+    if (result.success) {
+      throw new Error("Expected schema parse to fail");
+    }
+
+    expect(result.error.issues.some((issue) => issue.path.join(".") === "applicationUrl")).toBe(
+      true,
+    );
+  });
+
+  it("rejects non-http application URL protocols", () => {
+    const result = listingFormSchema.safeParse({
+      ...validFormInput,
+      applicationUrl: "mailto:leasing@example.org",
+    });
+
+    expect(result.success).toBe(false);
   });
 });

@@ -25,11 +25,7 @@ export function mapListingFormToUpdateListingInput(
   status = data.status,
   rawInput?: ListingFormInput,
 ): UpdateListingInput {
-  const {
-    applicationMethod: _applicationMethod,
-    eligibilityCriteria: _eligibilityCriteria,
-    ...payload
-  } = {
+  const { eligibilityCriteria: _eligibilityCriteria, ...payload } = {
     ...buildListingPayloadFromForm(data),
     status,
   };
@@ -68,6 +64,14 @@ export function mapListingFormToAutosaveUpdateInput(
     contact.email = contactEmail;
   }
   assignTrimmedString(contact, "phone", data.contactPhone);
+
+  const applicationUrl = normalizeOptionalString(data.applicationUrl);
+  if (applicationUrl && isHttpUrl(applicationUrl)) {
+    patch.applicationMethod = "external_link";
+    patch.externalApplicationUrl = applicationUrl;
+  } else if (data.applicationUrl !== undefined && !applicationUrl) {
+    patch.applicationMethod = "internal";
+  }
 
   if (data.unitNumber !== undefined) {
     patch.unitNumber = normalizeOptionalString(data.unitNumber) ?? null;
@@ -179,6 +183,8 @@ async function getApiErrorMessage(response: Response) {
 }
 
 function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput {
+  const applicationUrl = normalizeOptionalString(data.applicationUrl);
+
   return {
     title: data.title,
     name: data.name,
@@ -206,7 +212,8 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
       name: feature.name,
       description: normalizeOptionalString(feature.description) ?? feature.name,
     })),
-    applicationMethod: "internal" as const,
+    applicationMethod: applicationUrl ? "external_link" : "internal",
+    ...(applicationUrl ? { externalApplicationUrl: applicationUrl } : {}),
     eligibilityCriteria: {},
     images: data.images.flatMap((image) =>
       image.id
@@ -236,6 +243,15 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
 function normalizeOptionalString(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function isHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function assignTrimmedString(
