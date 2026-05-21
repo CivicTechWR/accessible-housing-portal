@@ -31,7 +31,7 @@ export function MapView({ listings }: { listings: Listing[] }) {
   }, []);
 
   return (
-    <div className="relative h-full w-full flex-1 min-h-[400px]">
+    <div className="relative h-full min-h-0 w-full flex-1">
       <div className="absolute inset-0">
         <Map
           mapStyle={OPENFREEMAP_STYLE}

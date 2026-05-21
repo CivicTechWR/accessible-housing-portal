@@ -18,7 +18,7 @@ export function ListingCardGallery({ listings, mode }: ListingCardGalleryProps) 
   const isFullscreen = mode === ListingsDisplayMode.FULLSCREEN;
 
   return (
-    <ScrollArea className="flex-1 h-full w-full">
+    <ScrollArea className="min-h-0 flex-1 w-full">
       <div
         className={`p-4 grid gap-4 ${
           isFullscreen

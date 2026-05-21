@@ -29,8 +29,10 @@ export function ListingsPanel({
 }: ListingsPanelProps) {
   return (
     <div
-      className={`flex h-full flex-col bg-background ${
-        displayMode === DisplayMode.LIST ? "flex-1" : "min-w-0 w-full lg:min-w-0 lg:basis-1/2"
+      className={`flex min-h-0 flex-col overflow-hidden bg-background ${
+        displayMode === DisplayMode.LIST
+          ? "flex-1"
+          : "min-w-0 w-full flex-1 lg:min-w-0 lg:basis-1/2"
       }`}
     >
       <ListingsPanelHeader
