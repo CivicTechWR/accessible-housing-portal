@@ -8,6 +8,7 @@ import {
   ListingFilterSearchBar,
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
@@ -20,7 +21,7 @@ const LazyMapView = dynamic<{ listings: ListingSummary[] }>(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full min-h-[400px] items-center justify-center bg-muted/30 text-sm text-muted-foreground">
+      <div className="flex h-full min-h-0 items-center justify-center bg-muted/30 text-sm text-muted-foreground">
         Loading map...
       </div>
     ),
@@ -41,7 +42,35 @@ export default function ListingsDashboard({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.MAP_LIST);
+  const [siteHeaderHeight, setSiteHeaderHeight] = useState("6rem");
   const isSplitView = displayMode === DisplayMode.MAP_LIST;
+  const shellStyle = {
+    "--site-header-height": siteHeaderHeight,
+  } as CSSProperties;
+
+  useEffect(() => {
+    const siteHeader = document.querySelector<HTMLElement>("[data-site-header='true']");
+
+    if (!siteHeader) {
+      return;
+    }
+
+    const syncSiteHeaderHeight = () => {
+      setSiteHeaderHeight(`${siteHeader.getBoundingClientRect().height}px`);
+    };
+
+    syncSiteHeaderHeight();
+    window.addEventListener("resize", syncSiteHeaderHeight);
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(syncSiteHeaderHeight);
+    resizeObserver?.observe(siteHeader);
+
+    return () => {
+      window.removeEventListener("resize", syncSiteHeaderHeight);
+      resizeObserver?.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const mobileMediaQuery = window.matchMedia("(max-width: 639px)");
@@ -111,7 +140,10 @@ export default function ListingsDashboard({
       ];
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col">
+    <div
+      className="flex h-[calc(100dvh-var(--site-header-height))] min-h-0 flex-col overflow-hidden"
+      style={shellStyle}
+    >
       <header className="shrink-0 border-b bg-background px-4 py-3 sm:flex sm:h-16 sm:items-center sm:gap-4 sm:py-0 lg:gap-6">
         <ListingFilterSearchBar
           searchInputProps={searchInputProps}
@@ -131,7 +163,7 @@ export default function ListingsDashboard({
           {error}
         </AlertBanner>
       ) : null}
-      <main className="flex min-h-0 flex-1 flex-col overflow-x-hidden lg:flex-row">
+      <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         {displayMode !== DisplayMode.MAP ? (
           <ListingsPanel
             listings={listings}
@@ -157,21 +189,29 @@ export default function ListingsDashboard({
         ) : null}
         {[DisplayMode.MAP, DisplayMode.MAP_LIST].includes(displayMode) && (
           <div
-            className={`min-w-0 flex-1 ${isSplitView ? "min-h-[320px] lg:basis-1/2" : "min-h-[400px]"}`}
+            className={`min-h-0 min-w-0 flex-1 overflow-hidden ${
+              isSplitView ? "lg:basis-1/2" : ""
+            }`}
           >
             <LazyMapView listings={listings} />
           </div>
         )}
         {isFilterOpen && !isMobileViewport && (
-          <ListingFilters
-            bathroomToggleProps={bathroomToggleProps}
-            bedroomToggleProps={bedroomToggleProps}
-            priceRangeProps={priceRangeProps}
-            getFeatureCheckboxProps={getFeatureCheckboxProps}
-            datePickerProps={datePickerProps}
-            clearFilters={clearFilters}
-            dynamicGroups={dynamicGroups}
-          />
+          <aside
+            aria-label="Filters"
+            className="absolute inset-y-0 right-0 z-30 w-full max-w-sm border-l bg-background shadow-xl"
+          >
+            <ListingFilters
+              bathroomToggleProps={bathroomToggleProps}
+              bedroomToggleProps={bedroomToggleProps}
+              priceRangeProps={priceRangeProps}
+              getFeatureCheckboxProps={getFeatureCheckboxProps}
+              datePickerProps={datePickerProps}
+              clearFilters={clearFilters}
+              dynamicGroups={dynamicGroups}
+              className="h-full max-w-none overflow-y-auto border-0 bg-background"
+            />
+          </aside>
         )}
       </main>
     </div>
