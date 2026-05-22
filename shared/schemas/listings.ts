@@ -3,6 +3,7 @@ import {
   optionalTrimmedString,
   requiredTrimmedString,
   trimmedEmailString,
+  trimmedHttpUrlString,
   trimmedUrlString,
 } from "@/shared/schemas/string-normalizers";
 import { positiveIntegerQueryParamSchema, positiveIntegerQueryParamWithMaxSchema } from "./common";
@@ -84,9 +85,10 @@ const listingEditorImageSchema = z.object({
 });
 
 const listingImageUrlSchema = trimmedUrlString("Invalid image URL.");
-const listingExternalApplicationUrlSchema = trimmedUrlString(
+const listingExternalApplicationUrlSchema = trimmedHttpUrlString(
   "Invalid external application URL.",
-).refine(hasHttpProtocol, "External application URL must start with http:// or https://.");
+  "External application URL must start with http:// or https://.",
+);
 const listingDetailsAddressSchema = z.object({
   street1: nonEmptyString,
   street2: nonEmptyString.optional(),
@@ -337,12 +339,3 @@ export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
 export type UpdateListingResponse = z.infer<typeof updateListingResponseSchema>;
 export type DeleteListingResponse = z.infer<typeof deleteListingResponseSchema>;
-
-function hasHttpProtocol(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { errorMessageSchema } from "@/shared/schemas/common";
+import { isHttpUrl } from "@/shared/schemas/string-normalizers";
 import {
   createDraftListingResponseSchema,
   listingEditorResponseSchema,
@@ -257,15 +258,6 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
 function normalizeOptionalString(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
-}
-
-function isHttpUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 function assignTrimmedString(

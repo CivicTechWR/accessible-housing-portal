@@ -18,6 +18,7 @@ import {
   formatListingTimeAgo,
   getDisplayAccessibilityFeatures,
   getEnabledBooleanCustomFieldKeys,
+  getListingApplicationUrl,
   getListingSquareFeet,
   getStoredApplicationMethod,
   getStoredAccessibilityFeatures,
@@ -648,7 +649,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
             phone: listing.property.contactPhone,
           }
         : undefined,
-    applicationUrl: normalizeExternalApplicationUrl(listing.applicationUrl),
+    applicationUrl: getListingApplicationUrl(listing.applicationUrl, listing.customFields),
   };
 }
 
@@ -727,25 +728,9 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     contactName: listing.property.contactName ?? "",
     contactEmail: listing.property.contactEmail ?? "",
     contactPhone: listing.property.contactPhone ?? "",
-    applicationUrl:
-      normalizeExternalApplicationUrl(
-        listing.applicationUrl ?? getStoredExternalApplicationUrl(listing.customFields),
-      ) ?? undefined,
+    applicationUrl: getListingApplicationUrl(listing.applicationUrl, listing.customFields),
     customFeatures: Array.from(customFeatures.values()),
   };
-}
-
-function normalizeExternalApplicationUrl(value: string | null | undefined) {
-  if (!value) {
-    return undefined;
-  }
-
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 function resolveNextApplicationUrl(input: {

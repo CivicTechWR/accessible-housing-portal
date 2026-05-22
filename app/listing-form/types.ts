@@ -1,9 +1,10 @@
 import { z } from "zod";
 import type { Control, UseFormReturn } from "react-hook-form";
 import {
-  trimmedAbsoluteOrRootRelativeUrlString,
   optionalTrimmedStringToUndefined,
   requiredTrimmedString,
+  trimmedAbsoluteOrRootRelativeUrlString,
+  trimmedHttpUrlString,
 } from "@/shared/schemas/string-normalizers";
 
 export const listingImageSchema = z.object({
@@ -19,11 +20,10 @@ export const listingCustomFeatureSchema = z.object({
   description: requiredTrimmedString("Feature description is required"),
 });
 
-const applicationUrlSchema = z
-  .string()
-  .trim()
-  .url("Invalid application URL")
-  .refine(hasHttpProtocol, "Application URL must start with http:// or https://");
+const applicationUrlSchema = trimmedHttpUrlString(
+  "Invalid application URL",
+  "Application URL must start with http:// or https://",
+);
 
 export const listingFormSchema = z.object({
   title: requiredTrimmedString("Title is required"),
@@ -103,12 +103,3 @@ export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents"> = 
   applicationUrl: undefined,
   customFeatures: [],
 };
-
-function hasHttpProtocol(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}

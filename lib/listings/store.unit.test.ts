@@ -5,6 +5,7 @@ import {
   buildListingCustomFields,
   buildListingFeatureCategories,
   getDisplayAccessibilityFeatures,
+  getListingApplicationUrl,
 } from "./store";
 
 describe("buildListingFeatureCategories", () => {
@@ -170,5 +171,23 @@ describe("getDisplayAccessibilityFeatures", () => {
       "Elevator in Building",
       "Automated Building Doors",
     ]);
+  });
+});
+
+describe("getListingApplicationUrl", () => {
+  it("falls back to the stored external application URL when the listing column is empty", () => {
+    expect(
+      getListingApplicationUrl(null, {
+        externalApplicationUrl: "https://example.org/legacy-apply",
+      }),
+    ).toBe("https://example.org/legacy-apply");
+  });
+
+  it("falls back to the stored external application URL when the listing column is invalid", () => {
+    expect(
+      getListingApplicationUrl("mailto:leasing@example.org", {
+        externalApplicationUrl: "https://example.org/legacy-apply",
+      }),
+    ).toBe("https://example.org/legacy-apply");
   });
 });
