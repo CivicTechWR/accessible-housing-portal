@@ -169,13 +169,17 @@ export function ListingDetails({
               <CardTitle>Contact Info</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <dl
+                className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${
+                  applicationUrl ? "lg:grid-cols-4" : "lg:grid-cols-3"
+                }`}
+              >
                 {contactRows.map((row) => (
-                  <div key={row.label} className="bg-background p-3">
+                  <div key={row.label} className="min-w-0 bg-background p-3">
                     <dt className="text-xs uppercase tracking-wide text-muted-foreground">
                       {row.label}
                     </dt>
-                    <dd className="mt-1 text-sm font-medium text-foreground">
+                    <dd className="mt-1 break-words text-sm font-medium text-foreground">
                       {row.href ? (
                         <a href={row.href} className="hover:underline">
                           {row.value}
@@ -187,7 +191,7 @@ export function ListingDetails({
                   </div>
                 ))}
                 {applicationUrl ? (
-                  <div className="bg-background p-3">
+                  <div className="min-w-0 bg-background p-3">
                     <dt className="text-xs uppercase tracking-wide text-muted-foreground">
                       Application
                     </dt>
