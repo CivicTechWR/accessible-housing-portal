@@ -219,7 +219,6 @@ describe("mapListingFormToCreateListingInput", () => {
         },
       ],
       amenities: [],
-      applicationMethod: "internal",
       accessibilityFeatures: [
         {
           id: "ramp_entry",
@@ -245,6 +244,39 @@ describe("mapListingFormToCreateListingInput", () => {
       unitStory: 2,
       leaseTerm: "1 year",
       utilitiesIncluded: ["Heat", "Water"],
+    });
+  });
+
+  it("maps application URLs on full updates to the external application method", () => {
+    expect(
+      mapListingFormToUpdateListingInput(
+        {
+          ...validFormData,
+          applicationUrl: "https://example.org/apply",
+        },
+        "published",
+      ),
+    ).toMatchObject({
+      applicationMethod: "external_link",
+      externalApplicationUrl: "https://example.org/apply",
+    });
+  });
+
+  it("maps explicitly cleared application URLs on full updates to the internal method", () => {
+    expect(
+      mapListingFormToUpdateListingInput(
+        {
+          ...validFormData,
+          applicationUrl: undefined,
+        },
+        "published",
+        {
+          ...validFormData,
+          applicationUrl: "  ",
+        },
+      ),
+    ).toMatchObject({
+      applicationMethod: "internal",
     });
   });
 
@@ -427,7 +459,6 @@ describe("mapListingFormToCreateListingInput", () => {
         },
       ],
       amenities: [],
-      applicationMethod: "internal",
       accessibilityFeatures: [
         {
           id: "ramp_entry",

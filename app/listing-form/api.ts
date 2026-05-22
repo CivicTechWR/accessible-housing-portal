@@ -25,7 +25,11 @@ export function mapListingFormToUpdateListingInput(
   status = data.status,
   rawInput?: ListingFormInput,
 ): UpdateListingInput {
-  const { eligibilityCriteria: _eligibilityCriteria, ...payload } = {
+  const {
+    applicationMethod: _applicationMethod,
+    eligibilityCriteria: _eligibilityCriteria,
+    ...payload
+  } = {
     ...buildListingPayloadFromForm(data),
     status,
   };
@@ -36,6 +40,16 @@ export function mapListingFormToUpdateListingInput(
     normalizeOptionalString(rawInput.unitNumber) === undefined
   ) {
     patch.unitNumber = null;
+  }
+
+  const applicationUrl = normalizeOptionalString(data.applicationUrl);
+  if (applicationUrl) {
+    patch.applicationMethod = "external_link";
+  } else if (
+    rawInput?.applicationUrl !== undefined &&
+    normalizeOptionalString(rawInput.applicationUrl) === undefined
+  ) {
+    patch.applicationMethod = "internal";
   }
 
   return patch;
