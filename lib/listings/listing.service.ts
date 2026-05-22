@@ -23,7 +23,6 @@ import {
   getStoredApplicationMethod,
   getStoredAccessibilityFeatures,
   getStoredEligibilityCriteria,
-  getStoredExternalApplicationUrl,
   getStoredNumber,
   getStoredString,
   getStoredStringArray,
@@ -506,7 +505,7 @@ export async function updateListingByIdService(input: {
         nextEligibility.maxIncome === null
           ? null
           : (dollarsToCents(nextEligibility.maxIncome ?? undefined) ?? listing.maxIncomeCents),
-      applicationUrl: nextApplicationUrlResult.nextApplicationUrl,
+      applicationUrl: nextApplicationUrlResult.nextApplicationUrl as string | null,
       applicationEmail: input.payload.contact?.email ?? listing.applicationEmail,
       applicationPhone: input.payload.contact?.phone ?? listing.applicationPhone,
       customFields: nextCustomFields,
@@ -649,7 +648,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
             phone: listing.property.contactPhone,
           }
         : undefined,
-    applicationUrl: getListingApplicationUrl(listing.applicationUrl, listing.customFields),
+    applicationUrl: getListingApplicationUrl(listing.applicationUrl),
   };
 }
 
@@ -728,7 +727,7 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     contactName: listing.property.contactName ?? "",
     contactEmail: listing.property.contactEmail ?? "",
     contactPhone: listing.property.contactPhone ?? "",
-    applicationUrl: getListingApplicationUrl(listing.applicationUrl, listing.customFields),
+    applicationUrl: getListingApplicationUrl(listing.applicationUrl),
     customFeatures: Array.from(customFeatures.values()),
   };
 }
@@ -746,18 +745,13 @@ function resolveNextApplicationUrl(input: {
   const hasExplicitExternalApplicationUrlUpdate =
     input.payload.externalApplicationUrl !== undefined;
 
-  if (effectiveApplicationMethod !== "external_link") {
-    input.nextCustomFields.externalApplicationUrl = null;
-  }
-
-  const nextExternalApplicationUrl = getStoredExternalApplicationUrl(input.nextCustomFields);
   const nextApplicationUrl =
     effectiveApplicationMethod === "external_link"
       ? hasExplicitExternalApplicationUrlUpdate
-        ? (nextExternalApplicationUrl ?? null)
-        : nextExternalApplicationUrl === undefined
+        ? (input.nextCustomFields.externalApplicationUrl ?? null)
+        : input.nextCustomFields.externalApplicationUrl === undefined
           ? input.listingApplicationUrl
-          : nextExternalApplicationUrl
+          : input.nextCustomFields.externalApplicationUrl
       : null;
 
   if (effectiveApplicationMethod === "external_link" && !nextApplicationUrl) {

@@ -222,21 +222,8 @@ export function getStoredApplicationMethod(
   return value === "internal" || value === "external_link" || value === "paper" ? value : undefined;
 }
 
-export function getStoredExternalApplicationUrl(customFields: ListingCustomFields) {
-  const value = customFields.externalApplicationUrl;
-
-  if (value === null) {
-    return null;
-  }
-
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
-export function getListingApplicationUrl(
-  applicationUrl: string | null | undefined,
-  customFields: ListingCustomFields,
-) {
-  return applicationUrl?.trim() || getStoredExternalApplicationUrl(customFields) || undefined;
+export function getListingApplicationUrl(applicationUrl: string | null | undefined) {
+  return applicationUrl?.trim() || undefined;
 }
 
 export function getEnabledBooleanCustomFieldKeys(customFields: ListingCustomFields) {

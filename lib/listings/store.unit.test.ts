@@ -175,11 +175,15 @@ describe("getDisplayAccessibilityFeatures", () => {
 });
 
 describe("getListingApplicationUrl", () => {
-  it("falls back to the stored external application URL when the listing column is empty", () => {
-    expect(
-      getListingApplicationUrl(null, {
-        externalApplicationUrl: "https://example.org/legacy-apply",
-      }),
-    ).toBe("https://example.org/legacy-apply");
+  it("returns trimmed applicationUrl when provided", () => {
+    expect(getListingApplicationUrl(" https://example.org/apply ")).toBe(
+      "https://example.org/apply",
+    );
+  });
+
+  it("returns undefined when empty", () => {
+    expect(getListingApplicationUrl(null)).toBeUndefined();
+    expect(getListingApplicationUrl(undefined)).toBeUndefined();
+    expect(getListingApplicationUrl("   ")).toBeUndefined();
   });
 });
