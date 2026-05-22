@@ -236,16 +236,7 @@ export function getListingApplicationUrl(
   applicationUrl: string | null | undefined,
   customFields: ListingCustomFields,
 ) {
-  const normalize = (v: string | null | undefined) => {
-    if (!v) return undefined;
-    try {
-      const u = new URL(v.trim());
-      return u.protocol === "http:" || u.protocol === "https:" ? u.toString() : undefined;
-    } catch {
-      return undefined;
-    }
-  };
-  return normalize(applicationUrl) ?? normalize(getStoredExternalApplicationUrl(customFields));
+  return applicationUrl?.trim() || getStoredExternalApplicationUrl(customFields) || undefined;
 }
 
 export function getEnabledBooleanCustomFieldKeys(customFields: ListingCustomFields) {
