@@ -157,7 +157,6 @@ const listingEligibilityCriteriaSchema = z.object({
   housingType: nonEmptyString.optional(),
 });
 
-const listingApplicationMethodSchema = z.enum(["internal", "external_link", "paper"]);
 const listingPaginationSchema = z.object({
   page: z.number().int().min(1),
   limit: z.number().int().min(1),
@@ -197,24 +196,14 @@ const updateListingBasePayloadSchema = z.object({
   unitStory: z.number().optional(),
   leaseTerm: nonEmptyString.optional(),
   utilitiesIncluded: z.array(nonEmptyString).optional(),
+  applicationUrl: listingExternalApplicationUrlSchema.optional(),
 });
-const updateListingApplicationPayloadSchema = z
-  .object({
-    applicationMethod: listingApplicationMethodSchema.optional(),
-    externalApplicationUrl: listingExternalApplicationUrlSchema.optional(),
-  })
-  .refine(
-    (value) => value.applicationMethod !== "external_link" || !!value.externalApplicationUrl,
-    {
-      message: "External application URL is required when applicationMethod is external_link.",
-      path: ["externalApplicationUrl"],
-    },
-  );
-const updateListingPayloadSchema = updateListingBasePayloadSchema
-  .and(updateListingApplicationPayloadSchema)
-  .refine((value) => hasAtLeastOneField(value), {
+const updateListingPayloadSchema = updateListingBasePayloadSchema.refine(
+  (value) => hasAtLeastOneField(value),
+  {
     message: "At least one field is required.",
-  });
+  },
+);
 const listingIdDataSchema = z.object({
   id: listingIdParamSchema,
 });
@@ -227,8 +216,7 @@ const listingPayloadSchema = z.object({
   units: z.tuple([listingUnitSchema], listingUnitSchema),
   amenities: z.array(nonEmptyString),
   accessibilityFeatures: z.array(listingFeatureSchema),
-  applicationMethod: listingApplicationMethodSchema,
-  externalApplicationUrl: listingExternalApplicationUrlSchema.optional(),
+  applicationUrl: listingExternalApplicationUrlSchema.optional(),
   eligibilityCriteria: listingEligibilityCriteriaSchema,
   images: z.array(listingUploadedImageInputSchema),
   contact: listingContactSchema,
@@ -242,15 +230,7 @@ const listingPayloadSchema = z.object({
   utilitiesIncluded: z.array(nonEmptyString).optional(),
 });
 
-export const createListingSchema = listingPayloadSchema.superRefine((value, context) => {
-  if (value.applicationMethod === "external_link" && !value.externalApplicationUrl) {
-    context.addIssue({
-      code: "custom",
-      message: "External application URL is required when applicationMethod is external_link.",
-      path: ["externalApplicationUrl"],
-    });
-  }
-});
+export const createListingSchema = listingPayloadSchema;
 
 export const updateListingSchema = updateListingPayloadSchema;
 

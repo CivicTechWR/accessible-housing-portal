@@ -123,7 +123,7 @@ describe("buildListingCustomFields", () => {
           description: "The building has at least one elevator.",
         },
       ],
-      applicationMethod: "internal",
+      applicationUrl: undefined,
       eligibilityCriteria: {},
       images: [],
       contact: {

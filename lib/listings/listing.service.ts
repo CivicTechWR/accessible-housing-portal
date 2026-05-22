@@ -2,7 +2,7 @@ import "server-only";
 
 import { asc, desc, type SQL } from "drizzle-orm";
 
-import { listings, type ListingCustomFields } from "@/db/schema";
+import { listings } from "@/db/schema";
 import type { getOptionalSession } from "@/lib/auth/session";
 import {
   buildListingFeatureDefinitionLookup,
@@ -20,7 +20,6 @@ import {
   getEnabledBooleanCustomFieldKeys,
   getListingApplicationUrl,
   getListingSquareFeet,
-  getStoredApplicationMethod,
   getStoredAccessibilityFeatures,
   getStoredEligibilityCriteria,
   getStoredNumber,
@@ -457,13 +456,7 @@ export async function updateListingByIdService(input: {
   const nextApplicationUrlResult = resolveNextApplicationUrl({
     payload: input.payload,
     listingApplicationUrl: listing.applicationUrl,
-    listingCustomFields: listing.customFields,
-    nextCustomFields,
   });
-
-  if (!nextApplicationUrlResult.ok) {
-    return fail("validation", nextApplicationUrlResult.message);
-  }
 
   const statusTimestamps = resolveListingStatusTimestamps(nextStatus, {
     publishedAt: listing.publishedAt,
@@ -735,34 +728,9 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
 function resolveNextApplicationUrl(input: {
   payload: UpdateListingInput;
   listingApplicationUrl: string | null;
-  listingCustomFields: ListingCustomFields;
-  nextCustomFields: ListingCustomFields;
 }) {
-  const effectiveApplicationMethod =
-    getStoredApplicationMethod(input.nextCustomFields) ??
-    getStoredApplicationMethod(input.listingCustomFields) ??
-    (input.listingApplicationUrl ? "external_link" : "internal");
-  const hasExplicitExternalApplicationUrlUpdate =
-    input.payload.externalApplicationUrl !== undefined;
-
-  const nextApplicationUrl =
-    effectiveApplicationMethod === "external_link"
-      ? hasExplicitExternalApplicationUrlUpdate
-        ? (input.nextCustomFields.externalApplicationUrl ?? null)
-        : input.nextCustomFields.externalApplicationUrl === undefined
-          ? input.listingApplicationUrl
-          : input.nextCustomFields.externalApplicationUrl
-      : null;
-
-  if (effectiveApplicationMethod === "external_link" && !nextApplicationUrl) {
-    return {
-      ok: false as const,
-      message: "External application URL is required when applicationMethod is external_link.",
-    };
+  if (input.payload.applicationUrl !== undefined) {
+    return { ok: true as const, nextApplicationUrl: input.payload.applicationUrl };
   }
-
-  return {
-    ok: true as const,
-    nextApplicationUrl,
-  };
+  return { ok: true as const, nextApplicationUrl: input.listingApplicationUrl };
 }

@@ -404,7 +404,7 @@ export async function createDraftListing(input: { actorUserId: string }) {
           ],
           amenities: [],
           accessibilityFeatures: [],
-          applicationMethod: "internal",
+          applicationUrl: null,
           eligibilityCriteria: {},
           utilitiesIncluded: [],
         },
@@ -504,10 +504,7 @@ export async function createListing(input: {
         monthlyRentCents: input.primaryUnitRentCents,
         availableOn: primaryUnit.availableDate ?? null,
         maxIncomeCents: dollarsToCents(input.payload.eligibilityCriteria.maxIncome),
-        applicationUrl:
-          input.payload.applicationMethod === "external_link"
-            ? (input.payload.externalApplicationUrl ?? null)
-            : null,
+        applicationUrl: input.payload.applicationUrl ?? null,
         applicationEmail: input.payload.contact.email,
         applicationPhone: input.payload.contact.phone,
         applicationInstructions: null,

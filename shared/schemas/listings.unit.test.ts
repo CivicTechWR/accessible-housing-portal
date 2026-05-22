@@ -91,7 +91,7 @@ describe("listing API schemas", () => {
 
     expect(parsed.title).toBe("Suite 204 at Cedar Court");
     expect(parsed.name).toBe("Cedar Court");
-    expect(parsed.externalApplicationUrl).toBe("https://example.org/apply");
+    expect(parsed.applicationUrl).toBe("https://example.org/apply");
     expect(parsed.contact.email).toBe("leasing@example.org");
   });
 
