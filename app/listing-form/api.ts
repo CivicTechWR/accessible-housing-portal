@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { errorMessageSchema } from "@/shared/schemas/common";
-import { isHttpUrl } from "@/shared/schemas/string-normalizers";
 import {
   createDraftListingResponseSchema,
   listingEditorResponseSchema,
@@ -81,7 +80,7 @@ export function mapListingFormToAutosaveUpdateInput(
   assignTrimmedString(contact, "phone", data.contactPhone);
 
   const applicationUrl = normalizeOptionalString(data.applicationUrl);
-  if (applicationUrl && isHttpUrl(applicationUrl)) {
+  if (applicationUrl && z.httpUrl().safeParse(applicationUrl).success) {
     patch.applicationMethod = "external_link";
     patch.externalApplicationUrl = applicationUrl;
   } else if (data.applicationUrl !== undefined) {

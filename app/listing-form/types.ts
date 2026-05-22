@@ -4,7 +4,6 @@ import {
   optionalTrimmedStringToUndefined,
   requiredTrimmedString,
   trimmedAbsoluteOrRootRelativeUrlString,
-  trimmedHttpUrlString,
 } from "@/shared/schemas/string-normalizers";
 
 export const listingImageSchema = z.object({
@@ -20,10 +19,7 @@ export const listingCustomFeatureSchema = z.object({
   description: requiredTrimmedString("Feature description is required"),
 });
 
-const applicationUrlSchema = trimmedHttpUrlString(
-  "Invalid application URL",
-  "Application URL must start with http:// or https://",
-);
+const applicationUrlSchema = z.string().trim().pipe(z.httpUrl());
 
 export const listingFormSchema = z.object({
   title: requiredTrimmedString("Title is required"),

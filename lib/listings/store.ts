@@ -9,7 +9,6 @@ import {
   type ListingFeatureDefinition,
   normalizeListingFeatureToken,
 } from "@/lib/listings/listing-feature-definitions";
-import { normalizeHttpUrl } from "@/shared/schemas/string-normalizers";
 import type {
   CreateListingInput,
   ListingDetails,
@@ -237,10 +236,16 @@ export function getListingApplicationUrl(
   applicationUrl: string | null | undefined,
   customFields: ListingCustomFields,
 ) {
-  return (
-    normalizeHttpUrl(applicationUrl) ??
-    normalizeHttpUrl(getStoredExternalApplicationUrl(customFields))
-  );
+  const normalize = (v: string | null | undefined) => {
+    if (!v) return undefined;
+    try {
+      const u = new URL(v.trim());
+      return u.protocol === "http:" || u.protocol === "https:" ? u.toString() : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  return normalize(applicationUrl) ?? normalize(getStoredExternalApplicationUrl(customFields));
 }
 
 export function getEnabledBooleanCustomFieldKeys(customFields: ListingCustomFields) {

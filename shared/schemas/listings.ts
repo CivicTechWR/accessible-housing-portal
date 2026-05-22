@@ -3,7 +3,6 @@ import {
   optionalTrimmedString,
   requiredTrimmedString,
   trimmedEmailString,
-  trimmedHttpUrlString,
   trimmedUrlString,
 } from "@/shared/schemas/string-normalizers";
 import { positiveIntegerQueryParamSchema, positiveIntegerQueryParamWithMaxSchema } from "./common";
@@ -85,10 +84,7 @@ const listingEditorImageSchema = z.object({
 });
 
 const listingImageUrlSchema = trimmedUrlString("Invalid image URL.");
-const listingExternalApplicationUrlSchema = trimmedHttpUrlString(
-  "Invalid external application URL.",
-  "External application URL must start with http:// or https://.",
-);
+const listingExternalApplicationUrlSchema = z.string().trim().pipe(z.httpUrl());
 const listingDetailsAddressSchema = z.object({
   street1: nonEmptyString,
   street2: nonEmptyString.optional(),
