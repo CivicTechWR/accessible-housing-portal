@@ -84,7 +84,7 @@ const listingEditorImageSchema = z.object({
 });
 
 const listingImageUrlSchema = trimmedUrlString("Invalid image URL.");
-const listingExternalApplicationUrlSchema = z.string().trim().pipe(z.httpUrl());
+
 const listingDetailsAddressSchema = z.object({
   street1: nonEmptyString,
   street2: nonEmptyString.optional(),
@@ -113,7 +113,7 @@ export const listingDetailsSchema = z.object({
   timeAgo: nonEmptyString,
   features: z.array(listingFeatureCategorySchema),
   contact: listingContactSchema.optional(),
-  applicationUrl: listingExternalApplicationUrlSchema.optional(),
+  applicationUrl: z.httpUrl({ normalize: true }).optional(),
 });
 
 export const listingSummarySchema = z.object({
@@ -196,7 +196,7 @@ const updateListingBasePayloadSchema = z.object({
   unitStory: z.number().optional(),
   leaseTerm: nonEmptyString.optional(),
   utilitiesIncluded: z.array(nonEmptyString).optional(),
-  applicationUrl: listingExternalApplicationUrlSchema.optional(),
+  applicationUrl: z.httpUrl({ normalize: true }).optional(),
 });
 const updateListingPayloadSchema = updateListingBasePayloadSchema.refine(
   (value) => hasAtLeastOneField(value),
@@ -216,7 +216,7 @@ const listingPayloadSchema = z.object({
   units: z.tuple([listingUnitSchema], listingUnitSchema),
   amenities: z.array(nonEmptyString),
   accessibilityFeatures: z.array(listingFeatureSchema),
-  applicationUrl: listingExternalApplicationUrlSchema.optional(),
+  applicationUrl: z.httpUrl({ normalize: true }).optional(),
   eligibilityCriteria: listingEligibilityCriteriaSchema,
   images: z.array(listingUploadedImageInputSchema),
   contact: listingContactSchema,
@@ -259,7 +259,7 @@ export const listingEditorDataSchema = z.object({
   contactName: z.string(),
   contactEmail: z.string(),
   contactPhone: z.string(),
-  applicationUrl: listingExternalApplicationUrlSchema.optional(),
+  applicationUrl: z.httpUrl({ normalize: true }).optional(),
   customFeatures: z.array(listingEditorFeatureSchema),
 });
 
