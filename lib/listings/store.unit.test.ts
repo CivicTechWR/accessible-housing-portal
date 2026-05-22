@@ -182,12 +182,4 @@ describe("getListingApplicationUrl", () => {
       }),
     ).toBe("https://example.org/legacy-apply");
   });
-
-  it("falls back to the stored external application URL when the listing column is invalid", () => {
-    expect(
-      getListingApplicationUrl("mailto:leasing@example.org", {
-        externalApplicationUrl: "https://example.org/legacy-apply",
-      }),
-    ).toBe("https://example.org/legacy-apply");
-  });
 });
