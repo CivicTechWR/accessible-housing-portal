@@ -423,6 +423,31 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
+  it("clears application URLs in autosave payloads when the field is invalid", () => {
+    expect(
+      mapListingFormToAutosaveUpdateInput({
+        ...CREATE_FORM_DEFAULTS,
+        title: "Draft title",
+        applicationUrl: "https://",
+        monthlyRentCents: 0,
+      }),
+    ).toEqual({
+      title: "Draft title",
+      applicationMethod: "internal",
+      accessibilityFeatures: [],
+      images: [],
+      status: "draft",
+      units: [
+        {
+          bedrooms: 0,
+          bathrooms: 0,
+          rent: 0,
+        },
+      ],
+      utilitiesIncluded: [],
+    });
+  });
+
   it("preserves explicit unit number clearing on publish updates", () => {
     const rawInput: ListingFormInput = {
       ...validFormData,

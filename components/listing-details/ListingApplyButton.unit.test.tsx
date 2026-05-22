@@ -17,4 +17,26 @@ describe("ListingApplyButton", () => {
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Confirm" })).not.toBeNull();
   });
+
+  it("closes the leaving-site dialog when the user cancels", () => {
+    render(<ListingApplyButton applicationUrl="https://example.org/apply" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByText("Leaving Affordable Housing Portal")).toBeNull();
+  });
+
+  it("navigates to the application URL when the user confirms", () => {
+    const originalUrl = window.location.href;
+    const applicationUrl = new URL("#application", originalUrl).toString();
+
+    render(<ListingApplyButton applicationUrl={applicationUrl} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(window.location.href).toBe(applicationUrl);
+    window.history.replaceState(null, "", originalUrl);
+  });
 });

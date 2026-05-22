@@ -281,7 +281,7 @@ export const listingEditorDataSchema = z.object({
   contactName: z.string(),
   contactEmail: z.string(),
   contactPhone: z.string(),
-  applicationUrl: z.string().optional(),
+  applicationUrl: listingExternalApplicationUrlSchema.optional(),
   customFeatures: z.array(listingEditorFeatureSchema),
 });
 

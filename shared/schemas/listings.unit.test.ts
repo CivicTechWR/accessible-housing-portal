@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import {
   createListingSchema,
+  listingEditorDataSchema,
   listingQuerySchema,
   updateListingSchema,
 } from "@/shared/schemas/listings";
@@ -187,6 +188,33 @@ describe("listing API schemas", () => {
     const result = createListingSchema.safeParse({
       ...validCreatePayload,
       externalApplicationUrl: "mailto:leasing@example.org",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-http application URLs in listing editor data", () => {
+    const result = listingEditorDataSchema.safeParse({
+      title: "",
+      propertyType: "",
+      buildingType: "",
+      bedrooms: 0,
+      bathrooms: 0,
+      monthlyRentCents: 0,
+      leaseTerm: "",
+      utilitiesIncluded: [],
+      images: [],
+      status: "draft",
+      name: "",
+      street1: "",
+      city: "",
+      province: "",
+      postalCode: "",
+      contactName: "",
+      contactEmail: "",
+      contactPhone: "",
+      applicationUrl: "mailto:leasing@example.org",
+      customFeatures: [],
     });
 
     expect(result.success).toBe(false);

@@ -83,7 +83,7 @@ export function mapListingFormToAutosaveUpdateInput(
   if (applicationUrl && isHttpUrl(applicationUrl)) {
     patch.applicationMethod = "external_link";
     patch.externalApplicationUrl = applicationUrl;
-  } else if (data.applicationUrl !== undefined && !applicationUrl) {
+  } else if (data.applicationUrl !== undefined) {
     patch.applicationMethod = "internal";
   }
 
