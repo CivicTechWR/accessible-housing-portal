@@ -17,8 +17,6 @@ import type {
 
 export const DEFAULT_PROPERTY_COUNTRY = "Canada";
 
-type ListingApplicationMethod = CreateListingInput["applicationMethod"];
-
 type StoredUnit = {
   bedrooms?: number;
   bathrooms?: number;
@@ -39,9 +37,6 @@ export function buildListingCustomFields(input: CreateListingInput): ListingCust
   const customFields: ListingCustomFields = {
     units: input.units.map((unit) => ({ ...unit })),
     amenities: [...input.amenities],
-    applicationMethod: input.applicationMethod,
-    externalApplicationUrl:
-      input.applicationMethod === "external_link" ? (input.externalApplicationUrl ?? null) : null,
     eligibilityCriteria: { ...input.eligibilityCriteria },
     ...(input.propertyType ? { propertyType: input.propertyType } : {}),
     ...(input.buildingType ? { buildingType: input.buildingType } : {}),
@@ -75,16 +70,6 @@ export function mergeListingCustomFields(
 
   if (input.accessibilityFeatures !== undefined) {
     applyAccessibilityFeatureState(next, input.accessibilityFeatures);
-  }
-
-  if (input.applicationMethod !== undefined) {
-    next.applicationMethod = input.applicationMethod;
-  }
-
-  if (input.externalApplicationUrl !== undefined) {
-    next.externalApplicationUrl = input.externalApplicationUrl;
-  } else if (input.applicationMethod !== undefined && input.applicationMethod !== "external_link") {
-    next.externalApplicationUrl = null;
   }
 
   if (input.eligibilityCriteria !== undefined) {
@@ -214,22 +199,8 @@ export function getStoredAccessibilityFeatures(
   });
 }
 
-export function getStoredApplicationMethod(
-  customFields: ListingCustomFields,
-): ListingApplicationMethod | undefined {
-  const value = customFields.applicationMethod;
-
-  return value === "internal" || value === "external_link" || value === "paper" ? value : undefined;
-}
-
-export function getStoredExternalApplicationUrl(customFields: ListingCustomFields) {
-  const value = customFields.externalApplicationUrl;
-
-  if (value === null) {
-    return null;
-  }
-
-  return typeof value === "string" && value.length > 0 ? value : undefined;
+export function getListingApplicationUrl(applicationUrl: string | null | undefined) {
+  return applicationUrl?.trim() || undefined;
 }
 
 export function getEnabledBooleanCustomFieldKeys(customFields: ListingCustomFields) {

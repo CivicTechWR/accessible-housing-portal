@@ -129,7 +129,14 @@ function FieldRenderer({
     );
   }
 
-  const inputType = def.fieldType === "email" ? "email" : def.fieldType === "tel" ? "tel" : "text";
+  const inputType =
+    def.fieldType === "email"
+      ? "email"
+      : def.fieldType === "tel"
+        ? "tel"
+        : def.fieldType === "url"
+          ? "url"
+          : "text";
 
   return (
     <FormField

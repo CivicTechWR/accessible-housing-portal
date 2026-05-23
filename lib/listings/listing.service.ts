@@ -2,7 +2,7 @@ import "server-only";
 
 import { asc, desc, type SQL } from "drizzle-orm";
 
-import { listings, type ListingCustomFields } from "@/db/schema";
+import { listings } from "@/db/schema";
 import type { getOptionalSession } from "@/lib/auth/session";
 import {
   buildListingFeatureDefinitionLookup,
@@ -18,11 +18,10 @@ import {
   formatListingTimeAgo,
   getDisplayAccessibilityFeatures,
   getEnabledBooleanCustomFieldKeys,
+  getListingApplicationUrl,
   getListingSquareFeet,
-  getStoredApplicationMethod,
   getStoredAccessibilityFeatures,
   getStoredEligibilityCriteria,
-  getStoredExternalApplicationUrl,
   getStoredNumber,
   getStoredString,
   getStoredStringArray,
@@ -457,13 +456,7 @@ export async function updateListingByIdService(input: {
   const nextApplicationUrlResult = resolveNextApplicationUrl({
     payload: input.payload,
     listingApplicationUrl: listing.applicationUrl,
-    listingCustomFields: listing.customFields,
-    nextCustomFields,
   });
-
-  if (!nextApplicationUrlResult.ok) {
-    return fail("validation", nextApplicationUrlResult.message);
-  }
 
   const statusTimestamps = resolveListingStatusTimestamps(nextStatus, {
     publishedAt: listing.publishedAt,
@@ -648,6 +641,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
             phone: listing.property.contactPhone,
           }
         : undefined,
+    applicationUrl: getListingApplicationUrl(listing.applicationUrl),
   };
 }
 
@@ -726,6 +720,7 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     contactName: listing.property.contactName ?? "",
     contactEmail: listing.property.contactEmail ?? "",
     contactPhone: listing.property.contactPhone ?? "",
+    applicationUrl: getListingApplicationUrl(listing.applicationUrl),
     customFeatures: Array.from(customFeatures.values()),
   };
 }
@@ -733,39 +728,9 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
 function resolveNextApplicationUrl(input: {
   payload: UpdateListingInput;
   listingApplicationUrl: string | null;
-  listingCustomFields: ListingCustomFields;
-  nextCustomFields: ListingCustomFields;
 }) {
-  const effectiveApplicationMethod =
-    getStoredApplicationMethod(input.nextCustomFields) ??
-    getStoredApplicationMethod(input.listingCustomFields) ??
-    (input.listingApplicationUrl ? "external_link" : "internal");
-  const hasExplicitExternalApplicationUrlUpdate =
-    input.payload.externalApplicationUrl !== undefined;
-
-  if (effectiveApplicationMethod !== "external_link") {
-    input.nextCustomFields.externalApplicationUrl = null;
+  if (input.payload.applicationUrl !== undefined) {
+    return { ok: true as const, nextApplicationUrl: input.payload.applicationUrl };
   }
-
-  const nextExternalApplicationUrl = getStoredExternalApplicationUrl(input.nextCustomFields);
-  const nextApplicationUrl =
-    effectiveApplicationMethod === "external_link"
-      ? hasExplicitExternalApplicationUrlUpdate
-        ? (nextExternalApplicationUrl ?? null)
-        : nextExternalApplicationUrl === undefined
-          ? input.listingApplicationUrl
-          : nextExternalApplicationUrl
-      : null;
-
-  if (effectiveApplicationMethod === "external_link" && !nextApplicationUrl) {
-    return {
-      ok: false as const,
-      message: "External application URL is required when applicationMethod is external_link.",
-    };
-  }
-
-  return {
-    ok: true as const,
-    nextApplicationUrl,
-  };
+  return { ok: true as const, nextApplicationUrl: input.listingApplicationUrl };
 }

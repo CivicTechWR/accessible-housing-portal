@@ -36,6 +36,7 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       contactName={details.contact?.name}
       contactEmail={details.contact?.email}
       contactPhone={details.contact?.phone}
+      applicationUrl={details.applicationUrl}
     />
   );
 }

@@ -25,11 +25,7 @@ export function mapListingFormToUpdateListingInput(
   status = data.status,
   rawInput?: ListingFormInput,
 ): UpdateListingInput {
-  const {
-    applicationMethod: _applicationMethod,
-    eligibilityCriteria: _eligibilityCriteria,
-    ...payload
-  } = {
+  const { eligibilityCriteria: _eligibilityCriteria, ...payload } = {
     ...buildListingPayloadFromForm(data),
     status,
   };
@@ -40,6 +36,13 @@ export function mapListingFormToUpdateListingInput(
     normalizeOptionalString(rawInput.unitNumber) === undefined
   ) {
     patch.unitNumber = null;
+  }
+
+  const applicationUrl = normalizeOptionalString(data.applicationUrl);
+  if (applicationUrl) {
+    patch.applicationUrl = applicationUrl;
+  } else if (rawInput?.applicationUrl !== undefined) {
+    patch.applicationUrl = null;
   }
 
   return patch;
@@ -68,6 +71,13 @@ export function mapListingFormToAutosaveUpdateInput(
     contact.email = contactEmail;
   }
   assignTrimmedString(contact, "phone", data.contactPhone);
+
+  const applicationUrl = normalizeOptionalString(data.applicationUrl);
+  if (applicationUrl && z.httpUrl().safeParse(applicationUrl).success) {
+    patch.applicationUrl = applicationUrl;
+  } else if (data.applicationUrl !== undefined) {
+    patch.applicationUrl = null;
+  }
 
   if (data.unitNumber !== undefined) {
     patch.unitNumber = normalizeOptionalString(data.unitNumber) ?? null;
@@ -179,6 +189,8 @@ async function getApiErrorMessage(response: Response) {
 }
 
 function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput {
+  const applicationUrl = normalizeOptionalString(data.applicationUrl);
+
   return {
     title: data.title,
     name: data.name,
@@ -206,7 +218,7 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
       name: feature.name,
       description: normalizeOptionalString(feature.description) ?? feature.name,
     })),
-    applicationMethod: "internal" as const,
+    applicationUrl: applicationUrl ?? undefined,
     eligibilityCriteria: {},
     images: data.images.flatMap((image) =>
       image.id

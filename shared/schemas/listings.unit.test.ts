@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import {
   createListingSchema,
+  listingEditorDataSchema,
   listingQuerySchema,
   updateListingSchema,
 } from "@/shared/schemas/listings";
@@ -27,8 +28,7 @@ const validCreatePayload = {
   ],
   amenities: ["Laundry"],
   accessibilityFeatures: [{ name: "Ramp entry", description: "Step-free building entry" }],
-  applicationMethod: "external_link" as const,
-  externalApplicationUrl: "https://example.org/apply",
+  applicationUrl: "https://example.org/apply",
   eligibilityCriteria: {},
   images: [{ id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2", caption: "Front exterior" }],
   contact: {
@@ -81,7 +81,7 @@ describe("listing API schemas", () => {
       ...validCreatePayload,
       title: "  Suite 204 at Cedar Court  ",
       name: "  Cedar Court  ",
-      externalApplicationUrl: "  https://example.org/apply  ",
+      applicationUrl: "  https://example.org/apply  ",
       contact: {
         ...validCreatePayload.contact,
         email: "  leasing@example.org  ",
@@ -90,7 +90,7 @@ describe("listing API schemas", () => {
 
     expect(parsed.title).toBe("Suite 204 at Cedar Court");
     expect(parsed.name).toBe("Cedar Court");
-    expect(parsed.externalApplicationUrl).toBe("https://example.org/apply");
+    expect(parsed.applicationUrl).toBe("https://example.org/apply");
     expect(parsed.contact.email).toBe("leasing@example.org");
   });
 
@@ -181,5 +181,41 @@ describe("listing API schemas", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("rejects non-http application URLs", () => {
+    const result = createListingSchema.safeParse({
+      ...validCreatePayload,
+      applicationUrl: "mailto:leasing@example.org",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-http application URLs in listing editor data", () => {
+    const result = listingEditorDataSchema.safeParse({
+      title: "",
+      propertyType: "",
+      buildingType: "",
+      bedrooms: 0,
+      bathrooms: 0,
+      monthlyRentCents: 0,
+      leaseTerm: "",
+      utilitiesIncluded: [],
+      images: [],
+      status: "draft",
+      name: "",
+      street1: "",
+      city: "",
+      province: "",
+      postalCode: "",
+      contactName: "",
+      contactEmail: "",
+      contactPhone: "",
+      applicationUrl: "mailto:leasing@example.org",
+      customFeatures: [],
+    });
+
+    expect(result.success).toBe(false);
   });
 });

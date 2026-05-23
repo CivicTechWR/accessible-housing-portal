@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { Control, UseFormReturn } from "react-hook-form";
 import {
-  trimmedAbsoluteOrRootRelativeUrlString,
   optionalTrimmedStringToUndefined,
   requiredTrimmedString,
+  trimmedAbsoluteOrRootRelativeUrlString,
 } from "@/shared/schemas/string-normalizers";
 
 export const listingImageSchema = z.object({
@@ -18,6 +18,8 @@ export const listingCustomFeatureSchema = z.object({
   name: requiredTrimmedString("Feature name is required"),
   description: requiredTrimmedString("Feature description is required"),
 });
+
+const applicationUrlSchema = z.string().trim().pipe(z.httpUrl());
 
 export const listingFormSchema = z.object({
   title: requiredTrimmedString("Title is required"),
@@ -48,6 +50,12 @@ export const listingFormSchema = z.object({
     .toLowerCase()
     .pipe(z.email("Invalid email")),
   contactPhone: requiredTrimmedString("Contact phone is required"),
+  applicationUrl: z
+    .string()
+    .trim()
+    .transform((value) => (value === "" ? undefined : value))
+    .pipe(applicationUrlSchema.optional())
+    .optional(),
 
   // Selected custom features (includes display data for preview/UI rendering)
   customFeatures: z.array(listingCustomFeatureSchema).default([]),
@@ -88,5 +96,6 @@ export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents"> = 
   contactName: "",
   contactEmail: "",
   contactPhone: "",
+  applicationUrl: undefined,
   customFeatures: [],
 };

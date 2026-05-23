@@ -5,6 +5,7 @@ import {
   buildListingCustomFields,
   buildListingFeatureCategories,
   getDisplayAccessibilityFeatures,
+  getListingApplicationUrl,
 } from "./store";
 
 describe("buildListingFeatureCategories", () => {
@@ -122,7 +123,7 @@ describe("buildListingCustomFields", () => {
           description: "The building has at least one elevator.",
         },
       ],
-      applicationMethod: "internal",
+      applicationUrl: undefined,
       eligibilityCriteria: {},
       images: [],
       contact: {
@@ -170,5 +171,19 @@ describe("getDisplayAccessibilityFeatures", () => {
       "Elevator in Building",
       "Automated Building Doors",
     ]);
+  });
+});
+
+describe("getListingApplicationUrl", () => {
+  it("returns trimmed applicationUrl when provided", () => {
+    expect(getListingApplicationUrl(" https://example.org/apply ")).toBe(
+      "https://example.org/apply",
+    );
+  });
+
+  it("returns undefined when empty", () => {
+    expect(getListingApplicationUrl(null)).toBeUndefined();
+    expect(getListingApplicationUrl(undefined)).toBeUndefined();
+    expect(getListingApplicationUrl("   ")).toBeUndefined();
   });
 });
