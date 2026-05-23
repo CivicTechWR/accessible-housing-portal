@@ -8,10 +8,6 @@ import {
 import { positiveIntegerQueryParamSchema, positiveIntegerQueryParamWithMaxSchema } from "./common";
 
 const nonEmptyString = requiredTrimmedString();
-const applicationUrlSchema = z
-  .string()
-  .trim()
-  .pipe(z.httpUrl({ normalize: true }));
 const listingStatusSchema = z.enum(["draft", "published", "archived"]);
 const hasAtLeastOneField = (value: Record<string, unknown>) => Object.keys(value).length > 0;
 
@@ -117,7 +113,7 @@ export const listingDetailsSchema = z.object({
   timeAgo: nonEmptyString,
   features: z.array(listingFeatureCategorySchema),
   contact: listingContactSchema.optional(),
-  applicationUrl: applicationUrlSchema.optional(),
+  applicationUrl: z.httpUrl({ normalize: true }).optional(),
 });
 
 export const listingSummarySchema = z.object({
@@ -200,7 +196,7 @@ const updateListingBasePayloadSchema = z.object({
   unitStory: z.number().optional(),
   leaseTerm: nonEmptyString.optional(),
   utilitiesIncluded: z.array(nonEmptyString).optional(),
-  applicationUrl: z.union([applicationUrlSchema, z.null()]).optional(),
+  applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
 });
 const updateListingPayloadSchema = updateListingBasePayloadSchema.refine(
   (value) => hasAtLeastOneField(value),
@@ -220,7 +216,7 @@ const listingPayloadSchema = z.object({
   units: z.tuple([listingUnitSchema], listingUnitSchema),
   amenities: z.array(nonEmptyString),
   accessibilityFeatures: z.array(listingFeatureSchema),
-  applicationUrl: applicationUrlSchema.optional(),
+  applicationUrl: z.httpUrl({ normalize: true }).optional(),
   eligibilityCriteria: listingEligibilityCriteriaSchema,
   images: z.array(listingUploadedImageInputSchema),
   contact: listingContactSchema,
@@ -263,7 +259,7 @@ export const listingEditorDataSchema = z.object({
   contactName: z.string(),
   contactEmail: z.string(),
   contactPhone: z.string(),
-  applicationUrl: applicationUrlSchema.optional(),
+  applicationUrl: z.httpUrl({ normalize: true }).optional(),
   customFeatures: z.array(listingEditorFeatureSchema),
 });
 
