@@ -498,7 +498,7 @@ export async function updateListingByIdService(input: {
         nextEligibility.maxIncome === null
           ? null
           : (dollarsToCents(nextEligibility.maxIncome ?? undefined) ?? listing.maxIncomeCents),
-      applicationUrl: nextApplicationUrlResult.nextApplicationUrl as string | null,
+      applicationUrl: nextApplicationUrlResult.nextApplicationUrl,
       applicationEmail: input.payload.contact?.email ?? listing.applicationEmail,
       applicationPhone: input.payload.contact?.phone ?? listing.applicationPhone,
       customFields: nextCustomFields,

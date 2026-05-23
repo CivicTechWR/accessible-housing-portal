@@ -28,8 +28,7 @@ const validCreatePayload = {
   ],
   amenities: ["Laundry"],
   accessibilityFeatures: [{ name: "Ramp entry", description: "Step-free building entry" }],
-  applicationMethod: "external_link" as const,
-  externalApplicationUrl: "https://example.org/apply",
+  applicationUrl: "https://example.org/apply",
   eligibilityCriteria: {},
   images: [{ id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2", caption: "Front exterior" }],
   contact: {
@@ -82,7 +81,7 @@ describe("listing API schemas", () => {
       ...validCreatePayload,
       title: "  Suite 204 at Cedar Court  ",
       name: "  Cedar Court  ",
-      externalApplicationUrl: "  https://example.org/apply  ",
+      applicationUrl: "  https://example.org/apply  ",
       contact: {
         ...validCreatePayload.contact,
         email: "  leasing@example.org  ",
@@ -184,10 +183,10 @@ describe("listing API schemas", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects non-http external application URLs", () => {
+  it("rejects non-http application URLs", () => {
     const result = createListingSchema.safeParse({
       ...validCreatePayload,
-      externalApplicationUrl: "mailto:leasing@example.org",
+      applicationUrl: "mailto:leasing@example.org",
     });
 
     expect(result.success).toBe(false);

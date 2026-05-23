@@ -42,7 +42,7 @@ export function mapListingFormToUpdateListingInput(
   if (applicationUrl) {
     patch.applicationUrl = applicationUrl;
   } else if (rawInput?.applicationUrl !== undefined) {
-    patch.applicationUrl = undefined;
+    patch.applicationUrl = null;
   }
 
   return patch;
@@ -76,7 +76,7 @@ export function mapListingFormToAutosaveUpdateInput(
   if (applicationUrl && z.httpUrl().safeParse(applicationUrl).success) {
     patch.applicationUrl = applicationUrl;
   } else if (data.applicationUrl !== undefined) {
-    patch.applicationUrl = undefined;
+    patch.applicationUrl = null;
   }
 
   if (data.unitNumber !== undefined) {

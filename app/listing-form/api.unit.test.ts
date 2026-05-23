@@ -82,7 +82,7 @@ describe("mapListingFormToCreateListingInput", () => {
           description: "Step-free building entry",
         },
       ],
-      applicationMethod: "internal",
+      applicationUrl: undefined,
       eligibilityCriteria: {},
       images: [
         {
@@ -139,7 +139,7 @@ describe("mapListingFormToCreateListingInput", () => {
     expect(payload.units[0]?.availableDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("maps an application URL to the external application payload", () => {
+  it("maps an application URL to the create payload", () => {
     expect(
       mapListingFormToCreateListingInput({
         ...validFormData,
@@ -173,8 +173,7 @@ describe("mapListingFormToCreateListingInput", () => {
           description: "Step-free building entry",
         },
       ],
-      applicationMethod: "external_link",
-      externalApplicationUrl: "https://example.org/apply",
+      applicationUrl: "https://example.org/apply",
       eligibilityCriteria: {},
       images: [
         {
@@ -247,7 +246,7 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
-  it("maps application URLs on full updates to the external application method", () => {
+  it("maps application URLs on full updates", () => {
     expect(
       mapListingFormToUpdateListingInput(
         {
@@ -257,12 +256,11 @@ describe("mapListingFormToCreateListingInput", () => {
         "published",
       ),
     ).toMatchObject({
-      applicationMethod: "external_link",
-      externalApplicationUrl: "https://example.org/apply",
+      applicationUrl: "https://example.org/apply",
     });
   });
 
-  it("maps explicitly cleared application URLs on full updates to the internal method", () => {
+  it("maps explicitly cleared application URLs on full updates to null", () => {
     expect(
       mapListingFormToUpdateListingInput(
         {
@@ -276,7 +274,7 @@ describe("mapListingFormToCreateListingInput", () => {
         },
       ),
     ).toMatchObject({
-      applicationMethod: "internal",
+      applicationUrl: null,
     });
   });
 
@@ -382,8 +380,7 @@ describe("mapListingFormToCreateListingInput", () => {
       }),
     ).toEqual({
       title: "Draft title",
-      applicationMethod: "external_link",
-      externalApplicationUrl: "https://example.org/apply",
+      applicationUrl: "https://example.org/apply",
       accessibilityFeatures: [],
       images: [],
       status: "draft",
@@ -408,7 +405,7 @@ describe("mapListingFormToCreateListingInput", () => {
       }),
     ).toEqual({
       title: "Draft title",
-      applicationMethod: "internal",
+      applicationUrl: null,
       accessibilityFeatures: [],
       images: [],
       status: "draft",
@@ -433,7 +430,7 @@ describe("mapListingFormToCreateListingInput", () => {
       }),
     ).toEqual({
       title: "Draft title",
-      applicationMethod: "internal",
+      applicationUrl: null,
       accessibilityFeatures: [],
       images: [],
       status: "draft",
