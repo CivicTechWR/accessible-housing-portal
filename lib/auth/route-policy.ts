@@ -7,20 +7,17 @@ type RoutePattern = `/${string}`;
 
 const PROTECTED_PAGE_PATTERNS = [
   "/admin/:path*",
+  "/listings/:path*",
   "/listing-form/:path*",
   "/my-listings/:path*",
 ] as const;
 
-const PROTECTED_API_PATTERNS = ["/api/admin/:path*"] as const;
-
-const LISTING_WRITE_API_PATTERNS = ["/api/listings/:path*"] as const;
+const PROTECTED_API_PATTERNS = ["/api/admin/:path*", "/api/listings/:path*"] as const;
 
 export function requiresAuthSessionForRequest(request: RouteRequest) {
   return (
     matchesAnyRoutePattern(request.pathname, PROTECTED_PAGE_PATTERNS) ||
-    matchesAnyRoutePattern(request.pathname, PROTECTED_API_PATTERNS) ||
-    (request.method !== "GET" &&
-      matchesAnyRoutePattern(request.pathname, LISTING_WRITE_API_PATTERNS))
+    matchesAnyRoutePattern(request.pathname, PROTECTED_API_PATTERNS)
   );
 }
 
