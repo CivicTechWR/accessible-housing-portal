@@ -63,7 +63,7 @@ describe("buildListingFeatureCategories", () => {
     ]);
   });
 
-  it("maps legacy accessibility labels onto canonical boolean field labels", () => {
+  it("ignores legacy accessibility arrays when building public feature categories", () => {
     const features = buildListingFeatureCategories(
       {
         accessibilityFeatures: ["Elevator access"],
@@ -79,64 +79,62 @@ describe("buildListingFeatureCategories", () => {
       ],
     );
 
-    expect(features).toEqual([
-      {
-        categoryName: "BUILDING AMENITIES",
-        features: [
-          {
-            name: "Elevator in Building",
-            description: "The building has at least one elevator.",
-          },
-        ],
-      },
-    ]);
+    expect(features).toEqual([]);
   });
 });
 
 describe("buildListingCustomFields", () => {
   it("persists selected feature ids as boolean custom fields", () => {
-    const customFields = buildListingCustomFields({
-      title: "Accessible listing",
-      name: "Cedar Court",
-      description: undefined,
-      address: {
-        street: "123 Main Street",
-        street2: undefined,
-        city: "Waterloo",
-        province: "ON",
-        postalCode: "N2L 3A1",
-      },
-      units: [
-        {
-          bedrooms: 1,
-          bathrooms: 1,
-          sqft: 600,
-          rent: 1500,
-          availableDate: "2026-05-01",
+    const customFields = buildListingCustomFields(
+      {
+        title: "Accessible listing",
+        name: "Cedar Court",
+        description: undefined,
+        address: {
+          street: "123 Main Street",
+          street2: undefined,
+          city: "Waterloo",
+          province: "ON",
+          postalCode: "N2L 3A1",
         },
-      ],
-      amenities: [],
-      accessibilityFeatures: [
+        units: [
+          {
+            bedrooms: 1,
+            bathrooms: 1,
+            sqft: 600,
+            rent: 1500,
+            availableDate: "2026-05-01",
+          },
+        ],
+        accessibilityFeatures: [
+          {
+            id: "elevator_in_building",
+            name: "Elevator in Building",
+            description: "The building has at least one elevator.",
+          },
+        ],
+        applicationUrl: undefined,
+        images: [],
+        contact: {
+          name: "Leasing Office",
+          email: "leasing@example.org",
+          phone: "519-555-0100",
+        },
+        status: "draft",
+        buildingType: "apartment",
+        leaseTermMonths: 12,
+        utilitiesIncluded: [],
+      },
+      [
         {
-          id: "elevator_in_building",
-          name: "Elevator in Building",
+          key: "elevator_in_building",
+          label: "Elevator in Building",
           description: "The building has at least one elevator.",
+          category: "BUILDING AMENITIES",
+          sortOrder: 1,
         },
       ],
-      applicationUrl: undefined,
-      eligibilityCriteria: {},
-      images: [],
-      contact: {
-        name: "Leasing Office",
-        email: "leasing@example.org",
-        phone: "519-555-0100",
-      },
-      status: "draft",
-      propertyType: "Rent",
-      buildingType: "Apartment",
-      leaseTerm: "1 year",
-      utilitiesIncluded: [],
-    });
+    );
 
     expect(customFields.elevator_in_building).toBe(true);
     expect(customFields.accessibilityFeatures).toBeUndefined();
@@ -144,10 +142,11 @@ describe("buildListingCustomFields", () => {
 });
 
 describe("getDisplayAccessibilityFeatures", () => {
-  it("prefers canonical labels from boolean definitions for legacy feature values", () => {
+  it("uses canonical labels from boolean custom field definitions", () => {
     const features = getDisplayAccessibilityFeatures(
       {
-        accessibilityFeatures: ["Automatic door opener", "Elevator access"],
+        automated_building_doors: true,
+        elevator_in_building: true,
       } satisfies ListingCustomFields,
       [
         {

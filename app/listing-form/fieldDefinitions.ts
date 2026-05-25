@@ -1,4 +1,5 @@
-import type { ListingFormInput } from "./types";
+import { LISTING_BUILDING_TYPE_VALUES } from "@/shared/schemas/listings";
+import { LEASE_TERM_MONTH_VALUES, type ListingFormInput } from "./types";
 
 export type CoreFieldType = "text" | "number" | "select" | "textarea" | "email" | "tel" | "url";
 
@@ -77,21 +78,8 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: false,
     sortOrder: 2,
-    placeholder: "Short description of the unit and amenities...",
+    placeholder: "Short description of the unit and building...",
     colSpan: 2,
-  },
-  {
-    key: "propertyType",
-    displayName: "Rental Type",
-    fieldType: "select",
-    category: "listing_details",
-    isRequired: true,
-    sortOrder: 3,
-    options: [
-      { label: "Rent", value: "Rent" },
-      { label: "Sublet", value: "Sublet" },
-      { label: "Lease Transfer", value: "Lease Transfer" },
-    ],
   },
   {
     key: "buildingType",
@@ -99,22 +87,13 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "select",
     category: "listing_details",
     isRequired: true,
-    sortOrder: 4,
+    sortOrder: 3,
     options: [
-      { label: "Apartment", value: "Apartment" },
-      { label: "House", value: "House" },
-      { label: "Townhouse", value: "Townhouse" },
-      { label: "Condo", value: "Condo" },
+      { label: "Apartment", value: LISTING_BUILDING_TYPE_VALUES[0] },
+      { label: "House", value: LISTING_BUILDING_TYPE_VALUES[1] },
+      { label: "Townhouse", value: LISTING_BUILDING_TYPE_VALUES[2] },
+      { label: "Condo", value: LISTING_BUILDING_TYPE_VALUES[3] },
     ],
-  },
-  {
-    key: "unitStory",
-    displayName: "Floor",
-    fieldType: "number",
-    category: "listing_details",
-    isRequired: false,
-    sortOrder: 5,
-    placeholder: "E.g. 1",
   },
   {
     key: "unitNumber",
@@ -122,7 +101,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "text",
     category: "listing_details",
     isRequired: false,
-    sortOrder: 6,
+    sortOrder: 4,
     placeholder: "Optional",
   },
   {
@@ -131,7 +110,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "number",
     category: "listing_details",
     isRequired: true,
-    sortOrder: 7,
+    sortOrder: 5,
     placeholder: "0 for studio",
   },
   {
@@ -140,7 +119,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "number",
     category: "listing_details",
     isRequired: true,
-    sortOrder: 8,
+    sortOrder: 6,
     placeholder: "E.g. 1.5",
   },
   {
@@ -149,7 +128,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "number",
     category: "listing_details",
     isRequired: false,
-    sortOrder: 9,
+    sortOrder: 7,
   },
   {
     key: "monthlyRentCents",
@@ -157,7 +136,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "number",
     category: "listing_details",
     isRequired: true,
-    sortOrder: 10,
+    sortOrder: 8,
     placeholder: "E.g. 1500",
     helpText: "Enter the monthly rent in dollars. Stored in cents internally.",
   },
@@ -167,12 +146,12 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "select",
     category: "listing_details",
     isRequired: true,
-    sortOrder: 11,
+    sortOrder: 9,
     options: [
-      { label: "Month-to-month", value: "Month-to-month" },
-      { label: "6 months", value: "6 months" },
-      { label: "1 year", value: "1 year" },
-      { label: "2 years", value: "2 years" },
+      { label: "Month-to-month", value: LEASE_TERM_MONTH_VALUES[0] },
+      { label: "6 months", value: LEASE_TERM_MONTH_VALUES[1] },
+      { label: "1 year", value: LEASE_TERM_MONTH_VALUES[2] },
+      { label: "2 years", value: LEASE_TERM_MONTH_VALUES[3] },
     ],
   },
 
@@ -182,7 +161,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "text",
     category: "property_info",
     isRequired: true,
-    sortOrder: 12,
+    sortOrder: 10,
     placeholder: "E.g. Elm Village",
   },
   {
@@ -191,7 +170,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "text",
     category: "property_info",
     isRequired: true,
-    sortOrder: 13,
+    sortOrder: 11,
   },
   {
     key: "street2",
@@ -199,7 +178,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "text",
     category: "property_info",
     isRequired: false,
-    sortOrder: 14,
+    sortOrder: 12,
   },
   {
     key: "city",
@@ -207,7 +186,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "text",
     category: "property_info",
     isRequired: true,
-    sortOrder: 15,
+    sortOrder: 13,
   },
   {
     key: "province",
@@ -215,7 +194,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "text",
     category: "property_info",
     isRequired: true,
-    sortOrder: 16,
+    sortOrder: 14,
   },
   {
     key: "postalCode",
@@ -223,7 +202,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "text",
     category: "property_info",
     isRequired: true,
-    sortOrder: 17,
+    sortOrder: 15,
   },
   {
     key: "contactName",
@@ -231,7 +210,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "text",
     category: "property_info",
     isRequired: true,
-    sortOrder: 18,
+    sortOrder: 16,
   },
   {
     key: "contactEmail",
@@ -239,7 +218,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "email",
     category: "property_info",
     isRequired: true,
-    sortOrder: 19,
+    sortOrder: 17,
   },
   {
     key: "contactPhone",
@@ -247,7 +226,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "tel",
     category: "property_info",
     isRequired: true,
-    sortOrder: 20,
+    sortOrder: 18,
   },
   {
     key: "applicationUrl",
@@ -255,7 +234,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "url",
     category: "property_info",
     isRequired: false,
-    sortOrder: 21,
+    sortOrder: 19,
     placeholder: "https://example.org/apply",
   },
 ];

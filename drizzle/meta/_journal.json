@@ -43,6 +43,13 @@
       "when": 1776822419636,
       "tag": "20260422014659_listing_image_uploads_and_draft_authoring",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779735372627,
+      "tag": "20260525185612_add_listing_built_in_field_columns",
+      "breakpoints": true
     }
   ]
 }

@@ -26,10 +26,8 @@ const validCreatePayload = {
       availableDate: "2026-05-01",
     },
   ],
-  amenities: ["Laundry"],
   accessibilityFeatures: [{ name: "Ramp entry", description: "Step-free building entry" }],
   applicationUrl: "https://example.org/apply",
-  eligibilityCriteria: {},
   images: [{ id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2", caption: "Front exterior" }],
   contact: {
     name: "Leasing Office",
@@ -38,11 +36,9 @@ const validCreatePayload = {
   },
   status: "draft" as const,
   unitNumber: "204",
-  propertyType: "Rent",
-  buildingType: "Apartment",
-  unitStory: 2,
-  leaseTerm: "1 year",
-  utilitiesIncluded: ["Heat"],
+  buildingType: "apartment",
+  leaseTermMonths: 12,
+  utilitiesIncluded: ["heat"],
 };
 
 describe("listing API schemas", () => {
@@ -120,10 +116,6 @@ describe("listing API schemas", () => {
   it("rejects effectively empty nested updates", () => {
     const cases = [
       { payload: { address: {} }, message: "Address update must include at least one field." },
-      {
-        payload: { eligibilityCriteria: {} },
-        message: "Eligibility criteria update must include at least one field.",
-      },
       { payload: { contact: {} }, message: "Contact update must include at least one field." },
       { payload: { units: [{}] }, message: "Each unit update must include at least one field." },
     ];
@@ -144,7 +136,6 @@ describe("listing API schemas", () => {
       title: "Updated Title",
       address: { city: "Waterloo" },
       contact: { email: "Leasing@Example.com" },
-      eligibilityCriteria: { minAge: 55 },
       units: [{ rent: 1800 }],
     });
 
@@ -195,7 +186,6 @@ describe("listing API schemas", () => {
   it("rejects non-http application URLs in listing editor data", () => {
     const result = listingEditorDataSchema.safeParse({
       title: "",
-      propertyType: "",
       buildingType: "",
       bedrooms: 0,
       bathrooms: 0,
