@@ -670,7 +670,7 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     bathrooms: listing.bathrooms,
     squareFeet: listing.squareFeet ?? undefined,
     monthlyRentCents: listing.monthlyRentCents,
-    leaseTerm: listing.leaseTermMonths?.toString() ?? "",
+    leaseTerm: listing.leaseTermMonths ?? undefined,
     utilitiesIncluded: [...listing.utilitiesIncluded],
     images: imageRows.map((image) => ({
       id: image.id,

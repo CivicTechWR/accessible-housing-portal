@@ -190,7 +190,6 @@ describe("listing API schemas", () => {
       bedrooms: 0,
       bathrooms: 0,
       monthlyRentCents: 0,
-      leaseTerm: "",
       utilitiesIncluded: [],
       images: [],
       status: "draft",

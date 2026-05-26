@@ -18,21 +18,6 @@ export const DEFAULT_PROPERTY_COUNTRY = "Canada";
 
 type StoredListingFeature = NonNullable<ListingDetails["accessibilityFeatures"]>[number];
 
-const BUILT_IN_LISTING_CUSTOM_FIELD_KEYS = [
-  "propertyType",
-  "buildingType",
-  "unitStory",
-  "leaseTerm",
-  "utilitiesIncluded",
-  "amenities",
-  "eligibilityCriteria",
-  "units",
-  "applicationMethod",
-  "applicationUrl",
-  "externalApplicationUrl",
-  "accessibilityFeatures",
-] as const;
-
 export function buildListingCustomFields(
   input: CreateListingInput,
   definitions: ListingFeatureDefinition[],
@@ -49,7 +34,7 @@ export function mergeListingCustomFields(
   input: UpdateListingInput,
   definitions: ListingFeatureDefinition[],
 ): ListingCustomFields {
-  const next = stripBuiltInListingCustomFields(existing);
+  const next = { ...existing };
 
   if (input.accessibilityFeatures !== undefined) {
     applyAccessibilityFeatureState(next, input.accessibilityFeatures, definitions);
@@ -130,8 +115,8 @@ function applyAccessibilityFeatureState(
 ) {
   const allowedKeys = new Set(definitions.map((definition) => definition.key));
 
-  for (const key of getEnabledBooleanCustomFieldKeys(customFields)) {
-    delete customFields[key];
+  for (const definition of definitions) {
+    delete customFields[definition.key];
   }
 
   if (!features) {
@@ -198,14 +183,4 @@ export function centsToDollars(amountInCents: number) {
 
 export function dollarsToCents(amount: number | undefined) {
   return amount === undefined ? null : Math.round(amount * 100);
-}
-
-function stripBuiltInListingCustomFields(existing: ListingCustomFields) {
-  const next: ListingCustomFields = { ...existing };
-
-  for (const key of BUILT_IN_LISTING_CUSTOM_FIELD_KEYS) {
-    delete next[key];
-  }
-
-  return next;
 }

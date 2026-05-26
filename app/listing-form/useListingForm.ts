@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { mapListingFormToAutosaveUpdateInput, mapListingFormToUpdateListingInput } from "./api";
@@ -30,7 +30,11 @@ export function useListingForm(initialListingId?: string) {
   } | null>(null);
   const [autosaveFeedback, setAutosaveFeedback] = useState<string | null>(null);
   const form = useForm<ListingFormInput, ListingFormContext, ListingFormData>({
-    resolver: zodResolver(listingFormSchema),
+    resolver: zodResolver(listingFormSchema) as Resolver<
+      ListingFormInput,
+      ListingFormContext,
+      ListingFormData
+    >,
     defaultValues: CREATE_FORM_DEFAULTS,
   });
   const watchedValues = useWatch({

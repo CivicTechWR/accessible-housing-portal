@@ -234,7 +234,7 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
     status: data.status,
     unitNumber: normalizeOptionalString(data.unitNumber),
     buildingType: data.buildingType,
-    leaseTermMonths: Number(data.leaseTerm),
+    leaseTermMonths: data.leaseTerm,
     utilitiesIncluded: data.utilitiesIncluded,
   };
 }
@@ -256,13 +256,6 @@ function assignTrimmedString(
   }
 }
 
-function parseLeaseTermMonths(value: string | undefined) {
-  const normalized = normalizeOptionalString(value);
-
-  if (!normalized) {
-    return undefined;
-  }
-
-  const months = Number(normalized);
-  return Number.isInteger(months) && months > 0 ? months : undefined;
+function parseLeaseTermMonths(value: number | undefined) {
+  return value !== undefined && Number.isInteger(value) && value > 0 ? value : undefined;
 }

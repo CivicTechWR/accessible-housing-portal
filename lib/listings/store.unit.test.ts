@@ -6,6 +6,7 @@ import {
   buildListingFeatureCategories,
   getDisplayAccessibilityFeatures,
   getListingApplicationUrl,
+  mergeListingCustomFields,
 } from "./store";
 
 describe("buildListingFeatureCategories", () => {
@@ -138,6 +139,51 @@ describe("buildListingCustomFields", () => {
 
     expect(customFields.elevator_in_building).toBe(true);
     expect(customFields.accessibilityFeatures).toBeUndefined();
+  });
+});
+
+describe("mergeListingCustomFields", () => {
+  it("preserves unmanaged custom fields while replacing selected feature ids", () => {
+    const customFields = mergeListingCustomFields(
+      {
+        accessibilityFeatures: ["Elevator access"],
+        amenities: ["Laundry"],
+        elevator_in_building: true,
+        unrelated_boolean: true,
+      } satisfies ListingCustomFields,
+      {
+        accessibilityFeatures: [
+          {
+            id: "automated_building_doors",
+            name: "Automated Building Doors",
+            description: "Common-area doors open automatically.",
+          },
+        ],
+      },
+      [
+        {
+          key: "elevator_in_building",
+          label: "Elevator in Building",
+          description: "The building has at least one elevator.",
+          category: "BUILDING AMENITIES",
+          sortOrder: 1,
+        },
+        {
+          key: "automated_building_doors",
+          label: "Automated Building Doors",
+          description: "Common-area doors open automatically.",
+          category: "BUILDING AMENITIES",
+          sortOrder: 2,
+        },
+      ],
+    );
+
+    expect(customFields).toEqual({
+      accessibilityFeatures: ["Elevator access"],
+      amenities: ["Laundry"],
+      unrelated_boolean: true,
+      automated_building_doors: true,
+    });
   });
 });
 

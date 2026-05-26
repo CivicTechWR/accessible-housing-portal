@@ -7,14 +7,6 @@ import {
 } from "@/shared/schemas/string-normalizers";
 import { LISTING_BUILDING_TYPE_VALUES, UTILITY_INCLUDED_VALUES } from "@/shared/schemas/listings";
 
-export const LEASE_TERM_MONTH_VALUES = ["1", "6", "12", "24"] as const;
-
-const requiredSelectValue = <TValue extends string>(values: readonly TValue[], message: string) =>
-  z
-    .string()
-    .trim()
-    .refine((value): value is TValue => values.includes(value as TValue), message);
-
 export const listingImageSchema = z.object({
   id: z.uuid("Invalid uploaded image id").optional(),
   url: trimmedAbsoluteOrRootRelativeUrlString("Image URL is invalid"),
@@ -33,12 +25,12 @@ const applicationUrlSchema = z.string().trim().pipe(z.httpUrl());
 export const listingFormSchema = z.object({
   title: requiredTrimmedString("Title is required"),
   description: optionalTrimmedStringToUndefined(),
-  buildingType: requiredSelectValue(LISTING_BUILDING_TYPE_VALUES, "Building type is required"),
+  buildingType: z.enum(LISTING_BUILDING_TYPE_VALUES),
   bedrooms: z.number({ message: "Bedrooms are required" }).min(0, "Invalid number of bedrooms"),
   bathrooms: z.number({ message: "Bathrooms are required" }).min(0, "Invalid number of bathrooms"),
   squareFeet: z.number().optional(),
   monthlyRentCents: z.number({ message: "Rent is required" }).min(0, "Rent cannot be negative"),
-  leaseTerm: requiredSelectValue(LEASE_TERM_MONTH_VALUES, "Lease term is required"),
+  leaseTerm: z.number().int().positive(),
   utilitiesIncluded: z.array(z.enum(UTILITY_INCLUDED_VALUES)).default([]),
   images: z.array(listingImageSchema).default([]),
   availableOn: optionalTrimmedStringToUndefined(),
@@ -68,7 +60,11 @@ export const listingFormSchema = z.object({
   customFeatures: z.array(listingCustomFeatureSchema).default([]),
 });
 
-export type ListingFormInput = z.input<typeof listingFormSchema>;
+type ListingFormSchemaInput = z.input<typeof listingFormSchema>;
+export type ListingFormInput = Omit<ListingFormSchemaInput, "buildingType" | "leaseTerm"> & {
+  buildingType: string;
+  leaseTerm?: number;
+};
 export type ListingFormData = z.output<typeof listingFormSchema>;
 export type ListingFormImage = z.output<typeof listingImageSchema>;
 export type ListingFormContext = Record<string, never>;
@@ -79,14 +75,13 @@ export type ListingFormMethods = UseFormReturn<
   ListingFormData
 >;
 
-export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents"> = {
+export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents" | "leaseTerm"> = {
   title: "",
   description: "",
   buildingType: "",
   bedrooms: 0,
   bathrooms: 0,
   squareFeet: undefined,
-  leaseTerm: "",
   utilitiesIncluded: [],
   images: [],
   availableOn: undefined,

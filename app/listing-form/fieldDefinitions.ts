@@ -1,5 +1,5 @@
 import { LISTING_BUILDING_TYPE_VALUES } from "@/shared/schemas/listings";
-import { LEASE_TERM_MONTH_VALUES, type ListingFormInput } from "./types";
+import type { ListingFormInput } from "./types";
 
 export type CoreFieldType = "text" | "number" | "select" | "textarea" | "email" | "tel" | "url";
 
@@ -143,16 +143,12 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   {
     key: "leaseTerm",
     displayName: "Lease Term",
-    fieldType: "select",
+    fieldType: "number",
     category: "listing_details",
     isRequired: true,
     sortOrder: 9,
-    options: [
-      { label: "Month-to-month", value: LEASE_TERM_MONTH_VALUES[0] },
-      { label: "6 months", value: LEASE_TERM_MONTH_VALUES[1] },
-      { label: "1 year", value: LEASE_TERM_MONTH_VALUES[2] },
-      { label: "2 years", value: LEASE_TERM_MONTH_VALUES[3] },
-    ],
+    placeholder: "E.g. 12",
+    helpText: "Enter the lease term in months.",
   },
 
   {

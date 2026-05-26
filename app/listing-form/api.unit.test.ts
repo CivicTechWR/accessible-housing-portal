@@ -19,7 +19,7 @@ const validFormData: ListingFormData = {
   bathrooms: 1.5,
   squareFeet: 920,
   monthlyRentCents: 185000,
-  leaseTerm: "12",
+  leaseTerm: 12,
   availableOn: "2026-05-01",
   status: "draft",
   unitNumber: "204",

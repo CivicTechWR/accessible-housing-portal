@@ -34,7 +34,6 @@ export const listingBuildingTypeEnum = pgEnum("listing_building_type", [
 export const utilityIncludedEnum = pgEnum("utility_included", [
   "heat",
   "water",
-  "hydro",
   "electricity",
   "gas",
   "internet",

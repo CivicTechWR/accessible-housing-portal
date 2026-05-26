@@ -369,7 +369,7 @@ export const mockListingSeedListings: SeedListing[] = [
       availableOn: "2026-05-28",
       buildingType: "condo",
       leaseTermMonths: 12,
-      utilitiesIncluded: ["heat", "water", "hydro"],
+      utilitiesIncluded: ["heat", "water", "electricity"],
       maxIncomeCents: 6400000,
       applicationUrl: null,
       applicationEmail: "leasing@waterloocoop.example.com",

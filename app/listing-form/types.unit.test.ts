@@ -12,7 +12,7 @@ const validFormInput: ListingFormInput = {
   bedrooms: 2,
   bathrooms: 1,
   monthlyRentCents: 185000,
-  leaseTerm: "12",
+  leaseTerm: 12,
   name: "Cedar Court",
   street1: "123 Main Street",
   city: "Waterloo",
