@@ -9,9 +9,11 @@ import {
   listings,
   properties,
   type ListingCustomFields,
+  type ListingBuildingType,
   type ListingStatus,
+  type UtilityIncluded,
 } from "@/db/schema";
-import { DEFAULT_PROPERTY_COUNTRY, dollarsToCents } from "@/lib/listings/store";
+import { DEFAULT_PROPERTY_COUNTRY } from "@/lib/listings/store";
 import type {
   CreateListingInput,
   ListingIdParam,
@@ -40,11 +42,14 @@ export type ListingRecord = {
   description: string | null;
   status: ListingStatus;
   unitNumber: string | null;
+  buildingType: ListingBuildingType | null;
   bedrooms: number;
   bathrooms: number;
   squareFeet: number | null;
   monthlyRentCents: number;
   availableOn: string | null;
+  leaseTermMonths: number | null;
+  utilitiesIncluded: UtilityIncluded[];
   maxIncomeCents: number | null;
   applicationUrl: string | null;
   applicationEmail: string | null;
@@ -162,11 +167,14 @@ export async function findListingRecordById(
       description: listings.description,
       status: listings.status,
       unitNumber: listings.unitNumber,
+      buildingType: listings.buildingType,
       bedrooms: listings.bedrooms,
       bathrooms: listings.bathrooms,
       squareFeet: listings.squareFeet,
       monthlyRentCents: listings.monthlyRentCents,
       availableOn: listings.availableOn,
+      leaseTermMonths: listings.leaseTermMonths,
+      utilitiesIncluded: listings.utilitiesIncluded,
       maxIncomeCents: listings.maxIncomeCents,
       applicationUrl: listings.applicationUrl,
       applicationEmail: listings.applicationEmail,
@@ -384,30 +392,20 @@ export async function createDraftListing(input: { actorUserId: string }) {
         description: null,
         status: "draft",
         unitNumber: null,
+        buildingType: null,
         bedrooms: 0,
         bathrooms: 0,
         squareFeet: null,
         monthlyRentCents: 0,
         availableOn: null,
+        leaseTermMonths: null,
+        utilitiesIncluded: [],
         maxIncomeCents: null,
         applicationUrl: null,
         applicationEmail: "",
         applicationPhone: "",
         applicationInstructions: null,
-        customFields: {
-          units: [
-            {
-              bedrooms: 0,
-              bathrooms: 0,
-              rent: 0,
-            },
-          ],
-          amenities: [],
-          accessibilityFeatures: [],
-          applicationUrl: null,
-          eligibilityCriteria: {},
-          utilitiesIncluded: [],
-        },
+        customFields: {},
         publishedAt: null,
         archivedAt: null,
       })
@@ -498,12 +496,15 @@ export async function createListing(input: {
         description: input.payload.description ?? null,
         status: input.payload.status,
         unitNumber: input.payload.unitNumber ?? null,
+        buildingType: input.payload.buildingType,
         bedrooms: primaryUnit.bedrooms,
         bathrooms: primaryUnit.bathrooms,
         squareFeet: primaryUnit.sqft ?? null,
         monthlyRentCents: input.primaryUnitRentCents,
         availableOn: primaryUnit.availableDate ?? null,
-        maxIncomeCents: dollarsToCents(input.payload.eligibilityCriteria.maxIncome),
+        leaseTermMonths: input.payload.leaseTermMonths,
+        utilitiesIncluded: input.payload.utilitiesIncluded ?? [],
+        maxIncomeCents: null,
         applicationUrl: input.payload.applicationUrl ?? null,
         applicationEmail: input.payload.contact.email,
         applicationPhone: input.payload.contact.phone,
@@ -568,11 +569,14 @@ export async function updateListingGraph(input: {
     description: string | null;
     status: ListingStatus;
     unitNumber: string | null;
+    buildingType: ListingBuildingType | null;
     bedrooms: number;
     bathrooms: number;
     squareFeet: number | null;
     monthlyRentCents: number;
     availableOn: string | null;
+    leaseTermMonths: number | null;
+    utilitiesIncluded: UtilityIncluded[];
     maxIncomeCents: number | null;
     applicationUrl: string | null;
     applicationEmail: string | null;
@@ -611,11 +615,14 @@ export async function updateListingGraph(input: {
         description: input.listing.description,
         status: input.listing.status,
         unitNumber: input.listing.unitNumber,
+        buildingType: input.listing.buildingType,
         bedrooms: input.listing.bedrooms,
         bathrooms: input.listing.bathrooms,
         squareFeet: input.listing.squareFeet,
         monthlyRentCents: input.listing.monthlyRentCents,
         availableOn: input.listing.availableOn,
+        leaseTermMonths: input.listing.leaseTermMonths,
+        utilitiesIncluded: input.listing.utilitiesIncluded,
         maxIncomeCents: input.listing.maxIncomeCents,
         applicationUrl: input.listing.applicationUrl,
         applicationEmail: input.listing.applicationEmail,

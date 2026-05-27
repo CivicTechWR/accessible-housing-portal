@@ -4,10 +4,7 @@ import { asc, desc, type SQL } from "drizzle-orm";
 
 import { listings } from "@/db/schema";
 import type { getOptionalSession } from "@/lib/auth/session";
-import {
-  buildListingFeatureDefinitionLookup,
-  normalizeListingFeatureToken,
-} from "@/lib/listings/listing-feature-definitions";
+import { buildListingFeatureDefinitionLookup } from "@/lib/listings/listing-feature-definitions";
 import {
   buildListingFeatureCategories,
   buildListingCustomFields,
@@ -20,12 +17,6 @@ import {
   getEnabledBooleanCustomFieldKeys,
   getListingApplicationUrl,
   getListingSquareFeet,
-  getStoredAccessibilityFeatures,
-  getStoredEligibilityCriteria,
-  getStoredNumber,
-  getStoredString,
-  getStoredStringArray,
-  getStoredUnits,
   mergeListingCustomFields,
   resolveListingStatusTimestamps,
 } from "@/lib/listings/store";
@@ -166,7 +157,7 @@ export async function getListingsService(query: ListingQuery): Promise<ListingLi
         city: row.city,
         beds: row.bedrooms,
         baths: row.bathrooms,
-        sqft: getListingSquareFeet(row.squareFeet, row.customFields),
+        sqft: getListingSquareFeet(row.squareFeet),
         accessibilityFeatures: accessibilityFeatures.length > 0 ? accessibilityFeatures : undefined,
         imageUrl: imageByListingId.get(row.id),
         timeAgo: formatListingTimeAgo(row.publishedAt, row.createdAt),
@@ -377,7 +368,7 @@ export async function getMyListingsService(): Promise<
       city: row.city || "Location pending",
       beds: row.bedrooms,
       baths: row.bathrooms,
-      sqft: getListingSquareFeet(row.squareFeet, row.customFields),
+      sqft: getListingSquareFeet(row.squareFeet),
       imageUrl: imageByListingId.get(row.id),
       updatedAt: row.updatedAt.toISOString(),
       publishedAt: row.publishedAt?.toISOString(),
@@ -400,7 +391,8 @@ export async function createListingService(
   const primaryUnitRentCents = Math.round(primaryUnit.rent * 100);
 
   const statusTimestamps = resolveListingStatusTimestamps(payload.status);
-  const customFields = buildListingCustomFields(payload);
+  const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
+  const customFields = buildListingCustomFields(payload, publicBooleanDefinitions);
 
   const createdListing = await createListing({
     actorUserId: actorResult.value.actor.userId,
@@ -448,10 +440,13 @@ export async function updateListingByIdService(input: {
     return fail("forbidden", "Forbidden");
   }
 
-  const nextCustomFields = mergeListingCustomFields(listing.customFields, input.payload);
-  const nextUnits = getStoredUnits(nextCustomFields);
-  const primaryUnit = nextUnits[0];
-  const nextEligibility = getStoredEligibilityCriteria(nextCustomFields);
+  const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
+  const nextCustomFields = mergeListingCustomFields(
+    listing.customFields,
+    input.payload,
+    publicBooleanDefinitions,
+  );
+  const primaryUnit = input.payload.units?.[0];
   const nextStatus = input.payload.status ?? listing.status;
   const nextApplicationUrlResult = resolveNextApplicationUrl({
     payload: input.payload,
@@ -489,15 +484,15 @@ export async function updateListingByIdService(input: {
       status: nextStatus,
       unitNumber:
         input.payload.unitNumber === undefined ? listing.unitNumber : input.payload.unitNumber,
+      buildingType: input.payload.buildingType ?? listing.buildingType,
       bedrooms: primaryUnit?.bedrooms ?? listing.bedrooms,
       bathrooms: primaryUnit?.bathrooms ?? listing.bathrooms,
       squareFeet: primaryUnit?.sqft ?? listing.squareFeet,
       monthlyRentCents,
       availableOn: primaryUnit?.availableDate ?? listing.availableOn,
-      maxIncomeCents:
-        nextEligibility.maxIncome === null
-          ? null
-          : (dollarsToCents(nextEligibility.maxIncome ?? undefined) ?? listing.maxIncomeCents),
+      leaseTermMonths: input.payload.leaseTermMonths ?? listing.leaseTermMonths,
+      utilitiesIncluded: input.payload.utilitiesIncluded ?? listing.utilitiesIncluded,
+      maxIncomeCents: listing.maxIncomeCents,
       applicationUrl: nextApplicationUrlResult.nextApplicationUrl,
       applicationEmail: input.payload.contact?.email ?? listing.applicationEmail,
       applicationPhone: input.payload.contact?.phone ?? listing.applicationPhone,
@@ -622,7 +617,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
     },
     beds: listing.bedrooms,
     baths: listing.bathrooms,
-    sqft: getListingSquareFeet(listing.squareFeet, listing.customFields),
+    sqft: getListingSquareFeet(listing.squareFeet),
     accessibilityFeatures: getDisplayAccessibilityFeatures(
       listing.customFields,
       featureDefinitions,
@@ -647,8 +642,6 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
 
 async function buildListingEditorData(listing: ListingRecord): Promise<ListingEditorData> {
   const imageRows = await findListingImagesByListingId(listing.id);
-  const storedUnits = getStoredUnits(listing.customFields);
-  const primaryUnit = storedUnits[0];
   const enabledDefinitionKeys = getEnabledBooleanCustomFieldKeys(listing.customFields);
   const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
   const featureDefinitionLookup = buildListingFeatureDefinitionLookup(publicBooleanDefinitions);
@@ -669,46 +662,22 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     });
   }
 
-  for (const feature of getStoredAccessibilityFeatures(listing.customFields)) {
-    const definition =
-      (feature.id ? featureDefinitionLookup.byKey.get(feature.id) : undefined) ??
-      featureDefinitionLookup.byToken.get(normalizeListingFeatureToken(feature.name));
-    const featureId =
-      definition?.key ??
-      feature.name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-
-    if (!customFeatures.has(featureId)) {
-      customFeatures.set(featureId, {
-        category: definition?.category ?? "Accessibility",
-        id: featureId,
-        name: definition?.label ?? feature.name,
-        description: definition?.description ?? feature.description,
-      });
-    }
-  }
-
   return {
     title: listing.title,
     description: listing.description ?? "",
-    propertyType: getStoredString(listing.customFields, "propertyType") ?? "",
-    buildingType: getStoredString(listing.customFields, "buildingType") ?? "",
-    unitStory: getStoredNumber(listing.customFields, "unitStory"),
-    bedrooms: primaryUnit?.bedrooms ?? listing.bedrooms,
-    bathrooms: primaryUnit?.bathrooms ?? listing.bathrooms,
-    squareFeet: primaryUnit?.sqft ?? listing.squareFeet ?? undefined,
+    buildingType: listing.buildingType ?? "",
+    bedrooms: listing.bedrooms,
+    bathrooms: listing.bathrooms,
+    squareFeet: listing.squareFeet ?? undefined,
     monthlyRentCents: listing.monthlyRentCents,
-    leaseTerm: getStoredString(listing.customFields, "leaseTerm") ?? "",
-    utilitiesIncluded: getStoredStringArray(listing.customFields, "utilitiesIncluded"),
+    leaseTerm: listing.leaseTermMonths ?? undefined,
+    utilitiesIncluded: [...listing.utilitiesIncluded],
     images: imageRows.map((image) => ({
       id: image.id,
       url: getListingImageUrl(image.id, image.imageUrl),
       caption: image.altText ?? "",
     })),
-    availableOn: primaryUnit?.availableDate ?? listing.availableOn ?? undefined,
+    availableOn: listing.availableOn ?? undefined,
     status: listing.status,
     unitNumber: listing.unitNumber ?? undefined,
     name: listing.property.name,

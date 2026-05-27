@@ -9,6 +9,11 @@ import { positiveIntegerQueryParamSchema, positiveIntegerQueryParamWithMaxSchema
 
 const nonEmptyString = requiredTrimmedString();
 const listingStatusSchema = z.enum(["draft", "published", "archived"]);
+export const LISTING_BUILDING_TYPE_VALUES = ["apartment", "house", "townhouse", "condo"] as const;
+export const UTILITY_INCLUDED_VALUES = ["heat", "water", "electricity", "gas", "internet"] as const;
+const listingBuildingTypeSchema = z.enum(LISTING_BUILDING_TYPE_VALUES);
+const utilityIncludedSchema = z.enum(UTILITY_INCLUDED_VALUES);
+const listingLeaseTermMonthsSchema = z.number().int().positive();
 const hasAtLeastOneField = (value: Record<string, unknown>) => Object.keys(value).length > 0;
 
 export const listingIdParamSchema = z.uuid("Invalid listing id.");
@@ -53,6 +58,9 @@ export const listingFeatureSchema = z.object({
   id: z.string().optional(),
   name: nonEmptyString,
   description: nonEmptyString,
+});
+const listingInputFeatureSchema = listingFeatureSchema.extend({
+  id: nonEmptyString,
 });
 
 const listingEditorFeatureSchema = z.object({
@@ -151,12 +159,6 @@ const listingUnitSchema = z.object({
   availableDate: z.iso.date().optional(),
 });
 
-const listingEligibilityCriteriaSchema = z.object({
-  maxIncome: z.number().int().min(0).optional(),
-  minAge: z.number().int().min(0).optional(),
-  housingType: nonEmptyString.optional(),
-});
-
 const listingPaginationSchema = z.object({
   page: z.number().int().min(1),
   limit: z.number().int().min(1),
@@ -166,11 +168,6 @@ const listingPaginationSchema = z.object({
 const listingAddressPatchSchema = listingAddressSchema.partial().refine(hasAtLeastOneField, {
   message: "Address update must include at least one field.",
 });
-const listingEligibilityCriteriaPatchSchema = listingEligibilityCriteriaSchema
-  .partial()
-  .refine(hasAtLeastOneField, {
-    message: "Eligibility criteria update must include at least one field.",
-  });
 const listingContactPatchSchema = listingContactSchema.partial().refine(hasAtLeastOneField, {
   message: "Contact update must include at least one field.",
 });
@@ -184,18 +181,14 @@ const updateListingBasePayloadSchema = z.object({
   description: optionalTrimmedString(),
   address: listingAddressPatchSchema.optional(),
   units: z.array(listingUnitPatchSchema).min(1, "At least one unit is required.").optional(),
-  amenities: z.array(nonEmptyString).optional(),
-  accessibilityFeatures: z.array(listingFeatureSchema).optional(),
-  eligibilityCriteria: listingEligibilityCriteriaPatchSchema.optional(),
+  accessibilityFeatures: z.array(listingInputFeatureSchema).optional(),
   images: z.array(listingUploadedImageInputSchema).optional(),
   contact: listingContactPatchSchema.optional(),
   status: listingStatusSchema.optional(),
   unitNumber: z.union([nonEmptyString, z.null()]).optional(),
-  propertyType: nonEmptyString.optional(),
-  buildingType: nonEmptyString.optional(),
-  unitStory: z.number().optional(),
-  leaseTerm: nonEmptyString.optional(),
-  utilitiesIncluded: z.array(nonEmptyString).optional(),
+  buildingType: listingBuildingTypeSchema.optional(),
+  leaseTermMonths: listingLeaseTermMonthsSchema.optional(),
+  utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
 });
 const updateListingPayloadSchema = updateListingBasePayloadSchema.refine(
@@ -214,20 +207,16 @@ const listingPayloadSchema = z.object({
   description: optionalTrimmedString(),
   address: listingAddressSchema,
   units: z.tuple([listingUnitSchema], listingUnitSchema),
-  amenities: z.array(nonEmptyString),
-  accessibilityFeatures: z.array(listingFeatureSchema),
+  accessibilityFeatures: z.array(listingInputFeatureSchema),
   applicationUrl: z.httpUrl({ normalize: true }).optional(),
-  eligibilityCriteria: listingEligibilityCriteriaSchema,
   images: z.array(listingUploadedImageInputSchema),
   contact: listingContactSchema,
   status: listingStatusSchema,
   unitNumber: nonEmptyString.optional(),
   imageUploadSessionId: z.uuid("Invalid image upload session id.").optional(),
-  propertyType: nonEmptyString.optional(),
-  buildingType: nonEmptyString.optional(),
-  unitStory: z.number().optional(),
-  leaseTerm: nonEmptyString.optional(),
-  utilitiesIncluded: z.array(nonEmptyString).optional(),
+  buildingType: listingBuildingTypeSchema,
+  leaseTermMonths: listingLeaseTermMonthsSchema,
+  utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
 });
 
 export const createListingSchema = listingPayloadSchema;
@@ -237,15 +226,13 @@ export const updateListingSchema = updateListingPayloadSchema;
 export const listingEditorDataSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
-  propertyType: z.string(),
-  buildingType: z.string(),
-  unitStory: z.number().optional(),
+  buildingType: z.union([listingBuildingTypeSchema, z.literal("")]),
   bedrooms: z.number().min(0),
   bathrooms: z.number().min(0),
   squareFeet: z.number().min(0).optional(),
   monthlyRentCents: z.number().min(0),
-  leaseTerm: z.string(),
-  utilitiesIncluded: z.array(z.string()),
+  leaseTerm: listingLeaseTermMonthsSchema.optional(),
+  utilitiesIncluded: z.array(utilityIncludedSchema),
   images: z.array(listingEditorImageSchema),
   availableOn: z.iso.date().optional(),
   status: listingStatusSchema,

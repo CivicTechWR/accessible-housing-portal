@@ -1,4 +1,9 @@
-import type { ListingCustomFields, UserStatus } from "@/db/schema";
+import type {
+  ListingBuildingType,
+  ListingCustomFields,
+  UserStatus,
+  UtilityIncluded,
+} from "@/db/schema";
 
 const now = new Date();
 
@@ -48,6 +53,9 @@ type SeedListing = {
     squareFeet: number;
     monthlyRentCents: number;
     availableOn: string;
+    buildingType: ListingBuildingType;
+    leaseTermMonths: number;
+    utilitiesIncluded: UtilityIncluded[];
     maxIncomeCents: number | null;
     applicationUrl: string | null;
     applicationEmail: string;
@@ -116,29 +124,17 @@ export const mockListingSeedListings: SeedListing[] = [
       squareFeet: 1200,
       monthlyRentCents: 235000,
       availableOn: "2026-05-15",
+      buildingType: "apartment",
+      leaseTermMonths: 12,
+      utilitiesIncluded: ["heat", "water"],
       maxIncomeCents: 7800000,
       applicationUrl: null,
       applicationEmail: "leasing@waterloocoop.example.com",
       applicationPhone: "519-555-0100",
       customFields: {
-        units: [
-          {
-            bedrooms: 3,
-            bathrooms: 2,
-            sqft: 1200,
-            rent: 2350,
-            availableDate: "2026-05-15",
-          },
-        ],
-        amenities: ["In-suite laundry", "Dishwasher", "Community room"],
-        accessibilityFeatures: ["Braille signage", "Lowered counters", "Wheelchair ramp"],
-        applicationMethod: "internal",
-        externalApplicationUrl: null,
-        eligibilityCriteria: {
-          maxIncome: 78000,
-          minAge: null,
-          housingType: "Family",
-        },
+        braille_signage: true,
+        lowered_kitchen_counters: true,
+        main_entrance_is_barrier_free: true,
       },
       publishedAt: daysAgo(2),
     },
@@ -196,30 +192,14 @@ export const mockListingSeedListings: SeedListing[] = [
       squareFeet: 640,
       monthlyRentCents: 165000,
       availableOn: "2026-06-01",
+      buildingType: "apartment",
+      leaseTermMonths: 12,
+      utilitiesIncluded: ["water"],
       maxIncomeCents: 6200000,
       applicationUrl: "https://example.com/apply/king-east-lofts",
       applicationEmail: "leasing@waterloocoop.example.com",
       applicationPhone: "519-555-0100",
-      customFields: {
-        units: [
-          {
-            bedrooms: 1,
-            bathrooms: 1,
-            sqft: 640,
-            rent: 1650,
-            availableDate: "2026-06-01",
-          },
-        ],
-        amenities: ["Bike storage", "Rooftop patio"],
-        accessibilityFeatures: [],
-        applicationMethod: "external_link",
-        externalApplicationUrl: "https://example.com/apply/king-east-lofts",
-        eligibilityCriteria: {
-          maxIncome: 62000,
-          minAge: null,
-          housingType: "Single adult",
-        },
-      },
+      customFields: {},
       publishedAt: daysAgo(5),
     },
     images: [
@@ -269,29 +249,15 @@ export const mockListingSeedListings: SeedListing[] = [
       squareFeet: 920,
       monthlyRentCents: 189500,
       availableOn: "2026-06-20",
+      buildingType: "townhouse",
+      leaseTermMonths: 6,
+      utilitiesIncluded: ["water"],
       maxIncomeCents: null,
       applicationUrl: null,
       applicationEmail: "housing@civichomes.example.com",
       applicationPhone: "519-555-0142",
       customFields: {
-        units: [
-          {
-            bedrooms: 2,
-            bathrooms: 1.5,
-            sqft: 920,
-            rent: 1895,
-            availableDate: "2026-06-20",
-          },
-        ],
-        amenities: ["Private entrance", "Outdoor play area"],
-        accessibilityFeatures: ["Step-free entry"],
-        applicationMethod: "paper",
-        externalApplicationUrl: null,
-        eligibilityCriteria: {
-          maxIncome: null,
-          minAge: null,
-          housingType: "Household",
-        },
+        main_entrance_is_barrier_free: true,
       },
       publishedAt: daysAgo(8),
     },
@@ -342,36 +308,15 @@ export const mockListingSeedListings: SeedListing[] = [
       squareFeet: 610,
       monthlyRentCents: 152500,
       availableOn: "2026-05-10",
+      buildingType: "apartment",
+      leaseTermMonths: 1,
+      utilitiesIncluded: ["heat", "water"],
       maxIncomeCents: 5500000,
       applicationUrl: null,
       applicationEmail: "housing@civichomes.example.com",
       applicationPhone: "519-555-0142",
       customFields: {
-        units: [
-          {
-            bedrooms: 1,
-            bathrooms: 1,
-            sqft: 610,
-            rent: 1525,
-            availableDate: "2026-05-10",
-          },
-          {
-            bedrooms: 2,
-            bathrooms: 1,
-            sqft: 780,
-            rent: 1760,
-            availableDate: "2026-06-05",
-          },
-        ],
-        amenities: ["Laundry room", "Surface parking"],
-        accessibilityFeatures: ["Elevator access"],
-        applicationMethod: "internal",
-        externalApplicationUrl: null,
-        eligibilityCriteria: {
-          maxIncome: 55000,
-          minAge: null,
-          housingType: "Mixed household",
-        },
+        elevator_in_building: true,
       },
       publishedAt: hoursAgo(18),
     },
@@ -422,29 +367,16 @@ export const mockListingSeedListings: SeedListing[] = [
       squareFeet: 830,
       monthlyRentCents: 171000,
       availableOn: "2026-05-28",
+      buildingType: "condo",
+      leaseTermMonths: 12,
+      utilitiesIncluded: ["heat", "water", "electricity"],
       maxIncomeCents: 6400000,
       applicationUrl: null,
       applicationEmail: "leasing@waterloocoop.example.com",
       applicationPhone: "519-555-0100",
       customFields: {
-        units: [
-          {
-            bedrooms: 2,
-            bathrooms: 1,
-            sqft: 830,
-            rent: 1710,
-            availableDate: "2026-05-28",
-          },
-        ],
-        amenities: ["Elevator", "Secure entry", "Shared laundry"],
-        accessibilityFeatures: ["Automatic door opener", "Elevator access"],
-        applicationMethod: "internal",
-        externalApplicationUrl: null,
-        eligibilityCriteria: {
-          maxIncome: 64000,
-          minAge: null,
-          housingType: "Single or couple",
-        },
+        automated_building_doors: true,
+        elevator_in_building: true,
       },
       publishedAt: hoursAgo(6),
     },

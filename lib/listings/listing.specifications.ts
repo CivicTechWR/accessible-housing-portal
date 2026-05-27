@@ -1,10 +1,7 @@
 import { and, eq, gte, ilike, lte, or, sql, type SQL } from "drizzle-orm";
 
 import { listings, properties, type ListingStatus } from "@/db/schema";
-import {
-  getListingFeatureSearchTerms,
-  type ListingFeatureDefinition,
-} from "@/lib/listings/listing-feature-definitions";
+import type { ListingFeatureDefinition } from "@/lib/listings/listing-feature-definitions";
 
 export type ListingFilterSpecification = SQL<unknown> | undefined;
 
@@ -103,24 +100,11 @@ export function listingAccessibilitySpecification(
     return undefined;
   }
 
-  const hasLegacyAccessibilityFeatures = sql<boolean>`
-    jsonb_array_length(
-      case
-        when jsonb_typeof(${listings.customFields} -> 'accessibilityFeatures') = 'array'
-          then ${listings.customFields} -> 'accessibilityFeatures'
-        else '[]'::jsonb
-      end
-    ) > 0
-  `;
-  const hasEnabledBooleanAccessibilityFeature = sql<boolean>`exists (
+  const hasAccessibility = sql<boolean>`exists (
     select 1
     from jsonb_each(${listings.customFields}) as custom_field(key, value)
     where value = 'true'::jsonb
   )`;
-  const hasAccessibility = or(
-    hasLegacyAccessibilityFeatures,
-    hasEnabledBooleanAccessibilityFeature,
-  );
 
   return accessibility === "true" ? hasAccessibility : sql<boolean>`not (${hasAccessibility})`;
 }
@@ -166,11 +150,9 @@ export function listingFeatureDefinitionsSpecification(
     return undefined;
   }
 
-  const activeFeatureSpecs = definitions.map((definition) =>
-    or(
+  const activeFeatureSpecs = definitions.map(
+    (definition) =>
       sql<boolean>`coalesce(${listings.customFields} ->> ${definition.key}, 'false') = 'true'`,
-      buildLegacyAccessibilityFeatureMatchSpecification(getListingFeatureSearchTerms(definition)),
-    ),
   );
 
   return and(...activeFeatureSpecs);
@@ -188,32 +170,6 @@ export function andListingSpecifications(
   }
 
   return and(...activeSpecifications);
-}
-
-function buildLegacyAccessibilityFeatureMatchSpecification(searchTerms: string[]) {
-  return or(
-    ...searchTerms.map(
-      (searchTerm) => sql<boolean>`exists (
-        select 1
-        from jsonb_array_elements(
-          case
-            when jsonb_typeof(${listings.customFields} -> 'accessibilityFeatures') = 'array'
-              then ${listings.customFields} -> 'accessibilityFeatures'
-            else '[]'::jsonb
-          end
-        ) as feature(value)
-        where lower(
-          case
-            when jsonb_typeof(feature.value) = 'string'
-              then trim(both '"' from feature.value::text)
-            when jsonb_typeof(feature.value) = 'object'
-              then coalesce(feature.value ->> 'name', '')
-            else ''
-          end
-        ) = lower(${searchTerm})
-      )`,
-    ),
-  );
 }
 
 function dollarsStringToCents(value: string) {

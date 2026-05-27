@@ -25,6 +25,19 @@ export const userStatusEnum = pgEnum("user_status", [
   "deactivated",
 ]);
 export const listingStatusEnum = pgEnum("listing_status", ["draft", "published", "archived"]);
+export const listingBuildingTypeEnum = pgEnum("listing_building_type", [
+  "apartment",
+  "house",
+  "townhouse",
+  "condo",
+]);
+export const utilityIncludedEnum = pgEnum("utility_included", [
+  "heat",
+  "water",
+  "electricity",
+  "gas",
+  "internet",
+]);
 export const customListingFieldTypeEnum = pgEnum("listing_field_type", [
   "boolean",
   "number",
@@ -63,6 +76,8 @@ export type ListingCustomFields = Record<string, ListingCustomFieldValue>;
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export type UserStatus = (typeof userStatusEnum.enumValues)[number];
 export type ListingStatus = (typeof listingStatusEnum.enumValues)[number];
+export type ListingBuildingType = (typeof listingBuildingTypeEnum.enumValues)[number];
+export type UtilityIncluded = (typeof utilityIncludedEnum.enumValues)[number];
 
 const byteaBuffer = customType<{ data: Buffer; driverData: Uint8Array }>({
   dataType() {
@@ -187,11 +202,17 @@ export const listings = pgTable(
     description: text("description"),
     status: listingStatusEnum("status").notNull(),
     unitNumber: text("unit_number"),
+    buildingType: listingBuildingTypeEnum("building_type"),
     bedrooms: integer("bedrooms").notNull(),
     bathrooms: doublePrecision("bathrooms").notNull(),
     squareFeet: integer("square_feet"),
     monthlyRentCents: integer("monthly_rent_cents").notNull(),
     availableOn: date("available_on"),
+    leaseTermMonths: integer("lease_term_months"),
+    utilitiesIncluded: utilityIncludedEnum("utilities_included")
+      .array()
+      .notNull()
+      .default(sql`'{}'::utility_included[]`),
     maxIncomeCents: integer("max_income_cents"),
     applicationUrl: text("application_url"),
     applicationEmail: text("application_email"),

@@ -25,7 +25,7 @@ export function mapListingFormToUpdateListingInput(
   status = data.status,
   rawInput?: ListingFormInput,
 ): UpdateListingInput {
-  const { eligibilityCriteria: _eligibilityCriteria, ...payload } = {
+  const payload = {
     ...buildListingPayloadFromForm(data),
     status,
   };
@@ -83,9 +83,11 @@ export function mapListingFormToAutosaveUpdateInput(
     patch.unitNumber = normalizeOptionalString(data.unitNumber) ?? null;
   }
 
-  assignTrimmedString(patch, "propertyType", data.propertyType);
   assignTrimmedString(patch, "buildingType", data.buildingType);
-  assignTrimmedString(patch, "leaseTerm", data.leaseTerm);
+  const leaseTermMonths = parseLeaseTermMonths(data.leaseTerm);
+  if (leaseTermMonths !== undefined) {
+    patch.leaseTermMonths = leaseTermMonths;
+  }
 
   if (Number.isFinite(data.bedrooms)) {
     unit.bedrooms = data.bedrooms;
@@ -119,10 +121,6 @@ export function mapListingFormToAutosaveUpdateInput(
 
   if (Object.keys(unit).length > 0) {
     patch.units = [unit];
-  }
-
-  if (Number.isFinite(data.unitStory)) {
-    patch.unitStory = data.unitStory;
   }
 
   patch.utilitiesIncluded = data.utilitiesIncluded ?? [];
@@ -212,14 +210,12 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
           normalizeOptionalString(data.availableOn) ?? new Date().toISOString().slice(0, 10),
       },
     ],
-    amenities: [],
     accessibilityFeatures: data.customFeatures.map((feature) => ({
       id: feature.id,
       name: feature.name,
       description: normalizeOptionalString(feature.description) ?? feature.name,
     })),
     applicationUrl: applicationUrl ?? undefined,
-    eligibilityCriteria: {},
     images: data.images.flatMap((image) =>
       image.id
         ? [
@@ -237,10 +233,8 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
     },
     status: data.status,
     unitNumber: normalizeOptionalString(data.unitNumber),
-    propertyType: data.propertyType,
     buildingType: data.buildingType,
-    unitStory: data.unitStory,
-    leaseTerm: data.leaseTerm,
+    leaseTermMonths: data.leaseTerm,
     utilitiesIncluded: data.utilitiesIncluded,
   };
 }
@@ -260,4 +254,8 @@ function assignTrimmedString(
   if (normalized) {
     target[key] = normalized;
   }
+}
+
+function parseLeaseTermMonths(value: number | undefined) {
+  return value !== undefined && Number.isInteger(value) && value > 0 ? value : undefined;
 }

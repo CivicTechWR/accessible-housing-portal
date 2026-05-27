@@ -26,10 +26,14 @@ const validCreatePayload = {
       availableDate: "2026-05-01",
     },
   ],
-  amenities: ["Laundry"],
-  accessibilityFeatures: [{ name: "Ramp entry", description: "Step-free building entry" }],
+  accessibilityFeatures: [
+    {
+      id: "ramp_entry",
+      name: "Ramp entry",
+      description: "Step-free building entry",
+    },
+  ],
   applicationUrl: "https://example.org/apply",
-  eligibilityCriteria: {},
   images: [{ id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2", caption: "Front exterior" }],
   contact: {
     name: "Leasing Office",
@@ -38,11 +42,9 @@ const validCreatePayload = {
   },
   status: "draft" as const,
   unitNumber: "204",
-  propertyType: "Rent",
-  buildingType: "Apartment",
-  unitStory: 2,
-  leaseTerm: "1 year",
-  utilitiesIncluded: ["Heat"],
+  buildingType: "apartment",
+  leaseTermMonths: 12,
+  utilitiesIncluded: ["heat"],
 };
 
 describe("listing API schemas", () => {
@@ -120,10 +122,6 @@ describe("listing API schemas", () => {
   it("rejects effectively empty nested updates", () => {
     const cases = [
       { payload: { address: {} }, message: "Address update must include at least one field." },
-      {
-        payload: { eligibilityCriteria: {} },
-        message: "Eligibility criteria update must include at least one field.",
-      },
       { payload: { contact: {} }, message: "Contact update must include at least one field." },
       { payload: { units: [{}] }, message: "Each unit update must include at least one field." },
     ];
@@ -144,8 +142,14 @@ describe("listing API schemas", () => {
       title: "Updated Title",
       address: { city: "Waterloo" },
       contact: { email: "Leasing@Example.com" },
-      eligibilityCriteria: { minAge: 55 },
       units: [{ rent: 1800 }],
+      accessibilityFeatures: [
+        {
+          id: "elevator_in_building",
+          name: "Elevator in Building",
+          description: "The building has at least one elevator.",
+        },
+      ],
     });
 
     expect(result.success).toBe(true);
@@ -155,6 +159,29 @@ describe("listing API schemas", () => {
     }
 
     expect(result.data.contact?.email).toBe("leasing@example.com");
+  });
+
+  it("rejects submitted accessibility features without ids", () => {
+    const createResult = createListingSchema.safeParse({
+      ...validCreatePayload,
+      accessibilityFeatures: [
+        {
+          name: "Ramp entry",
+          description: "Step-free building entry",
+        },
+      ],
+    });
+    const updateResult = updateListingSchema.safeParse({
+      accessibilityFeatures: [
+        {
+          name: "Ramp entry",
+          description: "Step-free building entry",
+        },
+      ],
+    });
+
+    expect(createResult.success).toBe(false);
+    expect(updateResult.success).toBe(false);
   });
 
   it("allows clearing unit number in partial updates", () => {
@@ -195,12 +222,10 @@ describe("listing API schemas", () => {
   it("rejects non-http application URLs in listing editor data", () => {
     const result = listingEditorDataSchema.safeParse({
       title: "",
-      propertyType: "",
       buildingType: "",
       bedrooms: 0,
       bathrooms: 0,
       monthlyRentCents: 0,
-      leaseTerm: "",
       utilitiesIncluded: [],
       images: [],
       status: "draft",

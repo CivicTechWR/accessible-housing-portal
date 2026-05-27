@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import type { SubmitErrorHandler } from "react-hook-form";
 import { useListingForm } from "./useListingForm";
+import { CORE_FIELD_DEFINITIONS } from "./fieldDefinitions";
+import type { ListingFormInput } from "./types";
 import { ListingFormFields } from "@/components/listing-form-fields/ListingFormFields";
 import { ListingFormFeatures } from "@/components/listing-form-features/ListingFormFeatures";
 import { ListingFormImages } from "@/components/listing-form-images/ListingFormImages";
@@ -47,6 +50,34 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     setPreviewMode("card");
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
+  };
+  const handleInvalidSubmit: SubmitErrorHandler<ListingFormInput> = (errors) => {
+    const firstInvalidField =
+      CORE_FIELD_DEFINITIONS.find((definition) => errors[definition.key])?.key ??
+      (Object.keys(errors)[0] as keyof ListingFormInput | undefined);
+
+    if (!firstInvalidField) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const formElement = document.getElementById("listing-form");
+      const fieldContainer = formElement?.querySelector<HTMLElement>(
+        `[data-field-name="${escapeAttributeValue(String(firstInvalidField))}"]`,
+      );
+
+      fieldContainer?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      const focusTarget =
+        fieldContainer?.querySelector<HTMLElement>(
+          "input, textarea, button, [tabindex]:not([tabindex='-1'])",
+        ) ?? fieldContainer;
+      focusTarget?.focus({ preventScroll: true });
+      form.setFocus(firstInvalidField);
+    });
   };
 
   const liveFormData = form.watch();
@@ -132,7 +163,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       }
       formContent={
         <Form {...form}>
-          <form id="listing-form" onSubmit={form.handleSubmit(onSubmit)}>
+          <form id="listing-form" onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}>
             <ListingFormFields control={form.control} />
             <ListingFormImages
               control={form.control}
@@ -179,4 +210,8 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       }
     />
   );
+}
+
+function escapeAttributeValue(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }

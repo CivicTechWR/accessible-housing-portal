@@ -14,14 +14,12 @@ import {
 const validFormData: ListingFormData = {
   ...CREATE_FORM_DEFAULTS,
   title: "Accessible Two Bedroom",
-  propertyType: "Rent",
-  buildingType: "Apartment",
-  unitStory: 2,
+  buildingType: "apartment",
   bedrooms: 2,
   bathrooms: 1.5,
   squareFeet: 920,
   monthlyRentCents: 185000,
-  leaseTerm: "1 year",
+  leaseTerm: 12,
   availableOn: "2026-05-01",
   status: "draft",
   unitNumber: "204",
@@ -49,7 +47,7 @@ const validFormData: ListingFormData = {
       description: "Step-free building entry",
     },
   ],
-  utilitiesIncluded: ["Heat", "Water"],
+  utilitiesIncluded: ["heat", "water"],
 };
 
 describe("mapListingFormToCreateListingInput", () => {
@@ -74,7 +72,6 @@ describe("mapListingFormToCreateListingInput", () => {
           availableDate: "2026-05-01",
         },
       ],
-      amenities: [],
       accessibilityFeatures: [
         {
           id: "ramp_entry",
@@ -83,7 +80,6 @@ describe("mapListingFormToCreateListingInput", () => {
         },
       ],
       applicationUrl: undefined,
-      eligibilityCriteria: {},
       images: [
         {
           id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2",
@@ -97,11 +93,9 @@ describe("mapListingFormToCreateListingInput", () => {
       },
       status: "draft",
       unitNumber: "204",
-      propertyType: "Rent",
-      buildingType: "Apartment",
-      unitStory: 2,
-      leaseTerm: "1 year",
-      utilitiesIncluded: ["Heat", "Water"],
+      buildingType: "apartment",
+      leaseTermMonths: 12,
+      utilitiesIncluded: ["heat", "water"],
     });
   });
 
@@ -165,7 +159,6 @@ describe("mapListingFormToCreateListingInput", () => {
           availableDate: "2026-05-01",
         },
       ],
-      amenities: [],
       accessibilityFeatures: [
         {
           id: "ramp_entry",
@@ -174,7 +167,6 @@ describe("mapListingFormToCreateListingInput", () => {
         },
       ],
       applicationUrl: "https://example.org/apply",
-      eligibilityCriteria: {},
       images: [
         {
           id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2",
@@ -188,11 +180,9 @@ describe("mapListingFormToCreateListingInput", () => {
       },
       status: "draft",
       unitNumber: "204",
-      propertyType: "Rent",
-      buildingType: "Apartment",
-      unitStory: 2,
-      leaseTerm: "1 year",
-      utilitiesIncluded: ["Heat", "Water"],
+      buildingType: "apartment",
+      leaseTermMonths: 12,
+      utilitiesIncluded: ["heat", "water"],
     });
   });
 
@@ -217,7 +207,6 @@ describe("mapListingFormToCreateListingInput", () => {
           availableDate: "2026-05-01",
         },
       ],
-      amenities: [],
       accessibilityFeatures: [
         {
           id: "ramp_entry",
@@ -238,11 +227,9 @@ describe("mapListingFormToCreateListingInput", () => {
       },
       status: "published",
       unitNumber: "204",
-      propertyType: "Rent",
-      buildingType: "Apartment",
-      unitStory: 2,
-      leaseTerm: "1 year",
-      utilitiesIncluded: ["Heat", "Water"],
+      buildingType: "apartment",
+      leaseTermMonths: 12,
+      utilitiesIncluded: ["heat", "water"],
     });
   });
 
@@ -480,7 +467,6 @@ describe("mapListingFormToCreateListingInput", () => {
           availableDate: "2026-05-01",
         },
       ],
-      amenities: [],
       accessibilityFeatures: [
         {
           id: "ramp_entry",
@@ -501,11 +487,9 @@ describe("mapListingFormToCreateListingInput", () => {
       },
       status: "published",
       unitNumber: null,
-      propertyType: "Rent",
-      buildingType: "Apartment",
-      unitStory: 2,
-      leaseTerm: "1 year",
-      utilitiesIncluded: ["Heat", "Water"],
+      buildingType: "apartment",
+      leaseTermMonths: 12,
+      utilitiesIncluded: ["heat", "water"],
     });
   });
 });

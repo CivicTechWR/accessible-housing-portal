@@ -42,7 +42,7 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem>
+          <FormItem data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <Select
               onValueChange={field.onChange}
@@ -76,7 +76,10 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem className={def.colSpan === 2 ? "md:col-span-2" : undefined}>
+          <FormItem
+            className={def.colSpan === 2 ? "md:col-span-2" : undefined}
+            data-field-name={def.key}
+          >
             <FormLabel>{label}</FormLabel>
             <FormControl>
               <Textarea placeholder={def.placeholder} rows={4} {...field} />
@@ -96,7 +99,7 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem>
+          <FormItem data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <FormControl>
               <Input
@@ -143,7 +146,7 @@ function FieldRenderer({
       control={control}
       name={def.key}
       render={({ field }) => (
-        <FormItem>
+        <FormItem data-field-name={def.key}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input
