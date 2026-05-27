@@ -59,6 +59,9 @@ export const listingFeatureSchema = z.object({
   name: nonEmptyString,
   description: nonEmptyString,
 });
+const listingInputFeatureSchema = listingFeatureSchema.extend({
+  id: nonEmptyString,
+});
 
 const listingEditorFeatureSchema = z.object({
   category: z.string(),
@@ -178,7 +181,7 @@ const updateListingBasePayloadSchema = z.object({
   description: optionalTrimmedString(),
   address: listingAddressPatchSchema.optional(),
   units: z.array(listingUnitPatchSchema).min(1, "At least one unit is required.").optional(),
-  accessibilityFeatures: z.array(listingFeatureSchema).optional(),
+  accessibilityFeatures: z.array(listingInputFeatureSchema).optional(),
   images: z.array(listingUploadedImageInputSchema).optional(),
   contact: listingContactPatchSchema.optional(),
   status: listingStatusSchema.optional(),
@@ -204,7 +207,7 @@ const listingPayloadSchema = z.object({
   description: optionalTrimmedString(),
   address: listingAddressSchema,
   units: z.tuple([listingUnitSchema], listingUnitSchema),
-  accessibilityFeatures: z.array(listingFeatureSchema),
+  accessibilityFeatures: z.array(listingInputFeatureSchema),
   applicationUrl: z.httpUrl({ normalize: true }).optional(),
   images: z.array(listingUploadedImageInputSchema),
   contact: listingContactSchema,

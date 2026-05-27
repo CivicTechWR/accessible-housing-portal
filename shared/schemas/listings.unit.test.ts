@@ -26,7 +26,13 @@ const validCreatePayload = {
       availableDate: "2026-05-01",
     },
   ],
-  accessibilityFeatures: [{ name: "Ramp entry", description: "Step-free building entry" }],
+  accessibilityFeatures: [
+    {
+      id: "ramp_entry",
+      name: "Ramp entry",
+      description: "Step-free building entry",
+    },
+  ],
   applicationUrl: "https://example.org/apply",
   images: [{ id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2", caption: "Front exterior" }],
   contact: {
@@ -137,6 +143,13 @@ describe("listing API schemas", () => {
       address: { city: "Waterloo" },
       contact: { email: "Leasing@Example.com" },
       units: [{ rent: 1800 }],
+      accessibilityFeatures: [
+        {
+          id: "elevator_in_building",
+          name: "Elevator in Building",
+          description: "The building has at least one elevator.",
+        },
+      ],
     });
 
     expect(result.success).toBe(true);
@@ -146,6 +159,29 @@ describe("listing API schemas", () => {
     }
 
     expect(result.data.contact?.email).toBe("leasing@example.com");
+  });
+
+  it("rejects submitted accessibility features without ids", () => {
+    const createResult = createListingSchema.safeParse({
+      ...validCreatePayload,
+      accessibilityFeatures: [
+        {
+          name: "Ramp entry",
+          description: "Step-free building entry",
+        },
+      ],
+    });
+    const updateResult = updateListingSchema.safeParse({
+      accessibilityFeatures: [
+        {
+          name: "Ramp entry",
+          description: "Step-free building entry",
+        },
+      ],
+    });
+
+    expect(createResult.success).toBe(false);
+    expect(updateResult.success).toBe(false);
   });
 
   it("allows clearing unit number in partial updates", () => {
