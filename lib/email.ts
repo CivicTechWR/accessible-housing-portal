@@ -2,6 +2,14 @@ import "server-only";
 
 import { Resend } from "resend";
 
+export type TransactionalEmailSendOptions = {
+  /**
+   * Stable key for the logical email, such as account_invite/<inviteId>.
+   * Do not use a random per-attempt value or provider retries can duplicate sends.
+   */
+  idempotencyKey: string;
+};
+
 export function getEmailFromAddress() {
   const from = process.env.EMAIL_FROM;
 

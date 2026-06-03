@@ -6,7 +6,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { lower, userInvites, users, type UserRole } from "@/db/schema";
-import { sendInviteEmail } from "@/lib/auth/invite-email";
+import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth/invite-email";
 import { createOpaqueToken, hashOpaqueToken } from "@/lib/auth/token";
 
 const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
@@ -106,6 +106,7 @@ export async function createInvite(params: {
       email: result.email,
       fullName: params.fullName,
       inviteUrl,
+      idempotencyKey: getAccountInviteEmailIdempotencyKey(result.invite.id),
     });
 
     const sentAt = new Date();
