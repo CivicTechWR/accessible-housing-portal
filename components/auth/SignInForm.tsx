@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { signInWithPassword } from "@/app/sign-in/actions";
@@ -48,6 +49,11 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
             autoComplete="current-password"
             required
           />
+          <div className="flex justify-end">
+            <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
         </div>
 
         {state.error ? <p className="text-xs text-destructive">{state.error}</p> : null}
