@@ -50,6 +50,13 @@
       "when": 1779735372627,
       "tag": "20260525185612_add_listing_built_in_field_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781134331494,
+      "tag": "20260610233211_email_jobs",
+      "breakpoints": true
     }
   ]
 }

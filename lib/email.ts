@@ -29,3 +29,40 @@ export function createResendClient() {
 
   return new Resend(apiKey);
 }
+
+export type TransactionalEmailContent = {
+  subject: string;
+  text: string;
+  html: string;
+};
+
+/**
+ * Single Resend call site for transactional email. Only the email job worker
+ * should call this; feature code enqueues jobs via lib/email-jobs instead.
+ */
+export async function sendTransactionalEmail(
+  params: {
+    to: string;
+  } & TransactionalEmailContent &
+    TransactionalEmailSendOptions,
+) {
+  const resend = createResendClient();
+  const result = await resend.emails.send(
+    {
+      from: getEmailFromAddress(),
+      to: params.to,
+      subject: params.subject,
+      text: params.text,
+      html: params.html,
+    },
+    {
+      idempotencyKey: params.idempotencyKey,
+    },
+  );
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return result.data?.id ?? null;
+}

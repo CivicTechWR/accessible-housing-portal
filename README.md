@@ -142,6 +142,10 @@ npm run test:integration
 
 Use `npm run format` and `npm run lint:fix` for automatic formatting and lint fixes.
 
+## Transactional Email
+
+Transactional email (account invites today) is delivered through a Postgres-backed job queue with retries, idempotent sends, and encrypted handling of one-time URLs — feature code never calls Resend directly. See [docs/email-queue.md](docs/email-queue.md) for the design and for worker setup in local dev (`npm run email:worker`), Docker (`docker compose --profile worker up`), and deployment (cron hitting `/api/cron/email-jobs` with `CRON_SECRET`).
+
 ## Architecture Notes
 
 - Public listing search is server-first: `app/listings/page.tsx` calls shared listing services directly for the initial render, while client-side filter refinements fetch `/api/listings`.

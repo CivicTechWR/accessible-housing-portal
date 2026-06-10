@@ -6,8 +6,9 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { lower, userInvites, users, type UserRole } from "@/db/schema";
-import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth/invite-email";
+import { getAccountInviteEmailIdempotencyKey } from "@/lib/auth/invite-email";
 import { createOpaqueToken, hashOpaqueToken } from "@/lib/auth/token";
+import { enqueueEmailJob, tryProcessEmailJobNow } from "@/lib/email-jobs/email-job-service";
 
 const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
@@ -24,6 +25,9 @@ export async function createInvite(params: {
   const token = createOpaqueToken();
   const tokenHash = hashOpaqueToken(token);
   const expiresAt = new Date(now.getTime() + INVITE_TTL_MS);
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000";
+  const inviteUrl = new URL(`/invite?token=${token}`, baseUrl).toString();
 
   const result = await db.transaction(async (tx) => {
     const [existingUser] = await tx
@@ -89,36 +93,47 @@ export async function createInvite(params: {
       throw new Error("Failed to create invite.");
     }
 
+    // Outbox: the email job commits atomically with the invite, so a created
+    // invite can never lose its email to a provider outage. The raw token only
+    // travels inside the encrypted secret context, never as plaintext payload.
+    let emailJobId: string | null = null;
+
+    if (params.sendInviteEmail) {
+      const { job } = await enqueueEmailJob(
+        {
+          type: "account_invite",
+          payload: { inviteId: invite.id },
+          secretContext: { inviteUrl },
+          idempotencyKey: getAccountInviteEmailIdempotencyKey(invite.id),
+          recipientEmail: normalizedEmail,
+        },
+        { executor: tx },
+      );
+
+      emailJobId = job.id;
+    }
+
     return {
       invite,
       userId,
       email: normalizedEmail,
       organization,
+      emailJobId,
     };
   });
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000";
-  const inviteUrl = new URL(`/invite?token=${token}`, baseUrl).toString();
+  if (result.emailJobId) {
+    // Best effort so admins usually see the invite go out immediately; on
+    // failure the job stays queued and the worker retries with backoff.
+    await tryProcessEmailJobNow(result.emailJobId);
 
-  if (params.sendInviteEmail) {
-    await sendInviteEmail({
-      email: result.email,
-      fullName: params.fullName,
-      inviteUrl,
-      idempotencyKey: getAccountInviteEmailIdempotencyKey(result.invite.id),
-    });
-
-    const sentAt = new Date();
     const [invite] = await db
-      .update(userInvites)
-      .set({
-        sentAt,
-      })
+      .select()
+      .from(userInvites)
       .where(eq(userInvites.id, result.invite.id))
-      .returning();
+      .limit(1);
 
-    result.invite = invite ?? { ...result.invite, sentAt };
+    result.invite = invite ?? result.invite;
   }
 
   return {

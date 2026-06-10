@@ -46,6 +46,14 @@ export const customListingFieldTypeEnum = pgEnum("listing_field_type", [
   "multi_select",
   "date",
 ]);
+export const emailJobTypeEnum = pgEnum("email_job_type", ["account_invite"]);
+export const emailJobStatusEnum = pgEnum("email_job_status", [
+  "pending",
+  "processing",
+  "sent",
+  "failed",
+  "canceled",
+]);
 
 export type SavedSearchFilters = {
   bathrooms?: number | null;
@@ -338,6 +346,58 @@ export const customListingFields = pgTable(
   ],
 );
 
+export type EmailJobType = (typeof emailJobTypeEnum.enumValues)[number];
+export type EmailJobStatus = (typeof emailJobStatusEnum.enumValues)[number];
+
+/**
+ * Stable entity references only (inviteId, passwordResetId, ...). Raw tokens,
+ * one-time links, and other secrets must never appear here; they belong in the
+ * encrypted secret_context column.
+ */
+export type EmailJobPayload = Record<string, string>;
+
+export const emailJobs = pgTable(
+  "email_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    type: emailJobTypeEnum("type").notNull(),
+    status: emailJobStatusEnum("status").notNull().default("pending"),
+    /**
+     * Stable key for the logical email (e.g. account_invite/<inviteId>).
+     * Dedupes enqueues and is forwarded to the provider so retries cannot
+     * double-send.
+     */
+    idempotencyKey: text("idempotency_key").notNull(),
+    payload: jsonb("payload")
+      .$type<EmailJobPayload>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    /**
+     * AES-256-GCM encrypted JSON for send-time data that cannot be re-derived
+     * from entity references (e.g. the invite URL containing the raw token).
+     * Cleared as soon as the job reaches a terminal state.
+     */
+    secretContext: byteaBuffer("secret_context"),
+    recipientEmail: text("recipient_email").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull(),
+    runAfter: timestamp("run_after", { withTimezone: true }).notNull().defaultNow(),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    providerMessageId: text("provider_message_id"),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("email_jobs_idempotency_key_unique").on(table.idempotencyKey),
+    index("email_jobs_status_run_after_idx").on(table.status, table.runAfter),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserInvite = typeof userInvites.$inferSelect;
@@ -354,3 +414,5 @@ export type SavedSearch = typeof savedSearches.$inferSelect;
 export type NewSavedSearch = typeof savedSearches.$inferInsert;
 export type CustomListingField = typeof customListingFields.$inferSelect;
 export type NewCustomListingField = typeof customListingFields.$inferInsert;
+export type EmailJob = typeof emailJobs.$inferSelect;
+export type NewEmailJob = typeof emailJobs.$inferInsert;

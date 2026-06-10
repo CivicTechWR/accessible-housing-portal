@@ -18,6 +18,7 @@
     "db:seed": "node --env-file-if-exists=.env.local --experimental-strip-types db/seed.ts",
     "db:seed:secrets": "infisical run --env=dev -- node --experimental-strip-types db/seed.ts",
     "db:studio": "drizzle-kit studio",
+    "email:worker": "node --env-file-if-exists=.env.local scripts/email-worker.mjs",
     "start": "next start",
     "start:secrets": "infisical run --env=dev -- next start",
     "lint": "oxlint . -c .oxlintrc.json",

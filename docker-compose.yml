@@ -36,6 +36,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe123}
       RESEND_API_KEY: ${RESEND_API_KEY:-re_replace_me}
       EMAIL_FROM: ${EMAIL_FROM:-Affordable Housing Portal <no-reply@example.com>}
+      CRON_SECRET: ${CRON_SECRET:-replace-with-a-random-secret}
     ports:
       - "3000:3000"
     volumes:
@@ -43,6 +44,25 @@ services:
       - /app/node_modules
     command: >
       sh -c "npm run db:migrate && npm run db:seed && npm run dev -- --hostname 0.0.0.0 --port 3000"
+
+  # Opt-in email queue worker: docker compose --profile worker up
+  email-worker:
+    container_name: ahp-email-worker
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    profiles:
+      - worker
+    depends_on:
+      - app
+    environment:
+      EMAIL_WORKER_APP_URL: http://app:3000
+      CRON_SECRET: ${CRON_SECRET:-replace-with-a-random-secret}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: node scripts/email-worker.mjs
 
 volumes:
   ahp-postgres-data:
