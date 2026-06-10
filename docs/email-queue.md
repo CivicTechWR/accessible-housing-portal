@@ -13,7 +13,10 @@ of calling Resend directly from feature code.
    provider outage.
 2. **Immediate attempt** — Right after commit, the service makes one
    best-effort `tryProcessEmailJobNow(...)` call so the common case delivers
-   within the request. Failures are swallowed; the job stays queued.
+   within the request. Failures are swallowed (the job stays queued), but the
+   outcome is returned so callers report delivery truthfully: the admin invite
+   flow surfaces "sent" only when the provider accepted the email and "queued"
+   otherwise, never a false success.
 3. **Worker drain** — A worker repeatedly claims due jobs and processes them.
    Claiming uses `SELECT ... FOR UPDATE SKIP LOCKED` plus a 10-minute
    processing lease, so any number of workers can run concurrently without

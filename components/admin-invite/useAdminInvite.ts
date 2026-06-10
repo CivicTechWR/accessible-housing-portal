@@ -43,13 +43,26 @@ export function useAdminInvite(input?: {
     (result: InviteActionResult) => {
       setLastResult(result);
 
-      if (result.status !== "sent") {
+      if (result.status !== "sent" && result.status !== "queued") {
         return;
       }
 
       void fetchRecentInvites()
         .then((nextInvites) => {
-          queryClient.setQueryData(queryKeys.recentInvites(), nextInvites);
+          // The API only returns invites whose email already went out, so a
+          // queued invite must be kept visible from the action result.
+          const queuedInvite =
+            result.invite?.status === "queued" &&
+            !nextInvites.some((invite) => invite.id === result.invite?.id)
+              ? result.invite
+              : null;
+
+          queryClient.setQueryData(
+            queryKeys.recentInvites(),
+            queuedInvite
+              ? [queuedInvite, ...nextInvites].slice(0, MAX_RECENT_INVITES)
+              : nextInvites,
+          );
         })
         .catch(() => {
           if (!result.invite) {

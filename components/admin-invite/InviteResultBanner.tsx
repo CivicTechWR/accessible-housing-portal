@@ -10,10 +10,11 @@ export function InviteResultBanner({ result }: InviteResultBannerProps) {
     return null;
   }
 
-  const isSuccess = result.status === "sent";
+  const variant =
+    result.status === "sent" ? "success" : result.status === "queued" ? "info" : "error";
 
   return (
-    <AlertBanner variant={isSuccess ? "success" : "error"} size="sm">
+    <AlertBanner variant={variant} size="sm">
       {result.message}
     </AlertBanner>
   );

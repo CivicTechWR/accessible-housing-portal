@@ -43,7 +43,8 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
 
     onResult(state);
 
-    if (state.status === "sent") {
+    // "queued" also created the invite; only true errors keep the form filled.
+    if (state.status === "sent" || state.status === "queued") {
       setName("");
       setEmail("");
       setOrganization("");

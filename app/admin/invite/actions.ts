@@ -52,15 +52,27 @@ export async function sendAdminInviteAction(
       };
     }
 
+    // Delivery happens through the durable email job queue, so the invite can
+    // exist while its email is still queued (or, rarely, dead-lettered).
+    // Report what actually happened instead of assuming the email went out.
+    if (result.value.data.emailDelivery === "failed") {
+      return {
+        status: "error",
+        message: result.value.message,
+      };
+    }
+
+    const status = result.value.data.emailDelivery === "queued" ? "queued" : "sent";
+
     return {
-      status: "sent",
+      status,
       message: result.value.message,
       invite: {
         id: result.value.data.id,
         email: result.value.data.email.trim().toLowerCase(),
         role: result.value.data.role,
         invitedAt: new Date().toISOString(),
-        status: "sent",
+        status,
       },
     };
   } catch (error) {

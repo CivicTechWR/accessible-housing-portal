@@ -22,14 +22,14 @@ export type InviteFormValues = {
   organization: string;
 };
 
-export type InviteStatus = "sent" | "error";
+export type InviteStatus = "sent" | "queued" | "error";
 
 export type InviteRecord = {
   id: string;
   email: string;
   role: InviteRole;
   invitedAt: string;
-  status: InviteStatus;
+  status: Exclude<InviteStatus, "error">;
 };
 
 export type InviteActionResult = {

@@ -237,17 +237,25 @@ describe("tryProcessEmailJobNow", () => {
     claimEmailJobByIdMock.mockResolvedValue(job);
     accountInviteHandlerMock.mockResolvedValue({ providerMessageId: "email_456" });
 
-    await tryProcessEmailJobNow(job.id);
+    await expect(tryProcessEmailJobNow(job.id)).resolves.toBe("sent");
 
     expect(markEmailJobSentMock).toHaveBeenCalledWith(job.id, {
       providerMessageId: "email_456",
     });
   });
 
-  it("leaves the job for the worker when it cannot be claimed", async () => {
+  it("reports the retried outcome when the provider call fails", async () => {
+    const job = makeJob();
+    claimEmailJobByIdMock.mockResolvedValue(job);
+    accountInviteHandlerMock.mockRejectedValue(new Error("Resend is unavailable"));
+
+    await expect(tryProcessEmailJobNow(job.id)).resolves.toBe("retried");
+  });
+
+  it("returns null and leaves the job for the worker when it cannot be claimed", async () => {
     claimEmailJobByIdMock.mockResolvedValue(null);
 
-    await tryProcessEmailJobNow("missing-job");
+    await expect(tryProcessEmailJobNow("missing-job")).resolves.toBeNull();
 
     expect(accountInviteHandlerMock).not.toHaveBeenCalled();
   });
@@ -256,7 +264,7 @@ describe("tryProcessEmailJobNow", () => {
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     claimEmailJobByIdMock.mockRejectedValue(new Error("db unavailable"));
 
-    await expect(tryProcessEmailJobNow("job-id")).resolves.toBeUndefined();
+    await expect(tryProcessEmailJobNow("job-id")).resolves.toBeNull();
 
     expect(consoleErrorSpy).toHaveBeenCalled();
     consoleErrorSpy.mockRestore();

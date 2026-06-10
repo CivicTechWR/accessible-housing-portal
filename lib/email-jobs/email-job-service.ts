@@ -149,19 +149,23 @@ export async function drainEmailJobs(
 
 /**
  * Best-effort immediate delivery right after enqueueing, so the common case
- * does not wait for a worker poll. Failures are swallowed: the job stays in
- * the queue and the retry/backoff machinery owns it from here.
+ * does not wait for a worker poll. Never throws: on any error the job stays
+ * in the queue and the retry/backoff machinery owns it from here. Returns the
+ * job outcome, or null when the job could not be claimed or processed, so
+ * callers can report delivery status truthfully instead of assuming success.
  */
-export async function tryProcessEmailJobNow(jobId: string) {
+export async function tryProcessEmailJobNow(jobId: string): Promise<EmailJobOutcome | null> {
   try {
     const job = await claimEmailJobById(jobId);
 
     if (!job) {
-      return;
+      return null;
     }
 
-    await processClaimedEmailJob(job);
+    return await processClaimedEmailJob(job);
   } catch (error) {
     console.error(`Immediate processing of email job ${jobId} failed; left for the worker.`, error);
+
+    return null;
   }
 }

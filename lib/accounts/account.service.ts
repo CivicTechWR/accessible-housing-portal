@@ -112,8 +112,18 @@ export async function createAccountService(
     sendInviteEmail: input.sendInviteEmail === true,
   });
 
+  const messageByEmailDelivery = {
+    sent: "Account invited",
+    queued:
+      "Account invited. The invite email is queued and will be delivered automatically once the email provider is reachable.",
+    failed:
+      "Account invited, but the invite email could not be delivered. Share the invite link manually or send a new invite.",
+  } as const;
+
   return succeed({
-    message: "Account invited",
+    message: invite.emailDelivery
+      ? messageByEmailDelivery[invite.emailDelivery]
+      : "Account invited",
     data: {
       id: invite.userId,
       email: invite.email,
@@ -121,6 +131,7 @@ export async function createAccountService(
       role: input.role,
       organization: invite.organization,
       inviteUrl: invite.inviteUrl,
+      emailDelivery: invite.emailDelivery,
     },
   });
 }

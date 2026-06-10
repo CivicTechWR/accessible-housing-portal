@@ -12,6 +12,14 @@ import { enqueueEmailJob, tryProcessEmailJobNow } from "@/lib/email-jobs/email-j
 
 const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
+/**
+ * Truthful delivery status for the invite email: "sent" only when the
+ * provider accepted it during the request, "queued" while the durable job
+ * still owns delivery, "failed" when the job already dead-lettered, and null
+ * when no email was requested.
+ */
+export type InviteEmailDelivery = "sent" | "queued" | "failed" | null;
+
 export async function createInvite(params: {
   email: string;
   fullName: string;
@@ -122,10 +130,19 @@ export async function createInvite(params: {
     };
   });
 
+  let emailDelivery: InviteEmailDelivery = null;
+
   if (result.emailJobId) {
     // Best effort so admins usually see the invite go out immediately; on
     // failure the job stays queued and the worker retries with backoff.
-    await tryProcessEmailJobNow(result.emailJobId);
+    const outcome = await tryProcessEmailJobNow(result.emailJobId);
+
+    emailDelivery =
+      outcome === "sent"
+        ? "sent"
+        : outcome === "failed" || outcome === "canceled"
+          ? "failed"
+          : "queued";
 
     const [invite] = await db
       .select()
@@ -139,5 +156,6 @@ export async function createInvite(params: {
   return {
     ...result,
     inviteUrl,
+    emailDelivery,
   };
 }

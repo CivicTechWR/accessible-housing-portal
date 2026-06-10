@@ -66,6 +66,8 @@ export const accountByIdResponseSchema = z.object({
   data: accountResponseDataSchema,
 });
 
+export const inviteEmailDeliverySchema = z.enum(["sent", "queued", "failed"]).nullable();
+
 export const createAccountResponseSchema = z.object({
   message: z.string(),
   data: z.object({
@@ -75,6 +77,7 @@ export const createAccountResponseSchema = z.object({
     role: accountRoleSchema,
     organization: z.string().nullable().optional(),
     inviteUrl: z.url(),
+    emailDelivery: inviteEmailDeliverySchema,
   }),
 });
 
