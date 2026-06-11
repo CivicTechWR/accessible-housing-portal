@@ -12,6 +12,7 @@ import {
   claimNextDueEmailJob,
   countEmailJobsByStatus,
   failExhaustedEmailJobs,
+  failStaleProcessingEmailJobs,
   findEmailJobByIdempotencyKey,
   insertEmailJob,
   markEmailJobCanceled,
@@ -167,6 +168,7 @@ export async function drainEmailJobs(
     backlog: { pending: 0, failed: 0 },
   };
 
+  summary.failed += await failStaleProcessingEmailJobs();
   summary.failed += await failExhaustedEmailJobs();
 
   while (Date.now() - startedAt < timeBudgetMs) {

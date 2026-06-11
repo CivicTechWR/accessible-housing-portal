@@ -9,6 +9,19 @@ export const DEFAULT_MAX_ATTEMPTS = 7;
  */
 export const PROCESSING_LEASE_MS = 10 * 60 * 1000;
 
+/**
+ * Stop reclaiming well before Resend's 24h idempotency window expires. The
+ * margin covers scheduler delay and the replacement provider request itself.
+ */
+export const MAX_PROCESSING_CLAIM_AGE_MS = 23 * 60 * 60 * 1000;
+
+export function getProcessingClaimCutoffs(now: Date) {
+  return {
+    leaseExpiredAtOrBefore: new Date(now.getTime() - PROCESSING_LEASE_MS),
+    staleAtOrBefore: new Date(now.getTime() - MAX_PROCESSING_CLAIM_AGE_MS),
+  };
+}
+
 const BASE_RETRY_DELAY_MS = 30 * 1000;
 const MAX_RETRY_DELAY_MS = 30 * 60 * 1000;
 const RETRY_JITTER_RATIO = 0.2;

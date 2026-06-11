@@ -60,11 +60,12 @@ same key has a unique index on `email_jobs`, so re-enqueueing is a no-op.
 **The provider-side dedupe is time-bounded**: Resend idempotency keys expire
 after 24 hours. A retry more than 24 hours after an unrecorded-but-delivered
 send (e.g. a timed-out request that actually landed) would deliver again.
-This is why production **requires a drain scheduler running every few
-minutes** (see below): with one, the whole retry schedule — 7 attempts,
-backoff capped at 30 minutes, 10-minute lease reclaims — completes within a
-few hours, comfortably inside the window. An infrequent (e.g. daily-only)
-drain would space retries ~24h apart and break the dedupe guarantee.
+Crash-abandoned processing claims are therefore reclaimable only between the
+10-minute lease expiry and a conservative 23-hour cutoff. Claims older than
+that are dead-lettered instead of retried, preventing that crash-and-outage
+path from causing duplicate delivery. Production still **requires a drain
+scheduler running every few minutes** (see below): pending retries after an
+ambiguous provider timeout must also complete inside the 24-hour window.
 
 ## Sensitive payloads
 

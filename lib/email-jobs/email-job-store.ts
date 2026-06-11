@@ -1,10 +1,10 @@
 import "server-only";
 
-import { and, asc, count, eq, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, lt, lte, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { emailJobs, type EmailJob, type EmailJobStatus, type NewEmailJob } from "@/db/schema";
-import { PROCESSING_LEASE_MS } from "@/lib/email-jobs/email-job-policy";
+import { getProcessingClaimCutoffs } from "@/lib/email-jobs/email-job-policy";
 
 type Database = typeof db;
 
@@ -35,13 +35,17 @@ export async function findEmailJobByIdempotencyKey(
 }
 
 function claimableEmailJobsFilter(now: Date) {
-  const leaseExpiredBefore = new Date(now.getTime() - PROCESSING_LEASE_MS);
+  const { leaseExpiredAtOrBefore, staleAtOrBefore } = getProcessingClaimCutoffs(now);
 
   return and(
     lt(emailJobs.attempts, emailJobs.maxAttempts),
     or(
       and(eq(emailJobs.status, "pending"), lte(emailJobs.runAfter, now)),
-      and(eq(emailJobs.status, "processing"), lte(emailJobs.claimedAt, leaseExpiredBefore)),
+      and(
+        eq(emailJobs.status, "processing"),
+        lte(emailJobs.claimedAt, leaseExpiredAtOrBefore),
+        gt(emailJobs.claimedAt, staleAtOrBefore),
+      ),
     ),
   );
 }
@@ -118,7 +122,7 @@ export async function claimEmailJobById(jobId: string, now = new Date()) {
  * failed instead of being stuck in processing forever.
  */
 export async function failExhaustedEmailJobs(now = new Date()) {
-  const leaseExpiredBefore = new Date(now.getTime() - PROCESSING_LEASE_MS);
+  const { leaseExpiredAtOrBefore } = getProcessingClaimCutoffs(now);
 
   const failed = await db
     .update(emailJobs)
@@ -131,10 +135,31 @@ export async function failExhaustedEmailJobs(now = new Date()) {
     .where(
       and(
         eq(emailJobs.status, "processing"),
-        lte(emailJobs.claimedAt, leaseExpiredBefore),
+        lte(emailJobs.claimedAt, leaseExpiredAtOrBefore),
         sql`${emailJobs.attempts} >= ${emailJobs.maxAttempts}`,
       ),
     )
+    .returning({ id: emailJobs.id });
+
+  return failed.length;
+}
+
+/**
+ * Dead-letters abandoned claims before retrying them could fall outside the
+ * provider's idempotency window and deliver the same logical email twice.
+ */
+export async function failStaleProcessingEmailJobs(now = new Date()) {
+  const { staleAtOrBefore } = getProcessingClaimCutoffs(now);
+
+  const failed = await db
+    .update(emailJobs)
+    .set({
+      status: "failed",
+      secretContext: null,
+      lastError: "Worker claim exceeded the provider idempotency safety window; not retried.",
+      updatedAt: now,
+    })
+    .where(and(eq(emailJobs.status, "processing"), lte(emailJobs.claimedAt, staleAtOrBefore)))
     .returning({ id: emailJobs.id });
 
   return failed.length;

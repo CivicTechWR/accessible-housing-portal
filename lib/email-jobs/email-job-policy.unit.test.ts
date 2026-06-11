@@ -1,8 +1,23 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { getRetryDelayMs, sanitizeEmailJobError } from "./email-job-policy";
+import {
+  getProcessingClaimCutoffs,
+  getRetryDelayMs,
+  sanitizeEmailJobError,
+} from "./email-job-policy";
 
 const NO_JITTER = () => 0.5;
+
+describe("getProcessingClaimCutoffs", () => {
+  it("reclaims expired leases only inside the provider idempotency safety window", () => {
+    const now = new Date("2026-06-11T12:00:00.000Z");
+
+    expect(getProcessingClaimCutoffs(now)).toEqual({
+      leaseExpiredAtOrBefore: new Date("2026-06-11T11:50:00.000Z"),
+      staleAtOrBefore: new Date("2026-06-10T13:00:00.000Z"),
+    });
+  });
+});
 
 describe("getRetryDelayMs", () => {
   it("doubles the delay per attempt starting at 30 seconds", () => {

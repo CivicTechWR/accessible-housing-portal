@@ -16,6 +16,7 @@ import {
   claimNextDueEmailJob,
   countEmailJobsByStatus,
   failExhaustedEmailJobs,
+  failStaleProcessingEmailJobs,
 } from "@/lib/email-jobs/email-job-store";
 import {
   drainEmailJobs,
@@ -34,6 +35,7 @@ jest.mock("@/lib/email-jobs/email-job-store", () => ({
   claimEmailJobById: jest.fn(),
   countEmailJobsByStatus: jest.fn(),
   failExhaustedEmailJobs: jest.fn(),
+  failStaleProcessingEmailJobs: jest.fn(),
   markEmailJobSent: jest.fn(),
   markEmailJobCanceled: jest.fn(),
   markEmailJobFailed: jest.fn(),
@@ -247,6 +249,7 @@ describe("drainEmailJobs", () => {
   it("claims and processes jobs one at a time until the queue is empty", async () => {
     const first = makeJob();
     const second = makeJob({ id: "5d3f0a52-7d92-4cf1-86fe-2f7f63726b02" });
+    jest.mocked(failStaleProcessingEmailJobs).mockResolvedValue(1);
     jest.mocked(failExhaustedEmailJobs).mockResolvedValue(1);
     jest
       .mocked(claimNextDueEmailJob)
@@ -265,13 +268,14 @@ describe("drainEmailJobs", () => {
       claimed: 2,
       sent: 2,
       retried: 0,
-      failed: 1,
+      failed: 2,
       canceled: 0,
       backlog: { pending: 3, failed: 2 },
     });
   });
 
   it("stops claiming once the time budget is spent", async () => {
+    jest.mocked(failStaleProcessingEmailJobs).mockResolvedValue(0);
     jest.mocked(failExhaustedEmailJobs).mockResolvedValue(0);
     jest.mocked(countEmailJobsByStatus).mockResolvedValue(0);
 
