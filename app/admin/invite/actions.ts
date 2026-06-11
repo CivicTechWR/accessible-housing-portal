@@ -72,7 +72,7 @@ export async function sendAdminInviteAction(
         email: result.value.data.email.trim().toLowerCase(),
         role: result.value.data.role,
         invitedAt: new Date().toISOString(),
-        status,
+        emailDelivery: status,
       },
     };
   } catch (error) {

@@ -1,10 +1,12 @@
 import "server-only";
 
-import { and, desc, eq, gt, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { userInvites, users, type UserRole } from "@/db/schema";
+import { emailJobs, userInvites, users, type UserRole } from "@/db/schema";
 import { hashOpaqueToken } from "@/lib/auth/token";
+
+export type InviteEmailDeliveryStatus = "sent" | "queued" | "failed";
 
 export type RecentAccountInviteRow = {
   id: string;
@@ -13,6 +15,7 @@ export type RecentAccountInviteRow = {
   role: UserRole;
   organization: string | null;
   invitedAt: Date;
+  emailDelivery: InviteEmailDeliveryStatus;
 };
 
 export type PendingAccountInviteRow = RecentAccountInviteRow & {
@@ -52,6 +55,31 @@ export async function getPendingInviteByToken(token: string) {
   return invite ?? null;
 }
 
+/**
+ * Joins an invite to its email job through the deterministic idempotency key
+ * (account_invite/<inviteId>), which is unique-indexed on email_jobs.
+ */
+const inviteEmailJobJoin = eq(
+  emailJobs.idempotencyKey,
+  sql`'account_invite/' || ${userInvites.id}::text`,
+);
+
+/**
+ * Truthful delivery state derived from the email job, not from sent_at alone:
+ * a failed or canceled job also has sent_at = null and must not read as
+ * queued. Invites with neither a job nor sent_at (manual link sharing) yield
+ * null and are excluded from email-centric lists.
+ */
+const inviteEmailDelivery = sql<InviteEmailDeliveryStatus | null>`
+  case
+    when ${emailJobs.status} in ('pending', 'processing') then 'queued'
+    when ${emailJobs.status} in ('failed', 'canceled') then 'failed'
+    when ${emailJobs.status} = 'sent' or ${userInvites.sentAt} is not null then 'sent'
+  end
+`;
+
+const inviteInvitedAtOrder = sql`coalesce(${userInvites.sentAt}, ${userInvites.createdAt})`;
+
 export async function findRecentAccountInvites(limit: number): Promise<RecentAccountInviteRow[]> {
   const rows = await db
     .select({
@@ -61,21 +89,24 @@ export async function findRecentAccountInvites(limit: number): Promise<RecentAcc
       role: users.role,
       organization: users.organization,
       sentAt: userInvites.sentAt,
+      createdAt: userInvites.createdAt,
+      emailDelivery: inviteEmailDelivery,
     })
     .from(userInvites)
     .innerJoin(users, eq(userInvites.userId, users.id))
+    .leftJoin(emailJobs, inviteEmailJobJoin)
     .where(
       and(
         isNull(userInvites.acceptedAt),
-        isNotNull(userInvites.sentAt),
         gt(userInvites.expiresAt, new Date()),
+        isNotNull(inviteEmailDelivery),
       ),
     )
-    .orderBy(desc(userInvites.sentAt), desc(userInvites.createdAt))
+    .orderBy(desc(inviteInvitedAtOrder), desc(userInvites.createdAt))
     .limit(limit);
 
   return rows.flatMap((row) => {
-    if (!row.sentAt) {
+    if (!row.emailDelivery) {
       return [];
     }
 
@@ -86,7 +117,8 @@ export async function findRecentAccountInvites(limit: number): Promise<RecentAcc
         name: row.name,
         role: row.role,
         organization: row.organization,
-        invitedAt: row.sentAt,
+        invitedAt: row.sentAt ?? row.createdAt,
+        emailDelivery: row.emailDelivery,
       },
     ];
   });
@@ -101,21 +133,24 @@ export async function findPendingAccountInvites(): Promise<PendingAccountInviteR
       role: users.role,
       organization: users.organization,
       sentAt: userInvites.sentAt,
+      createdAt: userInvites.createdAt,
       expiresAt: userInvites.expiresAt,
+      emailDelivery: inviteEmailDelivery,
     })
     .from(userInvites)
     .innerJoin(users, eq(userInvites.userId, users.id))
+    .leftJoin(emailJobs, inviteEmailJobJoin)
     .where(
       and(
         isNull(userInvites.acceptedAt),
-        isNotNull(userInvites.sentAt),
         gt(userInvites.expiresAt, new Date()),
+        isNotNull(inviteEmailDelivery),
       ),
     )
-    .orderBy(desc(userInvites.sentAt), desc(userInvites.createdAt));
+    .orderBy(desc(inviteInvitedAtOrder), desc(userInvites.createdAt));
 
   return rows.flatMap((row) => {
-    if (!row.sentAt) {
+    if (!row.emailDelivery) {
       return [];
     }
 
@@ -126,8 +161,9 @@ export async function findPendingAccountInvites(): Promise<PendingAccountInviteR
         name: row.name,
         role: row.role,
         organization: row.organization,
-        invitedAt: row.sentAt,
+        invitedAt: row.sentAt ?? row.createdAt,
         expiresAt: row.expiresAt,
+        emailDelivery: row.emailDelivery,
       },
     ];
   });

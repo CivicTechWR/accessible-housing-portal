@@ -92,6 +92,7 @@ export const accountInviteSchema = z.object({
   role: accountRoleSchema,
   organization: z.string().nullable(),
   invitedAt: z.string(),
+  emailDelivery: z.enum(["sent", "queued", "failed"]),
 });
 
 export const accountInviteListResponseSchema = z.object({

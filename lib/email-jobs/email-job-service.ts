@@ -147,25 +147,62 @@ export async function drainEmailJobs(
   return summary;
 }
 
+const DEFAULT_IMMEDIATE_PROCESS_TIMEOUT_MS = 5_000;
+
 /**
  * Best-effort immediate delivery right after enqueueing, so the common case
  * does not wait for a worker poll. Never throws: on any error the job stays
  * in the queue and the retry/backoff machinery owns it from here. Returns the
- * job outcome, or null when the job could not be claimed or processed, so
- * callers can report delivery status truthfully instead of assuming success.
+ * job outcome, or null when the job could not be claimed or processed within
+ * the deadline, so callers can report delivery status truthfully instead of
+ * assuming success.
+ *
+ * The deadline bounds the caller's request, but it does NOT cancel the
+ * in-flight attempt. If the runtime keeps the process alive, a late success
+ * still records sent; if the runtime freezes background work (serverless),
+ * the claimed job sits in processing until the lease expires and a worker
+ * reclaims it — the provider idempotency key prevents a double-send in case
+ * the original attempt did reach Resend.
  */
-export async function tryProcessEmailJobNow(jobId: string): Promise<EmailJobOutcome | null> {
+export async function tryProcessEmailJobNow(
+  jobId: string,
+  options: { timeoutMs?: number } = {},
+): Promise<EmailJobOutcome | null> {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_IMMEDIATE_PROCESS_TIMEOUT_MS;
+
   try {
-    const job = await claimEmailJobById(jobId);
+    return await withDeadline(
+      (async (): Promise<EmailJobOutcome | null> => {
+        const job = await claimEmailJobById(jobId);
 
-    if (!job) {
-      return null;
-    }
+        if (!job) {
+          return null;
+        }
 
-    return await processClaimedEmailJob(job);
+        return processClaimedEmailJob(job);
+      })(),
+      timeoutMs,
+    );
   } catch (error) {
     console.error(`Immediate processing of email job ${jobId} failed; left for the worker.`, error);
 
     return null;
   }
+}
+
+function withDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(null), timeoutMs);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      },
+    );
+  });
 }

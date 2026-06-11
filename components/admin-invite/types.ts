@@ -24,12 +24,18 @@ export type InviteFormValues = {
 
 export type InviteStatus = "sent" | "queued" | "error";
 
+/**
+ * Named emailDelivery (not status) because the admin users page already uses
+ * "Pending" as the acceptance status of an invite.
+ */
+export type InviteEmailDelivery = "sent" | "queued" | "failed";
+
 export type InviteRecord = {
   id: string;
   email: string;
   role: InviteRole;
   invitedAt: string;
-  status: Exclude<InviteStatus, "error">;
+  emailDelivery: InviteEmailDelivery;
 };
 
 export type InviteActionResult = {

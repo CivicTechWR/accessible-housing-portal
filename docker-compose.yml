@@ -37,6 +37,9 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-re_replace_me}
       EMAIL_FROM: ${EMAIL_FROM:-Affordable Housing Portal <no-reply@example.com>}
       CRON_SECRET: ${CRON_SECRET:-replace-with-a-random-secret}
+      # Optional dedicated key for encrypted email job payloads; empty falls
+      # back to a key derived from AUTH_SECRET.
+      EMAIL_JOB_SECRET_KEY: ${EMAIL_JOB_SECRET_KEY:-}
     ports:
       - "3000:3000"
     volumes:

@@ -49,20 +49,9 @@ export function useAdminInvite(input?: {
 
       void fetchRecentInvites()
         .then((nextInvites) => {
-          // The API only returns invites whose email already went out, so a
-          // queued invite must be kept visible from the action result.
-          const queuedInvite =
-            result.invite?.status === "queued" &&
-            !nextInvites.some((invite) => invite.id === result.invite?.id)
-              ? result.invite
-              : null;
-
-          queryClient.setQueryData(
-            queryKeys.recentInvites(),
-            queuedInvite
-              ? [queuedInvite, ...nextInvites].slice(0, MAX_RECENT_INVITES)
-              : nextInvites,
-          );
+          // The API derives emailDelivery from the email job, so queued and
+          // failed invites are included; no client-side merging is needed.
+          queryClient.setQueryData(queryKeys.recentInvites(), nextInvites);
         })
         .catch(() => {
           if (!result.invite) {

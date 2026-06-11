@@ -252,6 +252,31 @@ describe("tryProcessEmailJobNow", () => {
     await expect(tryProcessEmailJobNow(job.id)).resolves.toBe("retried");
   });
 
+  it("returns null at the deadline without cancelling the in-flight attempt", async () => {
+    const job = makeJob();
+    claimEmailJobByIdMock.mockResolvedValue(job);
+
+    let finishSend: (result: { providerMessageId: string }) => void = () => {};
+    accountInviteHandlerMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSend = resolve;
+        }),
+    );
+
+    await expect(tryProcessEmailJobNow(job.id, { timeoutMs: 10 })).resolves.toBeNull();
+    expect(markEmailJobSentMock).not.toHaveBeenCalled();
+
+    // A late success (process kept alive) still records the send; on runtimes
+    // that freeze background work, the lease + idempotency key take over.
+    finishSend({ providerMessageId: "late_123" });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(markEmailJobSentMock).toHaveBeenCalledWith(job.id, {
+      providerMessageId: "late_123",
+    });
+  });
+
   it("returns null and leaves the job for the worker when it cannot be claimed", async () => {
     claimEmailJobByIdMock.mockResolvedValue(null);
 

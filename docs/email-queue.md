@@ -16,7 +16,13 @@ of calling Resend directly from feature code.
    within the request. Failures are swallowed (the job stays queued), but the
    outcome is returned so callers report delivery truthfully: the admin invite
    flow surfaces "sent" only when the provider accepted the email and "queued"
-   otherwise, never a false success.
+   otherwise, never a false success. The attempt is bounded by a ~5s deadline
+   so a hanging provider cannot stall the admin request; the deadline does
+   not cancel the in-flight send. If the runtime keeps the process alive a
+   late success still records `sent`; on serverless runtimes that freeze
+   background work the claimed job waits out the 10-minute lease and is
+   reclaimed by a worker, with the provider idempotency key preventing a
+   double-send.
 3. **Worker drain** — A worker repeatedly claims due jobs and processes them.
    Claiming uses `SELECT ... FOR UPDATE SKIP LOCKED` plus a 10-minute
    processing lease, so any number of workers can run concurrently without

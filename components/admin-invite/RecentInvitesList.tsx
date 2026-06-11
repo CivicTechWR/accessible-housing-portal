@@ -40,7 +40,9 @@ export function RecentInvitesList({ invites }: RecentInvitesListProps) {
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{inviteRoleLabels[invite.role]}</Badge>
-                <Badge variant="secondary">{invite.status}</Badge>
+                <Badge variant={invite.emailDelivery === "failed" ? "destructive" : "secondary"}>
+                  {invite.emailDelivery}
+                </Badge>
               </div>
             </li>
           ))}
