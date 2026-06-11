@@ -43,7 +43,10 @@ export function useAdminInvite(input?: {
     (result: InviteActionResult) => {
       setLastResult(result);
 
-      if (result.status !== "sent" && result.status !== "queued") {
+      const inviteWasCreated =
+        result.status === "sent" || result.status === "queued" || Boolean(result.inviteUrl);
+
+      if (!inviteWasCreated) {
         return;
       }
 

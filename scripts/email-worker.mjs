@@ -10,6 +10,7 @@
 const appUrl = process.env.EMAIL_WORKER_APP_URL ?? "http://localhost:3000";
 const cronSecret = process.env.CRON_SECRET;
 const pollIntervalMs = Number(process.env.EMAIL_WORKER_POLL_INTERVAL_MS ?? 15_000);
+const drainRequestTimeoutMs = 90_000;
 
 if (!cronSecret) {
   console.error("CRON_SECRET is not set. The worker cannot authenticate against the app.");
@@ -38,6 +39,7 @@ process.on("SIGTERM", () => requestStop("SIGTERM"));
 async function drainOnce() {
   const response = await fetch(drainUrl, {
     method: "POST",
+    signal: AbortSignal.timeout(drainRequestTimeoutMs),
     headers: {
       authorization: `Bearer ${cronSecret}`,
     },

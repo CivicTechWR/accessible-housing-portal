@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Resend } from "resend";
+import { Resend, type ErrorResponse } from "resend";
 
 export type TransactionalEmailSendOptions = {
   /**
@@ -40,6 +40,17 @@ export type TransactionalEmailContent = {
   html: string;
 };
 
+export class TransactionalEmailProviderError extends Error {
+  constructor(
+    message: string,
+    readonly providerCode: ErrorResponse["name"],
+    readonly statusCode: number | null,
+  ) {
+    super(message);
+    this.name = "TransactionalEmailProviderError";
+  }
+}
+
 /**
  * Single Resend call site for transactional email. Only the email job worker
  * should call this; feature code enqueues jobs via lib/email-jobs instead.
@@ -77,7 +88,11 @@ export async function sendTransactionalEmail(
   );
 
   if (result.error) {
-    throw new Error(result.error.message);
+    throw new TransactionalEmailProviderError(
+      result.error.message,
+      result.error.name,
+      result.error.statusCode,
+    );
   }
 
   return result.data?.id ?? null;

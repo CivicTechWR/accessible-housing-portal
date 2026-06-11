@@ -2,13 +2,16 @@ import { afterAll, beforeEach, describe, expect, it, jest } from "@jest/globals"
 
 import { Resend } from "resend";
 
-import { sendTransactionalEmail } from "@/lib/email";
+import { sendTransactionalEmail, TransactionalEmailProviderError } from "@/lib/email";
 
 jest.mock("resend", () => ({
   Resend: jest.fn(),
 }));
 
-type SendResult = { data: { id: string } | null; error: { message: string } | null };
+type SendResult = {
+  data: { id: string } | null;
+  error: { message: string; name: string; statusCode: number | null } | null;
+};
 
 const sendMock = jest.fn<(...args: unknown[]) => Promise<SendResult>>();
 
@@ -69,9 +72,17 @@ describe("sendTransactionalEmail", () => {
   });
 
   it("throws when the provider reports an error", async () => {
-    sendMock.mockResolvedValue({ data: null, error: { message: "Invalid recipient" } });
+    sendMock.mockResolvedValue({
+      data: null,
+      error: { message: "Invalid recipient", name: "validation_error", statusCode: 422 },
+    });
 
-    await expect(sendTransactionalEmail(SEND_PARAMS)).rejects.toThrow("Invalid recipient");
+    await expect(sendTransactionalEmail(SEND_PARAMS)).rejects.toMatchObject({
+      message: "Invalid recipient",
+      name: "TransactionalEmailProviderError",
+      providerCode: "validation_error",
+      statusCode: 422,
+    } satisfies Partial<TransactionalEmailProviderError>);
   });
 
   it("fails the attempt when the provider exceeds the send timeout", async () => {

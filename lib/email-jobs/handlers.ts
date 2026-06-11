@@ -5,7 +5,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { userInvites, users, type EmailJob } from "@/db/schema";
 import { renderAccountInviteEmail } from "@/lib/auth/invite-email";
-import { sendTransactionalEmail } from "@/lib/email";
+import { sendTransactionalEmail, TransactionalEmailProviderError } from "@/lib/email";
 import { EmailJobCanceledError } from "@/lib/email-jobs/errors";
 import { decryptSecretContext } from "@/lib/email-jobs/secret-context";
 import type {
@@ -54,11 +54,27 @@ async function handleAccountInviteEmailJob(job: EmailJob): Promise<EmailJobHandl
     inviteUrl,
   });
 
-  const providerMessageId = await sendTransactionalEmail({
-    to: row.invite.email,
-    ...content,
-    idempotencyKey: job.idempotencyKey,
-  });
+  let providerMessageId: string | null;
+
+  try {
+    providerMessageId = await sendTransactionalEmail({
+      to: row.invite.email,
+      ...content,
+      idempotencyKey: job.idempotencyKey,
+    });
+  } catch (error) {
+    if (
+      !(error instanceof TransactionalEmailProviderError) ||
+      error.providerCode !== "invalid_idempotent_request"
+    ) {
+      throw error;
+    }
+
+    // Resend only returns this when the key already belongs to a previously
+    // accepted email with a different payload. Treat that prior send as the
+    // successful outcome instead of retrying the mismatched request forever.
+    providerMessageId = null;
+  }
 
   await db
     .update(userInvites)
