@@ -13,7 +13,7 @@ import {
 } from "@/lib/email-jobs/email-job-store";
 import { emailJobHandlers } from "@/lib/email-jobs/handlers";
 import {
-  claimDueEmailJobs,
+  claimNextDueEmailJob,
   countEmailJobsByStatus,
   failExhaustedEmailJobs,
 } from "@/lib/email-jobs/email-job-store";
@@ -30,7 +30,7 @@ jest.mock("@/db", () => ({ db: {} }));
 jest.mock("@/lib/email-jobs/email-job-store", () => ({
   insertEmailJob: jest.fn(),
   findEmailJobByIdempotencyKey: jest.fn(),
-  claimDueEmailJobs: jest.fn(),
+  claimNextDueEmailJob: jest.fn(),
   claimEmailJobById: jest.fn(),
   countEmailJobsByStatus: jest.fn(),
   failExhaustedEmailJobs: jest.fn(),
@@ -57,6 +57,7 @@ const accountInviteHandlerMock = jest.mocked(emailJobHandlers.account_invite);
 
 const INVITE_ID = "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204";
 const INVITE_URL = "https://housing.example.org/invite?token=raw-secret-token";
+const CLAIMED_AT = new Date("2026-06-11T12:00:00.000Z");
 
 function makeJob(overrides: Partial<EmailJob> = {}): EmailJob {
   return {
@@ -70,7 +71,7 @@ function makeJob(overrides: Partial<EmailJob> = {}): EmailJob {
     attempts: 1,
     maxAttempts: 7,
     runAfter: new Date(),
-    claimedAt: new Date(),
+    claimedAt: CLAIMED_AT,
     sentAt: null,
     providerMessageId: null,
     lastError: null,
@@ -83,6 +84,12 @@ function makeJob(overrides: Partial<EmailJob> = {}): EmailJob {
 beforeEach(() => {
   jest.clearAllMocks();
   process.env.EMAIL_JOB_SECRET_KEY = Buffer.alloc(32, 9).toString("base64");
+
+  // Outcome writes report whether the claim was still owned; default to yes.
+  markEmailJobSentMock.mockResolvedValue(true);
+  markEmailJobCanceledMock.mockResolvedValue(true);
+  markEmailJobFailedMock.mockResolvedValue(true);
+  scheduleEmailJobRetryMock.mockResolvedValue(true);
 });
 
 afterAll(() => {
@@ -151,8 +158,29 @@ describe("processClaimedEmailJob", () => {
 
     expect(markEmailJobSentMock).toHaveBeenCalledWith(job.id, {
       providerMessageId: "email_123",
+      claimedAt: CLAIMED_AT,
     });
     expect(scheduleEmailJobRetryMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses to process a job that carries no claim", async () => {
+    const job = makeJob({ claimedAt: null });
+
+    await expect(processClaimedEmailJob(job)).rejects.toThrow("only claimed jobs can be processed");
+
+    expect(accountInviteHandlerMock).not.toHaveBeenCalled();
+  });
+
+  it("warns instead of clobbering state when the claim was superseded", async () => {
+    const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const job = makeJob();
+    accountInviteHandlerMock.mockResolvedValue({ providerMessageId: "email_123" });
+    markEmailJobSentMock.mockResolvedValue(false);
+
+    await expect(processClaimedEmailJob(job)).resolves.toBe("sent");
+
+    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining("was not recorded"));
+    consoleWarnSpy.mockRestore();
   });
 
   it("schedules a bounded backoff retry on transient failure", async () => {
@@ -167,6 +195,7 @@ describe("processClaimedEmailJob", () => {
     const retry = scheduleEmailJobRetryMock.mock.calls[0]?.[1];
 
     expect(retry?.error).toBe("Resend is unavailable");
+    expect(retry?.claimedAt).toBe(CLAIMED_AT);
     // Attempt 2 backs off 60s ± 20% jitter.
     const delayMs = (retry?.runAfter.getTime() ?? 0) - before;
     expect(delayMs).toBeGreaterThanOrEqual(48_000);
@@ -179,7 +208,10 @@ describe("processClaimedEmailJob", () => {
 
     await expect(processClaimedEmailJob(job)).resolves.toBe("failed");
 
-    expect(markEmailJobFailedMock).toHaveBeenCalledWith(job.id, { error: "still failing" });
+    expect(markEmailJobFailedMock).toHaveBeenCalledWith(job.id, {
+      error: "still failing",
+      claimedAt: CLAIMED_AT,
+    });
     expect(scheduleEmailJobRetryMock).not.toHaveBeenCalled();
   });
 
@@ -193,6 +225,7 @@ describe("processClaimedEmailJob", () => {
 
     expect(markEmailJobCanceledMock).toHaveBeenCalledWith(job.id, {
       reason: "Invite was already accepted.",
+      claimedAt: CLAIMED_AT,
     });
     expect(scheduleEmailJobRetryMock).not.toHaveBeenCalled();
     expect(markEmailJobFailedMock).not.toHaveBeenCalled();
@@ -211,15 +244,23 @@ describe("processClaimedEmailJob", () => {
 });
 
 describe("drainEmailJobs", () => {
-  it("processes claimed batches until the queue is empty and reports the backlog", async () => {
-    const jobs = [makeJob(), makeJob({ id: "5d3f0a52-7d92-4cf1-86fe-2f7f63726b02" })];
+  it("claims and processes jobs one at a time until the queue is empty", async () => {
+    const first = makeJob();
+    const second = makeJob({ id: "5d3f0a52-7d92-4cf1-86fe-2f7f63726b02" });
     jest.mocked(failExhaustedEmailJobs).mockResolvedValue(1);
-    jest.mocked(claimDueEmailJobs).mockResolvedValueOnce(jobs).mockResolvedValue([]);
+    jest
+      .mocked(claimNextDueEmailJob)
+      .mockResolvedValueOnce(first)
+      .mockResolvedValueOnce(second)
+      .mockResolvedValue(null);
     jest.mocked(countEmailJobsByStatus).mockResolvedValueOnce(3).mockResolvedValueOnce(2);
     accountInviteHandlerMock.mockResolvedValue({ providerMessageId: "email_789" });
 
-    const summary = await drainEmailJobs({ batchSize: 10 });
+    const summary = await drainEmailJobs();
 
+    // One claim per job: a hung send can only burn the attempt of the job it
+    // is actually processing, never those of jobs claimed alongside it.
+    expect(jest.mocked(claimNextDueEmailJob)).toHaveBeenCalledTimes(3);
     expect(summary).toEqual({
       claimed: 2,
       sent: 2,
@@ -228,6 +269,16 @@ describe("drainEmailJobs", () => {
       canceled: 0,
       backlog: { pending: 3, failed: 2 },
     });
+  });
+
+  it("stops claiming once the time budget is spent", async () => {
+    jest.mocked(failExhaustedEmailJobs).mockResolvedValue(0);
+    jest.mocked(countEmailJobsByStatus).mockResolvedValue(0);
+
+    const summary = await drainEmailJobs({ timeBudgetMs: 0 });
+
+    expect(jest.mocked(claimNextDueEmailJob)).not.toHaveBeenCalled();
+    expect(summary.claimed).toBe(0);
   });
 });
 
@@ -241,6 +292,7 @@ describe("tryProcessEmailJobNow", () => {
 
     expect(markEmailJobSentMock).toHaveBeenCalledWith(job.id, {
       providerMessageId: "email_456",
+      claimedAt: CLAIMED_AT,
     });
   });
 
@@ -267,13 +319,15 @@ describe("tryProcessEmailJobNow", () => {
     await expect(tryProcessEmailJobNow(job.id, { timeoutMs: 10 })).resolves.toBeNull();
     expect(markEmailJobSentMock).not.toHaveBeenCalled();
 
-    // A late success (process kept alive) still records the send; on runtimes
-    // that freeze background work, the lease + idempotency key take over.
+    // A late success (process kept alive) still records the send while this
+    // attempt's claim is held; after a lease-expiry reclaim the write becomes
+    // a no-op and the idempotency key keeps the email exactly-once.
     finishSend({ providerMessageId: "late_123" });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(markEmailJobSentMock).toHaveBeenCalledWith(job.id, {
       providerMessageId: "late_123",
+      claimedAt: CLAIMED_AT,
     });
   });
 

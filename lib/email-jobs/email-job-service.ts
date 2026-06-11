@@ -8,8 +8,8 @@ import {
   sanitizeEmailJobError,
 } from "@/lib/email-jobs/email-job-policy";
 import {
-  claimDueEmailJobs,
   claimEmailJobById,
+  claimNextDueEmailJob,
   countEmailJobsByStatus,
   failExhaustedEmailJobs,
   findEmailJobByIdempotencyKey,
@@ -30,7 +30,6 @@ import type {
   EnqueueEmailJobResult,
 } from "@/lib/email-jobs/types";
 
-const DEFAULT_DRAIN_BATCH_SIZE = 10;
 const DEFAULT_DRAIN_TIME_BUDGET_MS = 50 * 1000;
 
 /**
@@ -72,17 +71,36 @@ export async function enqueueEmailJob(
  * Runs a job that was already claimed (status=processing, attempts bumped)
  * and records the outcome. Unexpected errors retry with bounded backoff until
  * attempts are exhausted, then the job is dead-lettered as failed.
+ *
+ * Every outcome write presents the claim's claimed_at token, so a writer
+ * whose lease expired and whose job was reclaimed cannot overwrite the new
+ * owner's state; the returned outcome then describes an attempt that was not
+ * recorded (the provider idempotency key keeps the email itself exactly-once).
  */
 export async function processClaimedEmailJob(job: EmailJob): Promise<EmailJobOutcome> {
+  const claimedAt = job.claimedAt;
+
+  if (!claimedAt) {
+    throw new Error(`Email job ${job.id} has no claim; only claimed jobs can be processed.`);
+  }
+
   try {
     const { providerMessageId } = await emailJobHandlers[job.type](job);
 
-    await markEmailJobSent(job.id, { providerMessageId });
+    warnIfClaimSuperseded(
+      await markEmailJobSent(job.id, { providerMessageId, claimedAt }),
+      job,
+      "sent",
+    );
 
     return "sent";
   } catch (error) {
     if (error instanceof EmailJobCanceledError) {
-      await markEmailJobCanceled(job.id, { reason: sanitizeEmailJobError(error) });
+      warnIfClaimSuperseded(
+        await markEmailJobCanceled(job.id, { reason: sanitizeEmailJobError(error), claimedAt }),
+        job,
+        "canceled",
+      );
 
       return "canceled";
     }
@@ -90,28 +108,50 @@ export async function processClaimedEmailJob(job: EmailJob): Promise<EmailJobOut
     const sanitizedError = sanitizeEmailJobError(error);
 
     if (job.attempts >= job.maxAttempts) {
-      await markEmailJobFailed(job.id, { error: sanitizedError });
+      warnIfClaimSuperseded(
+        await markEmailJobFailed(job.id, { error: sanitizedError, claimedAt }),
+        job,
+        "failed",
+      );
 
       return "failed";
     }
 
-    await scheduleEmailJobRetry(job.id, {
-      runAfter: new Date(Date.now() + getRetryDelayMs(job.attempts)),
-      error: sanitizedError,
-    });
+    warnIfClaimSuperseded(
+      await scheduleEmailJobRetry(job.id, {
+        runAfter: new Date(Date.now() + getRetryDelayMs(job.attempts)),
+        error: sanitizedError,
+        claimedAt,
+      }),
+      job,
+      "retried",
+    );
 
     return "retried";
+  }
+}
+
+function warnIfClaimSuperseded(recorded: boolean, job: EmailJob, outcome: EmailJobOutcome) {
+  if (!recorded) {
+    console.warn(
+      `Email job ${job.id} outcome "${outcome}" was not recorded: the claim expired and the job was reclaimed by another worker.`,
+    );
   }
 }
 
 /**
  * Claims and processes due jobs until the queue is drained or the time budget
  * is spent. Safe to run from several workers at once.
+ *
+ * Jobs are claimed strictly one at a time: a claim burns an attempt, so a
+ * batch claim would let one hung send (or a killed worker) exhaust the
+ * attempts of jobs that were never processed. With single claims, a stall
+ * costs at most the attempt of the job that actually stalled, and the time
+ * budget is re-checked before every claim.
  */
 export async function drainEmailJobs(
-  options: { batchSize?: number; timeBudgetMs?: number } = {},
+  options: { timeBudgetMs?: number } = {},
 ): Promise<DrainEmailJobsSummary> {
-  const batchSize = options.batchSize ?? DEFAULT_DRAIN_BATCH_SIZE;
   const timeBudgetMs = options.timeBudgetMs ?? DEFAULT_DRAIN_TIME_BUDGET_MS;
   const startedAt = Date.now();
 
@@ -127,18 +167,16 @@ export async function drainEmailJobs(
   summary.failed += await failExhaustedEmailJobs();
 
   while (Date.now() - startedAt < timeBudgetMs) {
-    const jobs = await claimDueEmailJobs({ limit: batchSize });
+    const job = await claimNextDueEmailJob();
 
-    if (jobs.length === 0) {
+    if (!job) {
       break;
     }
 
-    summary.claimed += jobs.length;
+    summary.claimed += 1;
 
-    for (const job of jobs) {
-      const outcome = await processClaimedEmailJob(job);
-      summary[outcome] += 1;
-    }
+    const outcome = await processClaimedEmailJob(job);
+    summary[outcome] += 1;
   }
 
   summary.backlog.pending = await countEmailJobsByStatus("pending");
@@ -158,11 +196,12 @@ const DEFAULT_IMMEDIATE_PROCESS_TIMEOUT_MS = 5_000;
  * assuming success.
  *
  * The deadline bounds the caller's request, but it does NOT cancel the
- * in-flight attempt. If the runtime keeps the process alive, a late success
- * still records sent; if the runtime freezes background work (serverless),
- * the claimed job sits in processing until the lease expires and a worker
- * reclaims it — the provider idempotency key prevents a double-send in case
- * the original attempt did reach Resend.
+ * in-flight attempt (the provider call itself is bounded by the send timeout
+ * in lib/email.ts). If the runtime keeps the process alive, a late outcome is
+ * still recorded as long as this attempt's claim is held; once the lease
+ * expires and a worker reclaims the job, the stale write becomes a no-op and
+ * the provider idempotency key prevents a double-send in case the original
+ * attempt did reach Resend.
  */
 export async function tryProcessEmailJobNow(
   jobId: string,

@@ -18,18 +18,29 @@ of calling Resend directly from feature code.
    flow surfaces "sent" only when the provider accepted the email and "queued"
    otherwise, never a false success. The attempt is bounded by a ~5s deadline
    so a hanging provider cannot stall the admin request; the deadline does
-   not cancel the in-flight send. If the runtime keeps the process alive a
-   late success still records `sent`; on serverless runtimes that freeze
-   background work the claimed job waits out the 10-minute lease and is
-   reclaimed by a worker, with the provider idempotency key preventing a
-   double-send.
+   not cancel the in-flight send (the provider call itself is bounded by the
+   15s send timeout). If the runtime keeps the process alive a late outcome
+   is still recorded as long as the attempt's claim is held; on serverless
+   runtimes that freeze background work the claimed job waits out the
+   10-minute lease and is reclaimed by a worker, with the provider
+   idempotency key preventing a double-send.
 3. **Worker drain** — A worker repeatedly claims due jobs and processes them.
    Claiming uses `SELECT ... FOR UPDATE SKIP LOCKED` plus a 10-minute
    processing lease, so any number of workers can run concurrently without
-   double-claiming, and jobs from crashed workers are reclaimed.
-4. **Retries** — Transient failures are retried with exponential backoff
-   (30s doubling to a 30min cap, ±20% jitter) up to `max_attempts` (default 7).
-   Exhausted jobs are dead-lettered as `failed` with sanitized error context.
+   double-claiming, and jobs from crashed workers are reclaimed. Jobs are
+   claimed **one at a time**: a claim burns an attempt, so claiming a batch
+   would let one hung send (or a killed worker) exhaust the attempts of jobs
+   that were never processed.
+4. **Retries** — Each provider call is bounded by a hard 15s timeout, and
+   transient failures are retried with exponential backoff (30s doubling to a
+   30min cap, ±20% jitter) up to `max_attempts` (default 7). Exhausted jobs
+   are dead-lettered as `failed` with sanitized error context.
+5. **Claim ownership** — Every outcome write (`sent`, `canceled`, `failed`,
+   retry) must present the `claimed_at` token of the claim it belongs to. A
+   stale writer — e.g. a very late inline attempt whose job was already
+   reclaimed after its lease expired — becomes a no-op instead of clobbering
+   the state written by the worker that now owns the job; the provider
+   idempotency key keeps the email itself exactly-once throughout.
 
 ## Job lifecycle
 
@@ -74,15 +85,18 @@ call. It is safe to call from several schedulers at once.
   `EMAIL_WORKER_POLL_INTERVAL_MS`, default `http://localhost:3000` / 15s).
 - **Docker** — `docker compose --profile worker up` starts the `email-worker`
   service alongside the app.
-- **Vercel / serverless** — schedule the endpoint with a cron, e.g. in
-  `vercel.json`:
+- **Vercel / serverless** — the repository ships a `vercel.json` that
+  schedules the endpoint daily:
 
   ```json
-  { "crons": [{ "path": "/api/cron/email-jobs", "schedule": "* * * * *" }] }
+  { "crons": [{ "path": "/api/cron/email-jobs", "schedule": "0 6 * * *" }] }
   ```
 
-  Vercel sends `Authorization: Bearer $CRON_SECRET` automatically when the
-  `CRON_SECRET` env var is set.
+  The daily schedule is the most frequent one Vercel Hobby plans allow; on a
+  Pro plan, tighten it (e.g. `*/5 * * * *`) so retries drain within minutes
+  instead of relying on the inline attempt. Vercel sends
+  `Authorization: Bearer $CRON_SECRET` automatically when the `CRON_SECRET`
+  env var is set.
 
 - **Self-hosted deployment** — run `node scripts/email-worker.mjs` as a
   long-lived process (systemd, container), or hit the endpoint from system

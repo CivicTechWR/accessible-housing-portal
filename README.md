@@ -144,7 +144,7 @@ Use `npm run format` and `npm run lint:fix` for automatic formatting and lint fi
 
 ## Transactional Email
 
-Transactional email (account invites today) is delivered through a Postgres-backed job queue with retries, idempotent sends, and encrypted handling of one-time URLs — feature code never calls Resend directly. See [docs/email-queue.md](docs/email-queue.md) for the design and for worker setup in local dev (`npm run email:worker`), Docker (`docker compose --profile worker up`), and deployment (cron hitting `/api/cron/email-jobs` with `CRON_SECRET`).
+Transactional email (account invites today) is delivered through a Postgres-backed job queue with retries, idempotent sends, and encrypted handling of one-time URLs — feature code never calls Resend directly. See [docs/email-queue.md](docs/email-queue.md) for the design and for worker setup in local dev (`npm run email:worker`), Docker (`docker compose --profile worker up`), and deployment (`vercel.json` schedules a cron against `/api/cron/email-jobs` authorized by `CRON_SECRET`; self-hosted deployments run the polling worker or system cron instead).
 
 ## Architecture Notes
 

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, count, eq, inArray, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, lt, lte, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { emailJobs, type EmailJob, type EmailJobStatus, type NewEmailJob } from "@/db/schema";
@@ -47,27 +47,29 @@ function claimableEmailJobsFilter(now: Date) {
 }
 
 /**
- * Atomically claims due jobs for one worker. SELECT ... FOR UPDATE SKIP LOCKED
- * lets concurrent workers claim disjoint sets, and lease-expired processing
- * jobs from crashed workers become claimable again.
+ * Atomically claims the single most overdue job. SELECT ... FOR UPDATE SKIP
+ * LOCKED lets concurrent workers claim disjoint jobs, and lease-expired
+ * processing jobs from crashed workers become claimable again.
+ *
+ * Deliberately claims one job at a time: claiming a batch would bump attempts
+ * on jobs the worker never reaches if an earlier send hangs or the process is
+ * killed, eventually dead-lettering emails that were never tried.
  */
-export async function claimDueEmailJobs(params: { limit: number; now?: Date }) {
-  const now = params.now ?? new Date();
-
-  return db.transaction(async (tx): Promise<EmailJob[]> => {
-    const due = await tx
+export async function claimNextDueEmailJob(now = new Date()) {
+  return db.transaction(async (tx): Promise<EmailJob | null> => {
+    const [due] = await tx
       .select({ id: emailJobs.id })
       .from(emailJobs)
       .where(claimableEmailJobsFilter(now))
       .orderBy(asc(emailJobs.runAfter))
-      .limit(params.limit)
+      .limit(1)
       .for("update", { skipLocked: true });
 
-    if (due.length === 0) {
-      return [];
+    if (!due) {
+      return null;
     }
 
-    return tx
+    const [job] = await tx
       .update(emailJobs)
       .set({
         status: "processing",
@@ -75,13 +77,10 @@ export async function claimDueEmailJobs(params: { limit: number; now?: Date }) {
         attempts: sql`${emailJobs.attempts} + 1`,
         updatedAt: now,
       })
-      .where(
-        inArray(
-          emailJobs.id,
-          due.map((row) => row.id),
-        ),
-      )
+      .where(eq(emailJobs.id, due.id))
       .returning();
+
+    return job ?? null;
   });
 }
 
@@ -141,13 +140,28 @@ export async function failExhaustedEmailJobs(now = new Date()) {
   return failed.length;
 }
 
+/**
+ * A claim is identified by the claimed_at timestamp the claiming transaction
+ * wrote. Outcome writes must present it, so a writer whose claim was reclaimed
+ * after its lease expired (e.g. a very late inline attempt) becomes a no-op
+ * instead of clobbering the state of whichever worker now owns the job.
+ * Returns whether the write landed.
+ */
+function ownsClaim(jobId: string, claimedAt: Date) {
+  return and(
+    eq(emailJobs.id, jobId),
+    eq(emailJobs.status, "processing"),
+    eq(emailJobs.claimedAt, claimedAt),
+  );
+}
+
 export async function markEmailJobSent(
   jobId: string,
-  params: { providerMessageId: string | null; sentAt?: Date },
+  params: { providerMessageId: string | null; claimedAt: Date; sentAt?: Date },
 ) {
   const sentAt = params.sentAt ?? new Date();
 
-  await db
+  const updated = await db
     .update(emailJobs)
     .set({
       status: "sent",
@@ -157,11 +171,17 @@ export async function markEmailJobSent(
       lastError: null,
       updatedAt: sentAt,
     })
-    .where(eq(emailJobs.id, jobId));
+    .where(ownsClaim(jobId, params.claimedAt))
+    .returning({ id: emailJobs.id });
+
+  return updated.length > 0;
 }
 
-export async function markEmailJobCanceled(jobId: string, params: { reason: string }) {
-  await db
+export async function markEmailJobCanceled(
+  jobId: string,
+  params: { reason: string; claimedAt: Date },
+) {
+  const updated = await db
     .update(emailJobs)
     .set({
       status: "canceled",
@@ -169,11 +189,17 @@ export async function markEmailJobCanceled(jobId: string, params: { reason: stri
       lastError: params.reason,
       updatedAt: new Date(),
     })
-    .where(and(eq(emailJobs.id, jobId), eq(emailJobs.status, "processing")));
+    .where(ownsClaim(jobId, params.claimedAt))
+    .returning({ id: emailJobs.id });
+
+  return updated.length > 0;
 }
 
-export async function markEmailJobFailed(jobId: string, params: { error: string }) {
-  await db
+export async function markEmailJobFailed(
+  jobId: string,
+  params: { error: string; claimedAt: Date },
+) {
+  const updated = await db
     .update(emailJobs)
     .set({
       status: "failed",
@@ -181,14 +207,17 @@ export async function markEmailJobFailed(jobId: string, params: { error: string 
       lastError: params.error,
       updatedAt: new Date(),
     })
-    .where(and(eq(emailJobs.id, jobId), eq(emailJobs.status, "processing")));
+    .where(ownsClaim(jobId, params.claimedAt))
+    .returning({ id: emailJobs.id });
+
+  return updated.length > 0;
 }
 
 export async function scheduleEmailJobRetry(
   jobId: string,
-  params: { runAfter: Date; error: string },
+  params: { runAfter: Date; error: string; claimedAt: Date },
 ) {
-  await db
+  const updated = await db
     .update(emailJobs)
     .set({
       status: "pending",
@@ -197,7 +226,10 @@ export async function scheduleEmailJobRetry(
       lastError: params.error,
       updatedAt: new Date(),
     })
-    .where(and(eq(emailJobs.id, jobId), eq(emailJobs.status, "processing")));
+    .where(ownsClaim(jobId, params.claimedAt))
+    .returning({ id: emailJobs.id });
+
+  return updated.length > 0;
 }
 
 export async function countEmailJobsByStatus(status: EmailJobStatus) {

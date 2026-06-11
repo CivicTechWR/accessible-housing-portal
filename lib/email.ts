@@ -8,7 +8,11 @@ export type TransactionalEmailSendOptions = {
    * Do not use a random per-attempt value or provider retries can duplicate sends.
    */
   idempotencyKey: string;
+  /** Hard upper bound on the provider call; the attempt fails past it. */
+  timeoutMs?: number;
 };
+
+const DEFAULT_SEND_TIMEOUT_MS = 15_000;
 
 export function getEmailFromAddress() {
   const from = process.env.EMAIL_FROM;
@@ -39,6 +43,12 @@ export type TransactionalEmailContent = {
 /**
  * Single Resend call site for transactional email. Only the email job worker
  * should call this; feature code enqueues jobs via lib/email-jobs instead.
+ *
+ * The send is raced against a hard deadline so a hanging provider connection
+ * cannot stall a worker or a drain call. The SDK does not expose an abort
+ * signal, so the abandoned request may still deliver; that is safe because
+ * the retry reuses the same idempotency key (Resend dedupes) and stale job
+ * outcome writes require claim ownership.
  */
 export async function sendTransactionalEmail(
   params: {
@@ -47,17 +57,22 @@ export async function sendTransactionalEmail(
     TransactionalEmailSendOptions,
 ) {
   const resend = createResendClient();
-  const result = await resend.emails.send(
-    {
-      from: getEmailFromAddress(),
-      to: params.to,
-      subject: params.subject,
-      text: params.text,
-      html: params.html,
-    },
-    {
-      idempotencyKey: params.idempotencyKey,
-    },
+  const timeoutMs = params.timeoutMs ?? DEFAULT_SEND_TIMEOUT_MS;
+
+  const result = await withSendTimeout(
+    resend.emails.send(
+      {
+        from: getEmailFromAddress(),
+        to: params.to,
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+      },
+      {
+        idempotencyKey: params.idempotencyKey,
+      },
+    ),
+    timeoutMs,
   );
 
   if (result.error) {
@@ -65,4 +80,22 @@ export async function sendTransactionalEmail(
   }
 
   return result.data?.id ?? null;
+}
+
+async function withSendTimeout<T>(send: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      send,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`Email provider did not respond within ${timeoutMs}ms.`)),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
