@@ -10,7 +10,36 @@ export type TransactionalEmailSendOptions = {
   idempotencyKey: string;
 };
 
-export function getEmailFromAddress() {
+export type SendEmailParams = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+} & TransactionalEmailSendOptions;
+
+export async function sendEmail(params: SendEmailParams) {
+  const resend = createResendClient();
+  const result = await resend.emails.send(
+    {
+      from: getEmailFromAddress(),
+      to: params.to,
+      subject: params.subject,
+      text: params.text,
+      html: params.html,
+    },
+    {
+      idempotencyKey: params.idempotencyKey,
+    },
+  );
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return result.data;
+}
+
+function getEmailFromAddress() {
   const from = process.env.EMAIL_FROM;
 
   if (!from) {
@@ -20,7 +49,7 @@ export function getEmailFromAddress() {
   return from;
 }
 
-export function createResendClient() {
+function createResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
