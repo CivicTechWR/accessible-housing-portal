@@ -3,7 +3,9 @@ export const DEFAULT_MAX_ATTEMPTS = 7;
 /**
  * A processing job whose claim is older than this is assumed to belong to a
  * crashed worker and becomes claimable again. Provider idempotency keys keep a
- * reclaim from double-sending if the original worker did reach Resend.
+ * reclaim from double-sending if the original worker did reach Resend — valid
+ * within Resend's 24h idempotency window, which the retry schedule stays
+ * inside as long as a drain scheduler runs every few minutes.
  */
 export const PROCESSING_LEASE_MS = 10 * 60 * 1000;
 

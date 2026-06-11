@@ -364,8 +364,8 @@ export const emailJobs = pgTable(
     status: emailJobStatusEnum("status").notNull().default("pending"),
     /**
      * Stable key for the logical email (e.g. account_invite/<inviteId>).
-     * Dedupes enqueues and is forwarded to the provider so retries cannot
-     * double-send.
+     * Dedupes enqueues and is forwarded to the provider so retries within
+     * Resend's 24h idempotency window cannot double-send.
      */
     idempotencyKey: text("idempotency_key").notNull(),
     payload: jsonb("payload")

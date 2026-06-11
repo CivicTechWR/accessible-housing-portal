@@ -19,11 +19,11 @@ of calling Resend directly from feature code.
    otherwise, never a false success. The attempt is bounded by a ~5s deadline
    so a hanging provider cannot stall the admin request; the deadline does
    not cancel the in-flight send (the provider call itself is bounded by the
-   15s send timeout). If the runtime keeps the process alive a late outcome
-   is still recorded as long as the attempt's claim is held; on serverless
-   runtimes that freeze background work the claimed job waits out the
-   10-minute lease and is reclaimed by a worker, with the provider
-   idempotency key preventing a double-send.
+   15s send timeout). A deadline-exceeded attempt is handed to next/server's
+   `after()`, which keeps serverless invocations alive until the late outcome
+   (sent, or the retry schedule) is recorded. Should the process die anyway,
+   the claimed job waits out the 10-minute lease and is reclaimed by a
+   worker, with the provider idempotency key preventing a double-send.
 3. **Worker drain** — A worker repeatedly claims due jobs and processes them.
    Claiming uses `SELECT ... FOR UPDATE SKIP LOCKED` plus a 10-minute
    processing lease, so any number of workers can run concurrently without
@@ -40,7 +40,8 @@ of calling Resend directly from feature code.
    stale writer — e.g. a very late inline attempt whose job was already
    reclaimed after its lease expired — becomes a no-op instead of clobbering
    the state written by the worker that now owns the job; the provider
-   idempotency key keeps the email itself exactly-once throughout.
+   idempotency key keeps the email itself single-send within Resend's
+   24-hour idempotency window (see below).
 
 ## Job lifecycle
 
@@ -55,6 +56,15 @@ pending ──claim──▶ processing ──▶ sent       (provider accepted;
 Every send passes the job's idempotency key (e.g. `account_invite/<inviteId>`)
 to Resend, so a retry after a crash cannot double-send a logical email. The
 same key has a unique index on `email_jobs`, so re-enqueueing is a no-op.
+
+**The provider-side dedupe is time-bounded**: Resend idempotency keys expire
+after 24 hours. A retry more than 24 hours after an unrecorded-but-delivered
+send (e.g. a timed-out request that actually landed) would deliver again.
+This is why production **requires a drain scheduler running every few
+minutes** (see below): with one, the whole retry schedule — 7 attempts,
+backoff capped at 30 minutes, 10-minute lease reclaims — completes within a
+few hours, comfortably inside the window. An infrequent (e.g. daily-only)
+drain would space retries ~24h apart and break the dedupe guarantee.
 
 ## Sensitive payloads
 
@@ -79,28 +89,34 @@ The drain endpoint `POST|GET /api/cron/email-jobs` requires
 `Authorization: Bearer $CRON_SECRET` and processes due jobs for up to ~50s per
 call. It is safe to call from several schedulers at once.
 
-- **Local dev** — usually unnecessary: the immediate attempt sends invites
-  inline. To process retries, run `npm run email:worker` next to `npm run dev`
-  (uses `CRON_SECRET` and optional `EMAIL_WORKER_APP_URL` /
-  `EMAIL_WORKER_POLL_INTERVAL_MS`, default `http://localhost:3000` / 15s).
-- **Docker** — `docker compose --profile worker up` starts the `email-worker`
-  service alongside the app.
-- **Vercel / serverless** — the repository ships a `vercel.json` that
-  schedules the endpoint daily:
+**Production requires a scheduler that drains every few minutes** — not just
+for latency, but for correctness: retries must stay inside Resend's 24-hour
+idempotency window (see above). Pick at least one:
 
-  ```json
-  { "crons": [{ "path": "/api/cron/email-jobs", "schedule": "0 6 * * *" }] }
-  ```
-
-  The daily schedule is the most frequent one Vercel Hobby plans allow; on a
-  Pro plan, tighten it (e.g. `*/5 * * * *`) so retries drain within minutes
-  instead of relying on the inline attempt. Vercel sends
-  `Authorization: Bearer $CRON_SECRET` automatically when the `CRON_SECRET`
-  env var is set.
-
+- **GitHub Actions (shipped, works on any Vercel plan)** — the repository
+  ships `.github/workflows/email-queue-drain.yml`, which calls the endpoint
+  every 5 minutes. To activate it, set the repository **variable**
+  `EMAIL_QUEUE_DRAIN_URL` (e.g.
+  `https://<production-host>/api/cron/email-jobs`) and the repository
+  **secret** `CRON_SECRET` (same value as the deployment env var). The
+  workflow is skipped while the variable is unset. Note GitHub disables
+  scheduled workflows after 60 days without repository activity.
+- **Vercel cron** — `vercel.json` schedules the endpoint daily
+  (`0 6 * * *`) as a backstop; that is the most frequent schedule Vercel
+  Hobby allows and is **not sufficient on its own**. On a Pro plan, tighten
+  it (e.g. `*/5 * * * *`) and the GitHub Actions workflow becomes redundant.
+  Vercel sends `Authorization: Bearer $CRON_SECRET` automatically when the
+  `CRON_SECRET` env var is set.
 - **Self-hosted deployment** — run `node scripts/email-worker.mjs` as a
   long-lived process (systemd, container), or hit the endpoint from system
   cron.
+
+For local development a worker is usually unnecessary: the immediate attempt
+sends invites inline. To process retries, run `npm run email:worker` next to
+`npm run dev` (uses `CRON_SECRET` and optional `EMAIL_WORKER_APP_URL` /
+`EMAIL_WORKER_POLL_INTERVAL_MS`, default `http://localhost:3000` / 15s), or
+`docker compose --profile worker up` to start the `email-worker` service
+alongside the app.
 
 ## Operations
 
@@ -123,6 +139,12 @@ where id = '<job id>';
 
 (For `account_invite` jobs whose secret context was already cleared, issue a
 fresh invite instead — the old one-time URL is not recoverable by design.)
+
+Manually retrying a job whose last send attempt was **more than 24 hours ago**
+is outside the provider's idempotency window: if an earlier attempt actually
+delivered without being recorded, the retry will deliver a second copy. For
+invites that is annoying rather than harmful, but check `sent_at` /
+`provider_message_id` and the Resend dashboard before re-running old jobs.
 
 ## Adding a new email type
 

@@ -75,7 +75,10 @@ export async function enqueueEmailJob(
  * Every outcome write presents the claim's claimed_at token, so a writer
  * whose lease expired and whose job was reclaimed cannot overwrite the new
  * owner's state; the returned outcome then describes an attempt that was not
- * recorded (the provider idempotency key keeps the email itself exactly-once).
+ * recorded. The provider idempotency key keeps the email itself single-send,
+ * provided retries stay inside Resend's 24h idempotency window — which the
+ * retry policy guarantees only when a drain scheduler runs every few minutes
+ * (see docs/email-queue.md).
  */
 export async function processClaimedEmailJob(job: EmailJob): Promise<EmailJobOutcome> {
   const claimedAt = job.claimedAt;
@@ -197,11 +200,13 @@ const DEFAULT_IMMEDIATE_PROCESS_TIMEOUT_MS = 5_000;
  *
  * The deadline bounds the caller's request, but it does NOT cancel the
  * in-flight attempt (the provider call itself is bounded by the send timeout
- * in lib/email.ts). If the runtime keeps the process alive, a late outcome is
- * still recorded as long as this attempt's claim is held; once the lease
- * expires and a worker reclaims the job, the stale write becomes a no-op and
- * the provider idempotency key prevents a double-send in case the original
- * attempt did reach Resend.
+ * in lib/email.ts). When the deadline elapses first, the attempt is handed to
+ * next/server's after() so serverless runtimes keep the instance alive until
+ * the late outcome (sent, retry schedule, ...) is recorded. Should the
+ * process die anyway, the claimed job waits out the lease and is reclaimed by
+ * a worker; the stale writer's outcome is rejected by the claim-ownership
+ * guard and the provider idempotency key prevents a double-send in case the
+ * original attempt did reach Resend.
  */
 export async function tryProcessEmailJobNow(
   jobId: string,
@@ -210,23 +215,63 @@ export async function tryProcessEmailJobNow(
   const timeoutMs = options.timeoutMs ?? DEFAULT_IMMEDIATE_PROCESS_TIMEOUT_MS;
 
   try {
-    return await withDeadline(
-      (async (): Promise<EmailJobOutcome | null> => {
-        const job = await claimEmailJobById(jobId);
+    let attemptSettled = false;
 
-        if (!job) {
-          return null;
-        }
+    const attempt = (async (): Promise<EmailJobOutcome | null> => {
+      const job = await claimEmailJobById(jobId);
 
-        return processClaimedEmailJob(job);
-      })(),
-      timeoutMs,
+      if (!job) {
+        return null;
+      }
+
+      return processClaimedEmailJob(job);
+    })();
+
+    void attempt.then(
+      () => {
+        attemptSettled = true;
+      },
+      () => {
+        attemptSettled = true;
+      },
     );
+
+    const outcome = await withDeadline(attempt, timeoutMs);
+
+    if (outcome === null && !attemptSettled) {
+      keepProcessingAfterResponse(attempt);
+    }
+
+    return outcome;
   } catch (error) {
     console.error(`Immediate processing of email job ${jobId} failed; left for the worker.`, error);
 
     return null;
   }
+}
+
+/**
+ * Serverless runtimes freeze background work once the response is sent, so a
+ * deadline-exceeded inline attempt could neither record a late success nor
+ * schedule its retry until the 10-minute lease expires — and with infrequent
+ * worker schedules that drift risks leaving Resend's 24h idempotency window.
+ * after() extends the function invocation until the attempt settles. Outside
+ * a request scope (unit tests, long-lived processes) this quietly does
+ * nothing and the lease/reclaim path remains the safety net.
+ */
+function keepProcessingAfterResponse(attempt: Promise<unknown>) {
+  // Explicit extension: dynamic import() resolves ESM-style under nodenext,
+  // and next has no exports map for the bare "next/server" subpath.
+  void import("next/server.js")
+    .then(({ after }) => {
+      after(() =>
+        attempt.then(
+          () => undefined,
+          () => undefined,
+        ),
+      );
+    })
+    .catch(() => {});
 }
 
 function withDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {

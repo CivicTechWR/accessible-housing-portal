@@ -1,0 +1,51 @@
+name: Email Queue Drain
+
+# Production consumer for the email job queue (docs/email-queue.md). Retries
+# must drain every few minutes so they stay inside Resend's 24-hour
+# idempotency window; Vercel Hobby crons run at most daily, so this external
+# scheduler does the frequent polling on any plan.
+#
+# Setup: define the repository variable EMAIL_QUEUE_DRAIN_URL
+# (e.g. https://<production-host>/api/cron/email-jobs) and the repository
+# secret CRON_SECRET (same value as the deployment's CRON_SECRET env var).
+# The job is skipped while the variable is unset.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  drain:
+    name: Drain due email jobs
+    runs-on: ubuntu-latest
+    if: vars.EMAIL_QUEUE_DRAIN_URL != ''
+    steps:
+      - name: Call the drain endpoint
+        env:
+          DRAIN_URL: ${{ vars.EMAIL_QUEUE_DRAIN_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured." >&2
+            exit 1
+          fi
+
+          status=$(curl --silent --show-error --output /tmp/drain-response \
+            --write-out "%{http_code}" --max-time 120 --request POST \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "$DRAIN_URL")
+
+          cat /tmp/drain-response
+          echo
+
+          if [ "$status" != "200" ]; then
+            echo "::error::Drain endpoint responded with HTTP $status." >&2
+            exit 1
+          fi

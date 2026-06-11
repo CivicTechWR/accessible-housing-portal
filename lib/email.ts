@@ -47,8 +47,9 @@ export type TransactionalEmailContent = {
  * The send is raced against a hard deadline so a hanging provider connection
  * cannot stall a worker or a drain call. The SDK does not expose an abort
  * signal, so the abandoned request may still deliver; that is safe because
- * the retry reuses the same idempotency key (Resend dedupes) and stale job
- * outcome writes require claim ownership.
+ * the retry reuses the same idempotency key (Resend dedupes for 24h, which
+ * the retry schedule stays inside given a few-minutes drain scheduler) and
+ * stale job outcome writes require claim ownership.
  */
 export async function sendTransactionalEmail(
   params: {
