@@ -42,4 +42,6 @@ export type InviteActionResult = {
   status: InviteStatus;
   message: string;
   invite?: InviteRecord;
+  /** Set when the message asks the admin to share the invite link manually. */
+  inviteUrl?: string;
 };

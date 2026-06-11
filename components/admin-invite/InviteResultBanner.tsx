@@ -16,6 +16,11 @@ export function InviteResultBanner({ result }: InviteResultBannerProps) {
   return (
     <AlertBanner variant={variant} size="sm">
       {result.message}
+      {result.inviteUrl ? (
+        <code className="mt-1.5 block select-all break-all rounded bg-muted px-2 py-1 font-mono text-xs text-foreground">
+          {result.inviteUrl}
+        </code>
+      ) : null}
     </AlertBanner>
   );
 }

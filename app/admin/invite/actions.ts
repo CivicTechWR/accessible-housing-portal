@@ -56,9 +56,12 @@ export async function sendAdminInviteAction(
     // exist while its email is still queued (or, rarely, dead-lettered).
     // Report what actually happened instead of assuming the email went out.
     if (result.value.data.emailDelivery === "failed") {
+      // The message tells the admin to share the link manually, so the link
+      // must actually be there to share.
       return {
         status: "error",
         message: result.value.message,
+        inviteUrl: result.value.data.inviteUrl,
       };
     }
 
