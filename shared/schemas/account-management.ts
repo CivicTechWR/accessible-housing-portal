@@ -89,8 +89,12 @@ export const accountInviteSchema = z.object({
   role: accountRoleSchema,
   organization: z.string().nullable(),
   invitedAt: z.string(),
-  /** "queued" until the email worker delivers the invite email. */
-  status: z.enum(["queued", "sent"]),
+  /**
+   * Email delivery state: "queued" until the worker delivers ("sent") or the
+   * job permanently fails ("failed"); "not_requested" when no invite email
+   * was asked for and the invite URL is shared manually.
+   */
+  status: z.enum(["not_requested", "queued", "failed", "sent"]),
 });
 
 export const accountInviteListResponseSchema = z.object({

@@ -85,6 +85,7 @@ export async function createInvite(params: {
         tokenHash,
         expiresAt,
         sentAt: null,
+        emailQueuedAt: params.sendInviteEmail ? now : null,
         createdByUserId: params.invitedByUserId,
       })
       .returning();

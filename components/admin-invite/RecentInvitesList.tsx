@@ -2,7 +2,7 @@ import verbiage from "@/content/verbiage.json";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { InviteRecord } from "@/components/admin-invite/types";
-import { inviteRoleLabels } from "@/components/admin-invite/types";
+import { inviteRoleLabels, inviteStatusLabels } from "@/components/admin-invite/types";
 
 type RecentInvitesListProps = {
   invites: InviteRecord[];
@@ -40,7 +40,9 @@ export function RecentInvitesList({ invites }: RecentInvitesListProps) {
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{inviteRoleLabels[invite.role]}</Badge>
-                <Badge variant="secondary">{invite.status}</Badge>
+                <Badge variant={invite.status === "failed" ? "destructive" : "secondary"}>
+                  {inviteStatusLabels[invite.status]}
+                </Badge>
               </div>
             </li>
           ))}

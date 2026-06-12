@@ -4,12 +4,17 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 import { sendInviteEmail } from "@/lib/auth/invite-email";
-import { findInviteEmailJobTarget, markInviteEmailSent } from "@/lib/auth/invite-store";
+import {
+  findInviteEmailJobTarget,
+  markInviteEmailFailed,
+  markInviteEmailSent,
+} from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
 import { buildAccountInviteEmailJob, type EmailJobData } from "@/lib/email-queue/email-job";
-import { EMAIL_QUEUE } from "@/lib/email-queue/queue";
+import { EMAIL_DEAD_LETTER_QUEUE, EMAIL_QUEUE } from "@/lib/email-queue/queue";
 import {
   MAX_EMAIL_JOB_DEFERRALS,
+  processDeadLetteredEmailJob,
   processEmailJob,
   type EmailWorkerBoss,
 } from "@/lib/email-queue/worker";
@@ -28,11 +33,13 @@ jest.mock("@/lib/auth/invite-email", () => ({
 
 jest.mock("@/lib/auth/invite-store", () => ({
   findInviteEmailJobTarget: jest.fn(),
+  markInviteEmailFailed: jest.fn(),
   markInviteEmailSent: jest.fn(),
 }));
 
 const sendInviteEmailMock = jest.mocked(sendInviteEmail);
 const findInviteEmailJobTargetMock = jest.mocked(findInviteEmailJobTarget);
+const markInviteEmailFailedMock = jest.mocked(markInviteEmailFailed);
 const markInviteEmailSentMock = jest.mocked(markInviteEmailSent);
 
 const ORIGINAL_ENV = process.env;
@@ -344,5 +351,38 @@ describe("processEmailJob", () => {
     await expect(processEmailJob(boss, buildJob())).rejects.toThrow("Internal server error");
 
     expect(sendAfterMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("processDeadLetteredEmailJob", () => {
+  function buildDeadLetterJob(signal?: AbortSignal): Job<EmailJobData> {
+    return { ...buildJob(signal), name: EMAIL_DEAD_LETTER_QUEUE };
+  }
+
+  it("records the permanent failure on the invite and redacts the secret", async () => {
+    const job = buildDeadLetterJob();
+
+    const result = await processDeadLetteredEmailJob(boss, job);
+
+    expect(markInviteEmailFailedMock).toHaveBeenCalledWith(INVITE_ID);
+    expect(executeSqlMock).toHaveBeenCalledWith(expect.stringContaining("data - 'secret'"), [
+      job.id,
+      EMAIL_DEAD_LETTER_QUEUE,
+    ]);
+    expect(result).toEqual({ status: "failure_recorded" });
+  });
+
+  it("still records the failure but leaves the payload alone when the job expired mid-handler", async () => {
+    const abortController = new AbortController();
+    abortController.abort();
+
+    const result = await processDeadLetteredEmailJob(
+      boss,
+      buildDeadLetterJob(abortController.signal),
+    );
+
+    expect(markInviteEmailFailedMock).toHaveBeenCalledWith(INVITE_ID);
+    expect(executeSqlMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "failure_recorded" });
   });
 });

@@ -106,7 +106,16 @@ describe("enqueueEmail", () => {
     expect(PgBossMock).toHaveBeenCalledTimes(1);
     expect(PgBossMock).toHaveBeenCalledWith(expect.objectContaining({ supervise: false }));
     expect(bossInstance.start).toHaveBeenCalledTimes(1);
-    expect(bossInstance.createQueue).toHaveBeenCalledWith(EMAIL_DEAD_LETTER_QUEUE);
+    // The dead letter queue is worked too (failure recording), so it gets a
+    // retry profile of its own — but no further dead-lettering.
+    expect(bossInstance.createQueue).toHaveBeenCalledWith(
+      EMAIL_DEAD_LETTER_QUEUE,
+      expect.not.objectContaining({ deadLetter: expect.anything() }),
+    );
+    expect(bossInstance.createQueue).toHaveBeenCalledWith(
+      EMAIL_DEAD_LETTER_QUEUE,
+      expect.objectContaining({ retryBackoff: true }),
+    );
     expect(bossInstance.createQueue).toHaveBeenCalledWith(
       EMAIL_QUEUE,
       expect.objectContaining({ deadLetter: EMAIL_DEAD_LETTER_QUEUE, retryBackoff: true }),

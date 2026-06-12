@@ -28,6 +28,20 @@ const EMAIL_QUEUE_OPTIONS = {
   deadLetter: EMAIL_DEAD_LETTER_QUEUE,
 } as const;
 
+/**
+ * Dead-lettered jobs are worked too (recording the permanent failure on the
+ * source entity), so give that queue the same bounded retry profile. A job
+ * that exhausts these retries stays visible as failed in the dead letter
+ * queue; there is no further dead-lettering.
+ */
+const EMAIL_DEAD_LETTER_QUEUE_OPTIONS = {
+  retryLimit: 8,
+  retryDelay: 5,
+  retryBackoff: true,
+  retryDelayMax: 900,
+  expireInSeconds: 60,
+} as const;
+
 export function isEmailWorkerEnabled() {
   return process.env.EMAIL_WORKER_ENABLED === "true";
 }
@@ -75,10 +89,11 @@ async function createEmailQueue() {
   });
 
   await boss.start();
-  await boss.createQueue(EMAIL_DEAD_LETTER_QUEUE);
+  await boss.createQueue(EMAIL_DEAD_LETTER_QUEUE, EMAIL_DEAD_LETTER_QUEUE_OPTIONS);
   await boss.createQueue(EMAIL_QUEUE, EMAIL_QUEUE_OPTIONS);
   // createQueue is a no-op for existing queues, so apply option changes too.
   await boss.updateQueue(EMAIL_QUEUE, EMAIL_QUEUE_OPTIONS);
+  await boss.updateQueue(EMAIL_DEAD_LETTER_QUEUE, EMAIL_DEAD_LETTER_QUEUE_OPTIONS);
 
   return boss;
 }

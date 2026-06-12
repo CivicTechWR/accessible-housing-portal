@@ -22,15 +22,28 @@ export type InviteFormValues = {
   organization: string;
 };
 
-/** "queued" means the invite email is enqueued for delivery, not yet sent. */
-export type InviteStatus = "queued" | "sent" | "error";
+/**
+ * Email delivery state of an invite: "queued" until the worker delivers
+ * ("sent") or the job permanently fails ("failed"); "not_requested" when the
+ * invite URL is shared manually instead.
+ */
+export type InviteEmailStatus = "not_requested" | "queued" | "failed" | "sent";
+
+export const inviteStatusLabels: Record<InviteEmailStatus, string> = {
+  not_requested: verbiage.adminInvite.status.notRequested,
+  queued: verbiage.adminInvite.status.queued,
+  failed: verbiage.adminInvite.status.failed,
+  sent: verbiage.adminInvite.status.sent,
+};
+
+export type InviteStatus = InviteEmailStatus | "error";
 
 export type InviteRecord = {
   id: string;
   email: string;
   role: InviteRole;
   invitedAt: string;
-  status: InviteStatus;
+  status: InviteEmailStatus;
 };
 
 export type InviteActionResult = {

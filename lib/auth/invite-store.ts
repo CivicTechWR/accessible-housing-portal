@@ -6,6 +6,14 @@ import { db } from "@/db";
 import { userInvites, users, type UserRole } from "@/db/schema";
 import { hashOpaqueToken } from "@/lib/auth/token";
 
+/**
+ * Email delivery state of an invite, derived from persisted columns:
+ * "sent" (worker delivered, sentAt set), "failed" (job dead-lettered,
+ * emailFailedAt set), "queued" (job enqueued, emailQueuedAt set), or
+ * "not_requested" (no email; the invite URL is shared manually).
+ */
+export type AccountInviteEmailStatus = "not_requested" | "queued" | "failed" | "sent";
+
 export type RecentAccountInviteRow = {
   id: string;
   email: string;
@@ -13,8 +21,7 @@ export type RecentAccountInviteRow = {
   role: UserRole;
   organization: string | null;
   invitedAt: Date;
-  /** "queued" until the email worker delivers the invite email and sets sentAt. */
-  status: "queued" | "sent";
+  status: AccountInviteEmailStatus;
 };
 
 export type PendingAccountInviteRow = RecentAccountInviteRow & {
@@ -55,9 +62,10 @@ export async function getPendingInviteByToken(token: string) {
 }
 
 /**
- * Invites whose email has not been delivered yet (sentAt null) are included
- * as "queued", so an invite stays visible between enqueue and delivery — or
- * when no invite email was requested and the URL is shared manually.
+ * Invites whose email has not been delivered yet are included too, so an
+ * invite stays visible between enqueue and delivery ("queued"), after its
+ * email job permanently failed ("failed"), and when no invite email was
+ * requested and the URL is shared manually ("not_requested").
  */
 export async function findRecentAccountInvites(limit: number): Promise<RecentAccountInviteRow[]> {
   const rows = await db
@@ -68,6 +76,8 @@ export async function findRecentAccountInvites(limit: number): Promise<RecentAcc
       role: users.role,
       organization: users.organization,
       sentAt: userInvites.sentAt,
+      emailQueuedAt: userInvites.emailQueuedAt,
+      emailFailedAt: userInvites.emailFailedAt,
       createdAt: userInvites.createdAt,
     })
     .from(userInvites)
@@ -88,6 +98,8 @@ export async function findPendingAccountInvites(): Promise<PendingAccountInviteR
       role: users.role,
       organization: users.organization,
       sentAt: userInvites.sentAt,
+      emailQueuedAt: userInvites.emailQueuedAt,
+      emailFailedAt: userInvites.emailFailedAt,
       createdAt: userInvites.createdAt,
       expiresAt: userInvites.expiresAt,
     })
@@ -106,6 +118,8 @@ function toAccountInviteRow(row: {
   role: UserRole;
   organization: string | null;
   sentAt: Date | null;
+  emailQueuedAt: Date | null;
+  emailFailedAt: Date | null;
   createdAt: Date;
 }): RecentAccountInviteRow {
   return {
@@ -115,8 +129,24 @@ function toAccountInviteRow(row: {
     role: row.role,
     organization: row.organization,
     invitedAt: row.sentAt ?? row.createdAt,
-    status: row.sentAt ? "sent" : "queued",
+    status: toEmailStatus(row),
   };
+}
+
+function toEmailStatus(row: {
+  sentAt: Date | null;
+  emailQueuedAt: Date | null;
+  emailFailedAt: Date | null;
+}): AccountInviteEmailStatus {
+  if (row.sentAt) {
+    return "sent";
+  }
+
+  if (row.emailFailedAt) {
+    return "failed";
+  }
+
+  return row.emailQueuedAt ? "queued" : "not_requested";
 }
 
 /**
@@ -143,6 +173,18 @@ export async function findInviteEmailJobTarget(inviteId: string) {
 
 export async function markInviteEmailSent(inviteId: string) {
   await db.update(userInvites).set({ sentAt: new Date() }).where(eq(userInvites.id, inviteId));
+}
+
+/**
+ * Record that the invite's email job permanently failed (dead-lettered), so
+ * admin lists can show "failed" instead of an eternal "queued". The sentAt
+ * guard keeps a stray late failure from masking a delivered email.
+ */
+export async function markInviteEmailFailed(inviteId: string) {
+  await db
+    .update(userInvites)
+    .set({ emailFailedAt: new Date() })
+    .where(and(eq(userInvites.id, inviteId), isNull(userInvites.sentAt)));
 }
 
 export async function acceptInvite(params: {

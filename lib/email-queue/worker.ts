@@ -3,7 +3,11 @@ import "server-only";
 import type { Job, PgBoss } from "pg-boss";
 
 import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth/invite-email";
-import { findInviteEmailJobTarget, markInviteEmailSent } from "@/lib/auth/invite-store";
+import {
+  findInviteEmailJobTarget,
+  markInviteEmailFailed,
+  markInviteEmailSent,
+} from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
 import {
   EMAIL_JOB_PRIORITY,
@@ -12,6 +16,7 @@ import {
   type EmailJobData,
 } from "@/lib/email-queue/email-job";
 import {
+  EMAIL_DEAD_LETTER_QUEUE,
   EMAIL_QUEUE,
   EMAIL_QUEUE_SCHEMA,
   getEmailQueue,
@@ -39,6 +44,9 @@ export type EmailJobResult =
       deferredForSeconds: number;
       replacementJobId: string | null;
     };
+
+/** Stored as the completed dead-letter job's output. */
+export type EmailDeadLetterJobResult = { status: "failure_recorded" };
 
 export type EmailWorkerBoss = Pick<PgBoss, "sendAfter" | "getDb">;
 
@@ -68,7 +76,15 @@ export async function startEmailWorker() {
       async (jobs) => await processEmailJob(boss, jobs[0] as Job<EmailJobData>),
     );
 
-    console.log(`[email-queue] Worker started for queue "${EMAIL_QUEUE}".`);
+    await boss.work<EmailJobData, EmailDeadLetterJobResult>(
+      EMAIL_DEAD_LETTER_QUEUE,
+      { batchSize: 1 },
+      async (jobs) => await processDeadLetteredEmailJob(boss, jobs[0] as Job<EmailJobData>),
+    );
+
+    console.log(
+      `[email-queue] Worker started for queues "${EMAIL_QUEUE}" and "${EMAIL_DEAD_LETTER_QUEUE}".`,
+    );
   } catch (error) {
     globalForEmailWorker.__ahpEmailWorkerStarted = false;
     throw error;
@@ -101,6 +117,39 @@ export async function processEmailJob(
   }
 
   return result;
+}
+
+/**
+ * Process a job that exhausted its retries and landed in the dead letter
+ * queue: record the permanent failure on the source entity so admin UIs can
+ * show "failed" instead of an eternal "queued". Dead-lettering copies the
+ * original payload, so the sealed secret is redacted here too — no send will
+ * ever use the dead-lettered copy.
+ */
+export async function processDeadLetteredEmailJob(
+  boss: EmailWorkerBoss,
+  job: Job<EmailJobData>,
+): Promise<EmailDeadLetterJobResult> {
+  const result = await recordEmailJobFailure(job.data);
+
+  // As in processEmailJob: an expired job has already been failed by pg-boss
+  // and a retry may own the row, so leave its payload alone.
+  if (!job.signal.aborted) {
+    await redactEmailJobSecret(boss, job);
+  }
+
+  return result;
+}
+
+async function recordEmailJobFailure(data: EmailJobData): Promise<EmailDeadLetterJobResult> {
+  switch (data.type) {
+    case "account_invite":
+      await markInviteEmailFailed(data.inviteId);
+      console.error(
+        `[email-queue] Invite email for invite ${data.inviteId} permanently failed and was dead-lettered; the invite must be re-sent.`,
+      );
+      return { status: "failure_recorded" };
+  }
 }
 
 async function runEmailJob(boss: EmailWorkerBoss, job: Job<EmailJobData>): Promise<EmailJobResult> {
