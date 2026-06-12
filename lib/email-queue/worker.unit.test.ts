@@ -122,13 +122,18 @@ describe("processEmailJob", () => {
     ]);
   });
 
-  it("skips sending when the invite no longer exists", async () => {
+  it("skips sending when the invite no longer exists and still redacts the secret", async () => {
     findInviteEmailJobTargetMock.mockResolvedValue(null);
+    const job = buildJob();
 
-    const result = await processEmailJob(boss, buildJob());
+    const result = await processEmailJob(boss, job);
 
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
     expect(result).toEqual({ status: "skipped", reason: "invite_not_found" });
+    expect(executeSqlMock).toHaveBeenCalledWith(expect.stringContaining("data - 'secret'"), [
+      job.id,
+      job.name,
+    ]);
   });
 
   it("skips sending when the invite was already accepted", async () => {
@@ -222,6 +227,10 @@ describe("processEmailJob", () => {
       deferredForSeconds: 7,
       replacementJobId: "b3398ac1-43cf-4e54-92ee-9f7e2a4e7f6a",
     });
+    // The deferred original keeps its sealed secret: a crash-recovered retry
+    // must still be able to send or defer, and the replacement job carries
+    // the same payload regardless.
+    expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
   it("defers briefly when rate limited without a Retry-After header", async () => {

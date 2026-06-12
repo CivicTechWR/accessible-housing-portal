@@ -80,11 +80,15 @@ export async function processEmailJob(
 ): Promise<EmailJobResult> {
   const result = await runEmailJob(boss, job);
 
-  // The completed job row is retained for audit; strip the sealed secret as
-  // soon as no retry can need it. Deferred jobs already copied their payload
-  // into the replacement job. If the job expired mid-handler, pg-boss has
-  // already failed it and a retry may own the row, so leave its payload alone.
-  if (!job.signal.aborted) {
+  // The completed job row is retained for audit; strip the sealed secret once
+  // no attempt can need it again. Sent and skipped recoveries get by without
+  // it (sentAt guard, or skip guards that run before decryption). Deferred
+  // jobs keep theirs: the secret lives on in the replacement job either way,
+  // and a crash between redaction and completion would otherwise recover the
+  // original as unsendable and falsely dead-letter it. If the job expired
+  // mid-handler, pg-boss has already failed it and a retry may own the row,
+  // so leave its payload alone.
+  if (result.status !== "deferred" && !job.signal.aborted) {
     await redactEmailJobSecret(boss, job);
   }
 
