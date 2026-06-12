@@ -36,6 +36,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe123}
       RESEND_API_KEY: ${RESEND_API_KEY:-re_replace_me}
       EMAIL_FROM: ${EMAIL_FROM:-Affordable Housing Portal <no-reply@example.com>}
+      EMAIL_WORKER_ENABLED: ${EMAIL_WORKER_ENABLED:-true}
     ports:
       - "3000:3000"
     volumes:

@@ -43,7 +43,7 @@ export function useAdminInvite(input?: {
     (result: InviteActionResult) => {
       setLastResult(result);
 
-      if (result.status !== "sent") {
+      if (result.status === "error") {
         return;
       }
 

@@ -22,7 +22,8 @@ export type InviteFormValues = {
   organization: string;
 };
 
-export type InviteStatus = "sent" | "error";
+/** "queued" means the invite email is enqueued for delivery, not yet sent. */
+export type InviteStatus = "queued" | "sent" | "error";
 
 export type InviteRecord = {
   id: string;

@@ -17,6 +17,29 @@ export type SendEmailParams = {
   html: string;
 } & TransactionalEmailSendOptions;
 
+/**
+ * Provider failure with enough structure for the email queue worker to pick a
+ * retry strategy: `code` is Resend's error name (such as rate_limit_exceeded,
+ * daily_quota_exceeded, monthly_quota_exceeded).
+ */
+export class EmailSendError extends Error {
+  readonly code: string | null;
+  readonly statusCode: number | null;
+  /** Parsed from the provider's Retry-After response header, when present. */
+  readonly retryAfterSeconds: number | null;
+
+  constructor(
+    message: string,
+    details: { code: string | null; statusCode: number | null; retryAfterSeconds: number | null },
+  ) {
+    super(message);
+    this.name = "EmailSendError";
+    this.code = details.code;
+    this.statusCode = details.statusCode;
+    this.retryAfterSeconds = details.retryAfterSeconds;
+  }
+}
+
 export async function sendEmail(params: SendEmailParams) {
   const resend = createResendClient();
   const result = await resend.emails.send(
@@ -33,10 +56,20 @@ export async function sendEmail(params: SendEmailParams) {
   );
 
   if (result.error) {
-    throw new Error(result.error.message);
+    throw new EmailSendError(result.error.message, {
+      code: result.error.name ?? null,
+      statusCode: result.error.statusCode ?? null,
+      retryAfterSeconds: parseRetryAfterSeconds(result.headers),
+    });
   }
 
   return result.data;
+}
+
+function parseRetryAfterSeconds(headers: Record<string, string> | null | undefined) {
+  const retryAfter = Number.parseInt(headers?.["retry-after"] ?? "", 10);
+
+  return Number.isFinite(retryAfter) && retryAfter >= 0 ? retryAfter : null;
 }
 
 function getEmailFromAddress() {

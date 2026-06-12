@@ -1,0 +1,196 @@
+import "server-only";
+
+import type { Job, PgBoss } from "pg-boss";
+
+import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth/invite-email";
+import { findInviteEmailJobTarget, markInviteEmailSent } from "@/lib/auth/invite-store";
+import { EmailSendError } from "@/lib/email";
+import {
+  EMAIL_JOB_PRIORITY,
+  openEmailJobSecret,
+  type AccountInviteEmailJobData,
+  type EmailJobData,
+} from "@/lib/email-queue/email-job";
+import {
+  EMAIL_QUEUE,
+  EMAIL_QUEUE_SCHEMA,
+  getEmailQueue,
+  isEmailWorkerEnabled,
+} from "@/lib/email-queue/queue";
+
+const DAY_IN_SECONDS = 24 * 60 * 60;
+const DEFAULT_RATE_LIMIT_DEFER_SECONDS = 2;
+
+/** Stored as the completed job's output: the audit trail for the send. */
+export type EmailJobResult =
+  | { status: "sent"; providerMessageId: string | null }
+  | { status: "skipped"; reason: string }
+  | {
+      status: "deferred";
+      reason: string;
+      deferredForSeconds: number;
+      replacementJobId: string | null;
+    };
+
+export type EmailWorkerBoss = Pick<PgBoss, "sendAfter" | "getDb">;
+
+const globalForEmailWorker = globalThis as typeof globalThis & {
+  __ahpEmailWorkerStarted?: boolean;
+};
+
+/**
+ * Start the in-process email queue worker. Callers must already be in a
+ * long-lived Node.js server; the EMAIL_WORKER_ENABLED gate keeps builds, CI,
+ * tests, and scripts from starting pollers, and the globalThis guard keeps dev
+ * hot reload from starting duplicates.
+ */
+export async function startEmailWorker() {
+  if (!isEmailWorkerEnabled() || globalForEmailWorker.__ahpEmailWorkerStarted) {
+    return;
+  }
+
+  globalForEmailWorker.__ahpEmailWorkerStarted = true;
+
+  try {
+    const boss = await getEmailQueue();
+
+    await boss.work<EmailJobData, EmailJobResult>(
+      EMAIL_QUEUE,
+      { batchSize: 1 },
+      async (jobs) => await processEmailJob(boss, jobs[0] as Job<EmailJobData>),
+    );
+
+    console.log(`[email-queue] Worker started for queue "${EMAIL_QUEUE}".`);
+  } catch (error) {
+    globalForEmailWorker.__ahpEmailWorkerStarted = false;
+    throw error;
+  }
+}
+
+/**
+ * Process one email job. Returning completes the job (output = the returned
+ * result); throwing fails it into pg-boss's bounded-backoff retry cycle and,
+ * once retries are exhausted, the dead letter queue. Quota and rate-limit
+ * failures do not burn retries: the job completes as "deferred" and an
+ * identical job is scheduled for when the provider window reopens.
+ */
+export async function processEmailJob(
+  boss: EmailWorkerBoss,
+  job: Job<EmailJobData>,
+): Promise<EmailJobResult> {
+  const result = await runEmailJob(boss, job);
+
+  // The completed job row is retained for audit; strip the sealed secret as
+  // soon as no retry can need it. Deferred jobs already copied their payload
+  // into the replacement job.
+  await redactEmailJobSecret(boss, job);
+
+  return result;
+}
+
+async function runEmailJob(boss: EmailWorkerBoss, job: Job<EmailJobData>): Promise<EmailJobResult> {
+  try {
+    return await sendEmailForJob(job.data);
+  } catch (error) {
+    const deferral = getProviderQuotaDeferral(error);
+
+    if (!deferral) {
+      if (error instanceof EmailSendError && error.code === "monthly_quota_exceeded") {
+        // Deferring for weeks would hide the problem; let the job retry and
+        // dead-letter so the exhausted monthly quota gets operational action.
+        console.error(
+          `[email-queue] Resend monthly quota exceeded; job ${job.id} will dead-letter unless the quota resets first.`,
+        );
+      }
+
+      throw error;
+    }
+
+    const replacementJobId = await boss.sendAfter(
+      EMAIL_QUEUE,
+      job.data,
+      { priority: EMAIL_JOB_PRIORITY[job.data.type] },
+      deferral.seconds,
+    );
+
+    console.warn(
+      `[email-queue] ${deferral.reason}; deferred job ${job.id} for ${deferral.seconds}s as job ${replacementJobId}.`,
+    );
+
+    return {
+      status: "deferred",
+      reason: deferral.reason,
+      deferredForSeconds: deferral.seconds,
+      replacementJobId,
+    };
+  }
+}
+
+async function sendEmailForJob(data: EmailJobData): Promise<EmailJobResult> {
+  switch (data.type) {
+    case "account_invite":
+      return await sendAccountInviteEmailJob(data);
+  }
+}
+
+async function sendAccountInviteEmailJob(data: AccountInviteEmailJobData): Promise<EmailJobResult> {
+  const target = await findInviteEmailJobTarget(data.inviteId);
+
+  if (!target) {
+    return { status: "skipped", reason: "invite_not_found" };
+  }
+
+  if (target.acceptedAt) {
+    return { status: "skipped", reason: "invite_accepted" };
+  }
+
+  // Also covers superseded invites: creating a new invite expires older ones.
+  if (target.expiresAt.getTime() <= Date.now()) {
+    return { status: "skipped", reason: "invite_expired" };
+  }
+
+  const sent = await sendInviteEmail({
+    email: target.email,
+    fullName: target.fullName,
+    inviteUrl: openEmailJobSecret(data.secret),
+    idempotencyKey: getAccountInviteEmailIdempotencyKey(data.inviteId),
+  });
+
+  await markInviteEmailSent(data.inviteId);
+
+  return { status: "sent", providerMessageId: sent?.id ?? null };
+}
+
+function getProviderQuotaDeferral(error: unknown) {
+  if (!(error instanceof EmailSendError)) {
+    return null;
+  }
+
+  if (error.code === "daily_quota_exceeded") {
+    // Resend does not expose an exact reset time, so defer ~24 hours instead
+    // of burning retries against a closed window.
+    return { reason: "daily_quota_exceeded", seconds: DAY_IN_SECONDS };
+  }
+
+  if (error.code === "rate_limit_exceeded") {
+    return {
+      reason: "rate_limit_exceeded",
+      seconds: Math.max(error.retryAfterSeconds ?? DEFAULT_RATE_LIMIT_DEFER_SECONDS, 1),
+    };
+  }
+
+  return null;
+}
+
+async function redactEmailJobSecret(boss: EmailWorkerBoss, job: Job<EmailJobData>) {
+  if (!("secret" in job.data)) {
+    return;
+  }
+
+  await boss
+    .getDb()
+    .executeSql(
+      `UPDATE ${EMAIL_QUEUE_SCHEMA}.job SET data = data - 'secret' WHERE id = $1 AND name = $2`,
+      [job.id, job.name],
+    );
+}

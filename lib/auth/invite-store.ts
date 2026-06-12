@@ -133,6 +133,31 @@ export async function findPendingAccountInvites(): Promise<PendingAccountInviteR
   });
 }
 
+/**
+ * Resolve the recipient details for a queued invite email at send time. The
+ * job payload only stores the invite id, so the email and name stay out of
+ * the job table and reflect the current database state.
+ */
+export async function findInviteEmailJobTarget(inviteId: string) {
+  const [row] = await db
+    .select({
+      email: userInvites.email,
+      fullName: users.fullName,
+      expiresAt: userInvites.expiresAt,
+      acceptedAt: userInvites.acceptedAt,
+    })
+    .from(userInvites)
+    .innerJoin(users, eq(userInvites.userId, users.id))
+    .where(eq(userInvites.id, inviteId))
+    .limit(1);
+
+  return row ?? null;
+}
+
+export async function markInviteEmailSent(inviteId: string) {
+  await db.update(userInvites).set({ sentAt: new Date() }).where(eq(userInvites.id, inviteId));
+}
+
 export async function acceptInvite(params: {
   inviteId: string;
   userId: string;

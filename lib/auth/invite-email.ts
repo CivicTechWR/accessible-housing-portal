@@ -10,7 +10,7 @@ export async function sendInviteEmail(
   } & TransactionalEmailSendOptions,
 ) {
   const inviteUrl = getSafeInviteUrl(params.inviteUrl);
-  await sendEmail({
+  return await sendEmail({
     to: params.email,
     subject: "You’ve been invited to the Affordable Housing Portal",
     text: `Hello ${params.fullName},\n\nYou’ve been invited to the Affordable Housing Portal. Use the link below to create your password and activate your account:\n\n${inviteUrl}\n\nIf you were not expecting this invite, you can ignore this email.`,
