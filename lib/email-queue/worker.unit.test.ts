@@ -8,7 +8,11 @@ import { findInviteEmailJobTarget, markInviteEmailSent } from "@/lib/auth/invite
 import { EmailSendError } from "@/lib/email";
 import { buildAccountInviteEmailJob, type EmailJobData } from "@/lib/email-queue/email-job";
 import { EMAIL_QUEUE } from "@/lib/email-queue/queue";
-import { processEmailJob, type EmailWorkerBoss } from "@/lib/email-queue/worker";
+import {
+  MAX_EMAIL_JOB_DEFERRALS,
+  processEmailJob,
+  type EmailWorkerBoss,
+} from "@/lib/email-queue/worker";
 
 import type { Job } from "pg-boss";
 
@@ -219,7 +223,12 @@ describe("processEmailJob", () => {
 
     const result = await processEmailJob(boss, job);
 
-    expect(sendAfterMock).toHaveBeenCalledWith(EMAIL_QUEUE, job.data, { priority: 20 }, 7);
+    expect(sendAfterMock).toHaveBeenCalledWith(
+      EMAIL_QUEUE,
+      { ...job.data, deferralCount: 1 },
+      { priority: 20 },
+      7,
+    );
     expect(markInviteEmailSentMock).not.toHaveBeenCalled();
     expect(result).toEqual({
       status: "deferred",
@@ -259,8 +268,53 @@ describe("processEmailJob", () => {
 
     const result = await processEmailJob(boss, job);
 
-    expect(sendAfterMock).toHaveBeenCalledWith(EMAIL_QUEUE, job.data, { priority: 20 }, 86_400);
+    expect(sendAfterMock).toHaveBeenCalledWith(
+      EMAIL_QUEUE,
+      { ...job.data, deferralCount: 1 },
+      { priority: 20 },
+      86_400,
+    );
     expect(result).toMatchObject({ status: "deferred", reason: "daily_quota_exceeded" });
+  });
+
+  it("increments the deferral count across successive deferrals", async () => {
+    const job = buildJob();
+    job.data.deferralCount = 3;
+    sendInviteEmailMock.mockRejectedValue(
+      new EmailSendError("Too many requests", {
+        code: "rate_limit_exceeded",
+        statusCode: 429,
+        retryAfterSeconds: 7,
+      }),
+    );
+
+    const result = await processEmailJob(boss, job);
+
+    expect(sendAfterMock).toHaveBeenCalledWith(
+      EMAIL_QUEUE,
+      { ...job.data, deferralCount: 4 },
+      { priority: 20 },
+      7,
+    );
+    expect(result).toMatchObject({ status: "deferred" });
+  });
+
+  it("fails into the retry/dead-letter cycle once the deferral chain hits the cap", async () => {
+    const job = buildJob();
+    job.data.deferralCount = MAX_EMAIL_JOB_DEFERRALS;
+    sendInviteEmailMock.mockRejectedValue(
+      new EmailSendError("Too many requests", {
+        code: "rate_limit_exceeded",
+        statusCode: 429,
+        retryAfterSeconds: 7,
+      }),
+    );
+
+    await expect(processEmailJob(boss, job)).rejects.toThrow("Too many requests");
+
+    expect(sendAfterMock).not.toHaveBeenCalled();
+    // The secret stays in place for the retries pg-boss now owns.
+    expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
   it("fails into the retry/dead-letter cycle when the monthly quota is exhausted", async () => {

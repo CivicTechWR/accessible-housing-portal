@@ -4,6 +4,17 @@ import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } f
 
 import { getAccountInviteEmailIdempotencyKey } from "@/lib/auth/invite-email";
 
+/** Fields shared by every email job payload. */
+type EmailJobBase = {
+  /**
+   * Times this logical email has been re-enqueued by a quota/rate-limit
+   * deferral. The worker caps the chain (MAX_EMAIL_JOB_DEFERRALS) so a
+   * provider stuck returning quota errors eventually dead-letters instead of
+   * deferring forever.
+   */
+  deferralCount?: number;
+};
+
 /**
  * Durable email job payloads, stored as pg-boss job rows in Postgres.
  *
@@ -13,7 +24,7 @@ import { getAccountInviteEmailIdempotencyKey } from "@/lib/auth/invite-email";
  * `secret` field, which is encrypted at rest and redacted after the job
  * completes. Never add plaintext secrets or full rendered emails here.
  */
-export type AccountInviteEmailJobData = {
+export type AccountInviteEmailJobData = EmailJobBase & {
   type: "account_invite";
   inviteId: string;
   /** Sealed invite URL; contains the raw one-time token, so never store it in plaintext. */

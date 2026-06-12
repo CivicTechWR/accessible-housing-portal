@@ -254,7 +254,9 @@ export default async function AdminUsersPage() {
                     <Badge variant={roleBadgeVariant(invite.role)}>{formatRole(invite.role)}</Badge>
                   </DesktopDataCell>
                   <DesktopDataCell>
-                    <Badge variant="outline">Pending</Badge>
+                    <Badge variant="outline">
+                      {invite.status === "queued" ? "Email queued" : "Pending"}
+                    </Badge>
                   </DesktopDataCell>
                   <DesktopDataCell muted>
                     {formatDateTime(invite.invitedAt.toISOString())}
@@ -287,7 +289,9 @@ export default async function AdminUsersPage() {
                         <Badge variant={roleBadgeVariant(invite.role)}>
                           {formatRole(invite.role)}
                         </Badge>
-                        <Badge variant="outline">Pending</Badge>
+                        <Badge variant="outline">
+                          {invite.status === "queued" ? "Email queued" : "Pending"}
+                        </Badge>
                       </>
                     }
                   />

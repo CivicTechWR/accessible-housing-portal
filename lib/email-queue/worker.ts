@@ -20,6 +20,14 @@ import {
 
 const DAY_IN_SECONDS = 24 * 60 * 60;
 const DEFAULT_RATE_LIMIT_DEFER_SECONDS = 2;
+/**
+ * Quota/rate-limit deferrals re-enqueue the job instead of burning retries,
+ * so bound the chain: past this many deferrals the provider limit is treated
+ * as a persistent failure and the job falls into the retry/dead-letter cycle.
+ * Generous enough for a month of daily-quota rollovers or a long rate-limit
+ * burst; anything beyond that needs operational attention, not more waiting.
+ */
+export const MAX_EMAIL_JOB_DEFERRALS = 30;
 
 /** Stored as the completed job's output: the audit trail for the send. */
 export type EmailJobResult =
@@ -115,9 +123,18 @@ async function runEmailJob(boss: EmailWorkerBoss, job: Job<EmailJobData>): Promi
       throw error;
     }
 
+    const deferralCount = (job.data.deferralCount ?? 0) + 1;
+
+    if (deferralCount > MAX_EMAIL_JOB_DEFERRALS) {
+      console.error(
+        `[email-queue] ${deferral.reason} persisted through ${MAX_EMAIL_JOB_DEFERRALS} deferrals; job ${job.id} now fails into the retry/dead-letter cycle.`,
+      );
+      throw error;
+    }
+
     const replacementJobId = await boss.sendAfter(
       EMAIL_QUEUE,
-      job.data,
+      { ...job.data, deferralCount },
       { priority: EMAIL_JOB_PRIORITY[job.data.type] },
       deferral.seconds,
     );
