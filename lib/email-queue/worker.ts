@@ -82,19 +82,22 @@ export async function processEmailJob(
 
   // The completed job row is retained for audit; strip the sealed secret as
   // soon as no retry can need it. Deferred jobs already copied their payload
-  // into the replacement job.
-  await redactEmailJobSecret(boss, job);
+  // into the replacement job. If the job expired mid-handler, pg-boss has
+  // already failed it and a retry may own the row, so leave its payload alone.
+  if (!job.signal.aborted) {
+    await redactEmailJobSecret(boss, job);
+  }
 
   return result;
 }
 
 async function runEmailJob(boss: EmailWorkerBoss, job: Job<EmailJobData>): Promise<EmailJobResult> {
   try {
-    return await sendEmailForJob(job.data);
+    return await sendEmailForJob(job.data, job.signal);
   } catch (error) {
     const deferral = getProviderQuotaDeferral(error);
 
-    if (!deferral) {
+    if (!deferral || job.signal.aborted) {
       if (error instanceof EmailSendError && error.code === "monthly_quota_exceeded") {
         // Deferring for weeks would hide the problem; let the job retry and
         // dead-letter so the exhausted monthly quota gets operational action.
@@ -103,6 +106,8 @@ async function runEmailJob(boss: EmailWorkerBoss, job: Job<EmailJobData>): Promi
         );
       }
 
+      // On an aborted (expired) job, pg-boss has already scheduled the retry;
+      // deferring as well would duplicate the job.
       throw error;
     }
 
@@ -126,14 +131,17 @@ async function runEmailJob(boss: EmailWorkerBoss, job: Job<EmailJobData>): Promi
   }
 }
 
-async function sendEmailForJob(data: EmailJobData): Promise<EmailJobResult> {
+async function sendEmailForJob(data: EmailJobData, signal: AbortSignal): Promise<EmailJobResult> {
   switch (data.type) {
     case "account_invite":
-      return await sendAccountInviteEmailJob(data);
+      return await sendAccountInviteEmailJob(data, signal);
   }
 }
 
-async function sendAccountInviteEmailJob(data: AccountInviteEmailJobData): Promise<EmailJobResult> {
+async function sendAccountInviteEmailJob(
+  data: AccountInviteEmailJobData,
+  signal: AbortSignal,
+): Promise<EmailJobResult> {
   const target = await findInviteEmailJobTarget(data.inviteId);
 
   if (!target) {
@@ -144,9 +152,23 @@ async function sendAccountInviteEmailJob(data: AccountInviteEmailJobData): Promi
     return { status: "skipped", reason: "invite_accepted" };
   }
 
+  // The worker only sets sentAt after a successful send, so this invite's
+  // email already went out. This is how a job recovered after a crash (or an
+  // expired attempt whose send still landed) completes instead of re-sending
+  // — its payload secret may already be redacted by then.
+  if (target.sentAt) {
+    return { status: "skipped", reason: "invite_already_sent" };
+  }
+
   // Also covers superseded invites: creating a new invite expires older ones.
   if (target.expiresAt.getTime() <= Date.now()) {
     return { status: "skipped", reason: "invite_expired" };
+  }
+
+  if (!data.secret) {
+    // Unsent invite with a missing secret cannot be recovered; fail into the
+    // retry/dead-letter cycle so it gets operational attention.
+    throw new Error(`Email job for invite ${data.inviteId} has no sealed payload secret.`);
   }
 
   const sent = await sendInviteEmail({
@@ -154,7 +176,15 @@ async function sendAccountInviteEmailJob(data: AccountInviteEmailJobData): Promi
     fullName: target.fullName,
     inviteUrl: openEmailJobSecret(data.secret),
     idempotencyKey: getAccountInviteEmailIdempotencyKey(data.inviteId),
+    signal,
   });
+
+  if (signal.aborted) {
+    // pg-boss expired this job mid-send and will retry it; stop before
+    // touching state the retry now owns. The idempotency key reconciles the
+    // provider side if this send actually landed.
+    throw new Error(`Email job ${data.inviteId} expired during send.`);
+  }
 
   await markInviteEmailSent(data.inviteId);
 

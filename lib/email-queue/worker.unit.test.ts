@@ -50,12 +50,19 @@ const boss = {
   getDb: () => ({ executeSql: executeSqlMock }),
 } as unknown as EmailWorkerBoss;
 
-function buildJob(): Job<EmailJobData> {
+function buildJob(signal: AbortSignal = new AbortController().signal): Job<EmailJobData> {
   return {
     id: "5a2da32a-cc55-4b27-bcb6-7e0bbf0db5c6",
     name: EMAIL_QUEUE,
     data: buildAccountInviteEmailJob({ inviteId: INVITE_ID, inviteUrl: INVITE_URL }),
+    signal,
   } as Job<EmailJobData>;
+}
+
+function buildAbortedJob(): Job<EmailJobData> {
+  const abortController = new AbortController();
+  abortController.abort();
+  return buildJob(abortController.signal);
 }
 
 function buildInviteTarget() {
@@ -64,6 +71,7 @@ function buildInviteTarget() {
     fullName: "Tenant User",
     expiresAt: new Date(Date.now() + 60_000),
     acceptedAt: null,
+    sentAt: null,
   };
 }
 
@@ -97,6 +105,7 @@ describe("processEmailJob", () => {
       fullName: "Tenant User",
       inviteUrl: INVITE_URL,
       idempotencyKey: `account_invite/${INVITE_ID}`,
+      signal: job.signal,
     });
     expect(markInviteEmailSentMock).toHaveBeenCalledWith(INVITE_ID);
     expect(result).toEqual({ status: "sent", providerMessageId: "email_123" });
@@ -132,6 +141,53 @@ describe("processEmailJob", () => {
 
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
     expect(result).toEqual({ status: "skipped", reason: "invite_accepted" });
+  });
+
+  it("skips sending when the invite email already went out, even without a payload secret", async () => {
+    findInviteEmailJobTargetMock.mockResolvedValue({
+      ...buildInviteTarget(),
+      sentAt: new Date(),
+    });
+    const job = buildJob();
+    (job.data as { secret?: string }).secret = undefined;
+
+    const result = await processEmailJob(boss, job);
+
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "skipped", reason: "invite_already_sent" });
+  });
+
+  it("fails into the retry/dead-letter cycle when an unsent invite has no payload secret", async () => {
+    const job = buildJob();
+    (job.data as { secret?: string }).secret = undefined;
+
+    await expect(processEmailJob(boss, job)).rejects.toThrow("no sealed payload secret");
+
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("stops before mutating state when the job expired during the send", async () => {
+    const job = buildAbortedJob();
+
+    await expect(processEmailJob(boss, job)).rejects.toThrow("expired during send");
+
+    expect(markInviteEmailSentMock).not.toHaveBeenCalled();
+    expect(executeSqlMock).not.toHaveBeenCalled();
+  });
+
+  it("does not defer quota failures for an expired job pg-boss already retries", async () => {
+    sendInviteEmailMock.mockRejectedValue(
+      new EmailSendError("Too many requests", {
+        code: "rate_limit_exceeded",
+        statusCode: 429,
+        retryAfterSeconds: 7,
+      }),
+    );
+
+    await expect(processEmailJob(boss, buildAbortedJob())).rejects.toThrow("Too many requests");
+
+    expect(sendAfterMock).not.toHaveBeenCalled();
+    expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
   it("skips sending when the invite expired or was superseded", async () => {

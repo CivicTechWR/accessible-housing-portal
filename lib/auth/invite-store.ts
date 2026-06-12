@@ -145,6 +145,7 @@ export async function findInviteEmailJobTarget(inviteId: string) {
       fullName: users.fullName,
       expiresAt: userInvites.expiresAt,
       acceptedAt: userInvites.acceptedAt,
+      sentAt: userInvites.sentAt,
     })
     .from(userInvites)
     .innerJoin(users, eq(userInvites.userId, users.id))
