@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Resend } from "resend";
 
-import { sendEmail } from "@/lib/email";
+import { EmailSendError, sendEmail } from "@/lib/email";
 
-const sendMock =
-  jest.fn<
-    (
-      ...args: unknown[]
-    ) => Promise<{ data: { id: string } | null; error: { message: string } | null }>
-  >();
+const sendMock = jest.fn<
+  (...args: unknown[]) => Promise<{
+    data: { id: string } | null;
+    error: { message: string; name?: string; statusCode?: number } | null;
+    headers?: Record<string, string> | null;
+  }>
+>();
 
 jest.mock("resend", () => ({
   Resend: jest.fn(() => ({
@@ -78,5 +79,82 @@ describe("sendEmail", () => {
         idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
       }),
     ).rejects.toThrow("Daily quota exceeded");
+  });
+
+  it("throws a structured EmailSendError with Retry-After parsed case-insensitively", async () => {
+    sendMock.mockResolvedValue({
+      data: null,
+      error: { message: "Too many requests", name: "rate_limit_exceeded", statusCode: 429 },
+      headers: { "Retry-After": "120" },
+    });
+
+    const error = await sendEmail({
+      to: "tenant@example.org",
+      subject: "Subject line",
+      text: "Plain text body",
+      html: "<p>HTML body</p>",
+      idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+    }).catch((thrown: unknown) => thrown);
+
+    expect(error).toBeInstanceOf(EmailSendError);
+    expect(error).toMatchObject({
+      code: "rate_limit_exceeded",
+      statusCode: 429,
+      retryAfterSeconds: 120,
+    });
+  });
+
+  it("parses an HTTP-date Retry-After into delay seconds", async () => {
+    sendMock.mockResolvedValue({
+      data: null,
+      error: { message: "Too many requests", name: "rate_limit_exceeded", statusCode: 429 },
+      headers: { "retry-after": new Date(Date.now() + 90_000).toUTCString() },
+    });
+
+    const error = (await sendEmail({
+      to: "tenant@example.org",
+      subject: "Subject line",
+      text: "Plain text body",
+      html: "<p>HTML body</p>",
+      idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+    }).catch((thrown: unknown) => thrown)) as EmailSendError;
+
+    expect(error.retryAfterSeconds).toBeGreaterThanOrEqual(85);
+    expect(error.retryAfterSeconds).toBeLessThanOrEqual(91);
+  });
+
+  it("rejects without calling the provider when the signal is already aborted", async () => {
+    const abortController = new AbortController();
+    abortController.abort();
+
+    await expect(
+      sendEmail({
+        to: "tenant@example.org",
+        subject: "Subject line",
+        text: "Plain text body",
+        html: "<p>HTML body</p>",
+        idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+        signal: abortController.signal,
+      }),
+    ).rejects.toThrow("aborted before it started");
+
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("stops waiting on an in-flight send when the signal aborts", async () => {
+    sendMock.mockReturnValue(new Promise(() => {}));
+    const abortController = new AbortController();
+
+    const pendingSend = sendEmail({
+      to: "tenant@example.org",
+      subject: "Subject line",
+      text: "Plain text body",
+      html: "<p>HTML body</p>",
+      idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+      signal: abortController.signal,
+    });
+    abortController.abort();
+
+    await expect(pendingSend).rejects.toThrow("aborted while in flight");
   });
 });
