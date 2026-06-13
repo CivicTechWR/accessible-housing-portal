@@ -61,7 +61,7 @@ Use `shared/schemas/*.ts` for contracts that must stay consistent across fronten
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 22.6+
+- [Node.js](https://nodejs.org/) 22.12+
 - npm, using the committed lockfile
 
 ### Install Dependencies
@@ -128,6 +128,15 @@ The app includes a Drizzle + Postgres schema for users, invites, properties, lis
 When using Docker Compose, `db:migrate` and `db:seed` are run automatically when the app container starts.
 
 If you set `ADMIN_PASSWORD`, the app enables a one-time bootstrap admin sign-in for `ADMIN_EMAIL` (default `admin@example.com`) until an admin user has a stored local password. This is intended for first-run setup and local/dev recovery from external-auth-only data.
+
+## Transactional Email Queue
+
+Transactional emails (currently admin invites) are not sent inline. Feature code enqueues a durable [pg-boss](https://github.com/timgit/pg-boss) job in the same Postgres transaction that writes the business records, and an in-process worker is the only caller of the shared `sendEmail()` service (`lib/email.ts`). pg-boss stores jobs in its own `pgboss` schema, which it creates and migrates automatically on first start — no drizzle migration is involved.
+
+- **Worker startup**: `instrumentation.ts` `register()` starts the worker, gated on `EMAIL_WORKER_ENABLED=true` in addition to the Node.js runtime check, so builds, CI, tests, and scripts never start pollers. Set `EMAIL_WORKER_ENABLED=true` wherever the long-lived server runs (it is preset in `docker-compose.yml`, and must be set in the Infisical prod environment for deployments); leave it unset everywhere else. Without it the app still enqueues jobs, but nothing sends them.
+- **Delivery semantics**: a successful request means the email is _queued_, not sent. The worker retries transient provider failures with bounded exponential backoff, honors `Retry-After` on rate limits, defers jobs ~24 hours when Resend's daily quota is exhausted, and moves permanently failing jobs to the `email_send_dead_letter` queue (monthly quota exhaustion ends up there too, after logging an error). Quota deferrals do not burn retries but are capped per logical email (`MAX_EMAIL_JOB_DEFERRALS` in `lib/email-queue/worker.ts`); a job that keeps hitting provider limits past the cap also dead-letters. The worker also works the dead letter queue: it records the permanent failure on the source entity (for invites, `emailFailedAt`), so admin invite lists distinguish `queued` (job enqueued), `sent` (worker delivered and set `sentAt`), `failed` (job dead-lettered; re-send the invite), and `not_requested` (no email asked for; the invite URL is shared manually). Dead-lettered job rows stay queryable for operational follow-up.
+- **Sensitive payloads**: raw one-time tokens and invite URLs are never stored in plaintext job payloads. They are sealed with AES-256-GCM under a key derived from `AUTH_SECRET` (`lib/email-queue/email-job.ts`) and redacted from the job row once the logical email reaches a terminal outcome (sent, skipped, or dead-lettered with the failure recorded); a quota-deferred job hands its still-sealed payload to the replacement job instead. Note that rotating `AUTH_SECRET` makes already-queued sealed payloads undecryptable; those jobs will dead-letter, the affected invites are marked `failed`, and they must be re-sent.
+- **Adding an email type**: extend `EmailJobData` in `lib/email-queue/email-job.ts` (entity reference + sealed secret if needed, plus a priority) and add a matching send handler and dead-letter failure-recording case in `lib/email-queue/worker.ts`. Do not add another delivery path around the queue.
 
 ## Development Commands
 
