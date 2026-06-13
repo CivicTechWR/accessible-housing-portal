@@ -136,7 +136,7 @@ describe("sendEmail", () => {
         idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
         signal: abortController.signal,
       }),
-    ).rejects.toThrow("aborted before it started");
+    ).rejects.toMatchObject({ name: "AbortError" });
 
     expect(sendMock).not.toHaveBeenCalled();
   });
@@ -155,6 +155,26 @@ describe("sendEmail", () => {
     });
     abortController.abort();
 
-    await expect(pendingSend).rejects.toThrow("aborted while in flight");
+    await expect(pendingSend).rejects.toMatchObject({ name: "AbortError" });
+  });
+
+  it("rejects if the signal aborts before the in-flight listener is attached", async () => {
+    const abortController = new AbortController();
+    const abortReason = new Error("Email job expired.");
+    sendMock.mockImplementation(() => {
+      abortController.abort(abortReason);
+      return new Promise(() => {});
+    });
+
+    await expect(
+      sendEmail({
+        to: "tenant@example.org",
+        subject: "Subject line",
+        text: "Plain text body",
+        html: "<p>HTML body</p>",
+        idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+        signal: abortController.signal,
+      }),
+    ).rejects.toBe(abortReason);
   });
 });

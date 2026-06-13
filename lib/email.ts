@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Resend } from "resend";
+import { Resend, type ErrorResponse } from "resend";
 
 export type TransactionalEmailSendOptions = {
   /**
@@ -30,14 +30,18 @@ export type SendEmailParams = {
  * daily_quota_exceeded, monthly_quota_exceeded).
  */
 export class EmailSendError extends Error {
-  readonly code: string | null;
+  readonly code: ErrorResponse["name"] | null;
   readonly statusCode: number | null;
   /** Parsed from the provider's Retry-After response header, when present. */
   readonly retryAfterSeconds: number | null;
 
   constructor(
     message: string,
-    details: { code: string | null; statusCode: number | null; retryAfterSeconds: number | null },
+    details: {
+      code: ErrorResponse["name"] | null;
+      statusCode: number | null;
+      retryAfterSeconds: number | null;
+    },
   ) {
     super(message);
     this.name = "EmailSendError";
@@ -48,7 +52,7 @@ export class EmailSendError extends Error {
 }
 
 export async function sendEmail(params: SendEmailParams) {
-  throwIfAborted(params.signal);
+  params.signal?.throwIfAborted();
 
   const resend = createResendClient();
   const result = await rejectOnAbort(
@@ -78,12 +82,6 @@ export async function sendEmail(params: SendEmailParams) {
   return result.data;
 }
 
-function throwIfAborted(signal: AbortSignal | undefined) {
-  if (signal?.aborted) {
-    throw new Error("Email send aborted before it started.");
-  }
-}
-
 /**
  * The Resend SDK does not accept an AbortSignal, so the in-flight request is
  * left to settle on its own; this only stops the caller from waiting on (and
@@ -94,8 +92,10 @@ function rejectOnAbort<T>(promise: Promise<T>, signal: AbortSignal | undefined):
     return promise;
   }
 
+  signal.throwIfAborted();
+
   return new Promise<T>((resolve, reject) => {
-    const onAbort = () => reject(new Error("Email send aborted while in flight."));
+    const onAbort = () => reject(signal.reason);
     signal.addEventListener("abort", onAbort, { once: true });
     promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", onAbort));
   });
