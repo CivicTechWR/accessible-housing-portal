@@ -3,8 +3,19 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
+import { UTILITY_INCLUDED_VALUES } from "@/shared/schemas/listings";
 import Link from "next/link";
 import { ListingApplyButton } from "./ListingApplyButton";
+
+type UtilityIncluded = (typeof UTILITY_INCLUDED_VALUES)[number];
+
+const UTILITY_LABELS: Record<UtilityIncluded, string> = {
+  heat: "Heat",
+  water: "Water",
+  electricity: "Electricity",
+  gas: "Gas",
+  internet: "Internet",
+};
 
 type ListingFeature = {
   name: string;
@@ -33,6 +44,7 @@ export interface ListingDetailProps {
   beds: number;
   baths: number;
   sqft: number;
+  utilitiesIncluded?: UtilityIncluded[];
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -51,6 +63,7 @@ export function ListingDetails({
   beds,
   baths,
   sqft,
+  utilitiesIncluded,
   contactName,
   contactEmail,
   contactPhone,
@@ -74,6 +87,13 @@ export function ListingDetails({
     { label: "Bedrooms", value: String(beds) },
     { label: "Bathrooms", value: String(baths) },
     { label: "Square Feet", value: `${sqft.toLocaleString()} sqft` },
+    {
+      label: "Utilities Included",
+      value:
+        utilitiesIncluded && utilitiesIncluded.length > 0
+          ? utilitiesIncluded.map((utility) => UTILITY_LABELS[utility]).join(", ")
+          : "None listed",
+    },
     { label: "Posted", value: timeAgo },
   ];
   const contactRows = [

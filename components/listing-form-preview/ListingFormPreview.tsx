@@ -74,6 +74,7 @@ export function ListingFormPreview({
           beds={formData.bedrooms}
           baths={formData.bathrooms}
           sqft={formData.squareFeet || 0}
+          utilitiesIncluded={formData.utilitiesIncluded}
           contactName={formData.contactName}
           contactEmail={formData.contactEmail}
           contactPhone={formData.contactPhone}

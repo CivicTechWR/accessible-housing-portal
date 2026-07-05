@@ -116,6 +116,7 @@ export const listingDetailsSchema = z.object({
   beds: z.number().int().min(0),
   baths: z.number().min(0),
   sqft: z.number().int().min(0),
+  utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   accessibilityFeatures: z.array(listingFeatureSchema).optional(),
   images: z.array(listingImageSchema),
   timeAgo: nonEmptyString,
