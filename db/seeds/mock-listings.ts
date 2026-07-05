@@ -128,7 +128,7 @@ export const mockListingSeedListings: SeedListing[] = [
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water"],
       maxIncomeCents: 7800000,
-      applicationUrl: null,
+      applicationUrl: "https://example.com/apply/main-st-apartments",
       applicationEmail: "leasing@waterloocoop.example.com",
       applicationPhone: "519-555-0100",
       customFields: {
@@ -253,7 +253,7 @@ export const mockListingSeedListings: SeedListing[] = [
       leaseTermMonths: 6,
       utilitiesIncluded: ["water"],
       maxIncomeCents: null,
-      applicationUrl: null,
+      applicationUrl: "https://example.com/apply/erb-street-townhomes",
       applicationEmail: "housing@civichomes.example.com",
       applicationPhone: "519-555-0142",
       customFields: {
@@ -371,7 +371,7 @@ export const mockListingSeedListings: SeedListing[] = [
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water", "electricity"],
       maxIncomeCents: 6400000,
-      applicationUrl: null,
+      applicationUrl: "https://example.com/apply/queen-south-residences",
       applicationEmail: "leasing@waterloocoop.example.com",
       applicationPhone: "519-555-0100",
       customFields: {
