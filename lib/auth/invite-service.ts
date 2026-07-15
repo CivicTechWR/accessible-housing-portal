@@ -96,7 +96,7 @@ export async function createInvite(params: {
 
     // Enqueue in the same transaction as the invite so a committed invite can
     // never lose its email job. The email is queued, not sent: the worker
-    // delivers it and sets sentAt afterwards.
+    // submits it to the provider and then sets the legacy sentAt field.
     if (params.sendInviteEmail) {
       await enqueueEmail(tx, buildAccountInviteEmailJob({ inviteId: invite.id, inviteUrl }));
     }

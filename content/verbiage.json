@@ -36,7 +36,7 @@
       "notRequested": "No email requested",
       "queued": "Email queued",
       "failed": "Email failed",
-      "sent": "Email sent"
+      "submitted": "Email submitted"
     }
   }
 }

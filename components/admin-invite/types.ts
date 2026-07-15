@@ -23,17 +23,17 @@ export type InviteFormValues = {
 };
 
 /**
- * Email delivery state of an invite: "queued" until the worker delivers
- * ("sent") or the job permanently fails ("failed"); "not_requested" when the
- * invite URL is shared manually instead.
+ * Email submission state of an invite: "queued" until Resend accepts the
+ * request ("submitted") or the job permanently fails ("failed");
+ * "not_requested" when the invite URL is shared manually instead.
  */
-export type InviteEmailStatus = "not_requested" | "queued" | "failed" | "sent";
+export type InviteEmailStatus = "not_requested" | "queued" | "failed" | "submitted";
 
 export const inviteStatusLabels: Record<InviteEmailStatus, string> = {
   not_requested: verbiage.adminInvite.status.notRequested,
   queued: verbiage.adminInvite.status.queued,
   failed: verbiage.adminInvite.status.failed,
-  sent: verbiage.adminInvite.status.sent,
+  submitted: verbiage.adminInvite.status.submitted,
 };
 
 export type InviteStatus = InviteEmailStatus | "error";

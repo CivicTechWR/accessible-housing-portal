@@ -7,12 +7,13 @@ import { userInvites, users, type UserRole } from "@/db/schema";
 import { hashOpaqueToken } from "@/lib/auth/token";
 
 /**
- * Email delivery state of an invite, derived from persisted columns:
- * "sent" (worker delivered, sentAt set), "failed" (job dead-lettered,
- * emailFailedAt set), "queued" (job enqueued, emailQueuedAt set), or
- * "not_requested" (no email; the invite URL is shared manually).
+ * Email submission state of an invite, derived from persisted columns:
+ * "submitted" (provider accepted the request; legacy sentAt set), "failed"
+ * (job dead-lettered, emailFailedAt set), "queued" (job enqueued,
+ * emailQueuedAt set), or "not_requested" (no email; the invite URL is shared
+ * manually). Recipient-server delivery is not currently tracked.
  */
-export type AccountInviteEmailStatus = "not_requested" | "queued" | "failed" | "sent";
+export type AccountInviteEmailStatus = "not_requested" | "queued" | "failed" | "submitted";
 
 export type RecentAccountInviteRow = {
   id: string;
@@ -62,10 +63,10 @@ export async function getPendingInviteByToken(token: string) {
 }
 
 /**
- * Invites whose email has not been delivered yet are included too, so an
- * invite stays visible between enqueue and delivery ("queued"), after its
- * email job permanently failed ("failed"), and when no invite email was
- * requested and the URL is shared manually ("not_requested").
+ * Invites whose email has not been submitted yet are included too, so an
+ * invite stays visible between enqueue and provider acceptance ("queued"),
+ * after its email job permanently failed ("failed"), and when no invite email
+ * was requested and the URL is shared manually ("not_requested").
  */
 export async function findRecentAccountInvites(limit: number): Promise<RecentAccountInviteRow[]> {
   const rows = await db
@@ -139,7 +140,7 @@ function toEmailStatus(row: {
   emailFailedAt: Date | null;
 }): AccountInviteEmailStatus {
   if (row.sentAt) {
-    return "sent";
+    return "submitted";
   }
 
   if (row.emailFailedAt) {
