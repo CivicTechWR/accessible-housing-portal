@@ -19,7 +19,7 @@ type HeaderMobileMenuProps = {
 };
 
 const mobileMenuItemClass =
-  "flex w-full items-center justify-between rounded-2xl bg-primary-foreground/10 px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/20";
+  "flex w-full cursor-pointer items-center justify-between rounded-2xl bg-primary-foreground/10 px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/20";
 
 export function HeaderMobileMenu({
   isSignedIn,
