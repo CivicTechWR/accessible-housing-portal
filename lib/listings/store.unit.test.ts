@@ -2,12 +2,26 @@ import { describe, expect, it } from "@jest/globals";
 
 import type { ListingCustomFields } from "@/db/schema";
 import {
+  buildDuplicateListingTitle,
   buildListingCustomFields,
   buildListingFeatureCategories,
   getDisplayAccessibilityFeatures,
   getListingApplicationUrl,
   mergeListingCustomFields,
 } from "./store";
+
+describe("buildDuplicateListingTitle", () => {
+  it("prefixes the source title with Copy of", () => {
+    expect(buildDuplicateListingTitle("Sunny 2BR near uptown")).toBe(
+      "Copy of Sunny 2BR near uptown",
+    );
+  });
+
+  it("keeps untitled drafts untitled", () => {
+    expect(buildDuplicateListingTitle("")).toBe("");
+    expect(buildDuplicateListingTitle("   ")).toBe("");
+  });
+});
 
 describe("buildListingFeatureCategories", () => {
   it("applies alphabetical category order and per-category sort order for custom fields", () => {

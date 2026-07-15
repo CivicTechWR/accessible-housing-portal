@@ -115,6 +115,25 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
     },
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: async ({ listingId }: { listingId: string }) => {
+      const response = await fetch(`/api/listings/${listingId}/duplicate`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(payload?.message ?? "Unable to duplicate listing.");
+      }
+
+      return { listingId };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["listings"] });
+      router.refresh();
+    },
+  });
+
   useEffect(() => {
     setNow(new Date());
 
@@ -145,11 +164,9 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
 
   return (
     <div className="space-y-4">
-      {statusMutation.error ? (
+      {statusMutation.error || duplicateMutation.error ? (
         <AlertBanner variant="error" size="default" className="rounded-lg">
-          {statusMutation.error instanceof Error
-            ? statusMutation.error.message
-            : "Unable to update listing. Please try again."}
+          {getMutationErrorMessage(statusMutation.error ?? duplicateMutation.error)}
         </AlertBanner>
       ) : null}
 
@@ -160,6 +177,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
             statusMutation.isPending && statusMutation.variables?.listingId === listing.id;
           const pendingLabel =
             statusMutation.variables?.nextStatus === "archived" ? "Deleting..." : "Restoring...";
+          const isDuplicating =
+            duplicateMutation.isPending && duplicateMutation.variables?.listingId === listing.id;
 
           return (
             <Card key={listing.id}>
@@ -226,6 +245,16 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                         <Button
                           type="button"
                           variant="outline"
+                          disabled={isDuplicating}
+                          onClick={() => {
+                            duplicateMutation.mutate({ listingId: listing.id });
+                          }}
+                        >
+                          {isDuplicating ? "Duplicating..." : "Duplicate"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
                           disabled={isMutating}
                           onClick={() => {
                             if (
@@ -272,6 +301,10 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
       </div>
     </div>
   );
+}
+
+function getMutationErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unable to update listing. Please try again.";
 }
 
 function sortListings(listings: MyListingItem[]) {

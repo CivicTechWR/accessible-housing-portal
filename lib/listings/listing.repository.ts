@@ -419,6 +419,107 @@ export async function createDraftListing(input: { actorUserId: string }) {
   });
 }
 
+export async function duplicateListingGraph(input: {
+  listingId: ListingIdParam;
+  actorUserId: string;
+  title: string;
+}) {
+  return db.transaction(async (tx) => {
+    const [source] = await tx
+      .select()
+      .from(listings)
+      .where(eq(listings.id, input.listingId))
+      .limit(1);
+
+    if (!source) {
+      throw new Error("Failed to load listing to duplicate.");
+    }
+
+    const [sourceProperty] = await tx
+      .select()
+      .from(properties)
+      .where(eq(properties.id, source.propertyId))
+      .limit(1);
+
+    if (!sourceProperty) {
+      throw new Error("Failed to load property to duplicate.");
+    }
+
+    const [property] = await tx
+      .insert(properties)
+      .values({
+        ownerUserId: sourceProperty.ownerUserId,
+        name: sourceProperty.name,
+        street1: sourceProperty.street1,
+        street2: sourceProperty.street2,
+        city: sourceProperty.city,
+        province: sourceProperty.province,
+        postalCode: sourceProperty.postalCode,
+        country: sourceProperty.country,
+        neighborhood: sourceProperty.neighborhood,
+        latitude: sourceProperty.latitude,
+        longitude: sourceProperty.longitude,
+        contactName: sourceProperty.contactName,
+        contactEmail: sourceProperty.contactEmail,
+        contactPhone: sourceProperty.contactPhone,
+        createdByUserId: input.actorUserId,
+        updatedByUserId: input.actorUserId,
+      })
+      .returning({ id: properties.id });
+
+    if (!property) {
+      throw new Error("Failed to duplicate property.");
+    }
+
+    const [listing] = await tx
+      .insert(listings)
+      .values({
+        propertyId: property.id,
+        createdByUserId: input.actorUserId,
+        updatedByUserId: input.actorUserId,
+        title: input.title,
+        description: source.description,
+        status: "draft",
+        unitNumber: source.unitNumber,
+        buildingType: source.buildingType,
+        bedrooms: source.bedrooms,
+        bathrooms: source.bathrooms,
+        squareFeet: source.squareFeet,
+        monthlyRentCents: source.monthlyRentCents,
+        availableOn: source.availableOn,
+        leaseTermMonths: source.leaseTermMonths,
+        utilitiesIncluded: source.utilitiesIncluded,
+        maxIncomeCents: source.maxIncomeCents,
+        applicationUrl: source.applicationUrl,
+        applicationEmail: source.applicationEmail,
+        applicationPhone: source.applicationPhone,
+        applicationInstructions: source.applicationInstructions,
+        customFields: source.customFields as ListingCustomFields,
+        publishedAt: null,
+        archivedAt: null,
+      })
+      .returning({ id: listings.id });
+
+    if (!listing) {
+      throw new Error("Failed to duplicate listing.");
+    }
+
+    // Copy image rows in SQL so bytea payloads never leave the database.
+    await tx.execute(sql`
+      insert into listing_images (
+        listing_id, uploaded_by_user_id, image_url, image_data, content_type,
+        size_bytes, width, height, original_filename, alt_text, sort_order
+      )
+      select ${listing.id}::uuid, uploaded_by_user_id, image_url, image_data, content_type,
+        size_bytes, width, height, original_filename, alt_text, sort_order
+      from listing_images
+      where listing_id = ${input.listingId}::uuid
+    `);
+
+    return listing;
+  });
+}
+
 export async function findOwnerListings(ownerUserId: string): Promise<OwnerListingRow[]> {
   return db
     .select({

@@ -6,6 +6,7 @@ import { listings } from "@/db/schema";
 import type { getOptionalSession } from "@/lib/auth/session";
 import { buildListingFeatureDefinitionLookup } from "@/lib/listings/listing-feature-definitions";
 import {
+  buildDuplicateListingTitle,
   buildListingFeatureCategories,
   buildListingCustomFields,
   centsToDollars,
@@ -40,6 +41,7 @@ import {
   archiveListing,
   createDraftListing,
   createListing,
+  duplicateListingGraph,
   findListingImagesByListingIds,
   findListingImagesByListingId,
   findOwnerListings,
@@ -63,6 +65,7 @@ import type {
   CreateListingResponse,
   CreateDraftListingResponse,
   DeleteListingResponse,
+  DuplicateListingResponse,
   ListingByIdResponse,
   ListingDetails,
   ListingEditorData,
@@ -317,6 +320,47 @@ export async function createDraftListingService(): Promise<
     message: "Draft listing created",
     data: {
       id: listing.id,
+    },
+  });
+}
+
+export async function duplicateListingByIdService(
+  listingId: ListingIdParam,
+): Promise<DomainResult<DuplicateListingResponse>> {
+  const actorResult = await requireListingWriteActor();
+
+  if (!actorResult.ok) {
+    return actorResult;
+  }
+
+  const listing = await findListingRecordById(listingId);
+
+  if (!listing) {
+    return fail("not_found", "Listing not found");
+  }
+
+  if (
+    !canEditListing(
+      {
+        ownerUserId: listing.property.ownerUserId,
+        status: listing.status,
+      },
+      actorResult.value.actor,
+    )
+  ) {
+    return fail("forbidden", "Forbidden");
+  }
+
+  const duplicatedListing = await duplicateListingGraph({
+    listingId,
+    actorUserId: actorResult.value.actor.userId,
+    title: buildDuplicateListingTitle(listing.title),
+  });
+
+  return succeed({
+    message: "Listing duplicated",
+    data: {
+      id: duplicatedListing.id,
     },
   });
 }
