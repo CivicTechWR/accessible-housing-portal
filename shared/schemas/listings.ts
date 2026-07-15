@@ -331,6 +331,11 @@ export const createDraftListingResponseSchema = z.object({
   data: listingIdDataSchema,
 });
 
+export const duplicateListingResponseSchema = z.object({
+  message: z.string(),
+  data: listingIdDataSchema,
+});
+
 export const replaceListingResponseSchema = z.object({
   message: z.string(),
   data: listingIdDataSchema.and(replaceListingSchema),
@@ -361,6 +366,7 @@ export type PatchListingInput = z.infer<typeof patchListingSchema>;
 export type ListingMutationInput = ReplaceListingInput | PatchListingInput;
 export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
+export type DuplicateListingResponse = z.infer<typeof duplicateListingResponseSchema>;
 export type ReplaceListingResponse = z.infer<typeof replaceListingResponseSchema>;
 export type PatchListingResponse = z.infer<typeof patchListingResponseSchema>;
 export type ArchiveListingResponse = z.infer<typeof archiveListingResponseSchema>;

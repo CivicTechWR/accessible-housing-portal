@@ -92,6 +92,12 @@ export function formatListingAddress(street1: string, unitNumber: string | null)
   return unitNumber ? `${street1} #${unitNumber}` : street1;
 }
 
+export function buildDuplicateListingTitle(title: string) {
+  const trimmedTitle = title.trim();
+
+  return trimmedTitle ? `Copy of ${trimmedTitle}` : "";
+}
+
 export function getListingImageUrl(imageId: string, imageUrl: string | null) {
   return imageUrl ?? `/api/image-uploads/${imageId}`;
 }
