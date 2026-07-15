@@ -163,17 +163,18 @@ export function ListingDetails({
           </CardContent>
         </Card>
 
-        {(contactRows.length > 0 || applicationUrl) && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Info</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl
-                className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${
-                  applicationUrl ? "lg:grid-cols-4" : "lg:grid-cols-3"
-                }`}
-              >
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Info</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {contactRows.length === 0 && !applicationUrl ? (
+              <p className="text-sm text-muted-foreground">
+                The lister hasn&apos;t provided contact or application details for this listing yet.
+                Please check back later.
+              </p>
+            ) : (
+              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {contactRows.map((row) => (
                   <div key={row.label} className="min-w-0 bg-background p-3">
                     <dt className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -190,20 +191,24 @@ export function ListingDetails({
                     </dd>
                   </div>
                 ))}
-                {applicationUrl ? (
-                  <div className="min-w-0 bg-background p-3">
-                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Application
-                    </dt>
-                    <dd className="mt-1">
+                <div className="min-w-0 bg-background p-3">
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Application
+                  </dt>
+                  <dd className="mt-1">
+                    {applicationUrl ? (
                       <ListingApplyButton applicationUrl={applicationUrl} />
-                    </dd>
-                  </div>
-                ) : null}
+                    ) : (
+                      <p className="text-sm font-medium text-foreground">
+                        No online application — contact the lister directly to apply.
+                      </p>
+                    )}
+                  </dd>
+                </div>
               </dl>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
     </WrapperElement>
   );
