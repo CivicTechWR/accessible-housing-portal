@@ -7,7 +7,7 @@ import { sendInviteEmail } from "@/lib/auth/invite-email";
 import {
   findInviteEmailJobTarget,
   markInviteEmailFailed,
-  markInviteEmailSent,
+  markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
 import { buildAccountInviteEmailJob, type EmailJobData } from "@/lib/email-queue/email-job";
@@ -34,13 +34,13 @@ jest.mock("@/lib/auth/invite-email", () => ({
 jest.mock("@/lib/auth/invite-store", () => ({
   findInviteEmailJobTarget: jest.fn(),
   markInviteEmailFailed: jest.fn(),
-  markInviteEmailSent: jest.fn(),
+  markInviteEmailSubmitted: jest.fn(),
 }));
 
 const sendInviteEmailMock = jest.mocked(sendInviteEmail);
 const findInviteEmailJobTargetMock = jest.mocked(findInviteEmailJobTarget);
 const markInviteEmailFailedMock = jest.mocked(markInviteEmailFailed);
-const markInviteEmailSentMock = jest.mocked(markInviteEmailSent);
+const markInviteEmailSubmittedMock = jest.mocked(markInviteEmailSubmitted);
 
 const ORIGINAL_ENV = process.env;
 const INVITE_ID = "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204";
@@ -106,7 +106,7 @@ afterEach(() => {
 });
 
 describe("processEmailJob", () => {
-  it("sends the invite email with the unsealed URL and records the send", async () => {
+  it("submits the invite email with the unsealed URL and records provider acceptance", async () => {
     const job = buildJob();
 
     const result = await processEmailJob(boss, job);
@@ -118,8 +118,8 @@ describe("processEmailJob", () => {
       idempotencyKey: `account_invite/${INVITE_ID}`,
       signal: job.signal,
     });
-    expect(markInviteEmailSentMock).toHaveBeenCalledWith(INVITE_ID);
-    expect(result).toEqual({ status: "sent", providerMessageId: "email_123" });
+    expect(markInviteEmailSubmittedMock).toHaveBeenCalledWith(INVITE_ID);
+    expect(result).toEqual({ status: "submitted", providerMessageId: "email_123" });
   });
 
   it("redacts the sealed secret from the job row once the job completes", async () => {
@@ -159,7 +159,7 @@ describe("processEmailJob", () => {
     expect(result).toEqual({ status: "skipped", reason: "invite_accepted" });
   });
 
-  it("skips sending when the invite email already went out, even without a payload secret", async () => {
+  it("skips sending when the invite email was already submitted, even without a payload secret", async () => {
     findInviteEmailJobTargetMock.mockResolvedValue({
       ...buildInviteTarget(),
       sentAt: new Date(),
@@ -170,10 +170,10 @@ describe("processEmailJob", () => {
     const result = await processEmailJob(boss, job);
 
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ status: "skipped", reason: "invite_already_sent" });
+    expect(result).toEqual({ status: "skipped", reason: "invite_already_submitted" });
   });
 
-  it("fails into the retry/dead-letter cycle when an unsent invite has no payload secret", async () => {
+  it("fails into the retry/dead-letter cycle when an unsubmitted invite has no payload secret", async () => {
     const job = buildJob();
     (job.data as { secret?: string }).secret = undefined;
 
@@ -187,7 +187,7 @@ describe("processEmailJob", () => {
 
     await expect(processEmailJob(boss, job)).rejects.toThrow("expired during send");
 
-    expect(markInviteEmailSentMock).not.toHaveBeenCalled();
+    expect(markInviteEmailSubmittedMock).not.toHaveBeenCalled();
     expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
@@ -236,7 +236,7 @@ describe("processEmailJob", () => {
       { priority: 20 },
       7,
     );
-    expect(markInviteEmailSentMock).not.toHaveBeenCalled();
+    expect(markInviteEmailSubmittedMock).not.toHaveBeenCalled();
     expect(result).toEqual({
       status: "deferred",
       reason: "rate_limit_exceeded",

@@ -155,14 +155,14 @@ export async function findInviteEmailJobTarget(inviteId: string) {
   return row ?? null;
 }
 
-export async function markInviteEmailSent(inviteId: string) {
+export async function markInviteEmailSubmitted(inviteId: string) {
   await db.update(userInvites).set({ sentAt: new Date() }).where(eq(userInvites.id, inviteId));
 }
 
 /**
  * Record that the invite's email job permanently failed (dead-lettered), so
  * admin lists can show "failed" instead of an eternal "queued". The sentAt
- * guard keeps a stray late failure from masking a delivered email.
+ * guard keeps a stray late failure from masking a provider-accepted email.
  */
 export async function markInviteEmailFailed(inviteId: string) {
   await db

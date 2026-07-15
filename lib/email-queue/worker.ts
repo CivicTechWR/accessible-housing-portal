@@ -6,7 +6,7 @@ import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth
 import {
   findInviteEmailJobTarget,
   markInviteEmailFailed,
-  markInviteEmailSent,
+  markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
 import {
@@ -36,7 +36,7 @@ export const MAX_EMAIL_JOB_DEFERRALS = 30;
 
 /** Stored as the completed job's output: the audit trail for the send. */
 export type EmailJobResult =
-  | { status: "sent"; providerMessageId: string | null }
+  | { status: "submitted"; providerMessageId: string | null }
   | { status: "skipped"; reason: string }
   | {
       status: "deferred";
@@ -105,7 +105,7 @@ export async function processEmailJob(
   const result = await runEmailJob(boss, job);
 
   // The completed job row is retained for audit; strip the sealed secret once
-  // no attempt can need it again. Sent and skipped recoveries get by without
+  // no attempt can need it again. Submitted and skipped recoveries get by without
   // it (sentAt guard, or skip guards that run before decryption). Deferred
   // jobs keep theirs: the secret lives on in the replacement job either way,
   // and a crash between redaction and completion would otherwise recover the
@@ -222,12 +222,12 @@ async function sendAccountInviteEmailJob(
     return { status: "skipped", reason: "invite_accepted" };
   }
 
-  // The worker only sets sentAt after a successful send, so this invite's
-  // email already went out. This is how a job recovered after a crash (or an
-  // expired attempt whose send still landed) completes instead of re-sending
-  // — its payload secret may already be redacted by then.
+  // The worker only sets sentAt after the provider accepts the send request,
+  // so this invite was already submitted. This is how a job recovered after a
+  // crash (or an expired attempt whose request still landed) completes instead
+  // of re-submitting — its payload secret may already be redacted by then.
   if (target.sentAt) {
-    return { status: "skipped", reason: "invite_already_sent" };
+    return { status: "skipped", reason: "invite_already_submitted" };
   }
 
   // Also covers superseded invites: creating a new invite expires older ones.
@@ -241,7 +241,7 @@ async function sendAccountInviteEmailJob(
     throw new Error(`Email job for invite ${data.inviteId} has no sealed payload secret.`);
   }
 
-  const sent = await sendInviteEmail({
+  const submission = await sendInviteEmail({
     email: target.email,
     fullName: target.fullName,
     inviteUrl: openEmailJobSecret(data.secret),
@@ -256,9 +256,9 @@ async function sendAccountInviteEmailJob(
     throw new Error(`Email job ${data.inviteId} expired during send.`);
   }
 
-  await markInviteEmailSent(data.inviteId);
+  await markInviteEmailSubmitted(data.inviteId);
 
-  return { status: "sent", providerMessageId: sent?.id ?? null };
+  return { status: "submitted", providerMessageId: submission?.id ?? null };
 }
 
 function getProviderQuotaDeferral(error: unknown) {

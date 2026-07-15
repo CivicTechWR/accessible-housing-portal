@@ -132,11 +132,13 @@ export const userInvites = pgTable(
     email: text("email").notNull(),
     tokenHash: text("token_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    // Legacy name: records when the email provider accepted the send request,
+    // not confirmed delivery to the recipient's mail server.
     sentAt: timestamp("sent_at", { withTimezone: true }),
     // Invite email lifecycle: emailQueuedAt is set when an email job is
     // enqueued (null = no email requested, the invite URL is shared
-    // manually); the worker then sets sentAt on delivery, or emailFailedAt
-    // when the job permanently fails (dead-letters).
+    // manually); the worker then sets sentAt on provider submission, or
+    // emailFailedAt when the job permanently fails (dead-letters).
     emailQueuedAt: timestamp("email_queued_at", { withTimezone: true }),
     emailFailedAt: timestamp("email_failed_at", { withTimezone: true }),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
