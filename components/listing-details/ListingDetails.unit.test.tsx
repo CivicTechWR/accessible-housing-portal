@@ -16,8 +16,8 @@ const baseProps = {
 };
 
 describe("ListingDetails", () => {
-  it("renders the included utilities as a readable list", () => {
-    render(<ListingDetails {...baseProps} utilitiesIncluded={["heat", "water", "internet"]} />);
+  it("renders the included utilities in a consistent order", () => {
+    render(<ListingDetails {...baseProps} utilitiesIncluded={["internet", "water", "heat"]} />);
 
     expect(screen.queryByText("Utilities Included")).not.toBeNull();
     expect(screen.queryByText("Heat, Water, Internet")).not.toBeNull();

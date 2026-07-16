@@ -91,7 +91,9 @@ export function ListingDetails({
       label: "Utilities Included",
       value:
         utilitiesIncluded && utilitiesIncluded.length > 0
-          ? utilitiesIncluded.map((utility) => UTILITY_LABELS[utility]).join(", ")
+          ? UTILITY_INCLUDED_VALUES.filter((utility) => utilitiesIncluded.includes(utility))
+              .map((utility) => UTILITY_LABELS[utility])
+              .join(", ")
           : "None listed",
     },
     { label: "Posted", value: timeAgo },
