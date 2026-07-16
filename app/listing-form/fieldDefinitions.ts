@@ -1,7 +1,15 @@
-import { LISTING_BUILDING_TYPE_VALUES } from "@/shared/schemas/listings";
+import { LISTING_BUILDING_TYPE_VALUES, UTILITY_INCLUDED_VALUES } from "@/shared/schemas/listings";
 import type { ListingFormInput } from "./types";
 
-export type CoreFieldType = "text" | "number" | "select" | "textarea" | "email" | "tel" | "url";
+export type CoreFieldType =
+  | "text"
+  | "number"
+  | "select"
+  | "textarea"
+  | "email"
+  | "tel"
+  | "url"
+  | "checkbox-group";
 
 export interface FieldOption {
   label: string;
@@ -14,6 +22,7 @@ type KeysMatching<T, V> = {
 
 type ListingStringKey = Extract<KeysMatching<ListingFormInput, string | undefined>, string>;
 type ListingNumberKey = Extract<KeysMatching<ListingFormInput, number | undefined>, string>;
+type ListingStringArrayKey = Extract<KeysMatching<ListingFormInput, string[] | undefined>, string>;
 
 interface BaseCoreFieldDefinition {
   displayName: string;
@@ -43,10 +52,17 @@ interface NumberFieldDefinition extends BaseCoreFieldDefinition {
   options?: never;
 }
 
+interface CheckboxGroupFieldDefinition extends BaseCoreFieldDefinition {
+  key: ListingStringArrayKey;
+  fieldType: "checkbox-group";
+  options: FieldOption[];
+}
+
 export type CoreFieldDefinition =
   | TextLikeFieldDefinition
   | SelectFieldDefinition
-  | NumberFieldDefinition;
+  | NumberFieldDefinition
+  | CheckboxGroupFieldDefinition;
 
 export const CORE_FIELD_CATEGORIES = [
   {
@@ -149,6 +165,23 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     sortOrder: 9,
     placeholder: "E.g. 12",
     helpText: "Enter the lease term in months.",
+  },
+  {
+    key: "utilitiesIncluded",
+    displayName: "Utilities Included",
+    fieldType: "checkbox-group",
+    category: "listing_details",
+    isRequired: false,
+    sortOrder: 10,
+    colSpan: 2,
+    helpText: "Select all utilities included in the rent.",
+    options: [
+      { label: "Heat", value: UTILITY_INCLUDED_VALUES[0] },
+      { label: "Water", value: UTILITY_INCLUDED_VALUES[1] },
+      { label: "Electricity", value: UTILITY_INCLUDED_VALUES[2] },
+      { label: "Gas", value: UTILITY_INCLUDED_VALUES[3] },
+      { label: "Internet", value: UTILITY_INCLUDED_VALUES[4] },
+    ],
   },
 
   {
