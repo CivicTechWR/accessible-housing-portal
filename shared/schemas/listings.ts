@@ -11,6 +11,14 @@ const nonEmptyString = requiredTrimmedString();
 const listingStatusSchema = z.enum(["draft", "published", "archived"]);
 export const LISTING_BUILDING_TYPE_VALUES = ["apartment", "house", "townhouse", "condo"] as const;
 export const UTILITY_INCLUDED_VALUES = ["heat", "water", "electricity", "gas", "internet"] as const;
+export type UtilityIncluded = (typeof UTILITY_INCLUDED_VALUES)[number];
+export const UTILITY_INCLUDED_LABELS = {
+  heat: "Heat",
+  water: "Water",
+  electricity: "Electricity",
+  gas: "Gas",
+  internet: "Internet",
+} satisfies Record<UtilityIncluded, string>;
 const listingBuildingTypeSchema = z.enum(LISTING_BUILDING_TYPE_VALUES);
 const utilityIncludedSchema = z.enum(UTILITY_INCLUDED_VALUES);
 const listingLeaseTermMonthsSchema = z.number().int().positive();
