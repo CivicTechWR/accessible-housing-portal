@@ -7,6 +7,7 @@ import { UserIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { signOutFromHeader } from "@/components/site-header/actions";
+import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
 
 type HeaderMobileMenuProps = {
   isSignedIn: boolean;
@@ -118,6 +119,11 @@ export function HeaderMobileMenu({
                 <span>Sign in</span>
               </Link>
             )}
+
+            <div className="flex items-center justify-between rounded-2xl bg-primary-foreground/10 px-4 py-3 text-sm font-medium text-primary-foreground">
+              <span>Theme</span>
+              <ThemeToggle />
+            </div>
           </nav>
         </div>
       ) : null}
