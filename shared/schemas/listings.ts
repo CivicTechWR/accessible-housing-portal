@@ -10,6 +10,15 @@ import { positiveIntegerQueryParamSchema, positiveIntegerQueryParamWithMaxSchema
 const nonEmptyString = requiredTrimmedString();
 const listingStatusSchema = z.enum(["draft", "published", "archived"]);
 export const LISTING_BUILDING_TYPE_VALUES = ["apartment", "house", "townhouse", "condo"] as const;
+export const LISTING_BUILDING_TYPE_LABELS: Record<
+  (typeof LISTING_BUILDING_TYPE_VALUES)[number],
+  string
+> = {
+  apartment: "Apartment",
+  house: "House",
+  townhouse: "Townhouse",
+  condo: "Condo",
+};
 export const UTILITY_INCLUDED_VALUES = ["heat", "water", "electricity", "gas", "internet"] as const;
 const listingBuildingTypeSchema = z.enum(LISTING_BUILDING_TYPE_VALUES);
 const utilityIncludedSchema = z.enum(UTILITY_INCLUDED_VALUES);
@@ -112,6 +121,10 @@ export const listingDetailsSchema = z.object({
   editUrl: z.string().optional(),
   unitNumber: nonEmptyString.optional(),
   price: z.number().min(0),
+  description: nonEmptyString.optional(),
+  buildingType: listingBuildingTypeSchema.optional(),
+  leaseTermMonths: listingLeaseTermMonthsSchema.optional(),
+  availableOn: z.iso.date().optional(),
   address: listingDetailsAddressSchema,
   beds: z.number().int().min(0),
   baths: z.number().min(0),
