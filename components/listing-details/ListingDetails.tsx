@@ -3,19 +3,13 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
-import { UTILITY_INCLUDED_VALUES } from "@/shared/schemas/listings";
+import {
+  UTILITY_INCLUDED_LABELS,
+  UTILITY_INCLUDED_VALUES,
+  type UtilityIncluded,
+} from "@/shared/schemas/listings";
 import Link from "next/link";
 import { ListingApplyButton } from "./ListingApplyButton";
-
-type UtilityIncluded = (typeof UTILITY_INCLUDED_VALUES)[number];
-
-const UTILITY_LABELS: Record<UtilityIncluded, string> = {
-  heat: "Heat",
-  water: "Water",
-  electricity: "Electricity",
-  gas: "Gas",
-  internet: "Internet",
-};
 
 type ListingFeature = {
   name: string;
@@ -92,7 +86,7 @@ export function ListingDetails({
       value:
         utilitiesIncluded && utilitiesIncluded.length > 0
           ? UTILITY_INCLUDED_VALUES.filter((utility) => utilitiesIncluded.includes(utility))
-              .map((utility) => UTILITY_LABELS[utility])
+              .map((utility) => UTILITY_INCLUDED_LABELS[utility])
               .join(", ")
           : "None listed",
     },
