@@ -480,13 +480,15 @@ export async function duplicateListingGraph(input: {
         title: input.title,
         description: source.description,
         status: "draft",
-        unitNumber: source.unitNumber,
+        // Cleared rather than copied: these are the two fields that are
+        // near-certain to differ for a new unit in the same building.
+        unitNumber: null,
         buildingType: source.buildingType,
         bedrooms: source.bedrooms,
         bathrooms: source.bathrooms,
         squareFeet: source.squareFeet,
         monthlyRentCents: source.monthlyRentCents,
-        availableOn: source.availableOn,
+        availableOn: null,
         leaseTermMonths: source.leaseTermMonths,
         utilitiesIncluded: source.utilitiesIncluded,
         maxIncomeCents: source.maxIncomeCents,
