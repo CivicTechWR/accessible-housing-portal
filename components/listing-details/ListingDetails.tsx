@@ -3,6 +3,11 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
+import {
+  UTILITY_INCLUDED_LABELS,
+  UTILITY_INCLUDED_VALUES,
+  type UtilityIncluded,
+} from "@/shared/schemas/listings";
 import Link from "next/link";
 import { ListingApplyButton } from "./ListingApplyButton";
 
@@ -33,6 +38,7 @@ export interface ListingDetailProps {
   beds: number;
   baths: number;
   sqft: number;
+  utilitiesIncluded?: UtilityIncluded[];
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -51,6 +57,7 @@ export function ListingDetails({
   beds,
   baths,
   sqft,
+  utilitiesIncluded,
   contactName,
   contactEmail,
   contactPhone,
@@ -74,6 +81,15 @@ export function ListingDetails({
     { label: "Bedrooms", value: String(beds) },
     { label: "Bathrooms", value: String(baths) },
     { label: "Square Feet", value: `${sqft.toLocaleString()} sqft` },
+    {
+      label: "Utilities Included",
+      value:
+        utilitiesIncluded && utilitiesIncluded.length > 0
+          ? UTILITY_INCLUDED_VALUES.filter((utility) => utilitiesIncluded.includes(utility))
+              .map((utility) => UTILITY_INCLUDED_LABELS[utility])
+              .join(", ")
+          : "None listed",
+    },
     { label: "Posted", value: timeAgo },
   ];
   const contactRows = [

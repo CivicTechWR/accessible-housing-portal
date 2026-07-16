@@ -618,6 +618,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
     beds: listing.bedrooms,
     baths: listing.bathrooms,
     sqft: getListingSquareFeet(listing.squareFeet),
+    utilitiesIncluded: [...listing.utilitiesIncluded],
     accessibilityFeatures: getDisplayAccessibilityFeatures(
       listing.customFields,
       featureDefinitions,
