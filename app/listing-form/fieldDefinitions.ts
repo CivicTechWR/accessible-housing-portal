@@ -1,4 +1,8 @@
-import { LISTING_BUILDING_TYPE_VALUES, UTILITY_INCLUDED_VALUES } from "@/shared/schemas/listings";
+import {
+  LISTING_BUILDING_TYPE_VALUES,
+  UTILITY_INCLUDED_LABELS,
+  UTILITY_INCLUDED_VALUES,
+} from "@/shared/schemas/listings";
 import type { ListingFormInput } from "./types";
 
 export type CoreFieldType =
@@ -175,13 +179,10 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     sortOrder: 10,
     colSpan: 2,
     helpText: "Select all utilities included in the rent.",
-    options: [
-      { label: "Heat", value: UTILITY_INCLUDED_VALUES[0] },
-      { label: "Water", value: UTILITY_INCLUDED_VALUES[1] },
-      { label: "Electricity", value: UTILITY_INCLUDED_VALUES[2] },
-      { label: "Gas", value: UTILITY_INCLUDED_VALUES[3] },
-      { label: "Internet", value: UTILITY_INCLUDED_VALUES[4] },
-    ],
+    options: UTILITY_INCLUDED_VALUES.map((value) => ({
+      label: UTILITY_INCLUDED_LABELS[value],
+      value,
+    })),
   },
 
   {
