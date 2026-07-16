@@ -2,6 +2,7 @@ import type { ListingFormInput } from "@/app/listing-form/types";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
 import { ListingsCard } from "@/components/listings-card/ListingsCard";
 import { buildAddress } from "@/lib/address";
+import { LISTING_BUILDING_TYPE_VALUES } from "@/shared/schemas/listings";
 
 export type ListingFormPreviewMode = "card" | "details";
 
@@ -37,6 +38,9 @@ export function ListingFormPreview({
   );
   const previewAvailability = formData.availableOn || "Now";
   const previewPrice = Math.round((formData.monthlyRentCents ?? 0) / 100);
+  const previewBuildingType = LISTING_BUILDING_TYPE_VALUES.find(
+    (value) => value === formData.buildingType,
+  );
 
   const previewFeaturesByCategory = Object.values(
     (formData.customFeatures ?? []).reduce<
@@ -66,6 +70,10 @@ export function ListingFormPreview({
           embedded
           title={previewTitle}
           price={previewPrice}
+          description={formData.description}
+          buildingType={previewBuildingType}
+          leaseTermMonths={formData.leaseTerm}
+          availableOn={formData.availableOn || undefined}
           unitNumber={previewUnitNumberValue}
           street1={previewStreet1}
           street2={previewStreet2Value}
