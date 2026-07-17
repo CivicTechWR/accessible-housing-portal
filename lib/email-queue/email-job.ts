@@ -69,6 +69,20 @@ export function getEmailJobId(data: EmailJobData): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-8${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
+/**
+ * JSONB containment match (`data @> …`) identifying every job row that
+ * carries this logical email: the original, its quota-deferral replacements,
+ * and dead-letter copies. Deferral replacements get fresh random ids, so the
+ * logical key — not the job id — is the only stable handle on the whole chain
+ * when the worker redacts sealed payloads at a terminal outcome.
+ */
+export function getEmailJobMatch(data: EmailJobData): Record<string, string> {
+  switch (data.type) {
+    case "account_invite":
+      return { type: data.type, inviteId: data.inviteId };
+  }
+}
+
 export function buildAccountInviteEmailJob(params: {
   inviteId: string;
   inviteUrl: string;

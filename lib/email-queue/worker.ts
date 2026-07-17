@@ -11,6 +11,7 @@ import {
 import { EmailSendError } from "@/lib/email";
 import {
   EMAIL_JOB_PRIORITY,
+  getEmailJobMatch,
   openEmailJobSecret,
   type AccountInviteEmailJobData,
   type EmailJobData,
@@ -104,12 +105,13 @@ export async function processEmailJob(
 ): Promise<EmailJobResult> {
   const result = await runEmailJob(boss, job);
 
-  // The completed job row is retained for audit; strip the sealed secret once
-  // no attempt can need it again. Submitted and skipped recoveries get by without
-  // it (sentAt guard, or skip guards that run before decryption). Deferred
-  // jobs keep theirs: the secret lives on in the replacement job either way,
-  // and a crash between redaction and completion would otherwise recover the
-  // original as unsendable and falsely dead-letter it. If the job expired
+  // Job rows are retained for audit; strip the sealed secret once no attempt
+  // can need it again. Submitted and skipped recoveries get by without it
+  // (sentAt guard, or skip guards that run before decryption). A deferral is
+  // not terminal: redacting the original before its replacement runs would
+  // let a crash between redaction and completion recover the original as
+  // unsendable and falsely dead-letter it, so its row keeps the secret until
+  // the chain ends and the chain-wide redaction sweeps it. If the job expired
   // mid-handler, pg-boss has already failed it and a retry may own the row,
   // so leave its payload alone.
   if (result.status !== "deferred" && !job.signal.aborted) {
@@ -124,7 +126,8 @@ export async function processEmailJob(
  * queue: record the permanent failure on the source entity so admin UIs can
  * show "failed" instead of an eternal "queued". Dead-lettering copies the
  * original payload, so the sealed secret is redacted here too — no send will
- * ever use the dead-lettered copy.
+ * ever use the dead-lettered copy, the failed source row, or a deferral
+ * ancestor.
  */
 export async function processDeadLetteredEmailJob(
   boss: EmailWorkerBoss,
@@ -282,15 +285,25 @@ function getProviderQuotaDeferral(error: unknown) {
   return null;
 }
 
+/**
+ * One logical email can span several job rows: each quota deferral completes
+ * its row with the payload intact (see processEmailJob) and enqueues a fresh
+ * replacement, and dead-lettering copies the payload while leaving the failed
+ * source row behind. Redact every settled row for the logical email, not just
+ * the finishing job's; the state filter keeps queued and retrying rows —
+ * which still need the secret — untouched.
+ */
 async function redactEmailJobSecret(boss: EmailWorkerBoss, job: Job<EmailJobData>) {
   if (!("secret" in job.data)) {
     return;
   }
 
-  await boss
-    .getDb()
-    .executeSql(
-      `UPDATE ${EMAIL_QUEUE_SCHEMA}.job SET data = data - 'secret' WHERE id = $1 AND name = $2`,
-      [job.id, job.name],
-    );
+  await boss.getDb().executeSql(
+    `UPDATE ${EMAIL_QUEUE_SCHEMA}.job
+        SET data = data - 'secret'
+      WHERE name IN ($1, $2)
+        AND data @> $3::jsonb
+        AND (id = $4 OR state IN ('completed', 'failed', 'cancelled'))`,
+    [EMAIL_QUEUE, EMAIL_DEAD_LETTER_QUEUE, JSON.stringify(getEmailJobMatch(job.data)), job.id],
+  );
 }

@@ -76,6 +76,15 @@ function buildAbortedJob(): Job<EmailJobData> {
   return buildJob(abortController.signal);
 }
 
+function expectedRedactionParams(job: Job<EmailJobData>) {
+  return [
+    EMAIL_QUEUE,
+    EMAIL_DEAD_LETTER_QUEUE,
+    JSON.stringify({ type: "account_invite", inviteId: INVITE_ID }),
+    job.id,
+  ];
+}
+
 function buildInviteTarget() {
   return {
     email: "tenant@example.org",
@@ -122,15 +131,21 @@ describe("processEmailJob", () => {
     expect(result).toEqual({ status: "submitted", providerMessageId: "email_123" });
   });
 
-  it("redacts the sealed secret from the job row once the job completes", async () => {
+  it("redacts the sealed secret from every settled row of the logical email once the job completes", async () => {
     const job = buildJob();
 
     await processEmailJob(boss, job);
 
-    expect(executeSqlMock).toHaveBeenCalledWith(expect.stringContaining("data - 'secret'"), [
-      job.id,
-      job.name,
-    ]);
+    expect(executeSqlMock).toHaveBeenCalledWith(
+      expect.stringContaining("data - 'secret'"),
+      expectedRedactionParams(job),
+    );
+    // Deferral ancestors and dead-letter copies settle as completed/failed and
+    // are swept by the logical-email match; rows a live attempt may still need
+    // (created, retry) are excluded by the state filter.
+    const [statement] = executeSqlMock.mock.calls[0] as [string];
+    expect(statement).toContain("data @> $3::jsonb");
+    expect(statement).toContain("(id = $4 OR state IN ('completed', 'failed', 'cancelled'))");
   });
 
   it("skips sending when the invite no longer exists and still redacts the secret", async () => {
@@ -141,10 +156,10 @@ describe("processEmailJob", () => {
 
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
     expect(result).toEqual({ status: "skipped", reason: "invite_not_found" });
-    expect(executeSqlMock).toHaveBeenCalledWith(expect.stringContaining("data - 'secret'"), [
-      job.id,
-      job.name,
-    ]);
+    expect(executeSqlMock).toHaveBeenCalledWith(
+      expect.stringContaining("data - 'secret'"),
+      expectedRedactionParams(job),
+    );
   });
 
   it("skips sending when the invite was already accepted", async () => {
@@ -244,8 +259,8 @@ describe("processEmailJob", () => {
       replacementJobId: "b3398ac1-43cf-4e54-92ee-9f7e2a4e7f6a",
     });
     // The deferred original keeps its sealed secret: a crash-recovered retry
-    // must still be able to send or defer, and the replacement job carries
-    // the same payload regardless.
+    // must still be able to send or defer. The chain-wide redaction sweeps
+    // this row once the replacement reaches a terminal outcome.
     expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
@@ -359,16 +374,18 @@ describe("processDeadLetteredEmailJob", () => {
     return { ...buildJob(signal), name: EMAIL_DEAD_LETTER_QUEUE };
   }
 
-  it("records the permanent failure on the invite and redacts the secret", async () => {
+  it("records the permanent failure on the invite and redacts the secret across both queues", async () => {
     const job = buildDeadLetterJob();
 
     const result = await processDeadLetteredEmailJob(boss, job);
 
     expect(markInviteEmailFailedMock).toHaveBeenCalledWith(INVITE_ID);
-    expect(executeSqlMock).toHaveBeenCalledWith(expect.stringContaining("data - 'secret'"), [
-      job.id,
-      EMAIL_DEAD_LETTER_QUEUE,
-    ]);
+    // The match spans EMAIL_QUEUE too, so the failed source row and any
+    // deferral ancestors are redacted along with the dead-lettered copy.
+    expect(executeSqlMock).toHaveBeenCalledWith(
+      expect.stringContaining("data - 'secret'"),
+      expectedRedactionParams(job),
+    );
     expect(result).toEqual({ status: "failure_recorded" });
   });
 
