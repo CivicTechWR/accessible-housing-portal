@@ -53,14 +53,14 @@ export async function sendAdminInviteAction(
     }
 
     return {
-      status: "sent",
+      status: "queued",
       message: result.value.message,
       invite: {
         id: result.value.data.id,
         email: result.value.data.email.trim().toLowerCase(),
         role: result.value.data.role,
         invitedAt: new Date().toISOString(),
-        status: "sent",
+        status: "queued",
       },
     };
   } catch (error) {

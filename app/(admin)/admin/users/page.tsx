@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { findPendingAccountInvites } from "@/lib/auth/invite-store";
+import { findPendingAccountInvites, type PendingAccountInviteRow } from "@/lib/auth/invite-store";
+import { inviteStatusLabels } from "@/components/admin-invite/types";
 import { getAccountsService } from "@/lib/accounts/account.service";
 import { cn } from "@/lib/utils";
 import type { AccountListResponse } from "@/shared/schemas/account-management";
@@ -93,6 +94,10 @@ function roleBadgeVariant(role: AccountListResponse["data"][number]["role"]) {
     case "user":
       return "outline" as const;
   }
+}
+
+function inviteEmailBadgeVariant(status: PendingAccountInviteRow["status"]) {
+  return status === "failed" ? ("destructive" as const) : ("outline" as const);
 }
 
 function statusBadgeVariant(status: AccountListResponse["data"][number]["status"]) {
@@ -254,7 +259,9 @@ export default async function AdminUsersPage() {
                     <Badge variant={roleBadgeVariant(invite.role)}>{formatRole(invite.role)}</Badge>
                   </DesktopDataCell>
                   <DesktopDataCell>
-                    <Badge variant="outline">Pending</Badge>
+                    <Badge variant={inviteEmailBadgeVariant(invite.status)}>
+                      {inviteStatusLabels[invite.status]}
+                    </Badge>
                   </DesktopDataCell>
                   <DesktopDataCell muted>
                     {formatDateTime(invite.invitedAt.toISOString())}
@@ -287,7 +294,9 @@ export default async function AdminUsersPage() {
                         <Badge variant={roleBadgeVariant(invite.role)}>
                           {formatRole(invite.role)}
                         </Badge>
-                        <Badge variant="outline">Pending</Badge>
+                        <Badge variant={inviteEmailBadgeVariant(invite.status)}>
+                          {inviteStatusLabels[invite.status]}
+                        </Badge>
                       </>
                     }
                   />

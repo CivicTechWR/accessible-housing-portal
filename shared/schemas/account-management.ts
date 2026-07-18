@@ -89,6 +89,12 @@ export const accountInviteSchema = z.object({
   role: accountRoleSchema,
   organization: z.string().nullable(),
   invitedAt: z.string(),
+  /**
+   * Email submission state: "queued" until the provider accepts the request
+   * ("submitted") or the job permanently fails ("failed"); "not_requested"
+   * when no email was asked for. Recipient-server delivery is not tracked.
+   */
+  status: z.enum(["not_requested", "queued", "failed", "submitted"]),
 });
 
 export const accountInviteListResponseSchema = z.object({

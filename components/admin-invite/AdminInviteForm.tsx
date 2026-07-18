@@ -43,7 +43,7 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
 
     onResult(state);
 
-    if (state.status === "sent") {
+    if (state.status !== "error") {
       setName("");
       setEmail("");
       setOrganization("");

@@ -31,6 +31,12 @@
       "admin": "Admin",
       "partner": "Housing Lister",
       "user": "Housing Searcher"
+    },
+    "status": {
+      "notRequested": "No email requested",
+      "queued": "Email queued",
+      "failed": "Email failed",
+      "submitted": "Email submitted"
     }
   }
 }

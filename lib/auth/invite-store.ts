@@ -1,10 +1,19 @@
 import "server-only";
 
-import { and, desc, eq, gt, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { userInvites, users, type UserRole } from "@/db/schema";
 import { hashOpaqueToken } from "@/lib/auth/token";
+
+/**
+ * Email submission state of an invite, derived from persisted columns:
+ * "submitted" (provider accepted the request; legacy sentAt set), "failed"
+ * (job dead-lettered, emailFailedAt set), "queued" (job enqueued,
+ * emailQueuedAt set), or "not_requested" (no email; the invite URL is shared
+ * manually). Recipient-server delivery is not currently tracked.
+ */
+export type AccountInviteEmailStatus = "not_requested" | "queued" | "failed" | "submitted";
 
 export type RecentAccountInviteRow = {
   id: string;
@@ -13,6 +22,7 @@ export type RecentAccountInviteRow = {
   role: UserRole;
   organization: string | null;
   invitedAt: Date;
+  status: AccountInviteEmailStatus;
 };
 
 export type PendingAccountInviteRow = RecentAccountInviteRow & {
@@ -52,6 +62,12 @@ export async function getPendingInviteByToken(token: string) {
   return invite ?? null;
 }
 
+/**
+ * Invites whose email has not been submitted yet are included too, so an
+ * invite stays visible between enqueue and provider acceptance ("queued"),
+ * after its email job permanently failed ("failed"), and when no invite email
+ * was requested and the URL is shared manually ("not_requested").
+ */
 export async function findRecentAccountInvites(limit: number): Promise<RecentAccountInviteRow[]> {
   const rows = await db
     .select({
@@ -61,35 +77,17 @@ export async function findRecentAccountInvites(limit: number): Promise<RecentAcc
       role: users.role,
       organization: users.organization,
       sentAt: userInvites.sentAt,
+      emailQueuedAt: userInvites.emailQueuedAt,
+      emailFailedAt: userInvites.emailFailedAt,
+      createdAt: userInvites.createdAt,
     })
     .from(userInvites)
     .innerJoin(users, eq(userInvites.userId, users.id))
-    .where(
-      and(
-        isNull(userInvites.acceptedAt),
-        isNotNull(userInvites.sentAt),
-        gt(userInvites.expiresAt, new Date()),
-      ),
-    )
-    .orderBy(desc(userInvites.sentAt), desc(userInvites.createdAt))
+    .where(and(isNull(userInvites.acceptedAt), gt(userInvites.expiresAt, new Date())))
+    .orderBy(desc(sql`coalesce(${userInvites.sentAt}, ${userInvites.createdAt})`))
     .limit(limit);
 
-  return rows.flatMap((row) => {
-    if (!row.sentAt) {
-      return [];
-    }
-
-    return [
-      {
-        id: row.id,
-        email: row.email,
-        name: row.name,
-        role: row.role,
-        organization: row.organization,
-        invitedAt: row.sentAt,
-      },
-    ];
-  });
+  return rows.map(toAccountInviteRow);
 }
 
 export async function findPendingAccountInvites(): Promise<PendingAccountInviteRow[]> {
@@ -101,36 +99,55 @@ export async function findPendingAccountInvites(): Promise<PendingAccountInviteR
       role: users.role,
       organization: users.organization,
       sentAt: userInvites.sentAt,
+      emailQueuedAt: userInvites.emailQueuedAt,
+      emailFailedAt: userInvites.emailFailedAt,
+      createdAt: userInvites.createdAt,
       expiresAt: userInvites.expiresAt,
     })
     .from(userInvites)
     .innerJoin(users, eq(userInvites.userId, users.id))
-    .where(
-      and(
-        isNull(userInvites.acceptedAt),
-        isNotNull(userInvites.sentAt),
-        gt(userInvites.expiresAt, new Date()),
-      ),
-    )
-    .orderBy(desc(userInvites.sentAt), desc(userInvites.createdAt));
+    .where(and(isNull(userInvites.acceptedAt), gt(userInvites.expiresAt, new Date())))
+    .orderBy(desc(sql`coalesce(${userInvites.sentAt}, ${userInvites.createdAt})`));
 
-  return rows.flatMap((row) => {
-    if (!row.sentAt) {
-      return [];
-    }
+  return rows.map((row) => ({ ...toAccountInviteRow(row), expiresAt: row.expiresAt }));
+}
 
-    return [
-      {
-        id: row.id,
-        email: row.email,
-        name: row.name,
-        role: row.role,
-        organization: row.organization,
-        invitedAt: row.sentAt,
-        expiresAt: row.expiresAt,
-      },
-    ];
-  });
+function toAccountInviteRow(row: {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  organization: string | null;
+  sentAt: Date | null;
+  emailQueuedAt: Date | null;
+  emailFailedAt: Date | null;
+  createdAt: Date;
+}): RecentAccountInviteRow {
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    organization: row.organization,
+    invitedAt: row.sentAt ?? row.createdAt,
+    status: toEmailStatus(row),
+  };
+}
+
+function toEmailStatus(row: {
+  sentAt: Date | null;
+  emailQueuedAt: Date | null;
+  emailFailedAt: Date | null;
+}): AccountInviteEmailStatus {
+  if (row.sentAt) {
+    return "submitted";
+  }
+
+  if (row.emailFailedAt) {
+    return "failed";
+  }
+
+  return row.emailQueuedAt ? "queued" : "not_requested";
 }
 
 /**

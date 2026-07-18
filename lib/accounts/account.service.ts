@@ -113,7 +113,10 @@ export async function createAccountService(
   });
 
   return succeed({
-    message: "Account invited",
+    message:
+      input.sendInviteEmail === true
+        ? "Account invited. The invite email is queued for delivery."
+        : "Account invited",
     data: {
       id: invite.userId,
       email: invite.email,

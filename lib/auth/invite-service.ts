@@ -6,8 +6,9 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { lower, userInvites, users, type UserRole } from "@/db/schema";
-import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth/invite-email";
 import { createOpaqueToken, hashOpaqueToken } from "@/lib/auth/token";
+import { buildAccountInviteEmailJob } from "@/lib/email-queue/email-job";
+import { enqueueEmail } from "@/lib/email-queue/queue";
 
 const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
@@ -24,6 +25,9 @@ export async function createInvite(params: {
   const token = createOpaqueToken();
   const tokenHash = hashOpaqueToken(token);
   const expiresAt = new Date(now.getTime() + INVITE_TTL_MS);
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000";
+  const inviteUrl = new URL(`/invite?token=${token}`, baseUrl).toString();
 
   const result = await db.transaction(async (tx) => {
     const [existingUser] = await tx
@@ -81,12 +85,20 @@ export async function createInvite(params: {
         tokenHash,
         expiresAt,
         sentAt: null,
+        emailQueuedAt: params.sendInviteEmail ? now : null,
         createdByUserId: params.invitedByUserId,
       })
       .returning();
 
     if (!invite) {
       throw new Error("Failed to create invite.");
+    }
+
+    // Enqueue in the same transaction as the invite so a committed invite can
+    // never lose its email job. The email is queued, not sent: the worker
+    // submits it to the provider and then sets the legacy sentAt field.
+    if (params.sendInviteEmail) {
+      await enqueueEmail(tx, buildAccountInviteEmailJob({ inviteId: invite.id, inviteUrl }));
     }
 
     return {
@@ -96,30 +108,6 @@ export async function createInvite(params: {
       organization,
     };
   });
-
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000";
-  const inviteUrl = new URL(`/invite?token=${token}`, baseUrl).toString();
-
-  if (params.sendInviteEmail) {
-    await sendInviteEmail({
-      email: result.email,
-      fullName: params.fullName,
-      inviteUrl,
-      idempotencyKey: getAccountInviteEmailIdempotencyKey(result.invite.id),
-    });
-
-    const sentAt = new Date();
-    const [invite] = await db
-      .update(userInvites)
-      .set({
-        sentAt,
-      })
-      .where(eq(userInvites.id, result.invite.id))
-      .returning();
-
-    result.invite = invite ?? { ...result.invite, sentAt };
-  }
 
   return {
     ...result,
