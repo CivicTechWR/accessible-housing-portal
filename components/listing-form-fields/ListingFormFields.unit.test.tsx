@@ -36,10 +36,12 @@ describe("ListingFormFields utilities included", () => {
     render(<TestListingForm />);
 
     expect(screen.queryByText("Utilities Included")).not.toBeNull();
+    const description = screen.getByText("Select all utilities included in the monthly rent.");
 
     for (const label of ["Heat", "Water", "Electricity", "Gas", "Internet"]) {
       const checkbox = screen.getByRole("checkbox", { name: label });
       expect(checkbox.getAttribute("aria-checked")).toBe("false");
+      expect(checkbox.getAttribute("aria-describedby")).toBe(description.id);
     }
   });
 
