@@ -12,6 +12,7 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -66,6 +67,53 @@ function FieldRenderer({
             <FormMessage />
           </FormItem>
         )}
+      />
+    );
+  }
+
+  if (def.fieldType === "checkbox-group") {
+    return (
+      <FormField
+        control={control}
+        name={def.key}
+        render={({ field }) => {
+          const selected: string[] = Array.isArray(field.value) ? field.value : [];
+          return (
+            <FormItem
+              className={def.colSpan === 2 ? "md:col-span-2" : undefined}
+              data-field-name={def.key}
+            >
+              <FormLabel>{label}</FormLabel>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
+                {def.options.map((opt) => {
+                  const checkboxId = `${def.key}-${opt.value}`;
+                  return (
+                    <div key={opt.value} className="flex items-center gap-2">
+                      <FormControl>
+                        <Checkbox
+                          id={checkboxId}
+                          checked={selected.includes(opt.value)}
+                          onCheckedChange={(checked) => {
+                            field.onChange(
+                              checked === true
+                                ? [...selected, opt.value]
+                                : selected.filter((value) => value !== opt.value),
+                            );
+                          }}
+                        />
+                      </FormControl>
+                      <label htmlFor={checkboxId} className="text-sm font-normal">
+                        {opt.label}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+              {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
+              <FormMessage />
+            </FormItem>
+          );
+        }}
       />
     );
   }
