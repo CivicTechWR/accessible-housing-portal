@@ -178,7 +178,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: false,
     sortOrder: 10,
     colSpan: 2,
-    helpText: "Select all utilities included in the rent.",
+    helpText: "Select all utilities included in the monthly rent.",
     options: UTILITY_INCLUDED_VALUES.map((value) => ({
       label: UTILITY_INCLUDED_LABELS[value],
       value,

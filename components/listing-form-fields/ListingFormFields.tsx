@@ -92,13 +92,14 @@ function FieldRenderer({
               <FormLabel>{label}</FormLabel>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {def.options.map((opt) => (
-                  <LabeledCheckbox
-                    key={opt.value}
-                    id={`${def.key}-${opt.value}`}
-                    label={opt.label}
-                    checked={selected.includes(opt.value)}
-                    onCheckedChange={(checked) => toggleOption(opt.value, checked === true)}
-                  />
+                  <FormControl key={opt.value}>
+                    <LabeledCheckbox
+                      id={`${def.key}-${opt.value}`}
+                      label={opt.label}
+                      checked={selected.includes(opt.value)}
+                      onCheckedChange={(checked) => toggleOption(opt.value, checked === true)}
+                    />
+                  </FormControl>
                 ))}
               </div>
               {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
