@@ -1,135 +1,91 @@
 # Affordable Housing Portal
 
-Affordable Housing Portal is [Civic Tech Waterloo Region](https://github.com/CivicTechWR)'s affordable housing platform. It aims to make it easier for housing seekers to find and access listings from affordable housing providers. Many existing platforms fail to centre the needs of marginalized communities — key information is often missing, and listings can be structured in ways that discourage these communities from applying. This project seeks to address those gaps with a more accessible and equitable experience.
+Affordable Housing Portal is [Civic Tech Waterloo Region](https://github.com/CivicTechWR)'s affordable housing platform. It helps housing seekers find affordable housing listings and gives housing providers a place to publish richer, more accessible listing information.
 
-## Overview
+The app is a Next.js 16 App Router application using React 19, TypeScript, Tailwind CSS 4, shadcn/ui primitives, NextAuth credentials auth, Drizzle ORM, Postgres, and Zod-based API contracts.
 
-![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Next JS](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+Current product areas include:
 
-The platform is a [Next.js](https://nextjs.org) App Router application using React 19, [Tailwind CSS](https://tailwindcss.com), [shadcn/ui](https://ui.shadcn.com) components, NextAuth credentials auth, Drizzle ORM, and Postgres.
+- signed-in listing search, map/list views, and listing detail pages
+- partner/admin listing authoring with draft autosave and image uploads
+- partner/admin "My Listings" management
+- admin account invites, account management, and custom listing fields
+- listing filters powered by admin-configured listing field definitions
 
-Current user-facing areas include:
+## Documentation
 
-- public listing search and listing detail pages
-- partner/admin listing authoring, draft autosave, image uploads, and "My Listings"
-- admin user invites and account management
-- admin-configurable custom listing fields that can drive public filters
+Start with [docs/README.md](docs/README.md). The developer reference is split by topic so new contributors can find the right level of detail quickly:
 
-## Repository Structure
-
-```
-app/                  → Pages, layouts, server actions, and API route handlers
-├── admin/            → Admin account and custom listing field pages
-├── api/
-│   ├── admin/        → Admin account, invite, and custom field endpoints
-│   ├── auth/         → NextAuth route handler
-│   ├── custom-listing-fields/
-│   ├── image-uploads/
-│   ├── listing-drafts/
-│   └── listings/     → Listing read/write endpoints
-├── listing-form/     → Create/edit listing workflow
-├── listings/         → Public listing browse/search and detail pages
-├── my-listings/      → Partner/admin listing management
-├── sign-in/          → Credentials sign-in
-└── page.tsx          → Redirects housing seekers to /listings
-
-components/           → React components
-├── ui/               → shadcn/ui primitives (button, card, input, etc.)
-├── listing-form-*    → Listing authoring form sections
-├── listing-filter*/  → Search and filter controls
-├── listings-panel/   → Listing results panel
-├── map-view/         → Map display
-├── site-header/      → Header and account menu
-└── ...               → Other shared components
-
-db/                   → Drizzle schema, client, and seed data
-drizzle/              → Generated SQL migrations and snapshots
-lib/                  → Domain services, repositories, auth, policies, utilities
-shared/               → Shared runtime schemas and TypeScript types
-test/                 → Test-only mocks and helpers
-```
-
-## Shared Schemas and Types
-
-Use `shared/schemas/*.ts` for contracts that must stay consistent across frontend and backend code.
-
-- Define request/response contracts once with `zod`.
-- Export inferred TypeScript types with `z.infer<typeof schema>`.
-- API route handlers use these schemas with `next-rest-framework` where applicable.
+- [Getting Started](docs/getting-started.md) for local setup, environment variables, database setup, and scripts
+- [Architecture](docs/architecture.md) for the App Router structure, service/repository boundaries, and feature workflow
+- [Domain Model](docs/domain-model.md) for database tables, enums, relationships, and migration rules
+- [Listings](docs/listings.md) for listing search, listing details, authoring, draft autosave, image uploads, and custom fields
+- [Auth and Admin](docs/auth-and-admin.md) for NextAuth credentials auth, invites, roles, access checks, and admin tools
+- [API Reference](docs/api-reference.md) for route handlers, schemas, endpoint behavior, and error responses
+- [Deployment and Operations](docs/deployment.md) for CI, Docker, Infisical, runtime settings, and migration expectations
+- [Testing and Quality](docs/testing-and-quality.md) for Jest, linting, formatting, hooks, and review expectations
+- [ADR 0001](docs/adr/0001-server-first-listings-data-fetching.md) for the server-first listings data decision
 
 ## Quick Start
 
-### Prerequisites
+Prerequisites:
 
-- [Node.js](https://nodejs.org/) 22.6+
-- npm, using the committed lockfile
+- Node.js 22.12 or newer
+- npm with the committed `package-lock.json`
+- a reachable Postgres database
 
-### Install Dependencies
+Install dependencies:
 
 ```bash
 npm ci
 ```
 
-### Run Locally
-
-Copy the example environment file and set values as needed:
+Create a local environment file:
 
 ```bash
 cp .env.example .env.local
 ```
 
-For a local Postgres instance, `DATABASE_URL` must point at that database. If you use the Docker Compose database from this repo, the host port is `5433` by default:
+Set `DATABASE_URL` to your local database. The committed example uses:
 
-```bash
+```env
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/affordable_housing_portal
+```
+
+If you use the Docker Compose database from this repo, set the host port to `5433`:
+
+```env
 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/affordable_housing_portal
 ```
 
-Install dependencies, then run the app:
+Apply migrations and seed local development data:
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+Start the app:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+Open [http://localhost:3000](http://localhost:3000).
 
-### Run Backend Stack with Docker
-
-This repo includes a local backend stack with:
-
-- Next.js app server (API routes + frontend)
-- Postgres database
-- Automatic DB migration + seed on container startup
+The Docker Compose workflow starts Postgres and the development app together, then runs migrations and seed data before `next dev`:
 
 ```bash
 npm run docker:up
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
-Postgres is exposed on `localhost:5433` by default (override with `POSTGRES_PORT`).
+## Transactional Email Queue
 
-Useful commands:
+Transactional emails, currently admin invites, are queued durably in Postgres with pg-boss instead of being sent inline. Invite creation and job enqueueing happen in the same transaction, and the worker started from `instrumentation.ts` records whether the provider accepted the request or the job permanently failed. Provider acceptance does not confirm delivery to the recipient's mail server; delivered, bounced, failed, and suppressed webhook outcomes are not currently reconciled.
 
-```bash
-npm run docker:logs
-npm run docker:down
-npm run docker:down:volumes
-```
+Set `EMAIL_WORKER_ENABLED=true` on the long-lived app server that should process jobs. Docker Compose enables it by default. See [Auth and Admin](docs/auth-and-admin.md) for submission behavior and [Deployment and Operations](docs/deployment.md) for worker, retry, dead-letter, and secret-rotation guidance.
 
-## Database
-
-The app includes a Drizzle + Postgres schema for users, invites, properties, listings, listing images, saved listings, saved searches, and admin-configurable listing fields.
-
-1. Copy `.env.example` to `.env.local` or provide `DATABASE_URL` through Infisical.
-2. Generate migrations after schema changes with `npm run db:generate`.
-3. Apply migrations with `npm run db:migrate`.
-4. Inspect the schema with `npm run db:studio`.
-5. Seed local data with `npm run db:seed`.
-
-When using Docker Compose, `db:migrate` and `db:seed` are run automatically when the app container starts.
-
-If you set `ADMIN_PASSWORD`, the app enables a one-time bootstrap admin sign-in for `ADMIN_EMAIL` (default `admin@example.com`) until an admin user has a stored local password. This is intended for first-run setup and local/dev recovery from external-auth-only data.
-
-## Development Commands
+## Common Commands
 
 ```bash
 npm run typecheck
@@ -137,37 +93,28 @@ npm run lint
 npm run format:check
 npm test
 npm run test:unit
-npm run test:integration
+npm run build
 ```
 
-Use `npm run format` and `npm run lint:fix` for automatic formatting and lint fixes.
+Use `npm run format` and `npm run lint:fix` for mechanical fixes.
 
-## Architecture Notes
+## Repository Map
 
-- Public listing search is server-first: `app/listings/page.tsx` calls shared listing services directly for the initial render, while client-side filter refinements fetch `/api/listings`.
-- Route handlers should remain thin and delegate business logic to services under `lib/`.
-- `auth.ts` and `proxy.ts` provide broad session gating and sign-in redirects for protected routes. Page, server action, service, and API code must still enforce role-specific authorization with shared auth/session and policy helpers.
-- Keep cross-boundary contracts in `shared/schemas/` so page code, services, route handlers, and tests use the same validation rules.
+```text
+app/                  Pages, layouts, server actions, route handlers, and route-local UI
+components/           Shared React components and shadcn/ui primitives
+content/              Static content such as product verbiage
+db/                   Drizzle schema, lazy database client, and seed scripts
+drizzle/              Generated SQL migrations and Drizzle snapshots
+docs/                 Developer documentation and ADRs
+lib/                  Server-side domain services, repositories, auth, policies, and utilities
+public/               Static assets served by Next.js
+shared/schemas/       Zod schemas and inferred TypeScript contracts shared across layers
+test/                 Test-only mocks and helpers
+```
 
 ## Contributing
 
-Contributions are welcomed. This repository does not currently include separate `CONTRIBUTING.md` or `CODE_OF_CONDUCT.md` files, so use the workflow below unless project maintainers provide more specific guidance.
+Development tasks are managed through [GitHub Issues](https://github.com/CivicTechWR/accessible-housing-portal/issues).
 
-### Issue Tracking
-
-Development tasks are managed through [GitHub Issues](https://github.com/CivicTechWR/affordable-housing-portal/issues). Please feel free to submit issues even if you don't plan on implementing them yourself. Before creating an issue, check first to see if one already exists. Include as much information as possible, including screenshots where helpful.
-
-### Committing
-
-The Husky pre-commit hook runs secret scanning, `lint-staged`, and `npm run typecheck`. The pre-push hook runs `npm run build`.
-
-### Pull Requests
-
-Pull requests are opened to the `main` branch. The CI workflow currently runs:
-
-- `npm run lint`
-- `npm run format:check`
-- `npm test`
-- `npm run build`
-
-When opening a PR, include the related issue, a description of the change, and testing notes for reviewers.
+Before opening a PR, run the relevant checks and include testing notes. The pre-commit hook runs secret scanning, `lint-staged`, and `npm run typecheck`; the pre-push hook runs `npm run build`.

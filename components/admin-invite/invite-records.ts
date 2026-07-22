@@ -9,6 +9,6 @@ export function buildInviteRecordFromAccountInvite(
     email: invite.email.trim().toLowerCase(),
     role: invite.role,
     invitedAt: invite.invitedAt,
-    status: "sent",
+    status: invite.status,
   };
 }

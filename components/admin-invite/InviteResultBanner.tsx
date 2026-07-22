@@ -10,7 +10,7 @@ export function InviteResultBanner({ result }: InviteResultBannerProps) {
     return null;
   }
 
-  const isSuccess = result.status === "sent";
+  const isSuccess = result.status !== "error";
 
   return (
     <AlertBanner variant={isSuccess ? "success" : "error"} size="sm">
