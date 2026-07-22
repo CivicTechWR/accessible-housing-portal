@@ -162,9 +162,16 @@ Use `npm run format` and `npm run lint:fix` for automatic formatting and lint fi
 
 Contributions are welcomed. This repository does not currently include separate `CONTRIBUTING.md` or `CODE_OF_CONDUCT.md` files, so use the workflow below unless project maintainers provide more specific guidance.
 
+### Choosing an Issue
+
+Please choose work based on your availability:
+
+- [Release-readiness tickets](https://github.com/orgs/CivicTechWR/projects/43/views/6) are time-sensitive and support our planned release. Please only pick up one of these issues if you can start soon and commit to completing it promptly, including responding to review feedback. If your availability changes, let the team know as soon as possible so the issue can be reassigned.
+- [Non-urgent tickets](https://github.com/orgs/CivicTechWR/projects/43/views/7) are suitable when you cannot commit to a near-term deadline or need more flexibility to complete the work.
+
 ### Contribution Workflow
 
-1. **Choose or create an issue.** Development tasks are managed through [GitHub Issues](https://github.com/CivicTechWR/affordable-housing-portal/issues). Before creating an issue, check whether one already exists. Include enough detail to understand the problem, including screenshots where helpful.
+1. **Choose or create an issue.** Select an issue from the appropriate project view above, or browse [GitHub Issues](https://github.com/CivicTechWR/affordable-housing-portal/issues). Before creating an issue, check whether one already exists. Include enough detail to understand the problem, including screenshots where helpful.
 2. **Assign the issue to yourself.** This lets other contributors know that the work is in progress. If you cannot assign yourself, leave a comment asking a maintainer to assign it to you.
 3. **Clarify the requirements.** Read the issue and any related discussion before starting. If the expected behaviour, scope, or design is unclear, ask questions on the issue and wait for clarification where the answer could materially change the implementation.
 4. **Create a branch.** Start from an up-to-date `main` branch and name the new branch using the issue number and a short, lowercase, hyphenated version of its title. For example: `123-improve-listing-filters`.
