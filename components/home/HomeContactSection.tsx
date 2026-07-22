@@ -23,15 +23,7 @@ export function HomeContactSection() {
         <div className="grid gap-4 rounded-[2rem] border border-sky-100 bg-[#eaf4fb] p-6 shadow-[0_18px_50px_rgba(56,116,166,0.12)] backdrop-blur-md sm:p-8">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#18324a]/55">Email</p>
-            <p className="mt-2 text-xl font-medium">info@wrhousingbridge.ca</p>
-          </div>
-          <div className="border-t border-sky-100 pt-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#18324a]/55">Phone</p>
-            <p className="mt-2 text-xl font-medium">(000) 000-0000</p>
-          </div>
-          <div className="border-t border-sky-100 pt-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#18324a]/55">Hours</p>
-            <p className="mt-2 text-xl font-medium">Monday to Friday, 9:00 AM to 5:00 PM</p>
+            <p className="mt-2 text-xl font-medium">info@example.ca</p>
           </div>
         </div>
       </div>
