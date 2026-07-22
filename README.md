@@ -162,9 +162,48 @@ Use `npm run format` and `npm run lint:fix` for automatic formatting and lint fi
 
 Contributions are welcomed. This repository does not currently include separate `CONTRIBUTING.md` or `CODE_OF_CONDUCT.md` files, so use the workflow below unless project maintainers provide more specific guidance.
 
-### Issue Tracking
+### Contribution Workflow
 
-Development tasks are managed through [GitHub Issues](https://github.com/CivicTechWR/affordable-housing-portal/issues). Please feel free to submit issues even if you don't plan on implementing them yourself. Before creating an issue, check first to see if one already exists. Include as much information as possible, including screenshots where helpful.
+1. **Choose or create an issue.** Development tasks are managed through [GitHub Issues](https://github.com/CivicTechWR/affordable-housing-portal/issues). Before creating an issue, check whether one already exists. Include enough detail to understand the problem, including screenshots where helpful.
+2. **Assign the issue to yourself.** This lets other contributors know that the work is in progress. If you cannot assign yourself, leave a comment asking a maintainer to assign it to you.
+3. **Clarify the requirements.** Read the issue and any related discussion before starting. If the expected behaviour, scope, or design is unclear, ask questions on the issue and wait for clarification where the answer could materially change the implementation.
+4. **Create a branch.** Start from an up-to-date `main` branch and name the new branch using the issue number and a short, lowercase, hyphenated version of its title. For example: `123-improve-listing-filters`.
+5. **Implement and verify the change.** Keep the work focused on the issue. Add or update tests where appropriate, and run the relevant development commands listed above.
+6. **Open a pull request.** Push the branch and open a PR against `main`. Link the issue (for example, `Closes #123`), explain what changed, and include testing notes and screenshots when the change affects the UI.
+7. **Request a review.** Request a reviewer on GitHub. If you are unsure who should review it or the PR is waiting for attention, share it in the project Slack channel and ask for a reviewer.
+8. **Address feedback.** Respond to review comments, push follow-up commits to the same branch, and let reviewers know when the PR is ready for another look.
+
+### Example
+
+Suppose you want to work on issue `#123`, **Improve listing filters**:
+
+1. Assign issue `#123` to yourself and comment with any questions that need clarification.
+2. Create the branch from the latest `main`:
+
+   ```bash
+   git switch main
+   git pull --ff-only
+   git switch -c 123-improve-listing-filters
+   ```
+
+3. Make the change, add tests, and run the relevant checks:
+
+   ```bash
+   npm run lint
+   npm run format:check
+   npm test
+   npm run build
+   ```
+
+4. Commit and push the branch:
+
+   ```bash
+   git add <changed-files>
+   git commit -m "Improve listing filters"
+   git push -u origin 123-improve-listing-filters
+   ```
+
+5. Open a PR against `main` with a summary, testing notes, and `Closes #123` in the description. Request a reviewer on GitHub, or post the PR link in Slack to ask for review.
 
 ### Committing
 
