@@ -38,7 +38,9 @@ async function main() {
   }
 
   const nextBin = path.join(projectRoot, "node_modules", "next", "dist", "bin", "next");
-  const nodePathEntries = [path.join(projectRoot, "node_modules"), process.env.NODE_PATH].filter(Boolean);
+  const nodePathEntries = [path.join(projectRoot, "node_modules"), process.env.NODE_PATH].filter(
+    Boolean,
+  );
   const childEnv = {
     ...process.env,
     NODE_PATH: nodePathEntries.join(path.delimiter),

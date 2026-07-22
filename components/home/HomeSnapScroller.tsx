@@ -33,9 +33,10 @@ export function HomeSnapScroller({ children }: HomeSnapScrollerProps) {
       const direction = Math.sign(event.deltaY);
       if (direction === 0) return;
 
-      const nextIndex = direction > 0
-        ? Math.min(currentIndex + 1, sections.length - 1)
-        : Math.max(currentIndex - 1, 0);
+      const nextIndex =
+        direction > 0
+          ? Math.min(currentIndex + 1, sections.length - 1)
+          : Math.max(currentIndex - 1, 0);
 
       if (nextIndex === currentIndex) return;
 
