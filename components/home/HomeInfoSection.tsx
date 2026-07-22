@@ -20,7 +20,8 @@ export function HomeInfoSection() {
             What is Accessibility Housing
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-8 text-[#18324a]/75 sm:text-lg">
-            Accessible Housing Bridge is a housing listings platform purpose-built for affordable and accessible rentals in the Kitchener-Waterloo region. 
+            Accessible Housing Bridge is a housing listings platform purpose-built for affordable
+            and accessible rentals in the Kitchener-Waterloo region.
           </p>
         </header>
         <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -46,7 +47,8 @@ export function HomeInfoSection() {
                 For House Seekers
               </h3>
               <p className="text-sm leading-7 text-[#18324a]/72">
-                If you help clients find affordable or accessible housing, you know how much time gets lost chasing incomplete listings. We make that work faster and more reliable.
+                If you help clients find affordable or accessible housing, you know how much time
+                gets lost chasing incomplete listings. We make that work faster and more reliable.
               </p>
             </div>
           </article>
@@ -73,7 +75,8 @@ export function HomeInfoSection() {
                 For Housing Providers
               </h3>
               <p className="text-sm leading-7 text-[#18324a]/72">
-                If you own or develop accessible and affordable housing, you want your units seen by the people and professionals best positioned to fill them responsibly.
+                If you own or develop accessible and affordable housing, you want your units seen by
+                the people and professionals best positioned to fill them responsibly.
               </p>
             </div>
           </article>
@@ -100,8 +103,11 @@ export function HomeInfoSection() {
                 How do I join Accessible Housing Bridge?
               </h3>
               <p className="text-sm leading-7 text-[#18324a]/72">
-                Access is by invitation as we onboard our first community of users and providers. Whether you’re a social worker looking to connect clients with housing, or a provider with accessible and affordable units to list, we’d love to have you.
-                Contact us to request access, let us know which group you belong to (housing provider/developer or social working/housing seeker), and we’ll get you set up.
+                Access is by invitation as we onboard our first community of users and providers.
+                Whether you’re a social worker looking to connect clients with housing, or a
+                provider with accessible and affordable units to list, we’d love to have you.
+                Contact us to request access, let us know which group you belong to (housing
+                provider/developer or social working/housing seeker), and we’ll get you set up.
               </p>
             </div>
           </article>
