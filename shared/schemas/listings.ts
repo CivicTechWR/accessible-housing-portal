@@ -286,6 +286,11 @@ export const createDraftListingResponseSchema = z.object({
   data: listingIdDataSchema,
 });
 
+export const duplicateListingResponseSchema = z.object({
+  message: z.string(),
+  data: listingIdDataSchema,
+});
+
 export const updateListingResponseSchema = z.object({
   message: z.string(),
   data: listingIdDataSchema.and(updateListingPayloadSchema),
@@ -309,5 +314,6 @@ export type CreateListingInput = z.infer<typeof createListingSchema>;
 export type UpdateListingInput = z.infer<typeof updateListingSchema>;
 export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
+export type DuplicateListingResponse = z.infer<typeof duplicateListingResponseSchema>;
 export type UpdateListingResponse = z.infer<typeof updateListingResponseSchema>;
 export type DeleteListingResponse = z.infer<typeof deleteListingResponseSchema>;
