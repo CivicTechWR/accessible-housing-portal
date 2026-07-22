@@ -1,5 +1,4 @@
 import Image from "next/image";
-import heroImage from "../../assets/Goodwill-Baptist-Rendering-scaled.jpg";
 import socialImage from "../../assets/socialworkers.jpg";
 import providerImage from "../../assets/housingProviders.jpg";
 import joinImage from "../../assets/joinimage.jpg";
