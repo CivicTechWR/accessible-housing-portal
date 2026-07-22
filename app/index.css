@@ -1,0 +1,224 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f8fafc;
+  color: #111827;
+  overflow-y: auto;
+}
+
+.pages {
+  height: 100%;
+  scroll-snap-type: y mandatory;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding-top: 56px;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  scroll-snap-align: start;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #111827;
+}
+
+.page-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.38), rgba(15, 23, 42, 0.58));
+}
+
+.page-background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.85) contrast(0.95) brightness(0.72);
+  opacity: 0.95;
+  display: block;
+}
+
+.page-content {
+  max-width: 720px;
+  width: 100%;
+  padding: 2rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+}
+
+.welcome-corner {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: min(52vw, 520px);
+  height: min(52vw, 520px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.welcome-corner-shape {
+  position: absolute;
+  inset: auto 0 0 auto;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(0 100%, 0 0, 100% 100%);
+  background: linear-gradient(135deg, rgba(9, 15, 25, 0.14), rgba(9, 15, 25, 0.44));
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.welcome-corner-shape::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+  clip-path: inherit;
+  /* soften the hard clip-path edge slightly */
+  filter: blur(2px);
+  transform: translateZ(0);
+  /* fade the diagonal edge using a mask so the hypotenuse appears softer */
+  -webkit-mask-image: linear-gradient(135deg, rgba(0, 0, 0, 1) 62%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(135deg, rgba(0, 0, 0, 1) 62%, rgba(0, 0, 0, 0) 100%);
+}
+
+/* Simple fixed header with two nav links */
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 1rem;
+  z-index: 6;
+  pointer-events: auto;
+}
+.site-nav a {
+  color: #ffffff;
+  margin-left: 0.75rem;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  transition:
+    background 160ms ease,
+    transform 120ms ease;
+}
+.site-nav a:hover,
+.site-nav a:focus {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.welcome-corner-content {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  max-width: 280px;
+  padding: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.05;
+  font-weight: 800;
+}
+
+p {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 1.05rem;
+}
+
+.welcome-strip h1,
+.welcome-strip p,
+.welcome-strip .eyebrow {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.32);
+}
+
+.welcome-corner-content h1,
+.welcome-corner-content p,
+.welcome-corner-content .eyebrow {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.32);
+  color: #ffffff;
+}
+
+.welcome-corner-content h1,
+.welcome-corner-content p {
+  color: #ffffff;
+}
+
+.page-1 {
+  background: linear-gradient(180deg, #eef2ff, #f8fafc);
+}
+.page-2 {
+  background: linear-gradient(180deg, #f0fdf4, #f8fafc);
+}
+.page-3 {
+  background: linear-gradient(180deg, #fff7ed, #f8fafc);
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1rem;
+  }
+
+  .page-content {
+    padding: 1.25rem;
+  }
+
+  .welcome-corner {
+    width: 100%;
+    height: 56vw;
+    max-height: 360px;
+  }
+
+  .welcome-corner-content {
+    left: 1rem;
+    bottom: 1rem;
+    max-width: calc(100% - 2rem);
+    padding: 1.1rem 1rem;
+  }
+}
