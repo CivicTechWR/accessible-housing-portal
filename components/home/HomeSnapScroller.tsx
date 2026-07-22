@@ -24,29 +24,34 @@ export function HomeSnapScroller({ children }: HomeSnapScrollerProps) {
       if (sections.length === 0) return;
 
       const currentIndex = sections.findIndex((section) => {
-        const sectionTop = section.offsetTop;
-        const sectionBottom = sectionTop + section.offsetHeight;
-        const scrollTop = container.scrollTop;
-        return scrollTop >= sectionTop - 8 && scrollTop < sectionBottom - 8;
-      });
+      const sectionTop = section.offsetTop;
+      const sectionBottom = sectionTop + section.offsetHeight;
+      const scrollTop = container.scrollTop;
+      return scrollTop >= sectionTop - 8 && scrollTop < sectionBottom - 8;
+    });
 
-      const direction = Math.sign(event.deltaY);
-      if (direction === 0) return;
+    if (currentIndex === -1) return;
 
-      const nextIndex =
-        direction > 0
-          ? Math.min(currentIndex + 1, sections.length - 1)
-          : Math.max(currentIndex - 1, 0);
+    const direction = Math.sign(event.deltaY);
+    if (direction === 0) return;
 
-      if (nextIndex === currentIndex) return;
+    const nextIndex =
+      direction > 0
+        ? Math.min(currentIndex + 1, sections.length - 1)
+        : Math.max(currentIndex - 1, 0);
 
-      event.preventDefault();
-      wheelLockRef.current = true;
-      sections[nextIndex].scrollIntoView({ behavior: "smooth", block: "start" });
+    if (nextIndex === currentIndex) return;
 
-      window.setTimeout(() => {
-        wheelLockRef.current = false;
-      }, 700);
+    const nextSection = sections[nextIndex];
+    if (!nextSection) return;
+
+    event.preventDefault();
+    wheelLockRef.current = true;
+    nextSection.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    window.setTimeout(() => {
+      wheelLockRef.current = false;
+    }, 700);
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
