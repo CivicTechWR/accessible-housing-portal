@@ -7,6 +7,7 @@ import { UserIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { signOutFromHeader } from "@/components/site-header/actions";
+import { isActivePath } from "@/components/site-header/nav-active";
 
 type HeaderMobileMenuProps = {
   isSignedIn: boolean;
@@ -20,6 +21,7 @@ type HeaderMobileMenuProps = {
 
 const mobileMenuItemClass =
   "flex w-full items-center justify-between rounded-2xl bg-primary-foreground/10 px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/20";
+const mobileMenuItemActiveClass = "bg-primary-foreground/25 ring-1 ring-primary-foreground/50";
 
 export function HeaderMobileMenu({
   isSignedIn,
@@ -34,6 +36,13 @@ export function HeaderMobileMenu({
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
+
+  const menuItemClass = (href: string) =>
+    isActivePath(pathname, href)
+      ? `${mobileMenuItemClass} ${mobileMenuItemActiveClass}`
+      : mobileMenuItemClass;
+  const menuItemCurrent = (href: string) =>
+    isActivePath(pathname, href) ? ("page" as const) : undefined;
 
   return (
     <div className="absolute right-0 lg:hidden">
@@ -65,7 +74,8 @@ export function HeaderMobileMenu({
                   <>
                     <Link
                       href="/my-listings"
-                      className={mobileMenuItemClass}
+                      aria-current={menuItemCurrent("/my-listings")}
+                      className={menuItemClass("/my-listings")}
                       onClick={() => setIsOpen(false)}
                     >
                       <span>My Listings</span>
@@ -77,14 +87,16 @@ export function HeaderMobileMenu({
                   <>
                     <Link
                       href="/admin/custom-listing-fields"
-                      className={mobileMenuItemClass}
+                      aria-current={menuItemCurrent("/admin/custom-listing-fields")}
+                      className={menuItemClass("/admin/custom-listing-fields")}
                       onClick={() => setIsOpen(false)}
                     >
                       <span>Custom Fields</span>
                     </Link>
                     <Link
                       href="/admin/users"
-                      className={mobileMenuItemClass}
+                      aria-current={menuItemCurrent("/admin/users")}
+                      className={menuItemClass("/admin/users")}
                       onClick={() => setIsOpen(false)}
                     >
                       <span>Manage Users</span>
@@ -112,7 +124,8 @@ export function HeaderMobileMenu({
             ) : (
               <Link
                 href="/sign-in"
-                className={mobileMenuItemClass}
+                aria-current={menuItemCurrent("/sign-in")}
+                className={menuItemClass("/sign-in")}
                 onClick={() => setIsOpen(false)}
               >
                 <span>Sign in</span>

@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import { HeaderAccountMenu } from "@/components/site-header/HeaderAccountMenu";
-import { HeaderBreadcrumbs } from "@/components/site-header/HeaderBreadcrumbs";
 import { HeaderMobileMenu } from "@/components/site-header/HeaderMobileMenu";
+import { HeaderNavLink } from "@/components/site-header/HeaderNavLink";
 import { getOptionalSession } from "@/lib/auth/session";
 
 export async function SiteHeader() {
@@ -13,6 +13,7 @@ export async function SiteHeader() {
     optionalSession.authzUser?.role === "admin" || optionalSession.authzUser?.role === "partner";
   const navPillClass =
     "rounded-full bg-primary-foreground/20 px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/30";
+  const navPillActiveClass = "bg-primary-foreground/35 ring-1 ring-primary-foreground/60";
 
   return (
     <header data-site-header="true" className="bg-primary text-primary-foreground shrink-0">
@@ -27,29 +28,45 @@ export async function SiteHeader() {
               <>
                 {canCreateListing ? (
                   <>
-                    <Link href="/my-listings" className={navPillClass}>
+                    <HeaderNavLink
+                      href="/my-listings"
+                      className={navPillClass}
+                      activeClassName={navPillActiveClass}
+                    >
                       My Listings
-                    </Link>
+                    </HeaderNavLink>
                   </>
                 ) : null}
 
                 {optionalSession.authzUser?.role === "admin" ? (
                   <>
-                    <Link href="/admin/custom-listing-fields" className={navPillClass}>
+                    <HeaderNavLink
+                      href="/admin/custom-listing-fields"
+                      className={navPillClass}
+                      activeClassName={navPillActiveClass}
+                    >
                       Custom Fields
-                    </Link>
-                    <Link href="/admin/users" className={navPillClass}>
+                    </HeaderNavLink>
+                    <HeaderNavLink
+                      href="/admin/users"
+                      className={navPillClass}
+                      activeClassName={navPillActiveClass}
+                    >
                       Manage Users
-                    </Link>
+                    </HeaderNavLink>
                   </>
                 ) : null}
 
                 {session?.user ? <HeaderAccountMenu user={session.user} /> : null}
               </>
             ) : (
-              <Link href="/sign-in" className={navPillClass}>
+              <HeaderNavLink
+                href="/sign-in"
+                className={navPillClass}
+                activeClassName={navPillActiveClass}
+              >
                 Sign in
-              </Link>
+              </HeaderNavLink>
             )}
           </nav>
 
@@ -59,10 +76,6 @@ export async function SiteHeader() {
             canCreateListing={canCreateListing}
             user={session?.user ?? null}
           />
-        </div>
-
-        <div className="border-t border-primary-foreground/15 py-2.5">
-          <HeaderBreadcrumbs />
         </div>
       </div>
     </header>
