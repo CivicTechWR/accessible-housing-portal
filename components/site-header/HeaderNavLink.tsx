@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { isActivePath } from "@/components/site-header/nav-active";
+import { cn } from "@/lib/utils";
 
 type HeaderNavLinkProps = {
   href: string;
@@ -21,7 +22,7 @@ export function HeaderNavLink({ href, className, activeClassName, children }: He
     <Link
       href={href}
       aria-current={isActive ? "page" : undefined}
-      className={isActive ? `${className} ${activeClassName}` : className}
+      className={cn(className, isActive && activeClassName)}
     >
       {children}
     </Link>

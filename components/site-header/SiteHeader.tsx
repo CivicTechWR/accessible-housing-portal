@@ -13,7 +13,8 @@ export async function SiteHeader() {
     optionalSession.authzUser?.role === "admin" || optionalSession.authzUser?.role === "partner";
   const navPillClass =
     "rounded-full bg-primary-foreground/20 px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/30";
-  const navPillActiveClass = "bg-primary-foreground/35 ring-1 ring-primary-foreground/60";
+  const navPillActiveClass =
+    "bg-primary-foreground text-primary font-semibold hover:bg-primary-foreground";
 
   return (
     <header data-site-header="true" className="bg-primary text-primary-foreground shrink-0">

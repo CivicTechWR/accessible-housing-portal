@@ -8,6 +8,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { signOutFromHeader } from "@/components/site-header/actions";
 import { isActivePath } from "@/components/site-header/nav-active";
+import { cn } from "@/lib/utils";
 
 type HeaderMobileMenuProps = {
   isSignedIn: boolean;
@@ -21,7 +22,8 @@ type HeaderMobileMenuProps = {
 
 const mobileMenuItemClass =
   "flex w-full items-center justify-between rounded-2xl bg-primary-foreground/10 px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/20";
-const mobileMenuItemActiveClass = "bg-primary-foreground/25 ring-1 ring-primary-foreground/50";
+const mobileMenuItemActiveClass =
+  "bg-primary-foreground text-primary font-semibold hover:bg-primary-foreground";
 
 export function HeaderMobileMenu({
   isSignedIn,
@@ -38,9 +40,7 @@ export function HeaderMobileMenu({
   }, [pathname]);
 
   const menuItemClass = (href: string) =>
-    isActivePath(pathname, href)
-      ? `${mobileMenuItemClass} ${mobileMenuItemActiveClass}`
-      : mobileMenuItemClass;
+    cn(mobileMenuItemClass, isActivePath(pathname, href) && mobileMenuItemActiveClass);
   const menuItemCurrent = (href: string) =>
     isActivePath(pathname, href) ? ("page" as const) : undefined;
 
