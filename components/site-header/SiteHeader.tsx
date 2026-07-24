@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { HeaderAccountMenu } from "@/components/site-header/HeaderAccountMenu";
-import { HeaderBreadcrumbs } from "@/components/site-header/HeaderBreadcrumbs";
 import { HeaderMobileMenu } from "@/components/site-header/HeaderMobileMenu";
 import { getOptionalSession } from "@/lib/auth/session";
 
@@ -59,10 +58,6 @@ export async function SiteHeader() {
             canCreateListing={canCreateListing}
             user={session?.user ?? null}
           />
-        </div>
-
-        <div className="border-t border-primary-foreground/15 py-2.5">
-          <HeaderBreadcrumbs />
         </div>
       </div>
     </header>
