@@ -1,7 +1,7 @@
 "use client";
 
 import { DynamicFilterGroup } from "@/components/feature-accordian/FeatureAccordian";
-import { ListingFilters } from "@/components/listing-filter/ListingFilter";
+import type { ListingFiltersProps } from "@/components/listing-filter/ListingFilter";
 import { useListingFilters } from "@/components/listing-filter/useListingFilter";
 import {
   DisplayMode,
@@ -15,6 +15,18 @@ import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared
 import dynamic from "next/dynamic";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
+
+const LazyListingFilters = dynamic<ListingFiltersProps>(
+  () =>
+    import("../../components/listing-filter/ListingFilter.tsx").then((mod) => mod.ListingFilters),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center p-6 text-sm text-muted-foreground">
+        Loading filters...
+      </div>
+    ),
+  },
+);
 
 const LazyMapView = dynamic<{ listings: ListingSummary[] }>(
   () => import("../../components/map-view/MapView.tsx").then((mod) => mod.MapView),
@@ -172,7 +184,7 @@ export default function ListingsDashboard({
             filterButtonProps={filterButtonProps}
             mobileFilters={
               isFilterOpen && isMobileViewport ? (
-                <ListingFilters
+                <LazyListingFilters
                   bathroomToggleProps={bathroomToggleProps}
                   bedroomToggleProps={bedroomToggleProps}
                   priceRangeProps={priceRangeProps}
@@ -201,7 +213,7 @@ export default function ListingsDashboard({
             aria-label="Filters"
             className="absolute inset-y-0 right-0 z-30 w-full max-w-sm border-l bg-background shadow-xl"
           >
-            <ListingFilters
+            <LazyListingFilters
               bathroomToggleProps={bathroomToggleProps}
               bedroomToggleProps={bedroomToggleProps}
               priceRangeProps={priceRangeProps}
