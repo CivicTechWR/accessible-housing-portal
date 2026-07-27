@@ -4,10 +4,13 @@ import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
 import {
+  LISTING_BUILDING_TYPE_LABELS,
   UTILITY_INCLUDED_LABELS,
   UTILITY_INCLUDED_VALUES,
+  type ListingBuildingType,
   type UtilityIncluded,
 } from "@/shared/schemas/listings";
+import { format, parseISO } from "date-fns";
 import Link from "next/link";
 import { ListingApplyButton } from "./ListingApplyButton";
 
@@ -30,6 +33,11 @@ export interface ListingDetailProps {
   title?: string;
   editUrl?: string;
   price: number;
+  description?: string;
+  buildingType?: ListingBuildingType;
+  leaseTermMonths?: number;
+  /** ISO date string (YYYY-MM-DD). */
+  availableOn?: string;
   unitNumber?: string;
   street1: string;
   street2?: string;
@@ -49,10 +57,19 @@ export interface ListingDetailProps {
   embedded?: boolean;
 }
 
+function formatAvailableDate(isoDate: string) {
+  const parsed = parseISO(isoDate);
+  return Number.isNaN(parsed.getTime()) ? isoDate : format(parsed, "MMMM d, yyyy");
+}
+
 export function ListingDetails({
   title,
   editUrl,
   price,
+  description,
+  buildingType,
+  leaseTermMonths,
+  availableOn,
   city,
   beds,
   baths,
@@ -75,9 +92,14 @@ export function ListingDetails({
   const rentalCost = `$${price.toLocaleString()}`;
   const WrapperElement = embedded ? "section" : "main";
 
+  const trimmedDescription = description?.trim();
+
   const rentalDetailRows: Array<{ label: string; value: string; fullWidth?: boolean }> = [
     { label: "Address", value: address || "Address Here", fullWidth: true },
     { label: "Rental Cost", value: rentalCost },
+    ...(buildingType
+      ? [{ label: "Building Type", value: LISTING_BUILDING_TYPE_LABELS[buildingType] }]
+      : []),
     { label: "Bedrooms", value: String(beds) },
     { label: "Bathrooms", value: String(baths) },
     { label: "Square Feet", value: `${sqft.toLocaleString()} sqft` },
@@ -90,6 +112,8 @@ export function ListingDetails({
               .join(", ")
           : "None listed",
     },
+    ...(leaseTermMonths ? [{ label: "Lease Term", value: `${leaseTermMonths}-month lease` }] : []),
+    ...(availableOn ? [{ label: "Available", value: formatAvailableDate(availableOn) }] : []),
     { label: "Posted", value: timeAgo },
   ];
   const contactRows = [
@@ -131,6 +155,17 @@ export function ListingDetails({
         </div>
 
         {images.length > 0 && <ListingImageCarousel images={images} altPrefix={address} />}
+
+        {trimmedDescription && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Description</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-line text-sm text-foreground">{trimmedDescription}</p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

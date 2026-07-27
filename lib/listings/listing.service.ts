@@ -608,6 +608,10 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
     title: listing.title,
     unitNumber: listing.unitNumber ?? undefined,
     price: centsToDollars(listing.monthlyRentCents),
+    description: listing.description?.trim() ? listing.description.trim() : undefined,
+    buildingType: listing.buildingType ?? undefined,
+    leaseTermMonths: listing.leaseTermMonths ?? undefined,
+    availableOn: listing.availableOn ?? undefined,
     address: {
       street1: listing.property.street1,
       street2: listing.property.street2 ?? undefined,

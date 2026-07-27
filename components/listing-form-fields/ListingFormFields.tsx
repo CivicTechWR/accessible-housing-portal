@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormSection } from "@/components/listing-form-layout/ListingFormLayout";
+import { LabeledCheckbox } from "@/components/labeled-checkbox/LabeledCheckbox";
 
 export interface ListingFormFieldsProps {
   control: ListingFormControl;
@@ -45,7 +46,19 @@ function FieldRenderer({
           <FormItem data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <Select
-              onValueChange={field.onChange}
+              onValueChange={(value) => {
+                // Radix renders a hidden native <select> so the value participates in
+                // form submission, and re-dispatches its change event when the option
+                // list registers. On the edit form that echo lands after the listing
+                // loads and carries the pre-hydration empty value, which would wipe the
+                // selection. No option is empty, so an empty payload is only ever that
+                // echo.
+                if (value === "") {
+                  return;
+                }
+
+                field.onChange(value);
+              }}
               defaultValue={field.value ?? undefined}
               value={field.value ?? undefined}
             >
@@ -66,6 +79,46 @@ function FieldRenderer({
             <FormMessage />
           </FormItem>
         )}
+      />
+    );
+  }
+
+  if (def.fieldType === "checkbox-group") {
+    return (
+      <FormField
+        control={control}
+        name={def.key}
+        render={({ field }) => {
+          const selected: string[] = Array.isArray(field.value) ? field.value : [];
+          const toggleOption = (value: string, checked: boolean) => {
+            const next = checked ? [...selected, value] : selected.filter((v) => v !== value);
+            // Keep the stored order stable regardless of the order boxes were checked
+            field.onChange(def.options.map((opt) => opt.value).filter((v) => next.includes(v)));
+          };
+
+          return (
+            <FormItem
+              className={def.colSpan === 2 ? "md:col-span-2" : undefined}
+              data-field-name={def.key}
+            >
+              <FormLabel>{label}</FormLabel>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {def.options.map((opt) => (
+                  <FormControl key={opt.value}>
+                    <LabeledCheckbox
+                      id={`${def.key}-${opt.value}`}
+                      label={opt.label}
+                      checked={selected.includes(opt.value)}
+                      onCheckedChange={(checked) => toggleOption(opt.value, checked === true)}
+                    />
+                  </FormControl>
+                ))}
+              </div>
+              {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
+              <FormMessage />
+            </FormItem>
+          );
+        }}
       />
     );
   }
