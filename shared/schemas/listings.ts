@@ -335,8 +335,9 @@ export const createDraftListingResponseSchema = z.object({
   data: listingIdDataSchema,
 });
 
-// Both fields are optional so the endpoint stays usable without a body; the
-// service applies DEFAULT_LISTING_DUPLICATE_* when they are omitted.
+// A JSON body is required (the route declares the content type so malformed
+// requests fail with 415/400 rather than silently duplicating), but both
+// fields are optional: `{}` applies DEFAULT_LISTING_DUPLICATE_*.
 export const duplicateListingSchema = z.object({
   scope: z.enum(LISTING_DUPLICATE_SCOPE_VALUES).optional(),
   copyPhotos: z.boolean().optional(),
