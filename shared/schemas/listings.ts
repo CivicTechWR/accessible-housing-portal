@@ -17,6 +17,10 @@ export const LISTING_BUILDING_TYPE_LABELS: Record<ListingBuildingType, string> =
   townhouse: "Townhouse",
   condo: "Condo",
 };
+export const LISTING_DUPLICATE_SCOPE_VALUES = ["all", "building", "unit"] as const;
+export type ListingDuplicateScope = (typeof LISTING_DUPLICATE_SCOPE_VALUES)[number];
+export const DEFAULT_LISTING_DUPLICATE_SCOPE: ListingDuplicateScope = "all";
+export const DEFAULT_LISTING_DUPLICATE_COPY_PHOTOS = false;
 export const UTILITY_INCLUDED_VALUES = ["heat", "water", "electricity", "gas", "internet"] as const;
 export type UtilityIncluded = (typeof UTILITY_INCLUDED_VALUES)[number];
 export const UTILITY_INCLUDED_LABELS = {
@@ -331,6 +335,13 @@ export const createDraftListingResponseSchema = z.object({
   data: listingIdDataSchema,
 });
 
+// Both fields are optional so the endpoint stays usable without a body; the
+// service applies DEFAULT_LISTING_DUPLICATE_* when they are omitted.
+export const duplicateListingSchema = z.object({
+  scope: z.enum(LISTING_DUPLICATE_SCOPE_VALUES).optional(),
+  copyPhotos: z.boolean().optional(),
+});
+
 export const duplicateListingResponseSchema = z.object({
   message: z.string(),
   data: listingIdDataSchema,
@@ -366,6 +377,7 @@ export type PatchListingInput = z.infer<typeof patchListingSchema>;
 export type ListingMutationInput = ReplaceListingInput | PatchListingInput;
 export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
+export type DuplicateListingInput = z.infer<typeof duplicateListingSchema>;
 export type DuplicateListingResponse = z.infer<typeof duplicateListingResponseSchema>;
 export type ReplaceListingResponse = z.infer<typeof replaceListingResponseSchema>;
 export type PatchListingResponse = z.infer<typeof patchListingResponseSchema>;

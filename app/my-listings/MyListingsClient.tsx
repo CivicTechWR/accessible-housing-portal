@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  DuplicateListingDialog,
+  type DuplicateListingSelection,
+} from "@/app/my-listings/DuplicateListingDialog";
 
 type MyListingItem = {
   id: string;
@@ -20,10 +24,12 @@ type MyListingItem = {
   price: number;
   address: string;
   city: string;
+  unitNumber?: string;
   beds: number;
   baths: number;
   sqft: number;
   imageUrl?: string;
+  imageCount: number;
   updatedAt: string;
   publishedAt?: string;
   editUrl: string;
@@ -51,6 +57,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
   const router = useRouter();
   const queryClient = useQueryClient();
   const [now, setNow] = useState(() => new Date(renderedAt));
+  const [duplicateTarget, setDuplicateTarget] = useState<MyListingItem | null>(null);
   const listingsQuery = useQuery({
     queryKey: queryKeys.myListings(),
     queryFn: () => sortListings(initialListings),
@@ -119,9 +126,17 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
   });
 
   const duplicateMutation = useMutation({
-    mutationFn: async ({ listingId }: { listingId: string }) => {
+    mutationFn: async ({
+      listingId,
+      selection,
+    }: {
+      listingId: string;
+      selection: DuplicateListingSelection;
+    }) => {
       const response = await fetch(`/api/listings/${listingId}/duplicate`, {
         method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(selection),
       });
 
       if (!response.ok) {
@@ -132,6 +147,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
       return { listingId };
     },
     onSuccess: () => {
+      setDuplicateTarget(null);
       void queryClient.invalidateQueries({ queryKey: ["listings"] });
       router.refresh();
     },
@@ -167,9 +183,9 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
 
   return (
     <div className="space-y-4">
-      {statusMutation.error || duplicateMutation.error ? (
+      {statusMutation.error ? (
         <AlertBanner variant="error" size="default" className="rounded-lg">
-          {getMutationErrorMessage(statusMutation.error ?? duplicateMutation.error)}
+          {getMutationErrorMessage(statusMutation.error)}
         </AlertBanner>
       ) : null}
 
@@ -250,7 +266,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                           variant="outline"
                           disabled={isDuplicating}
                           onClick={() => {
-                            duplicateMutation.mutate({ listingId: listing.id });
+                            duplicateMutation.reset();
+                            setDuplicateTarget(listing);
                           }}
                         >
                           {isDuplicating ? "Duplicating..." : "Duplicate"}
@@ -302,6 +319,23 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
           );
         })}
       </div>
+
+      {duplicateTarget ? (
+        <DuplicateListingDialog
+          listing={duplicateTarget}
+          isDuplicating={duplicateMutation.isPending}
+          errorMessage={
+            duplicateMutation.error ? getMutationErrorMessage(duplicateMutation.error) : null
+          }
+          onCancel={() => {
+            duplicateMutation.reset();
+            setDuplicateTarget(null);
+          }}
+          onConfirm={(selection) => {
+            duplicateMutation.mutate({ listingId: duplicateTarget.id, selection });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

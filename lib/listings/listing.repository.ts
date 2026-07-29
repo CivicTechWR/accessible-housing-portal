@@ -16,6 +16,7 @@ import {
 import { DEFAULT_PROPERTY_COUNTRY } from "@/lib/listings/store";
 import type {
   CreateListingInput,
+  ListingDuplicateScope,
   ListingIdParam,
   ListingMutationInput,
 } from "@/shared/schemas/listings";
@@ -330,6 +331,20 @@ export async function findPublicFeatureDefinitionsByKeys(keys: string[]) {
     );
 }
 
+export async function findFeatureDefinitionCategoriesByKeys(keys: string[]) {
+  if (keys.length === 0) {
+    return [];
+  }
+
+  return db
+    .select({
+      key: customListingFields.key,
+      category: customListingFields.category,
+    })
+    .from(customListingFields)
+    .where(inArray(customListingFields.key, keys));
+}
+
 export async function findPublicBooleanFeatureDefinitions() {
   return db
     .select({
@@ -423,7 +438,16 @@ export async function duplicateListingGraph(input: {
   listingId: ListingIdParam;
   actorUserId: string;
   title: string;
+  scope: ListingDuplicateScope;
+  copyPhotos: boolean;
+  customFields: ListingCustomFields;
 }) {
+  // "building" copies the property row and the landlord-level listing fields;
+  // "unit" copies the unit-level listing fields. Fields outside the chosen
+  // scope start blank, exactly as they do for a brand new draft.
+  const copiesBuilding = input.scope !== "unit";
+  const copiesUnit = input.scope !== "building";
+
   return db.transaction(async (tx) => {
     const [source] = await tx
       .select()
@@ -448,20 +472,22 @@ export async function duplicateListingGraph(input: {
     const [property] = await tx
       .insert(properties)
       .values({
+        // The copy stays under the original owner so it still shows up in
+        // their listings when an admin duplicates on their behalf.
         ownerUserId: sourceProperty.ownerUserId,
-        name: sourceProperty.name,
-        street1: sourceProperty.street1,
-        street2: sourceProperty.street2,
-        city: sourceProperty.city,
-        province: sourceProperty.province,
-        postalCode: sourceProperty.postalCode,
-        country: sourceProperty.country,
-        neighborhood: sourceProperty.neighborhood,
-        latitude: sourceProperty.latitude,
-        longitude: sourceProperty.longitude,
-        contactName: sourceProperty.contactName,
-        contactEmail: sourceProperty.contactEmail,
-        contactPhone: sourceProperty.contactPhone,
+        name: copiesBuilding ? sourceProperty.name : "",
+        street1: copiesBuilding ? sourceProperty.street1 : "",
+        street2: copiesBuilding ? sourceProperty.street2 : null,
+        city: copiesBuilding ? sourceProperty.city : "",
+        province: copiesBuilding ? sourceProperty.province : "",
+        postalCode: copiesBuilding ? sourceProperty.postalCode : "",
+        country: copiesBuilding ? sourceProperty.country : DEFAULT_PROPERTY_COUNTRY,
+        neighborhood: copiesBuilding ? sourceProperty.neighborhood : null,
+        latitude: copiesBuilding ? sourceProperty.latitude : null,
+        longitude: copiesBuilding ? sourceProperty.longitude : null,
+        contactName: copiesBuilding ? sourceProperty.contactName : "",
+        contactEmail: copiesBuilding ? sourceProperty.contactEmail : "",
+        contactPhone: copiesBuilding ? sourceProperty.contactPhone : "",
         createdByUserId: input.actorUserId,
         updatedByUserId: input.actorUserId,
       })
@@ -478,25 +504,25 @@ export async function duplicateListingGraph(input: {
         createdByUserId: input.actorUserId,
         updatedByUserId: input.actorUserId,
         title: input.title,
-        description: source.description,
         status: "draft",
         // Cleared rather than copied: these are the two fields that are
         // near-certain to differ for a new unit in the same building.
         unitNumber: null,
-        buildingType: source.buildingType,
-        bedrooms: source.bedrooms,
-        bathrooms: source.bathrooms,
-        squareFeet: source.squareFeet,
-        monthlyRentCents: source.monthlyRentCents,
         availableOn: null,
-        leaseTermMonths: source.leaseTermMonths,
-        utilitiesIncluded: source.utilitiesIncluded,
-        maxIncomeCents: source.maxIncomeCents,
-        applicationUrl: source.applicationUrl,
-        applicationEmail: source.applicationEmail,
-        applicationPhone: source.applicationPhone,
-        applicationInstructions: source.applicationInstructions,
-        customFields: source.customFields as ListingCustomFields,
+        description: copiesUnit ? source.description : null,
+        bedrooms: copiesUnit ? source.bedrooms : 0,
+        bathrooms: copiesUnit ? source.bathrooms : 0,
+        squareFeet: copiesUnit ? source.squareFeet : null,
+        monthlyRentCents: copiesUnit ? source.monthlyRentCents : 0,
+        leaseTermMonths: copiesUnit ? source.leaseTermMonths : null,
+        utilitiesIncluded: copiesUnit ? source.utilitiesIncluded : [],
+        maxIncomeCents: copiesUnit ? source.maxIncomeCents : null,
+        buildingType: copiesBuilding ? source.buildingType : null,
+        applicationUrl: copiesBuilding ? source.applicationUrl : null,
+        applicationEmail: copiesBuilding ? source.applicationEmail : "",
+        applicationPhone: copiesBuilding ? source.applicationPhone : "",
+        applicationInstructions: copiesBuilding ? source.applicationInstructions : null,
+        customFields: input.customFields,
         publishedAt: null,
         archivedAt: null,
       })
@@ -506,17 +532,19 @@ export async function duplicateListingGraph(input: {
       throw new Error("Failed to duplicate listing.");
     }
 
-    // Copy image rows in SQL so bytea payloads never leave the database.
-    await tx.execute(sql`
-      insert into listing_images (
-        listing_id, uploaded_by_user_id, image_url, image_data, content_type,
-        size_bytes, width, height, original_filename, alt_text, sort_order
-      )
-      select ${listing.id}::uuid, uploaded_by_user_id, image_url, image_data, content_type,
-        size_bytes, width, height, original_filename, alt_text, sort_order
-      from listing_images
-      where listing_id = ${input.listingId}::uuid
-    `);
+    if (input.copyPhotos) {
+      // Copy image rows in SQL so bytea payloads never leave the database.
+      await tx.execute(sql`
+        insert into listing_images (
+          listing_id, uploaded_by_user_id, image_url, image_data, content_type,
+          size_bytes, width, height, original_filename, alt_text, sort_order
+        )
+        select ${listing.id}::uuid, uploaded_by_user_id, image_url, image_data, content_type,
+          size_bytes, width, height, original_filename, alt_text, sort_order
+        from listing_images
+        where listing_id = ${input.listingId}::uuid
+      `);
+    }
 
     return listing;
   });
