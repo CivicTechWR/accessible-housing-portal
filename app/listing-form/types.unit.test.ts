@@ -88,29 +88,22 @@ describe("listingFormSchema", () => {
     expect(parsed.images[0]?.url).toBe("/api/image-uploads/ec53dba9-e6c0-491c-9c8c-f63b8fa43c1a");
   });
 
-  it("rejects invalid application URLs", () => {
-    const result = listingFormSchema.safeParse({
-      ...validFormInput,
-      applicationUrl: "not-a-url",
+  it("rejects application URLs that are malformed or not http(s)", () => {
+    ["not-a-url", "mailto:leasing@example.org"].forEach((applicationUrl) => {
+      const result = listingFormSchema.safeParse({
+        ...validFormInput,
+        applicationUrl,
+      });
+
+      expect(result.success).toBe(false);
+
+      if (result.success) {
+        throw new Error("Expected schema parse to fail");
+      }
+
+      expect(result.error.issues.some((issue) => issue.path.join(".") === "applicationUrl")).toBe(
+        true,
+      );
     });
-
-    expect(result.success).toBe(false);
-
-    if (result.success) {
-      throw new Error("Expected schema parse to fail");
-    }
-
-    expect(result.error.issues.some((issue) => issue.path.join(".") === "applicationUrl")).toBe(
-      true,
-    );
-  });
-
-  it("rejects non-http application URL protocols", () => {
-    const result = listingFormSchema.safeParse({
-      ...validFormInput,
-      applicationUrl: "mailto:leasing@example.org",
-    });
-
-    expect(result.success).toBe(false);
   });
 });
