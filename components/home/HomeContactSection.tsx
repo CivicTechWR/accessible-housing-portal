@@ -14,10 +14,6 @@ export function HomeContactSection() {
           <h2 id="page-3-title" className="text-3xl font-semibold tracking-tight sm:text-5xl">
             Get in touch
           </h2>
-          <p className="max-w-xl text-lg leading-8 text-[#18324a]/74">
-            Use these details as the main contact point for the platform. You can replace them with
-            the exact organization email, phone number, and office hours later.
-          </p>
         </div>
 
         <div className="grid gap-4 rounded-[2rem] border border-sky-100 bg-[#eaf4fb] p-6 shadow-[0_18px_50px_rgba(56,116,166,0.12)] backdrop-blur-md sm:p-8">

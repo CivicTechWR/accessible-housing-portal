@@ -12,7 +12,7 @@ export function HomeHeroSection() {
       <div className="absolute inset-0">
         <Image
           src={heroImage}
-          alt="Rendering of an accessible housing building"
+          alt=""
           fill
           priority
           sizes="100vw"

@@ -32,7 +32,7 @@ export function HomeInfoSection() {
             <div className="relative h-56 overflow-hidden">
               <Image
                 src={socialImage}
-                alt="Accessible housing building with a clear entryway and barrier-free approach"
+                alt=""
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover object-center brightness-95 saturate-80 transition-transform duration-500 group-hover:scale-[1.03]"
@@ -60,7 +60,7 @@ export function HomeInfoSection() {
             <div className="relative h-56 overflow-hidden">
               <Image
                 src={providerImage}
-                alt="Housing provider showcasing accessible units"
+                alt=""
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover object-center brightness-95 saturate-80 transition-transform duration-500 group-hover:scale-[1.03]"
@@ -88,7 +88,7 @@ export function HomeInfoSection() {
             <div className="relative h-56 overflow-hidden">
               <Image
                 src={joinImage}
-                alt="Person joining the Accessible Housing Bridge community"
+                alt=""
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover object-center brightness-95 saturate-80 transition-transform duration-500 group-hover:scale-[1.03]"
