@@ -2,7 +2,7 @@ import "server-only";
 
 import { asc, desc, type SQL } from "drizzle-orm";
 
-import { listings } from "@/db/schema";
+import { listings, type ListingCustomFields } from "@/db/schema";
 import type { getOptionalSession } from "@/lib/auth/session";
 import { buildListingFeatureDefinitionLookup } from "@/lib/listings/listing-feature-definitions";
 import {
@@ -20,6 +20,7 @@ import {
   getListingSquareFeet,
   mergeListingCustomFields,
   resolveListingStatusTimestamps,
+  selectDuplicateCustomFields,
 } from "@/lib/listings/store";
 import {
   andListingSpecifications,
@@ -42,6 +43,7 @@ import {
   createDraftListing,
   createListing,
   duplicateListingGraph,
+  findFeatureDefinitionCategoriesByKeys,
   findListingImagesByListingIds,
   findListingImagesByListingId,
   findOwnerListings,
@@ -60,14 +62,20 @@ import {
   type ListingActor,
 } from "@/lib/policies/listing-policy";
 import { getOptionalSession as getAuthSession } from "@/lib/auth/session";
+import {
+  DEFAULT_LISTING_DUPLICATE_COPY_PHOTOS,
+  DEFAULT_LISTING_DUPLICATE_SCOPE,
+} from "@/shared/schemas/listings";
 import type {
   CreateListingInput,
   CreateListingResponse,
   CreateDraftListingResponse,
   DeleteListingResponse,
+  DuplicateListingInput,
   DuplicateListingResponse,
   ListingByIdResponse,
   ListingDetails,
+  ListingDuplicateScope,
   ListingEditorData,
   ListingEditorResponse,
   ListingIdParam,
@@ -326,6 +334,7 @@ export async function createDraftListingService(): Promise<
 
 export async function duplicateListingByIdService(
   listingId: ListingIdParam,
+  input: DuplicateListingInput = {},
 ): Promise<DomainResult<DuplicateListingResponse>> {
   const actorResult = await requireListingWriteActor();
 
@@ -351,10 +360,14 @@ export async function duplicateListingByIdService(
     return fail("forbidden", "Forbidden");
   }
 
+  const scope = input.scope ?? DEFAULT_LISTING_DUPLICATE_SCOPE;
   const duplicatedListing = await duplicateListingGraph({
     listingId,
     actorUserId: actorResult.value.actor.userId,
     title: buildDuplicateListingTitle(listing.title),
+    scope,
+    copyPhotos: input.copyPhotos ?? DEFAULT_LISTING_DUPLICATE_COPY_PHOTOS,
+    customFields: await resolveDuplicateCustomFields(listing.customFields, scope),
   });
 
   return succeed({
@@ -362,6 +375,23 @@ export async function duplicateListingByIdService(
     data: {
       id: duplicatedListing.id,
     },
+  });
+}
+
+async function resolveDuplicateCustomFields(
+  customFields: ListingCustomFields,
+  scope: ListingDuplicateScope,
+): Promise<ListingCustomFields> {
+  if (scope === "all") {
+    return customFields;
+  }
+
+  const definitions = await findFeatureDefinitionCategoriesByKeys(Object.keys(customFields));
+
+  return selectDuplicateCustomFields({
+    customFields,
+    categoryByKey: new Map(definitions.map((definition) => [definition.key, definition.category])),
+    scope,
   });
 }
 
@@ -374,10 +404,12 @@ export async function getMyListingsService(): Promise<
       price: number;
       address: string;
       city: string;
+      unitNumber?: string;
       beds: number;
       baths: number;
       sqft: number;
       imageUrl?: string;
+      imageCount: number;
       updatedAt: string;
       publishedAt?: string;
       editUrl: string;
@@ -395,11 +427,21 @@ export async function getMyListingsService(): Promise<
   const listingIds = rows.map((row) => row.id);
   const imageRows = await findListingImagesByListingIds(listingIds);
   const imageByListingId = new Map<string, string>();
+  const imageCountByListingId = new Map<string, number>();
 
   for (const image of imageRows) {
-    if (image.listingId && !imageByListingId.has(image.listingId)) {
+    if (!image.listingId) {
+      continue;
+    }
+
+    if (!imageByListingId.has(image.listingId)) {
       imageByListingId.set(image.listingId, getListingImageUrl(image.id, image.imageUrl));
     }
+
+    imageCountByListingId.set(
+      image.listingId,
+      (imageCountByListingId.get(image.listingId) ?? 0) + 1,
+    );
   }
 
   return succeed({
@@ -410,10 +452,12 @@ export async function getMyListingsService(): Promise<
       price: centsToDollars(row.monthlyRentCents),
       address: formatListingAddress(row.street1, row.unitNumber) || "Address pending",
       city: row.city || "Location pending",
+      unitNumber: row.unitNumber?.trim() || undefined,
       beds: row.bedrooms,
       baths: row.bathrooms,
       sqft: getListingSquareFeet(row.squareFeet),
       imageUrl: imageByListingId.get(row.id),
+      imageCount: imageCountByListingId.get(row.id) ?? 0,
       updatedAt: row.updatedAt.toISOString(),
       publishedAt: row.publishedAt?.toISOString(),
       editUrl: `/listing-form/${row.id}`,

@@ -6,6 +6,8 @@ import {
   buildListingCustomFields,
   buildListingFeatureCategories,
   getDisplayAccessibilityFeatures,
+  isBuildingScopeFeatureCategory,
+  selectDuplicateCustomFields,
   getListingApplicationUrl,
   mergeListingCustomFields,
 } from "./store";
@@ -20,6 +22,48 @@ describe("buildDuplicateListingTitle", () => {
   it("keeps untitled drafts untitled", () => {
     expect(buildDuplicateListingTitle("")).toBe("");
     expect(buildDuplicateListingTitle("   ")).toBe("");
+  });
+});
+
+describe("selectDuplicateCustomFields", () => {
+  const customFields: ListingCustomFields = {
+    elevator_in_building: true,
+    main_entrance_is_barrier_free: true,
+    roll_in_shower: true,
+    legacy_unmapped_feature: true,
+  };
+  const categoryByKey = new Map([
+    ["elevator_in_building", "BUILDING AMENITIES"],
+    ["main_entrance_is_barrier_free", "ENTRY & EXTERIOR"],
+    ["roll_in_shower", "KITCHEN & BATH"],
+  ]);
+
+  it("keeps every feature when all fields are copied", () => {
+    expect(selectDuplicateCustomFields({ customFields, categoryByKey, scope: "all" })).toEqual(
+      customFields,
+    );
+  });
+
+  it("keeps only building-level features for the building scope", () => {
+    expect(selectDuplicateCustomFields({ customFields, categoryByKey, scope: "building" })).toEqual(
+      {
+        elevator_in_building: true,
+        main_entrance_is_barrier_free: true,
+      },
+    );
+  });
+
+  it("keeps unit-level and unrecognized features for the unit scope", () => {
+    expect(selectDuplicateCustomFields({ customFields, categoryByKey, scope: "unit" })).toEqual({
+      roll_in_shower: true,
+      legacy_unmapped_feature: true,
+    });
+  });
+
+  it("matches building categories regardless of case and punctuation", () => {
+    expect(isBuildingScopeFeatureCategory("Entry and Exterior")).toBe(true);
+    expect(isBuildingScopeFeatureCategory("building amenities")).toBe(true);
+    expect(isBuildingScopeFeatureCategory("UNIT INTERIOR")).toBe(false);
   });
 });
 

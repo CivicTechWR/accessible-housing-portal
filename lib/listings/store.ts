@@ -6,11 +6,13 @@ import type { ListingCustomFields, ListingStatus } from "@/db/schema";
 import { sortCustomListingFieldsForDisplay } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import {
   buildListingFeatureDefinitionLookup,
+  normalizeListingFeatureToken,
   type ListingFeatureDefinition,
 } from "@/lib/listings/listing-feature-definitions";
 import type {
   CreateListingInput,
   ListingDetails,
+  ListingDuplicateScope,
   UpdateListingInput,
 } from "@/shared/schemas/listings";
 
@@ -96,6 +98,47 @@ export function buildDuplicateListingTitle(title: string) {
   const trimmedTitle = title.trim();
 
   return trimmedTitle ? `Copy of ${trimmedTitle}` : "";
+}
+
+/**
+ * Feature categories that describe the building rather than the unit, used to
+ * split accessibility features when only part of a listing is duplicated.
+ * Categories are admin-editable, so anything unrecognized is treated as a unit
+ * feature: it then travels with the unit, and the copy is a draft the lister
+ * reviews before publishing.
+ */
+export const BUILDING_SCOPE_FEATURE_CATEGORIES = ["BUILDING AMENITIES", "ENTRY & EXTERIOR"];
+
+const buildingScopeFeatureCategoryTokens = new Set(
+  BUILDING_SCOPE_FEATURE_CATEGORIES.map(normalizeListingFeatureToken),
+);
+
+export function isBuildingScopeFeatureCategory(category: string) {
+  return buildingScopeFeatureCategoryTokens.has(normalizeListingFeatureToken(category));
+}
+
+export function selectDuplicateCustomFields(input: {
+  customFields: ListingCustomFields;
+  categoryByKey: Map<string, string>;
+  scope: ListingDuplicateScope;
+}): ListingCustomFields {
+  if (input.scope === "all") {
+    return { ...input.customFields };
+  }
+
+  const wantsBuildingFeatures = input.scope === "building";
+  const selected: ListingCustomFields = {};
+
+  for (const [key, value] of Object.entries(input.customFields)) {
+    const category = input.categoryByKey.get(key);
+    const isBuildingFeature = category ? isBuildingScopeFeatureCategory(category) : false;
+
+    if (isBuildingFeature === wantsBuildingFeatures) {
+      selected[key] = value;
+    }
+  }
+
+  return selected;
 }
 
 export function getListingImageUrl(imageId: string, imageUrl: string | null) {

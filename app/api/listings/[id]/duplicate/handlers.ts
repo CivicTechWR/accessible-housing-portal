@@ -2,17 +2,22 @@ import { TypedNextResponse, type TypedNextRequest } from "next-rest-framework";
 
 import { mapDomainErrorToHttpResponse } from "@/lib/http/map-domain-error";
 import { duplicateListingByIdService } from "@/lib/listings/listing.service";
-import type { DuplicateListingResponse, ListingParams } from "@/shared/schemas/listings";
+import type {
+  DuplicateListingInput,
+  DuplicateListingResponse,
+  ListingParams,
+} from "@/shared/schemas/listings";
 
 type DuplicateListingRouteContext = {
   params: ListingParams;
 };
 
 export async function duplicateListingByIdHandler(
-  _request: TypedNextRequest<"POST">,
+  request: TypedNextRequest<"POST", "application/json", DuplicateListingInput>,
   { params }: DuplicateListingRouteContext,
 ) {
-  const result = await duplicateListingByIdService(params.id);
+  const body = await request.json();
+  const result = await duplicateListingByIdService(params.id, body);
 
   if (!result.ok) {
     return mapDomainErrorToHttpResponse(result.error);
