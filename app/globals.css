@@ -176,6 +176,65 @@
   --sidebar-ring: oklch(0.56 0.021 213.5);
 }
 
+/* MapLibre's attribution control ships light-only styling; restyle it with theme
+   tokens when the site is in dark mode. The icons are inlined SVG data URIs, so
+   the dark variants repeat maplibre's icon with a white fill. */
+.dark .maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background-color: color-mix(in oklab, var(--card) 50%, transparent);
+}
+
+.dark .maplibregl-ctrl-attrib.maplibregl-compact {
+  background-color: var(--card);
+  color: var(--card-foreground);
+}
+
+.dark .maplibregl-ctrl-attrib a {
+  color: color-mix(in oklab, var(--card-foreground) 75%, transparent);
+}
+
+.dark .maplibregl-ctrl-attrib a:hover {
+  color: var(--card-foreground);
+}
+
+.dark .maplibregl-ctrl-attrib-button,
+.dark .maplibregl-ctrl-attrib.maplibregl-compact:after {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23fff' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
+}
+
+.dark .maplibregl-ctrl-attrib-button {
+  background-color: transparent;
+}
+
+.dark .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
+  background-color: rgb(255 255 255 / 10%);
+}
+
+/* MapLibre popups are hardcoded white as well; match the card surface. */
+.dark .maplibregl-popup-content {
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 40%);
+}
+
+.dark .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--card);
+}
+
+.dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--card);
+}
+
+.dark .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--card);
+}
+
+.dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--card);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
