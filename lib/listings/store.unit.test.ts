@@ -1,10 +1,12 @@
 import { describe, expect, it } from "@jest/globals";
 
-import type { ListingCustomFields } from "@/db/schema";
+import type { Listing, ListingCustomFields, Property } from "@/db/schema";
 import {
+  buildDuplicateListingPlan,
   buildDuplicateListingTitle,
   buildListingCustomFields,
   buildListingFeatureCategories,
+  DEFAULT_PROPERTY_COUNTRY,
   getDisplayAccessibilityFeatures,
   isBuildingScopeFeatureCategory,
   selectDuplicateCustomFields,
@@ -64,6 +66,171 @@ describe("selectDuplicateCustomFields", () => {
     expect(isBuildingScopeFeatureCategory("Entry and Exterior")).toBe(true);
     expect(isBuildingScopeFeatureCategory("building amenities")).toBe(true);
     expect(isBuildingScopeFeatureCategory("UNIT INTERIOR")).toBe(false);
+  });
+});
+
+describe("buildDuplicateListingPlan", () => {
+  const OWNER_USER_ID = "11111111-1111-4111-8111-111111111111";
+  const ACTOR_USER_ID = "22222222-2222-4222-8222-222222222222";
+
+  const sourceProperty: Property = {
+    id: "33333333-3333-4333-8333-333333333333",
+    ownerUserId: OWNER_USER_ID,
+    name: "Riverbend Apartments",
+    street1: "120 King St W",
+    street2: "Suite 4",
+    city: "Kitchener",
+    province: "ON",
+    postalCode: "N2G 1A7",
+    country: "Canada",
+    neighborhood: "Downtown",
+    latitude: 43.4516,
+    longitude: -80.4925,
+    contactName: "Dana Reyes",
+    contactEmail: "dana@example.com",
+    contactPhone: "519-555-0142",
+    createdByUserId: OWNER_USER_ID,
+    updatedByUserId: OWNER_USER_ID,
+    createdAt: new Date("2026-01-05T00:00:00Z"),
+    updatedAt: new Date("2026-02-05T00:00:00Z"),
+  };
+
+  const source: Listing = {
+    id: "44444444-4444-4444-8444-444444444444",
+    propertyId: sourceProperty.id,
+    createdByUserId: OWNER_USER_ID,
+    updatedByUserId: OWNER_USER_ID,
+    title: "Sunny 2BR near uptown",
+    description: "Bright corner unit.",
+    status: "published",
+    unitNumber: "301",
+    buildingType: "apartment",
+    bedrooms: 2,
+    bathrooms: 1.5,
+    squareFeet: 880,
+    monthlyRentCents: 185000,
+    availableOn: "2026-09-01",
+    leaseTermMonths: 12,
+    utilitiesIncluded: ["heat", "water"],
+    maxIncomeCents: 7200000,
+    applicationUrl: "https://example.com/apply",
+    applicationEmail: "apply@example.com",
+    applicationPhone: "519-555-0143",
+    applicationInstructions: "Bring proof of income.",
+    customFields: { elevator_in_building: true },
+    publishedAt: new Date("2026-03-01T00:00:00Z"),
+    archivedAt: null,
+    createdAt: new Date("2026-01-06T00:00:00Z"),
+    updatedAt: new Date("2026-02-06T00:00:00Z"),
+  };
+
+  const planFor = (scope: "all" | "building" | "unit") =>
+    buildDuplicateListingPlan({
+      source,
+      sourceProperty,
+      actorUserId: ACTOR_USER_ID,
+      title: "Copy of Sunny 2BR near uptown",
+      scope,
+      customFields: { elevator_in_building: true },
+    });
+
+  it("carries over building and unit fields when everything is copied", () => {
+    const plan = planFor("all");
+
+    expect(plan.property).toMatchObject({
+      name: "Riverbend Apartments",
+      street1: "120 King St W",
+      city: "Kitchener",
+      country: "Canada",
+      contactEmail: "dana@example.com",
+    });
+    expect(plan.listing).toMatchObject({
+      description: "Bright corner unit.",
+      bedrooms: 2,
+      bathrooms: 1.5,
+      monthlyRentCents: 185000,
+      buildingType: "apartment",
+      applicationUrl: "https://example.com/apply",
+    });
+  });
+
+  it("blanks the unit fields for the building scope", () => {
+    const plan = planFor("building");
+
+    expect(plan.property).toMatchObject({ street1: "120 King St W", city: "Kitchener" });
+    expect(plan.listing).toMatchObject({
+      description: null,
+      bedrooms: 0,
+      bathrooms: 0,
+      squareFeet: null,
+      monthlyRentCents: 0,
+      leaseTermMonths: null,
+      utilitiesIncluded: [],
+      maxIncomeCents: null,
+      // Landlord-level fields still belong to the building.
+      buildingType: "apartment",
+      applicationInstructions: "Bring proof of income.",
+    });
+  });
+
+  it("blanks the building and address fields for the unit scope", () => {
+    const plan = planFor("unit");
+
+    expect(plan.property).toMatchObject({
+      name: "",
+      street1: "",
+      street2: null,
+      city: "",
+      province: "",
+      postalCode: "",
+      neighborhood: null,
+      latitude: null,
+      longitude: null,
+      contactName: "",
+      contactEmail: "",
+      contactPhone: "",
+    });
+    expect(plan.listing).toMatchObject({
+      description: "Bright corner unit.",
+      bedrooms: 2,
+      monthlyRentCents: 185000,
+      buildingType: null,
+      applicationUrl: null,
+      applicationEmail: "",
+      applicationPhone: "",
+      applicationInstructions: null,
+    });
+  });
+
+  it("falls back to the default country when the building is not copied", () => {
+    expect(planFor("unit").property.country).toBe(DEFAULT_PROPERTY_COUNTRY);
+    expect(planFor("building").property.country).toBe("Canada");
+  });
+
+  it("always resets the copy to an unpublished draft regardless of scope", () => {
+    for (const scope of ["all", "building", "unit"] as const) {
+      expect(planFor(scope).listing).toMatchObject({
+        status: "draft",
+        unitNumber: null,
+        availableOn: null,
+        publishedAt: null,
+        archivedAt: null,
+      });
+    }
+  });
+
+  it("keeps the source owner while recording the actor as the editor", () => {
+    const plan = planFor("all");
+
+    expect(plan.property.ownerUserId).toBe(OWNER_USER_ID);
+    expect(plan.property).toMatchObject({
+      createdByUserId: ACTOR_USER_ID,
+      updatedByUserId: ACTOR_USER_ID,
+    });
+    expect(plan.listing).toMatchObject({
+      createdByUserId: ACTOR_USER_ID,
+      updatedByUserId: ACTOR_USER_ID,
+    });
   });
 });
 

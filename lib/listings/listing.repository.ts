@@ -13,7 +13,7 @@ import {
   type ListingStatus,
   type UtilityIncluded,
 } from "@/db/schema";
-import { DEFAULT_PROPERTY_COUNTRY } from "@/lib/listings/store";
+import { buildDuplicateListingPlan, DEFAULT_PROPERTY_COUNTRY } from "@/lib/listings/store";
 import type {
   CreateListingInput,
   ListingDuplicateScope,
@@ -442,12 +442,6 @@ export async function duplicateListingGraph(input: {
   copyPhotos: boolean;
   customFields: ListingCustomFields;
 }) {
-  // "building" copies the property row and the landlord-level listing fields;
-  // "unit" copies the unit-level listing fields. Fields outside the chosen
-  // scope start blank, exactly as they do for a brand new draft.
-  const copiesBuilding = input.scope !== "unit";
-  const copiesUnit = input.scope !== "building";
-
   return db.transaction(async (tx) => {
     const [source] = await tx
       .select()
@@ -469,28 +463,18 @@ export async function duplicateListingGraph(input: {
       throw new Error("Failed to load property to duplicate.");
     }
 
+    const plan = buildDuplicateListingPlan({
+      source,
+      sourceProperty,
+      actorUserId: input.actorUserId,
+      title: input.title,
+      scope: input.scope,
+      customFields: input.customFields,
+    });
+
     const [property] = await tx
       .insert(properties)
-      .values({
-        // The copy stays under the original owner so it still shows up in
-        // their listings when an admin duplicates on their behalf.
-        ownerUserId: sourceProperty.ownerUserId,
-        name: copiesBuilding ? sourceProperty.name : "",
-        street1: copiesBuilding ? sourceProperty.street1 : "",
-        street2: copiesBuilding ? sourceProperty.street2 : null,
-        city: copiesBuilding ? sourceProperty.city : "",
-        province: copiesBuilding ? sourceProperty.province : "",
-        postalCode: copiesBuilding ? sourceProperty.postalCode : "",
-        country: copiesBuilding ? sourceProperty.country : DEFAULT_PROPERTY_COUNTRY,
-        neighborhood: copiesBuilding ? sourceProperty.neighborhood : null,
-        latitude: copiesBuilding ? sourceProperty.latitude : null,
-        longitude: copiesBuilding ? sourceProperty.longitude : null,
-        contactName: copiesBuilding ? sourceProperty.contactName : "",
-        contactEmail: copiesBuilding ? sourceProperty.contactEmail : "",
-        contactPhone: copiesBuilding ? sourceProperty.contactPhone : "",
-        createdByUserId: input.actorUserId,
-        updatedByUserId: input.actorUserId,
-      })
+      .values(plan.property)
       .returning({ id: properties.id });
 
     if (!property) {
@@ -499,33 +483,7 @@ export async function duplicateListingGraph(input: {
 
     const [listing] = await tx
       .insert(listings)
-      .values({
-        propertyId: property.id,
-        createdByUserId: input.actorUserId,
-        updatedByUserId: input.actorUserId,
-        title: input.title,
-        status: "draft",
-        // Cleared rather than copied: these are the two fields that are
-        // near-certain to differ for a new unit in the same building.
-        unitNumber: null,
-        availableOn: null,
-        description: copiesUnit ? source.description : null,
-        bedrooms: copiesUnit ? source.bedrooms : 0,
-        bathrooms: copiesUnit ? source.bathrooms : 0,
-        squareFeet: copiesUnit ? source.squareFeet : null,
-        monthlyRentCents: copiesUnit ? source.monthlyRentCents : 0,
-        leaseTermMonths: copiesUnit ? source.leaseTermMonths : null,
-        utilitiesIncluded: copiesUnit ? source.utilitiesIncluded : [],
-        maxIncomeCents: copiesUnit ? source.maxIncomeCents : null,
-        buildingType: copiesBuilding ? source.buildingType : null,
-        applicationUrl: copiesBuilding ? source.applicationUrl : null,
-        applicationEmail: copiesBuilding ? source.applicationEmail : "",
-        applicationPhone: copiesBuilding ? source.applicationPhone : "",
-        applicationInstructions: copiesBuilding ? source.applicationInstructions : null,
-        customFields: input.customFields,
-        publishedAt: null,
-        archivedAt: null,
-      })
+      .values({ ...plan.listing, propertyId: property.id })
       .returning({ id: listings.id });
 
     if (!listing) {
