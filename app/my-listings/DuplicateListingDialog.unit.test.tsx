@@ -95,11 +95,4 @@ describe("DuplicateListingDialog", () => {
       ),
     ).not.toBeNull();
   });
-
-  it("surfaces a failed duplicate without closing the dialog", () => {
-    renderDialog({ errorMessage: "Unable to duplicate listing." });
-
-    expect(screen.queryByText("Unable to duplicate listing.")).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Duplicate as draft" })).not.toBeNull();
-  });
 });

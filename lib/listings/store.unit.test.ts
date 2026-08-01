@@ -15,13 +15,10 @@ import {
 } from "./store";
 
 describe("buildDuplicateListingTitle", () => {
-  it("prefixes the source title with Copy of", () => {
+  it("prefixes titled listings and keeps untitled drafts untitled", () => {
     expect(buildDuplicateListingTitle("Sunny 2BR near uptown")).toBe(
       "Copy of Sunny 2BR near uptown",
     );
-  });
-
-  it("keeps untitled drafts untitled", () => {
     expect(buildDuplicateListingTitle("")).toBe("");
     expect(buildDuplicateListingTitle("   ")).toBe("");
   });
