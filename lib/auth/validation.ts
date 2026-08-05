@@ -14,6 +14,10 @@ export const signInSchema = z.object({
   password: z.string().min(1),
 });
 
+export const forgotPasswordRequestSchema = z.object({
+  email: emailSchema,
+});
+
 export const acceptInviteSchema = z
   .object({
     token: z.string().min(1),
@@ -23,4 +27,30 @@ export const acceptInviteSchema = z
   .refine((value) => value.password === value.confirmPassword, {
     message: "Passwords do not match.",
     path: ["confirmPassword"],
+  });
+
+export const resetPasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required."),
+    newPassword: passwordSchema,
+    confirmNewPassword: z.string().min(1, "Please confirm your new password."),
+  })
+  .refine((value) => value.newPassword === value.confirmNewPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmNewPassword"],
+  })
+  .refine((value) => value.currentPassword !== value.newPassword, {
+    message: "New password must be different from your current password.",
+    path: ["newPassword"],
+  });
+
+export const resetPasswordWithTokenSchema = z
+  .object({
+    token: z.string().min(1, "Reset token is required."),
+    newPassword: passwordSchema,
+    confirmNewPassword: z.string().min(1, "Please confirm your new password."),
+  })
+  .refine((value) => value.newPassword === value.confirmNewPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmNewPassword"],
   });
