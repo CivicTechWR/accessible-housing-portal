@@ -8,7 +8,7 @@ const siteMap = [
 export function SiteFooter() {
   return (
     <footer className="bg-primary text-primary-foreground">
-      <div className="mx-auto max-w-7xl px-6 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="mx-auto max-w-7xl px-6 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         <div className="space-y-3">
           <img
             src="https://civictechwr.org/images/logos/civictechwr_logo_black.webp"
@@ -30,20 +30,6 @@ export function SiteFooter() {
                 </Link>
               </li>
             ))}
-          </ul>
-        </div>
-        <div className="space-y-3">
-          <h3 className="text-sm uppercase tracking-wider">Resources</h3>
-          <ul className="space-y-2 text-sm text-primary-foreground/80">
-            <li>
-              <span className="opacity-60">Mock Link</span>
-            </li>
-            <li>
-              <span className="opacity-60">Mock Link</span>
-            </li>
-            <li>
-              <span className="opacity-60">Mock Link</span>
-            </li>
           </ul>
         </div>
         <div className="space-y-3">
