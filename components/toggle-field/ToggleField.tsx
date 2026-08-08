@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export type ToggleFieldProps = {
   title?: string;
   description?: string;
+  publicText?: string;
   options: {
     value: string;
     label: string;
@@ -22,6 +23,7 @@ export type ToggleFieldProps = {
 export function ToggleField({
   title,
   description,
+  publicText,
   options,
   value,
   onValueChange,
@@ -39,7 +41,12 @@ export function ToggleField({
             {title}
           </FieldLabel>
           {description && (
-            <p className="text-sm text-muted-foreground whitespace-pre-line">{description}</p>
+            <p className="text-sm text-foreground whitespace-pre-line">{description}</p>
+          )}
+          {publicText && (
+            <blockquote className="text-xs leading-snug text-foreground/75 whitespace-pre-line before:content-['“'] after:content-['”']">
+              {publicText}
+            </blockquote>
           )}
         </div>
       )}
