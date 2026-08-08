@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  DuplicateListingDialog,
+  type DuplicateListingSelection,
+} from "@/app/my-listings/DuplicateListingDialog";
 
 type MyListingItem = {
   id: string;
@@ -20,10 +24,12 @@ type MyListingItem = {
   price: number;
   address: string;
   city: string;
+  unitNumber?: string;
   beds: number;
   baths: number;
   sqft: number;
   imageUrl?: string;
+  imageCount: number;
   updatedAt: string;
   publishedAt?: string;
   editUrl: string;
@@ -51,6 +57,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
   const router = useRouter();
   const queryClient = useQueryClient();
   const [now, setNow] = useState(() => new Date(renderedAt));
+  const [duplicateTarget, setDuplicateTarget] = useState<MyListingItem | null>(null);
   const listingsQuery = useQuery({
     queryKey: queryKeys.myListings(),
     queryFn: () => sortListings(initialListings),
@@ -115,6 +122,34 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
     },
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: async ({
+      listingId,
+      selection,
+    }: {
+      listingId: string;
+      selection: DuplicateListingSelection;
+    }) => {
+      const response = await fetch(`/api/listings/${listingId}/duplicate`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(selection),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(payload?.message ?? "Unable to duplicate listing.");
+      }
+
+      return { listingId };
+    },
+    onSuccess: () => {
+      setDuplicateTarget(null);
+      void queryClient.invalidateQueries({ queryKey: ["listings"] });
+      router.refresh();
+    },
+  });
+
   useEffect(() => {
     setNow(new Date());
 
@@ -147,9 +182,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
     <div className="space-y-4">
       {statusMutation.error ? (
         <AlertBanner variant="error" size="default" className="rounded-lg">
-          {statusMutation.error instanceof Error
-            ? statusMutation.error.message
-            : "Unable to update listing. Please try again."}
+          {getMutationErrorMessage(statusMutation.error)}
         </AlertBanner>
       ) : null}
 
@@ -160,6 +193,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
             statusMutation.isPending && statusMutation.variables?.listingId === listing.id;
           const pendingLabel =
             statusMutation.variables?.nextStatus === "archived" ? "Deleting..." : "Restoring...";
+          const isDuplicating =
+            duplicateMutation.isPending && duplicateMutation.variables?.listingId === listing.id;
 
           return (
             <Card key={listing.id}>
@@ -226,6 +261,17 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                         <Button
                           type="button"
                           variant="outline"
+                          disabled={isDuplicating}
+                          onClick={() => {
+                            duplicateMutation.reset();
+                            setDuplicateTarget(listing);
+                          }}
+                        >
+                          {isDuplicating ? "Duplicating..." : "Duplicate"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
                           disabled={isMutating}
                           onClick={() => {
                             if (
@@ -270,8 +316,29 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
           );
         })}
       </div>
+
+      {duplicateTarget ? (
+        <DuplicateListingDialog
+          listing={duplicateTarget}
+          isDuplicating={duplicateMutation.isPending}
+          errorMessage={
+            duplicateMutation.error ? getMutationErrorMessage(duplicateMutation.error) : null
+          }
+          onCancel={() => {
+            duplicateMutation.reset();
+            setDuplicateTarget(null);
+          }}
+          onConfirm={(selection) => {
+            duplicateMutation.mutate({ listingId: duplicateTarget.id, selection });
+          }}
+        />
+      ) : null}
     </div>
   );
+}
+
+function getMutationErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unable to update listing. Please try again.";
 }
 
 function sortListings(listings: MyListingItem[]) {

@@ -13,9 +13,10 @@ import {
   type ListingStatus,
   type UtilityIncluded,
 } from "@/db/schema";
-import { DEFAULT_PROPERTY_COUNTRY } from "@/lib/listings/store";
+import { buildDuplicateListingPlan, DEFAULT_PROPERTY_COUNTRY } from "@/lib/listings/store";
 import type {
   CreateListingInput,
+  ListingDuplicateScope,
   ListingIdParam,
   UpdateListingInput,
 } from "@/shared/schemas/listings";
@@ -330,6 +331,20 @@ export async function findPublicFeatureDefinitionsByKeys(keys: string[]) {
     );
 }
 
+export async function findFeatureDefinitionCategoriesByKeys(keys: string[]) {
+  if (keys.length === 0) {
+    return [];
+  }
+
+  return db
+    .select({
+      key: customListingFields.key,
+      category: customListingFields.category,
+    })
+    .from(customListingFields)
+    .where(inArray(customListingFields.key, keys));
+}
+
 export async function findPublicBooleanFeatureDefinitions() {
   return db
     .select({
@@ -413,6 +428,80 @@ export async function createDraftListing(input: { actorUserId: string }) {
 
     if (!listing) {
       throw new Error("Failed to create draft listing.");
+    }
+
+    return listing;
+  });
+}
+
+export async function duplicateListingGraph(input: {
+  listingId: ListingIdParam;
+  actorUserId: string;
+  title: string;
+  scope: ListingDuplicateScope;
+  copyPhotos: boolean;
+  customFields: ListingCustomFields;
+}) {
+  return db.transaction(async (tx) => {
+    const [source] = await tx
+      .select()
+      .from(listings)
+      .where(eq(listings.id, input.listingId))
+      .limit(1);
+
+    if (!source) {
+      throw new Error("Failed to load listing to duplicate.");
+    }
+
+    const [sourceProperty] = await tx
+      .select()
+      .from(properties)
+      .where(eq(properties.id, source.propertyId))
+      .limit(1);
+
+    if (!sourceProperty) {
+      throw new Error("Failed to load property to duplicate.");
+    }
+
+    const plan = buildDuplicateListingPlan({
+      source,
+      sourceProperty,
+      actorUserId: input.actorUserId,
+      title: input.title,
+      scope: input.scope,
+      customFields: input.customFields,
+    });
+
+    const [property] = await tx
+      .insert(properties)
+      .values(plan.property)
+      .returning({ id: properties.id });
+
+    if (!property) {
+      throw new Error("Failed to duplicate property.");
+    }
+
+    const [listing] = await tx
+      .insert(listings)
+      .values({ ...plan.listing, propertyId: property.id })
+      .returning({ id: listings.id });
+
+    if (!listing) {
+      throw new Error("Failed to duplicate listing.");
+    }
+
+    if (input.copyPhotos) {
+      // Copy image rows in SQL so bytea payloads never leave the database.
+      await tx.execute(sql`
+        insert into listing_images (
+          listing_id, uploaded_by_user_id, image_url, image_data, content_type,
+          size_bytes, width, height, original_filename, alt_text, sort_order
+        )
+        select ${listing.id}::uuid, uploaded_by_user_id, image_url, image_data, content_type,
+          size_bytes, width, height, original_filename, alt_text, sort_order
+        from listing_images
+        where listing_id = ${input.listingId}::uuid
+      `);
     }
 
     return listing;

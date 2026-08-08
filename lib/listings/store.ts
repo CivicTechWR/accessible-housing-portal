@@ -2,15 +2,24 @@ import "server-only";
 
 import { formatDistanceToNow } from "date-fns";
 
-import type { ListingCustomFields, ListingStatus } from "@/db/schema";
+import type {
+  Listing,
+  ListingCustomFields,
+  ListingStatus,
+  NewListing,
+  NewProperty,
+  Property,
+} from "@/db/schema";
 import { sortCustomListingFieldsForDisplay } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import {
   buildListingFeatureDefinitionLookup,
+  normalizeListingFeatureToken,
   type ListingFeatureDefinition,
 } from "@/lib/listings/listing-feature-definitions";
 import type {
   CreateListingInput,
   ListingDetails,
+  ListingDuplicateScope,
   UpdateListingInput,
 } from "@/shared/schemas/listings";
 
@@ -90,6 +99,134 @@ export function getDisplayAccessibilityFeatures(
 
 export function formatListingAddress(street1: string, unitNumber: string | null) {
   return unitNumber ? `${street1} #${unitNumber}` : street1;
+}
+
+export function buildDuplicateListingTitle(title: string) {
+  const trimmedTitle = title.trim();
+
+  return trimmedTitle ? `Copy of ${trimmedTitle}` : "";
+}
+
+/**
+ * Feature categories that describe the building rather than the unit, used to
+ * split accessibility features when only part of a listing is duplicated.
+ * Categories are admin-editable, so anything unrecognized is treated as a unit
+ * feature: it then travels with the unit, and the copy is a draft the lister
+ * reviews before publishing.
+ */
+export const BUILDING_SCOPE_FEATURE_CATEGORIES = ["BUILDING AMENITIES", "ENTRY & EXTERIOR"];
+
+const buildingScopeFeatureCategoryTokens = new Set(
+  BUILDING_SCOPE_FEATURE_CATEGORIES.map(normalizeListingFeatureToken),
+);
+
+export function isBuildingScopeFeatureCategory(category: string) {
+  return buildingScopeFeatureCategoryTokens.has(normalizeListingFeatureToken(category));
+}
+
+export function selectDuplicateCustomFields(input: {
+  customFields: ListingCustomFields;
+  categoryByKey: Map<string, string>;
+  scope: ListingDuplicateScope;
+}): ListingCustomFields {
+  if (input.scope === "all") {
+    return { ...input.customFields };
+  }
+
+  const wantsBuildingFeatures = input.scope === "building";
+  const selected: ListingCustomFields = {};
+
+  for (const [key, value] of Object.entries(input.customFields)) {
+    const category = input.categoryByKey.get(key);
+    const isBuildingFeature = category ? isBuildingScopeFeatureCategory(category) : false;
+
+    if (isBuildingFeature === wantsBuildingFeatures) {
+      selected[key] = value;
+    }
+  }
+
+  return selected;
+}
+
+/**
+ * The values a duplicate is created from. `propertyId` is left to the caller
+ * because the new property row has to be inserted before its id exists.
+ */
+export type DuplicateListingPlan = {
+  property: NewProperty;
+  listing: Omit<NewListing, "propertyId">;
+};
+
+/**
+ * Decides what a duplicate carries over. This is the duplication policy —
+ * which fields belong to the building, which belong to the unit, what is
+ * deliberately reset, and who ends up owning the copy. It is pure so the rules
+ * can be tested without a database; the repository decides how the resulting
+ * plan is persisted.
+ */
+export function buildDuplicateListingPlan(input: {
+  source: Listing;
+  sourceProperty: Property;
+  actorUserId: string;
+  title: string;
+  scope: ListingDuplicateScope;
+  customFields: ListingCustomFields;
+}): DuplicateListingPlan {
+  // "building" copies the property row and the landlord-level listing fields;
+  // "unit" copies the unit-level listing fields. Fields outside the chosen
+  // scope start blank, exactly as they do for a brand new draft.
+  const copiesBuilding = input.scope !== "unit";
+  const copiesUnit = input.scope !== "building";
+  const { source, sourceProperty, actorUserId } = input;
+
+  return {
+    property: {
+      // The copy stays under the original owner so it still shows up in
+      // their listings when an admin duplicates on their behalf.
+      ownerUserId: sourceProperty.ownerUserId,
+      name: copiesBuilding ? sourceProperty.name : "",
+      street1: copiesBuilding ? sourceProperty.street1 : "",
+      street2: copiesBuilding ? sourceProperty.street2 : null,
+      city: copiesBuilding ? sourceProperty.city : "",
+      province: copiesBuilding ? sourceProperty.province : "",
+      postalCode: copiesBuilding ? sourceProperty.postalCode : "",
+      country: copiesBuilding ? sourceProperty.country : DEFAULT_PROPERTY_COUNTRY,
+      neighborhood: copiesBuilding ? sourceProperty.neighborhood : null,
+      latitude: copiesBuilding ? sourceProperty.latitude : null,
+      longitude: copiesBuilding ? sourceProperty.longitude : null,
+      contactName: copiesBuilding ? sourceProperty.contactName : "",
+      contactEmail: copiesBuilding ? sourceProperty.contactEmail : "",
+      contactPhone: copiesBuilding ? sourceProperty.contactPhone : "",
+      createdByUserId: actorUserId,
+      updatedByUserId: actorUserId,
+    },
+    listing: {
+      createdByUserId: actorUserId,
+      updatedByUserId: actorUserId,
+      title: input.title,
+      status: "draft",
+      // Cleared rather than copied: these are the two fields that are
+      // near-certain to differ for a new unit in the same building.
+      unitNumber: null,
+      availableOn: null,
+      description: copiesUnit ? source.description : null,
+      bedrooms: copiesUnit ? source.bedrooms : 0,
+      bathrooms: copiesUnit ? source.bathrooms : 0,
+      squareFeet: copiesUnit ? source.squareFeet : null,
+      monthlyRentCents: copiesUnit ? source.monthlyRentCents : 0,
+      leaseTermMonths: copiesUnit ? source.leaseTermMonths : null,
+      utilitiesIncluded: copiesUnit ? source.utilitiesIncluded : [],
+      maxIncomeCents: copiesUnit ? source.maxIncomeCents : null,
+      buildingType: copiesBuilding ? source.buildingType : null,
+      applicationUrl: copiesBuilding ? source.applicationUrl : null,
+      applicationEmail: copiesBuilding ? source.applicationEmail : "",
+      applicationPhone: copiesBuilding ? source.applicationPhone : "",
+      applicationInstructions: copiesBuilding ? source.applicationInstructions : null,
+      customFields: input.customFields,
+      publishedAt: null,
+      archivedAt: null,
+    },
+  };
 }
 
 export function getListingImageUrl(imageId: string, imageUrl: string | null) {
