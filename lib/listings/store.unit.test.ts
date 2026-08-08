@@ -12,11 +12,13 @@ import {
 describe("buildListingFeatureCategories", () => {
   it("applies alphabetical category order and per-category sort order for custom fields", () => {
     const features = buildListingFeatureCategories(
+      // Deliberately the reverse of the expected output so that passing through
+      // insertion order cannot be mistaken for sorting.
       {
-        building_alpha: true,
-        building_beta: true,
-        unit_alpha: true,
         unit_beta: true,
+        unit_alpha: true,
+        building_beta: true,
+        building_alpha: true,
       } satisfies ListingCustomFields,
       [
         {
