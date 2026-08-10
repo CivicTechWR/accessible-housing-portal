@@ -491,7 +491,7 @@ export async function duplicateListingGraph(input: {
     }
 
     if (input.copyPhotos) {
-      // Copy image rows in SQL so bytea payloads never leave the database.
+      // Keep bytea in Postgres; id/created_at use defaults and upload_session_id is cleared.
       await tx.execute(sql`
         insert into listing_images (
           listing_id, uploaded_by_user_id, image_url, image_data, content_type,

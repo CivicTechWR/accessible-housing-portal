@@ -224,8 +224,6 @@ export function buildDuplicateListingSummary(input: {
   }
 
   if (input.scope !== "building") {
-    // Kept out of the copy for the building-only scope, where every unit field
-    // is already blank.
     sentences.push("The unit number and availability date will be left blank.");
   }
 

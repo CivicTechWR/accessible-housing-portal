@@ -335,9 +335,6 @@ export const createDraftListingResponseSchema = z.object({
   data: listingIdDataSchema,
 });
 
-// A JSON body is required (the route declares the content type so malformed
-// requests fail with 415/400 rather than silently duplicating), but both
-// fields are optional: `{}` applies DEFAULT_LISTING_DUPLICATE_*.
 export const duplicateListingSchema = z.object({
   scope: z.enum(LISTING_DUPLICATE_SCOPE_VALUES).optional(),
   copyPhotos: z.boolean().optional(),

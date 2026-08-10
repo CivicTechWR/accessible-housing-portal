@@ -164,7 +164,6 @@ describe("buildDuplicateListingPlan", () => {
       leaseTermMonths: null,
       utilitiesIncluded: [],
       maxIncomeCents: null,
-      // Landlord-level fields still belong to the building.
       buildingType: "apartment",
       applicationInstructions: "Bring proof of income.",
     });

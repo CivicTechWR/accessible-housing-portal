@@ -107,13 +107,7 @@ export function buildDuplicateListingTitle(title: string) {
   return trimmedTitle ? `Copy of ${trimmedTitle}` : "";
 }
 
-/**
- * Feature categories that describe the building rather than the unit, used to
- * split accessibility features when only part of a listing is duplicated.
- * Categories are admin-editable, so anything unrecognized is treated as a unit
- * feature: it then travels with the unit, and the copy is a draft the lister
- * reviews before publishing.
- */
+// Admin-editable categories default to unit scope unless explicitly recognized as building scope.
 export const BUILDING_SCOPE_FEATURE_CATEGORIES = ["BUILDING AMENITIES", "ENTRY & EXTERIOR"];
 
 const buildingScopeFeatureCategoryTokens = new Set(
@@ -148,22 +142,13 @@ export function selectDuplicateCustomFields(input: {
   return selected;
 }
 
-/**
- * The values a duplicate is created from. `propertyId` is left to the caller
- * because the new property row has to be inserted before its id exists.
- */
+// propertyId is assigned after the copied property is inserted.
 export type DuplicateListingPlan = {
   property: NewProperty;
   listing: Omit<NewListing, "propertyId">;
 };
 
-/**
- * Decides what a duplicate carries over. This is the duplication policy —
- * which fields belong to the building, which belong to the unit, what is
- * deliberately reset, and who ends up owning the copy. It is pure so the rules
- * can be tested without a database; the repository decides how the resulting
- * plan is persisted.
- */
+// Keep duplication policy pure so it can be tested without a database.
 export function buildDuplicateListingPlan(input: {
   source: Listing;
   sourceProperty: Property;
@@ -172,17 +157,14 @@ export function buildDuplicateListingPlan(input: {
   scope: ListingDuplicateScope;
   customFields: ListingCustomFields;
 }): DuplicateListingPlan {
-  // "building" copies the property row and the landlord-level listing fields;
-  // "unit" copies the unit-level listing fields. Fields outside the chosen
-  // scope start blank, exactly as they do for a brand new draft.
+  // Keep blank values aligned with createDraftListing.
   const copiesBuilding = input.scope !== "unit";
   const copiesUnit = input.scope !== "building";
   const { source, sourceProperty, actorUserId } = input;
 
   return {
     property: {
-      // The copy stays under the original owner so it still shows up in
-      // their listings when an admin duplicates on their behalf.
+      // Preserve the source owner when an admin duplicates on their behalf.
       ownerUserId: sourceProperty.ownerUserId,
       name: copiesBuilding ? sourceProperty.name : "",
       street1: copiesBuilding ? sourceProperty.street1 : "",
@@ -205,8 +187,7 @@ export function buildDuplicateListingPlan(input: {
       updatedByUserId: actorUserId,
       title: input.title,
       status: "draft",
-      // Cleared rather than copied: these are the two fields that are
-      // near-certain to differ for a new unit in the same building.
+      // These unit-specific values are likely stale on a copy.
       unitNumber: null,
       availableOn: null,
       description: copiesUnit ? source.description : null,
