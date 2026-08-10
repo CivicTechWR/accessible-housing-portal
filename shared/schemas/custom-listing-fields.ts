@@ -83,7 +83,7 @@ const customListingFieldMutationSchema = z.object({
   key: nonEmptyString,
   label: nonEmptyString,
   description: z.string().trim().nullable().optional(),
-  type: customListingFieldTypeSchema,
+  type: z.literal("boolean"),
   category: nonEmptyString,
   helpText: z.string().trim().nullable().optional(),
   placeholder: z.string().trim().nullable().optional(),
@@ -93,12 +93,8 @@ const customListingFieldMutationSchema = z.object({
   sortOrder: z.number().int().min(0),
 });
 
-const booleanCustomListingFieldMutationSchema = customListingFieldMutationSchema.extend({
-  type: z.literal("boolean"),
-});
-
-export const createCustomListingFieldSchema = booleanCustomListingFieldMutationSchema;
-export const updateCustomListingFieldSchema = booleanCustomListingFieldMutationSchema
+export const createCustomListingFieldSchema = customListingFieldMutationSchema;
+export const updateCustomListingFieldSchema = customListingFieldMutationSchema
   .partial()
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required.",
