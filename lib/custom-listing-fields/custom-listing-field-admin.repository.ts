@@ -70,7 +70,7 @@ export async function createCustomListingField(input: {
   isFilterable: boolean;
   isRequired: boolean;
   sortOrder: number;
-  options?: typeof customListingFields.$inferInsert.options;
+  options: null;
   actorUserId: string;
 }) {
   const [field] = await db
@@ -87,7 +87,7 @@ export async function createCustomListingField(input: {
       isFilterable: input.isFilterable,
       isRequired: input.isRequired,
       sortOrder: input.sortOrder,
-      options: input.options ?? null,
+      options: input.options,
       createdByUserId: input.actorUserId,
       updatedByUserId: input.actorUserId,
     })

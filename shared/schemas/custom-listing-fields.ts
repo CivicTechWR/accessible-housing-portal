@@ -94,8 +94,13 @@ const customListingFieldMutationSchema = z.object({
   options: z.array(customListingFieldSelectableOptionSchema).nullable().optional(),
 });
 
-export const createCustomListingFieldSchema = customListingFieldMutationSchema;
-export const updateCustomListingFieldSchema = customListingFieldMutationSchema
+const booleanCustomListingFieldMutationSchema = customListingFieldMutationSchema.extend({
+  type: z.literal("boolean"),
+  options: z.null(),
+});
+
+export const createCustomListingFieldSchema = booleanCustomListingFieldMutationSchema;
+export const updateCustomListingFieldSchema = booleanCustomListingFieldMutationSchema
   .partial()
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required.",
