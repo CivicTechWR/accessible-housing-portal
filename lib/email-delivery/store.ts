@@ -15,6 +15,80 @@ export async function startEmailDeliveryAttempt(
   tx: EmailDeliveryTransaction,
   params: { emailType: EmailDeliveryType; sourceEntityId: string },
 ): Promise<EmailDeliveryAttemptRef> {
+  const deliveryId = await upsertEmailDelivery(tx, params);
+
+  const [latestAttempt] = await tx
+    .select({ attemptNumber: emailDeliveryAttempts.attemptNumber })
+    .from(emailDeliveryAttempts)
+    .where(eq(emailDeliveryAttempts.deliveryId, deliveryId))
+    .orderBy(desc(emailDeliveryAttempts.attemptNumber))
+    .limit(1);
+
+  const attemptNumber = (latestAttempt?.attemptNumber ?? 0) + 1;
+  const idempotencyKey = getEmailDeliveryAttemptIdempotencyKey({
+    emailType: params.emailType,
+    sourceEntityId: params.sourceEntityId,
+    attemptNumber,
+  });
+
+  const [attempt] = await tx
+    .insert(emailDeliveryAttempts)
+    .values({ deliveryId, attemptNumber, idempotencyKey })
+    .returning({ id: emailDeliveryAttempts.id });
+
+  if (!attempt) {
+    throw new Error(`Failed to open an email delivery attempt for ${params.emailType}.`);
+  }
+
+  return {
+    id: attempt.id,
+    deliveryId,
+    emailType: params.emailType,
+    attemptNumber,
+    idempotencyKey,
+  };
+}
+
+/** Adopt a legacy queued send under its original provider idempotency key. */
+export async function adoptEmailDeliveryAttempt(params: {
+  emailType: EmailDeliveryType;
+  sourceEntityId: string;
+  idempotencyKey: string;
+}): Promise<EmailDeliveryAttemptRef> {
+  return await db.transaction(async (tx) => {
+    const deliveryId = await upsertEmailDelivery(tx, params);
+
+    const [attempt] = await tx
+      .insert(emailDeliveryAttempts)
+      .values({ deliveryId, attemptNumber: 1, idempotencyKey: params.idempotencyKey })
+      .onConflictDoUpdate({
+        target: emailDeliveryAttempts.idempotencyKey,
+        set: { idempotencyKey: params.idempotencyKey },
+      })
+      .returning({
+        id: emailDeliveryAttempts.id,
+        attemptNumber: emailDeliveryAttempts.attemptNumber,
+      });
+
+    if (!attempt) {
+      throw new Error(`Failed to adopt an email delivery attempt for ${params.emailType}.`);
+    }
+
+    return {
+      id: attempt.id,
+      deliveryId,
+      emailType: params.emailType,
+      attemptNumber: attempt.attemptNumber,
+      idempotencyKey: params.idempotencyKey,
+      adopted: true,
+    };
+  });
+}
+
+async function upsertEmailDelivery(
+  tx: EmailDeliveryTransaction,
+  params: { emailType: EmailDeliveryType; sourceEntityId: string },
+) {
   const [delivery] = await tx
     .insert(emailDeliveries)
     .values({ emailType: params.emailType, sourceEntityId: params.sourceEntityId })
@@ -28,36 +102,7 @@ export async function startEmailDeliveryAttempt(
     throw new Error(`Failed to open an email delivery for ${params.emailType}.`);
   }
 
-  const [latestAttempt] = await tx
-    .select({ attemptNumber: emailDeliveryAttempts.attemptNumber })
-    .from(emailDeliveryAttempts)
-    .where(eq(emailDeliveryAttempts.deliveryId, delivery.id))
-    .orderBy(desc(emailDeliveryAttempts.attemptNumber))
-    .limit(1);
-
-  const attemptNumber = (latestAttempt?.attemptNumber ?? 0) + 1;
-  const idempotencyKey = getEmailDeliveryAttemptIdempotencyKey({
-    emailType: params.emailType,
-    sourceEntityId: params.sourceEntityId,
-    attemptNumber,
-  });
-
-  const [attempt] = await tx
-    .insert(emailDeliveryAttempts)
-    .values({ deliveryId: delivery.id, attemptNumber, idempotencyKey })
-    .returning({ id: emailDeliveryAttempts.id });
-
-  if (!attempt) {
-    throw new Error(`Failed to open an email delivery attempt for ${params.emailType}.`);
-  }
-
-  return {
-    id: attempt.id,
-    deliveryId: delivery.id,
-    emailType: params.emailType,
-    attemptNumber,
-    idempotencyKey,
-  };
+  return delivery.id;
 }
 
 export async function recordEmailDeliveryAttemptQueueJob(

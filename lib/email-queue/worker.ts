@@ -2,13 +2,14 @@ import "server-only";
 
 import type { Job, PgBoss } from "pg-boss";
 
-import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth/invite-email";
+import { sendInviteEmail } from "@/lib/auth/invite-email";
 import {
   findInviteEmailJobTarget,
   markInviteEmailFailed,
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
+import { adoptEmailDeliveryAttempt } from "@/lib/email-delivery/store";
 import {
   EMAIL_JOB_PRIORITY,
   getEmailJobMatch,
@@ -248,7 +249,9 @@ async function sendAccountInviteEmailJob(
     email: target.email,
     fullName: target.fullName,
     inviteUrl: openEmailJobSecret(data.secret),
-    idempotencyKey: getAccountInviteEmailIdempotencyKey(data.inviteId),
+    // Retries of this job resubmit under the attempt the payload was built
+    // with, so the provider treats them as the same send.
+    attempt: data.attempt ?? (await adoptLegacyAccountInviteAttempt(data.inviteId)),
     signal,
   });
 
@@ -262,6 +265,35 @@ async function sendAccountInviteEmailJob(
   await markInviteEmailSubmitted(data.inviteId);
 
   return { status: "submitted", providerMessageId: submission?.id ?? null };
+}
+
+/**
+ * Adopt an invite email job enqueued before deliveries were modelled. Such a
+ * payload has no attempt, and without this the send would fail every retry
+ * until the job dead-lettered and marked the invite failed without ever
+ * sending — a queued job can outlive a deploy by weeks through quota
+ * deferrals, so waiting for the queue to drain is not a real gate.
+ *
+ * The adopted attempt keeps the idempotency key the job was already
+ * submitting under, so if an earlier submission did land, the provider
+ * deduplicates this one instead of sending a second invite. That also means
+ * the request has to stay byte-for-byte what it was: Resend rejects a reused
+ * key whose payload changed, so an adopted attempt submits without the
+ * correlation tags this code otherwise adds. Adoption is idempotent, so the
+ * job's own retries reuse the one attempt.
+ *
+ * Removable once no pre-attempt job rows remain in the queue.
+ */
+async function adoptLegacyAccountInviteAttempt(inviteId: string) {
+  console.warn(
+    `[email-queue] Invite email job for invite ${inviteId} predates delivery attempts; adopting it into one.`,
+  );
+
+  return await adoptEmailDeliveryAttempt({
+    emailType: "account_invite",
+    sourceEntityId: inviteId,
+    idempotencyKey: `account_invite/${inviteId}`,
+  });
 }
 
 function getProviderQuotaDeferral(error: unknown) {

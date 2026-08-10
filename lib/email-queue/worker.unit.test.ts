@@ -10,6 +10,7 @@ import {
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
+import { adoptEmailDeliveryAttempt } from "@/lib/email-delivery/store";
 import { buildAccountInviteEmailJob, type EmailJobData } from "@/lib/email-queue/email-job";
 import { EMAIL_DEAD_LETTER_QUEUE, EMAIL_QUEUE } from "@/lib/email-queue/queue";
 import {
@@ -27,7 +28,6 @@ jest.mock("pg-boss", () => ({
 }));
 
 jest.mock("@/lib/auth/invite-email", () => ({
-  getAccountInviteEmailIdempotencyKey: (inviteId: string) => `account_invite/${inviteId}`,
   sendInviteEmail: jest.fn(),
 }));
 
@@ -37,6 +37,11 @@ jest.mock("@/lib/auth/invite-store", () => ({
   markInviteEmailSubmitted: jest.fn(),
 }));
 
+jest.mock("@/lib/email-delivery/store", () => ({
+  adoptEmailDeliveryAttempt: jest.fn(),
+}));
+
+const adoptEmailDeliveryAttemptMock = jest.mocked(adoptEmailDeliveryAttempt);
 const sendInviteEmailMock = jest.mocked(sendInviteEmail);
 const findInviteEmailJobTargetMock = jest.mocked(findInviteEmailJobTarget);
 const markInviteEmailFailedMock = jest.mocked(markInviteEmailFailed);
@@ -45,6 +50,20 @@ const markInviteEmailSubmittedMock = jest.mocked(markInviteEmailSubmitted);
 const ORIGINAL_ENV = process.env;
 const INVITE_ID = "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204";
 const INVITE_URL = "https://housing.example.org/invite?token=raw-one-time-token";
+const ATTEMPT = {
+  id: "0f5cce0c-92e5-4ab0-a06d-21c5a8f4ff79",
+  deliveryId: "6d5a1a9a-8f1f-4d1e-9a2e-3b0f5a2c7d11",
+  emailType: "account_invite",
+  attemptNumber: 1,
+  idempotencyKey: `account_invite/${INVITE_ID}/attempt/1`,
+} as const;
+/** What adopting a pre-attempt job payload yields: the legacy key it already used. */
+const ADOPTED_ATTEMPT = {
+  ...ATTEMPT,
+  id: "9b1f3d2a-1c4e-4f5a-8d6b-7e8f9a0b1c2d",
+  idempotencyKey: `account_invite/${INVITE_ID}`,
+  adopted: true,
+} as const;
 
 const executeSqlMock = jest.fn<(text: string, values?: unknown[]) => Promise<{ rows: never[] }>>();
 const sendAfterMock =
@@ -65,7 +84,11 @@ function buildJob(signal: AbortSignal = new AbortController().signal): Job<Email
   return {
     id: "5a2da32a-cc55-4b27-bcb6-7e0bbf0db5c6",
     name: EMAIL_QUEUE,
-    data: buildAccountInviteEmailJob({ inviteId: INVITE_ID, inviteUrl: INVITE_URL }),
+    data: buildAccountInviteEmailJob({
+      inviteId: INVITE_ID,
+      inviteUrl: INVITE_URL,
+      attempt: ATTEMPT,
+    }),
     signal,
   } as Job<EmailJobData>;
 }
@@ -107,6 +130,7 @@ beforeEach(() => {
   sendAfterMock.mockResolvedValue("b3398ac1-43cf-4e54-92ee-9f7e2a4e7f6a");
   findInviteEmailJobTargetMock.mockResolvedValue(buildInviteTarget());
   sendInviteEmailMock.mockResolvedValue({ id: "email_123" });
+  adoptEmailDeliveryAttemptMock.mockResolvedValue(ADOPTED_ATTEMPT);
 });
 
 afterEach(() => {
@@ -124,10 +148,30 @@ describe("processEmailJob", () => {
       email: "tenant@example.org",
       fullName: "Tenant User",
       inviteUrl: INVITE_URL,
-      idempotencyKey: `account_invite/${INVITE_ID}`,
+      attempt: ATTEMPT,
       signal: job.signal,
     });
     expect(markInviteEmailSubmittedMock).toHaveBeenCalledWith(INVITE_ID);
+    expect(adoptEmailDeliveryAttemptMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "submitted", providerMessageId: "email_123" });
+  });
+
+  it("adopts a job enqueued before attempts existed instead of failing the invite", async () => {
+    const job = buildJob();
+    delete (job.data as { attempt?: unknown }).attempt;
+
+    const result = await processEmailJob(boss, job);
+
+    // Adopted under the key the job was already submitting with, so a send
+    // that already landed is deduplicated by the provider rather than repeated.
+    expect(adoptEmailDeliveryAttemptMock).toHaveBeenCalledWith({
+      emailType: "account_invite",
+      sourceEntityId: INVITE_ID,
+      idempotencyKey: `account_invite/${INVITE_ID}`,
+    });
+    expect(sendInviteEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({ attempt: ADOPTED_ATTEMPT }),
+    );
     expect(result).toEqual({ status: "submitted", providerMessageId: "email_123" });
   });
 

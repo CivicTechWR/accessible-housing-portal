@@ -1,7 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Resend } from "resend";
 
+import type { EmailDeliveryAttemptRef } from "@/lib/email-delivery/attempt";
+import { recordEmailDeliveryAttemptSubmission } from "@/lib/email-delivery/store";
 import { EmailSendError, sendEmail } from "@/lib/email";
+
+jest.mock("@/lib/email-delivery/store", () => ({
+  recordEmailDeliveryAttemptSubmission: jest.fn(),
+}));
+
+const recordSubmissionMock = jest.mocked(recordEmailDeliveryAttemptSubmission);
+
+const ATTEMPT: EmailDeliveryAttemptRef = {
+  id: "0f5cce0c-92e5-4ab0-a06d-21c5a8f4ff79",
+  deliveryId: "6d5a1a9a-8f1f-4d1e-9a2e-3b0f5a2c7d11",
+  emailType: "account_invite",
+  attemptNumber: 1,
+  idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204/attempt/1",
+};
 
 const sendMock = jest.fn<
   (...args: unknown[]) => Promise<{
@@ -32,6 +48,7 @@ describe("sendEmail", () => {
     };
     ResendMock.mockClear();
     sendMock.mockReset();
+    recordSubmissionMock.mockReset();
     sendMock.mockResolvedValue({ data: { id: "email_123" }, error: null });
   });
 
@@ -39,13 +56,13 @@ describe("sendEmail", () => {
     process.env = ORIGINAL_ENV;
   });
 
-  it("sends through Resend with the configured sender and the idempotency key in provider options", async () => {
+  it("submits under the attempt's idempotency key with non-sensitive correlation tags", async () => {
     const result = await sendEmail({
       to: "tenant@example.org",
       subject: "Subject line",
       text: "Plain text body",
       html: "<p>HTML body</p>",
-      idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+      attempt: ATTEMPT,
     });
 
     expect(ResendMock).toHaveBeenCalledWith("re_test_key");
@@ -56,12 +73,50 @@ describe("sendEmail", () => {
         subject: "Subject line",
         text: "Plain text body",
         html: "<p>HTML body</p>",
+        tags: [
+          { name: "email_type", value: "account_invite" },
+          { name: "delivery_id", value: ATTEMPT.deliveryId },
+          { name: "attempt_id", value: ATTEMPT.id },
+        ],
       },
       {
-        idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+        idempotencyKey: ATTEMPT.idempotencyKey,
       },
     );
     expect(result).toEqual({ id: "email_123" });
+  });
+
+  it("submits an adopted attempt untagged, reproducing the payload its key was first used with", async () => {
+    await sendEmail({
+      to: "tenant@example.org",
+      subject: "Subject line",
+      text: "Plain text body",
+      html: "<p>HTML body</p>",
+      attempt: { ...ATTEMPT, idempotencyKey: "account_invite/legacy", adopted: true },
+    });
+
+    // Resend rejects a reused idempotency key whose payload changed
+    // (invalid_idempotent_request), so adding tags here would fail the send
+    // rather than return the original submission.
+    const [payload, options] = sendMock.mock.calls[0] as [Record<string, unknown>, unknown];
+    expect(payload.tags).toBeUndefined();
+    expect(JSON.parse(JSON.stringify(payload))).not.toHaveProperty("tags");
+    expect(options).toEqual({ idempotencyKey: "account_invite/legacy" });
+  });
+
+  it("persists the Resend email id on the attempt once the provider accepts the send", async () => {
+    await sendEmail({
+      to: "tenant@example.org",
+      subject: "Subject line",
+      text: "Plain text body",
+      html: "<p>HTML body</p>",
+      attempt: ATTEMPT,
+    });
+
+    expect(recordSubmissionMock).toHaveBeenCalledWith({
+      attemptId: ATTEMPT.id,
+      providerEmailId: "email_123",
+    });
   });
 
   it("surfaces provider errors to the caller", async () => {
@@ -76,7 +131,7 @@ describe("sendEmail", () => {
         subject: "Subject line",
         text: "Plain text body",
         html: "<p>HTML body</p>",
-        idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+        attempt: ATTEMPT,
       }),
     ).rejects.toThrow("Daily quota exceeded");
   });
@@ -93,7 +148,7 @@ describe("sendEmail", () => {
       subject: "Subject line",
       text: "Plain text body",
       html: "<p>HTML body</p>",
-      idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+      attempt: ATTEMPT,
     }).catch((thrown: unknown) => thrown);
 
     expect(error).toBeInstanceOf(EmailSendError);
@@ -116,7 +171,7 @@ describe("sendEmail", () => {
       subject: "Subject line",
       text: "Plain text body",
       html: "<p>HTML body</p>",
-      idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+      attempt: ATTEMPT,
     }).catch((thrown: unknown) => thrown)) as EmailSendError;
 
     expect(error.retryAfterSeconds).toBeGreaterThanOrEqual(85);
@@ -133,7 +188,7 @@ describe("sendEmail", () => {
         subject: "Subject line",
         text: "Plain text body",
         html: "<p>HTML body</p>",
-        idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+        attempt: ATTEMPT,
         signal: abortController.signal,
       }),
     ).rejects.toMatchObject({ name: "AbortError" });
@@ -150,7 +205,7 @@ describe("sendEmail", () => {
       subject: "Subject line",
       text: "Plain text body",
       html: "<p>HTML body</p>",
-      idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+      attempt: ATTEMPT,
       signal: abortController.signal,
     });
     abortController.abort();
@@ -172,7 +227,7 @@ describe("sendEmail", () => {
         subject: "Subject line",
         text: "Plain text body",
         html: "<p>HTML body</p>",
-        idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+        attempt: ATTEMPT,
         signal: abortController.signal,
       }),
     ).rejects.toBe(abortReason);

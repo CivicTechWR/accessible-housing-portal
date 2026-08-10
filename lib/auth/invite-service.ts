@@ -7,6 +7,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { lower, userInvites, users, type UserRole } from "@/db/schema";
 import { createOpaqueToken, hashOpaqueToken } from "@/lib/auth/token";
+import { startEmailDeliveryAttempt } from "@/lib/email-delivery/store";
 import { buildAccountInviteEmailJob } from "@/lib/email-queue/email-job";
 import { enqueueEmail } from "@/lib/email-queue/queue";
 
@@ -89,11 +90,21 @@ export async function createInvite(params: {
       throw new Error("Failed to create invite.");
     }
 
-    // Enqueue in the same transaction as the invite so a committed invite can
-    // never lose its email job. The email is queued, not sent: the worker
-    // submits it to the provider and then sets the legacy sentAt field.
+    // Open the delivery attempt and enqueue in the same transaction as the
+    // invite so a committed invite can never lose its email job, and the job
+    // can never reference an attempt that was rolled back. The email is
+    // queued, not sent: the worker submits it to the provider and then sets
+    // the legacy sentAt field.
     if (params.sendInviteEmail) {
-      await enqueueEmail(tx, buildAccountInviteEmailJob({ inviteId: invite.id, inviteUrl }));
+      const attempt = await startEmailDeliveryAttempt(tx, {
+        emailType: "account_invite",
+        sourceEntityId: invite.id,
+      });
+
+      await enqueueEmail(
+        tx,
+        buildAccountInviteEmailJob({ inviteId: invite.id, inviteUrl, attempt }),
+      );
     }
 
     return {

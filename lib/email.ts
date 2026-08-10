@@ -2,12 +2,21 @@ import "server-only";
 
 import { Resend, type ErrorResponse } from "resend";
 
+import {
+  getEmailDeliveryAttemptTags,
+  type EmailDeliveryAttemptRef,
+} from "@/lib/email-delivery/attempt";
+import { recordEmailDeliveryAttemptSubmission } from "@/lib/email-delivery/store";
+
 export type TransactionalEmailSendOptions = {
   /**
-   * Stable key for the logical email, such as account_invite/<inviteId>.
-   * Do not use a random per-attempt value or provider retries can duplicate sends.
+   * The delivery attempt this send submits, opened with
+   * startEmailDeliveryAttempt. It supplies the provider idempotency key and
+   * the correlation tags, and it is the record the Resend email id is written
+   * back to. Retrying a send must reuse its attempt so the provider
+   * deduplicates it; only a genuine resend opens a new one.
    */
-  idempotencyKey: string;
+  attempt: EmailDeliveryAttemptRef;
 };
 
 export type SendEmailParams = {
@@ -63,9 +72,10 @@ export async function sendEmail(params: SendEmailParams) {
         subject: params.subject,
         text: params.text,
         html: params.html,
+        tags: getEmailDeliveryAttemptTags(params.attempt),
       },
       {
-        idempotencyKey: params.idempotencyKey,
+        idempotencyKey: params.attempt.idempotencyKey,
       },
     ),
     params.signal,
@@ -78,6 +88,16 @@ export async function sendEmail(params: SendEmailParams) {
       retryAfterSeconds: parseRetryAfterSeconds(result.headers),
     });
   }
+
+  // Every sender records its submission here rather than at its own boundary,
+  // so the Resend email id that later delivery outcomes are correlated by is
+  // persisted no matter which path submitted the email. If this write fails
+  // the caller retries under the same idempotency key, and the provider
+  // returns the original submission to be recorded then.
+  await recordEmailDeliveryAttemptSubmission({
+    attemptId: params.attempt.id,
+    providerEmailId: result.data?.id ?? null,
+  });
 
   return result.data;
 }

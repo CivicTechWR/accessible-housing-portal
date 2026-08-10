@@ -2,10 +2,22 @@ import "server-only";
 
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from "node:crypto";
 
-import { getAccountInviteEmailIdempotencyKey } from "@/lib/auth/invite-email";
+import type { EmailDeliveryAttemptRef } from "@/lib/email-delivery/attempt";
 
 /** Fields shared by every email job payload. */
 type EmailJobBase = {
+  /**
+   * The delivery attempt this job submits, opened alongside the record the
+   * email is about. Every job row carrying this attempt — the original, its
+   * quota-deferral replacements, its retries, and the dead-letter copy — sends
+   * under the attempt's one idempotency key, so only a genuine resend (a new
+   * attempt) can deliver the message again.
+   *
+   * Optional only because job rows enqueued before deliveries were modelled
+   * have none; the worker adopts those into an attempt. Everything enqueued
+   * from here on sets it.
+   */
+  attempt?: EmailDeliveryAttemptRef;
   /**
    * Times this logical email has been re-enqueued by a quota/rate-limit
    * deferral. The worker caps the chain (MAX_EMAIL_JOB_DEFERRALS) so a
@@ -46,22 +58,34 @@ export const EMAIL_JOB_PRIORITY = {
 } as const satisfies Record<EmailJobType, number>;
 
 /**
- * Stable key for the logical email, shared with the Resend idempotency key so
- * provider-side dedupe and queue-side dedupe agree on identity.
+ * Stable key for the attempt this job submits, shared with the Resend
+ * idempotency key so provider-side dedupe and queue-side dedupe agree on
+ * identity.
  */
 export function getEmailJobIdempotencyKey(data: EmailJobData): string {
-  switch (data.type) {
-    case "account_invite":
-      return getAccountInviteEmailIdempotencyKey(data.inviteId);
-  }
+  return requireEmailJobAttempt(data).idempotencyKey;
 }
 
 /**
- * Deterministic job id (UUID) derived from the logical email key, so enqueueing
- * the same logical email twice dedupes via primary-key conflict for as long as
- * the first job row is retained — unlike singletonKey, which only dedupes
- * queued/active jobs. The Resend idempotency key remains the provider-side
- * guarantee against double sends.
+ * The attempt a job submits under. Absent only on job rows enqueued before
+ * deliveries were modelled; those are already in the queue and can only be
+ * adopted by the worker, never re-derived here.
+ */
+export function requireEmailJobAttempt(data: EmailJobData): EmailDeliveryAttemptRef {
+  if (!data.attempt) {
+    throw new Error(`Email job for ${data.type} has no delivery attempt.`);
+  }
+
+  return data.attempt;
+}
+
+/**
+ * Deterministic job id (UUID) derived from the attempt key, so enqueueing the
+ * same attempt twice dedupes via primary-key conflict for as long as the first
+ * job row is retained — unlike singletonKey, which only dedupes queued/active
+ * jobs. A genuine resend is a different attempt and therefore a different job
+ * id, so it is not mistaken for a duplicate. The Resend idempotency key
+ * remains the provider-side guarantee against double sends.
  */
 export function getEmailJobId(data: EmailJobData): string {
   const hex = createHash("sha256").update(getEmailJobIdempotencyKey(data)).digest("hex");
@@ -86,10 +110,12 @@ export function getEmailJobMatch(data: EmailJobData): Record<string, string> {
 export function buildAccountInviteEmailJob(params: {
   inviteId: string;
   inviteUrl: string;
+  attempt: EmailDeliveryAttemptRef;
 }): AccountInviteEmailJobData {
   return {
     type: "account_invite",
     inviteId: params.inviteId,
+    attempt: params.attempt,
     secret: sealEmailJobSecret(params.inviteUrl),
   };
 }

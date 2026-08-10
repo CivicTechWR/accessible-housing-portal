@@ -3,6 +3,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 
+import type { EmailDeliveryAttemptRef } from "@/lib/email-delivery/attempt";
 import {
   buildAccountInviteEmailJob,
   getEmailJobId,
@@ -71,41 +72,67 @@ describe("sealEmailJobSecret/openEmailJobSecret", () => {
   });
 });
 
+function buildAttempt(attemptNumber: number): EmailDeliveryAttemptRef {
+  return {
+    id: `attempt-${attemptNumber}`,
+    deliveryId: "6d5a1a9a-8f1f-4d1e-9a2e-3b0f5a2c7d11",
+    emailType: "account_invite",
+    attemptNumber,
+    idempotencyKey: `account_invite/${INVITE_ID}/attempt/${attemptNumber}`,
+  };
+}
+
 describe("getEmailJobIdempotencyKey", () => {
-  it("matches the Resend idempotency key for the logical email", () => {
+  it("uses the attempt's key, so the queue and Resend dedupe on the same identity", () => {
     expect(
-      getEmailJobIdempotencyKey({ type: "account_invite", inviteId: INVITE_ID, secret: "x" }),
-    ).toBe(`account_invite/${INVITE_ID}`);
+      getEmailJobIdempotencyKey({
+        type: "account_invite",
+        inviteId: INVITE_ID,
+        attempt: buildAttempt(1),
+        secret: "x",
+      }),
+    ).toBe(`account_invite/${INVITE_ID}/attempt/1`);
   });
 });
 
 describe("getEmailJobId", () => {
-  it("derives a stable UUID from the logical email key", () => {
-    const data = { type: "account_invite", inviteId: INVITE_ID, secret: "x" } as const;
+  it("derives a stable UUID from the attempt key, so re-enqueueing an attempt dedupes", () => {
+    const data = {
+      type: "account_invite",
+      inviteId: INVITE_ID,
+      attempt: buildAttempt(1),
+      secret: "x",
+    } as const;
     const jobId = getEmailJobId(data);
 
     expect(jobId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(getEmailJobId({ ...data, secret: "a-different-sealed-secret" })).toBe(jobId);
   });
 
-  it("differs across logical emails", () => {
-    const jobId = getEmailJobId({ type: "account_invite", inviteId: INVITE_ID, secret: "x" });
-    const otherJobId = getEmailJobId({
+  it("gives a resend of the same invite a different job id", () => {
+    const data = {
       type: "account_invite",
-      inviteId: "0f5cce0c-92e5-4ab0-a06d-21c5a8f4ff79",
+      inviteId: INVITE_ID,
+      attempt: buildAttempt(1),
       secret: "x",
-    });
+    } as const;
 
-    expect(otherJobId).not.toBe(jobId);
+    expect(getEmailJobId({ ...data, attempt: buildAttempt(2) })).not.toBe(getEmailJobId(data));
   });
 });
 
 describe("buildAccountInviteEmailJob", () => {
-  it("stores only the invite reference and a sealed secret", () => {
-    const job = buildAccountInviteEmailJob({ inviteId: INVITE_ID, inviteUrl: INVITE_URL });
+  it("stores only the invite reference, the attempt, and a sealed secret", () => {
+    const attempt = buildAttempt(1);
+    const job = buildAccountInviteEmailJob({
+      inviteId: INVITE_ID,
+      inviteUrl: INVITE_URL,
+      attempt,
+    });
 
-    expect(Object.keys(job).sort()).toEqual(["inviteId", "secret", "type"]);
+    expect(Object.keys(job).sort()).toEqual(["attempt", "inviteId", "secret", "type"]);
     expect(job.inviteId).toBe(INVITE_ID);
+    expect(job.attempt).toEqual(attempt);
     expect(JSON.stringify(job)).not.toContain("raw-one-time-token");
     expect(openEmailJobSecret(job.secret)).toBe(INVITE_URL);
   });
