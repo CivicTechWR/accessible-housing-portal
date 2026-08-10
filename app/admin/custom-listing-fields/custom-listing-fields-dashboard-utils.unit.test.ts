@@ -234,7 +234,6 @@ describe("custom listing field dashboard utilities", () => {
       publicOnly: true,
       filterableOnly: true,
       required: false,
-      options: null,
     });
   });
 

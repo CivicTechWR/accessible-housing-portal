@@ -91,12 +91,10 @@ const customListingFieldMutationSchema = z.object({
   filterableOnly: z.boolean(),
   required: z.boolean(),
   sortOrder: z.number().int().min(0),
-  options: z.array(customListingFieldSelectableOptionSchema).nullable().optional(),
 });
 
 const booleanCustomListingFieldMutationSchema = customListingFieldMutationSchema.extend({
   type: z.literal("boolean"),
-  options: z.null(),
 });
 
 export const createCustomListingFieldSchema = booleanCustomListingFieldMutationSchema;

@@ -152,7 +152,6 @@ export async function createAdminCustomListingFieldService(
     isFilterable: input.filterableOnly,
     isRequired: input.required,
     sortOrder: input.sortOrder,
-    options: input.options,
     actorUserId: actorResult.value.actor.userId,
   });
 
@@ -209,7 +208,6 @@ export async function updateAdminCustomListingFieldByIdService(input: {
     isFilterable: input.payload.filterableOnly,
     isRequired: input.payload.required,
     sortOrder: input.payload.sortOrder,
-    options: input.payload.options,
     actorUserId: actorResult.value.actor.userId,
   });
 

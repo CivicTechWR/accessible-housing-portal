@@ -55,7 +55,6 @@ export function toCreateFieldDialogPayload(
     publicOnly: values.publicOnly,
     filterableOnly: values.filterableOnly,
     required: values.required,
-    options: null,
   };
 }
 

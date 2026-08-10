@@ -70,7 +70,6 @@ export async function createCustomListingField(input: {
   isFilterable: boolean;
   isRequired: boolean;
   sortOrder: number;
-  options: null;
   actorUserId: string;
 }) {
   const [field] = await db
@@ -87,7 +86,7 @@ export async function createCustomListingField(input: {
       isFilterable: input.isFilterable,
       isRequired: input.isRequired,
       sortOrder: input.sortOrder,
-      options: input.options,
+      options: null,
       createdByUserId: input.actorUserId,
       updatedByUserId: input.actorUserId,
     })
@@ -109,7 +108,6 @@ export async function updateCustomListingFieldById(input: {
   isFilterable?: boolean;
   isRequired?: boolean;
   sortOrder?: number;
-  options?: typeof customListingFields.$inferInsert.options;
   actorUserId: string;
 }) {
   const [field] = await db
@@ -126,7 +124,6 @@ export async function updateCustomListingFieldById(input: {
       isFilterable: input.isFilterable,
       isRequired: input.isRequired,
       sortOrder: input.sortOrder,
-      options: input.options,
       updatedByUserId: input.actorUserId,
     })
     .where(eq(customListingFields.id, input.fieldId))
