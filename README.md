@@ -115,7 +115,6 @@ test/                 Test-only mocks and helpers
 
 ## Contributing
 
-Contributions are welcomed. This repository does not currently include separate `CONTRIBUTING.md` or `CODE_OF_CONDUCT.md` files, so use the workflow below unless project maintainers provide more specific guidance.
 
 ### Choosing an Issue
 
