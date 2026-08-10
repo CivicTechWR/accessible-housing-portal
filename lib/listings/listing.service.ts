@@ -62,10 +62,6 @@ import {
   type ListingActor,
 } from "@/lib/policies/listing-policy";
 import { getOptionalSession as getAuthSession } from "@/lib/auth/session";
-import {
-  DEFAULT_LISTING_DUPLICATE_COPY_PHOTOS,
-  DEFAULT_LISTING_DUPLICATE_SCOPE,
-} from "@/shared/schemas/listings";
 import type {
   CreateListingInput,
   CreateListingResponse,
@@ -337,7 +333,7 @@ export async function createDraftListingService(): Promise<
 
 export async function duplicateListingByIdService(
   listingId: ListingIdParam,
-  input: DuplicateListingInput = {},
+  input: DuplicateListingInput,
 ): Promise<DomainResult<DuplicateListingResponse>> {
   const actorResult = await requireListingWriteActor();
 
@@ -363,13 +359,13 @@ export async function duplicateListingByIdService(
     return fail("forbidden", "Forbidden");
   }
 
-  const scope = input.scope ?? DEFAULT_LISTING_DUPLICATE_SCOPE;
+  const { scope, copyPhotos } = input;
   const duplicatedListing = await duplicateListingGraph({
     listingId,
     actorUserId: actorResult.value.actor.userId,
     title: buildDuplicateListingTitle(listing.title),
     scope,
-    copyPhotos: input.copyPhotos ?? DEFAULT_LISTING_DUPLICATE_COPY_PHOTOS,
+    copyPhotos,
     customFields: await resolveDuplicateCustomFields(listing.customFields, scope),
   });
 

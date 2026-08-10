@@ -336,8 +336,8 @@ export const createDraftListingResponseSchema = z.object({
 });
 
 export const duplicateListingSchema = z.object({
-  scope: z.enum(LISTING_DUPLICATE_SCOPE_VALUES).optional(),
-  copyPhotos: z.boolean().optional(),
+  scope: z.enum(LISTING_DUPLICATE_SCOPE_VALUES),
+  copyPhotos: z.boolean(),
 });
 
 export const duplicateListingResponseSchema = z.object({
