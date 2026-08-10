@@ -46,6 +46,10 @@ export const customListingFieldTypeEnum = pgEnum("listing_field_type", [
   "multi_select",
   "date",
 ]);
+export const customListingFieldApplicabilityEnum = pgEnum("listing_field_applicability", [
+  "building",
+  "unit",
+]);
 
 export type SavedSearchFilters = {
   bathrooms?: number | null;
@@ -78,6 +82,8 @@ export type UserStatus = (typeof userStatusEnum.enumValues)[number];
 export type ListingStatus = (typeof listingStatusEnum.enumValues)[number];
 export type ListingBuildingType = (typeof listingBuildingTypeEnum.enumValues)[number];
 export type UtilityIncluded = (typeof utilityIncludedEnum.enumValues)[number];
+export type CustomListingFieldApplicability =
+  (typeof customListingFieldApplicabilityEnum.enumValues)[number];
 
 const byteaBuffer = customType<{ data: Buffer; driverData: Uint8Array }>({
   dataType() {
@@ -320,6 +326,7 @@ export const customListingFields = pgTable(
     description: text("description"),
     fieldType: customListingFieldTypeEnum("field_type").notNull(),
     category: text("category").notNull(),
+    appliesTo: customListingFieldApplicabilityEnum("applies_to").notNull(),
     helpText: text("help_text"),
     placeholder: text("placeholder"),
     isPublic: boolean("is_public").notNull(),

@@ -150,6 +150,8 @@ Field definition behavior:
 
 - `key` is unique and should be treated as stable once listings use it.
 - `category` is normalized to uppercase in admin services.
+- `appliesTo` is required, accepts `building` or `unit`, and remains independent of category.
+  Changes affect future listing duplications rather than copies that already exist.
 - `publicOnly` maps to `is_public`.
 - `filterableOnly` maps to `is_filterable`.
 - `required` maps to `is_required`.

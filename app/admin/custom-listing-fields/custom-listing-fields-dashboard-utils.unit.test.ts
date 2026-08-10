@@ -34,6 +34,7 @@ const baseField: AdminCustomListingField = {
   description: null,
   type: "boolean",
   category: "BUILDING AMENITIES",
+  appliesTo: "building",
   helpText: null,
   placeholder: null,
   publicOnly: true,

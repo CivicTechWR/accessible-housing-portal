@@ -12,6 +12,7 @@ export const adminCustomListingFieldColumns = {
   description: customListingFields.description,
   fieldType: customListingFields.fieldType,
   category: customListingFields.category,
+  appliesTo: customListingFields.appliesTo,
   helpText: customListingFields.helpText,
   placeholder: customListingFields.placeholder,
   isPublic: customListingFields.isPublic,
@@ -64,6 +65,7 @@ export async function createCustomListingField(input: {
   description?: string | null;
   fieldType: typeof customListingFields.$inferInsert.fieldType;
   category: string;
+  appliesTo: typeof customListingFields.$inferInsert.appliesTo;
   helpText?: string | null;
   placeholder?: string | null;
   isPublic: boolean;
@@ -81,6 +83,7 @@ export async function createCustomListingField(input: {
       description: input.description ?? null,
       fieldType: input.fieldType,
       category: input.category,
+      appliesTo: input.appliesTo,
       helpText: input.helpText ?? null,
       placeholder: input.placeholder ?? null,
       isPublic: input.isPublic,
@@ -103,6 +106,7 @@ export async function updateCustomListingFieldById(input: {
   description?: string | null;
   fieldType?: typeof customListingFields.$inferInsert.fieldType;
   category?: string;
+  appliesTo?: typeof customListingFields.$inferInsert.appliesTo;
   helpText?: string | null;
   placeholder?: string | null;
   isPublic?: boolean;
@@ -120,6 +124,7 @@ export async function updateCustomListingFieldById(input: {
       description: input.description,
       fieldType: input.fieldType,
       category: input.category,
+      appliesTo: input.appliesTo,
       helpText: input.helpText,
       placeholder: input.placeholder,
       isPublic: input.isPublic,

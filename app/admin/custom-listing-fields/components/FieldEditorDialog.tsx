@@ -8,6 +8,7 @@ import {
   createFieldDialogSchema,
   getDefaultCreateFieldDialogValues,
   toCreateFieldDialogPayload,
+  type CreateFieldDialogInput,
   type CreateFieldDialogValues,
 } from "../custom-listing-fields-dashboard-forms";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export function FieldEditorDialog({
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const discardReturnFocusRef = useRef<HTMLElement | null>(null);
   const normalizedCategories = getUniqueCategoryOptions(categories);
-  const form = useForm<CreateFieldDialogValues>({
+  const form = useForm<CreateFieldDialogInput, unknown, CreateFieldDialogValues>({
     resolver: zodResolver(createFieldDialogSchema),
     defaultValues: getDefaultCreateFieldDialogValues(state),
   });
@@ -246,6 +247,32 @@ export function FieldEditorDialog({
 
             <FormField
               control={form.control}
+              name="appliesTo"
+              render={({ field }) => (
+                <FormItem className="space-y-1.5">
+                  <FormLabel className="text-xs font-medium text-foreground">
+                    Applicability *
+                  </FormLabel>
+                  <FormDescription className="text-xs">
+                    Is this information shared across units in the building, or specific to one
+                    unit?
+                  </FormDescription>
+                  <FormControl>
+                    <NativeSelect {...field} disabled={isSaving} required>
+                      <option value="" disabled>
+                        Select applicability
+                      </option>
+                      <option value="building">Building — shared across units</option>
+                      <option value="unit">Unit — specific to one unit</option>
+                    </NativeSelect>
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="publicOnly"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
@@ -362,7 +389,7 @@ function FormTextArea({
   helpText,
   disabled,
 }: {
-  control: Control<CreateFieldDialogValues>;
+  control: Control<CreateFieldDialogInput, unknown, CreateFieldDialogValues>;
   name: "description" | "helpText";
   label: string;
   helpText: string;
@@ -393,7 +420,7 @@ function CheckboxFieldControl({
   helpText,
   disabled,
 }: {
-  control: Control<CreateFieldDialogValues>;
+  control: Control<CreateFieldDialogInput, unknown, CreateFieldDialogValues>;
   name: "filterableOnly" | "required";
   label: string;
   helpText: string;

@@ -57,6 +57,13 @@
       "when": 1781250070671,
       "tag": "20260612074110_user_invites_email_delivery_status",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786379640367,
+      "tag": "20260810163400_curly_captain_universe",
+      "breakpoints": true
     }
   ]
 }
