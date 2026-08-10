@@ -236,7 +236,7 @@ const listingPayloadSchema = z.object({
   imageUploadSessionId: z.uuid("Invalid image upload session id.").optional(),
   buildingType: listingBuildingTypeSchema,
   leaseTermMonths: listingLeaseTermMonthsSchema,
-  utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
+  utilitiesIncluded: z.array(utilityIncludedSchema),
 });
 
 export const createListingSchema = listingPayloadSchema;
