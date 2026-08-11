@@ -23,17 +23,18 @@ export function HomeHeroSection() {
 
       <div className="relative z-10 w-full px-6 pb-10 pt-24 sm:px-10 sm:pb-14 lg:px-16">
         <p className="max-w-2xl text-xs font-semibold uppercase tracking-[0.35em] text-slate-700 drop-shadow-[0_2px_10px_rgba(255,255,255,0.4)]">
-          Waterloo Region Accessible Housing
+          A trusted accessible housing network
         </p>
         <div className="max-w-2xl pt-3 text-slate-900">
           <h1
             id="page-1-title"
             className="mt-2 text-4xl font-semibold tracking-tight drop-shadow-[0_2px_14px_rgba(255,255,255,0.5)] sm:text-6xl"
           >
-            Find accessible housing with less friction
+            Help accessible homes reach the people who need them
           </h1>
           <p className="mt-4 max-w-xl text-base text-slate-700 drop-shadow-[0_2px_10px_rgba(255,255,255,0.35)] sm:text-lg">
-            Connecting affordable, accessible housing seekers with the providers who serve them.
+            Connecting housing providers with organizations and social workers helping clients find
+            affordable homes that meet their access needs.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -41,7 +42,7 @@ export function HomeHeroSection() {
               href="#page-2"
               className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
             >
-              About the site
+              How it works
             </a>
             <a
               href="#page-3"

@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WR Housing Bridge — Connect with affordable housing",
-  description: "Connecting social workers with affordable housing providers in Waterloo Region.",
+  title: "WR Housing Bridge — Accessible homes for people who need them",
+  description:
+    "Connecting housing providers with organizations and social workers helping clients find affordable, accessible homes in Waterloo Region.",
 };
 
 export default function RootLayout({

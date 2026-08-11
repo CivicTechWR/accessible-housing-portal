@@ -1,7 +1,9 @@
 import Image from "next/image";
 import socialImage from "../../assets/socialworkers.jpg";
 import providerImage from "../../assets/housingProviders.jpg";
-import joinImage from "../../assets/joinimage.jpg";
+
+const accessRequestHref =
+  "mailto:example@example.com?subject=Accessible%20Housing%20Bridge%20Access";
 
 export function HomeInfoSection() {
   return (
@@ -17,98 +19,82 @@ export function HomeInfoSection() {
             About this website
           </p>
           <h2 id="page-2-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
-            What is Accessibility Housing
+            Accessible homes should reach people who need them
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-8 text-[#18324a]/75 sm:text-lg">
-            Accessible Housing Bridge is a housing listings platform purpose-built for affordable
-            and accessible rentals in the Kitchener-Waterloo region.
+            Affordable housing providers often receive more applications than they can accommodate.
+            In that rush, homes with accessibility features may not reach the people who rely on
+            them. Accessible Housing Bridge creates a trusted connection between providers and the
+            organizations and social workers supporting clients with specific, often non-negotiable
+            access needs.
           </p>
         </header>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
           <article
             aria-labelledby="page-2-card-1-title"
-            className="group overflow-hidden rounded-[2rem] border border-sky-100 bg-[#eaf4fb] shadow-[0_18px_50px_rgba(56,116,166,0.12)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(56,116,166,0.18)]"
+            className="group flex flex-col overflow-hidden rounded-[2rem] border border-sky-100 bg-[#eaf4fb] shadow-[0_18px_50px_rgba(56,116,166,0.12)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(56,116,166,0.18)]"
           >
             <div className="relative h-56 overflow-hidden">
               <Image
                 src={socialImage}
                 alt="Accessible housing building with a clear entryway and barrier-free approach"
                 fill
-                sizes="(max-width: 768px) 100vw, 33vw"
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover object-center brightness-95 saturate-80 transition-transform duration-500 group-hover:scale-[1.03]"
               />
               <div className="absolute inset-0 bg-linear-to-t from-[#cfe4f5]/86 via-[#cfe4f5]/16 to-transparent" />
             </div>
-            <div className="space-y-3 p-6">
+            <div className="flex flex-1 flex-col gap-3 p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">
-                Trust the listings
+                Find the right fit
               </p>
               <h3 id="page-2-card-1-title" className="text-xl font-semibold text-[#18324a]">
-                For House Seekers
+                For Organizations and Social Workers
               </h3>
-              <p className="text-sm leading-7 text-[#18324a]/72">
-                If you help clients find affordable or accessible housing, you know how much time
-                gets lost chasing incomplete listings. We make that work faster and more reliable.
+              <p className="flex-1 text-sm leading-7 text-[#18324a]/72">
+                Search affordable rentals using detailed accessibility information, so you can focus
+                on homes that meet each client’s needs and avoid unsuitable applications.
               </p>
+              <a
+                href={accessRequestHref}
+                className="mt-auto inline-flex self-start rounded-full bg-[#18324a] px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+              >
+                Request access
+              </a>
             </div>
           </article>
 
           <article
             aria-labelledby="page-2-card-2-title"
-            className="group overflow-hidden rounded-[2rem] border border-sky-100 bg-[#eaf4fb] shadow-[0_18px_50px_rgba(56,116,166,0.12)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(56,116,166,0.18)]"
+            className="group flex flex-col overflow-hidden rounded-[2rem] border border-sky-100 bg-[#eaf4fb] shadow-[0_18px_50px_rgba(56,116,166,0.12)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(56,116,166,0.18)]"
           >
             <div className="relative h-56 overflow-hidden">
               <Image
                 src={providerImage}
                 alt="Housing provider showcasing accessible units"
                 fill
-                sizes="(max-width: 768px) 100vw, 33vw"
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover object-center brightness-95 saturate-80 transition-transform duration-500 group-hover:scale-[1.03]"
               />
               <div className="absolute inset-0 bg-linear-to-t from-[#cfe4f5]/86 via-[#cfe4f5]/16 to-transparent" />
             </div>
-            <div className="space-y-3 p-6">
+            <div className="flex flex-1 flex-col gap-3 p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">
-                User benefits
+                Reach the right applicants
               </p>
               <h3 id="page-2-card-2-title" className="text-xl font-semibold text-[#18324a]">
                 For Housing Providers
               </h3>
-              <p className="text-sm leading-7 text-[#18324a]/72">
-                If you own or develop accessible and affordable housing, you want your units seen by
-                the people and professionals best positioned to fill them responsibly.
+              <p className="flex-1 text-sm leading-7 text-[#18324a]/72">
+                Share accessible units with trusted organizations that understand their clients’
+                needs, helping specialized homes reach people who can benefit from their features.
               </p>
-            </div>
-          </article>
-
-          <article
-            aria-labelledby="page-2-card-3-title"
-            className="group overflow-hidden rounded-[2rem] border border-sky-100 bg-[#eaf4fb] shadow-[0_18px_50px_rgba(56,116,166,0.12)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(56,116,166,0.18)]"
-          >
-            <div className="relative h-56 overflow-hidden">
-              <Image
-                src={joinImage}
-                alt="Person joining the Accessible Housing Bridge community"
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover object-center brightness-95 saturate-80 transition-transform duration-500 group-hover:scale-[1.03]"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-[#cfe4f5]/86 via-[#cfe4f5]/16 to-transparent" />
-            </div>
-            <div className="space-y-3 p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">
-                Next steps
-              </p>
-              <h3 id="page-2-card-3-title" className="text-xl font-semibold text-[#18324a]">
-                How do I join Accessible Housing Bridge?
-              </h3>
-              <p className="text-sm leading-7 text-[#18324a]/72">
-                Access is by invitation as we onboard our first community of users and providers.
-                Whether you’re a social worker looking to connect clients with housing, or a
-                provider with accessible and affordable units to list, we’d love to have you.
-                Contact us to request access, let us know which group you belong to (housing
-                provider/developer or social working/housing seeker), and we’ll get you set up.
-              </p>
+              <a
+                href={accessRequestHref}
+                className="mt-auto inline-flex self-start rounded-full bg-[#18324a] px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+              >
+                Request access
+              </a>
             </div>
           </article>
         </div>

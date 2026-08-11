@@ -22,28 +22,29 @@ export function HomeFAQSection() {
           </div>
           <div>
             <h3 className="text-xl font-semibold text-[#18324a]">
-              How much does Accessible Housing Bridge cost?
+              Who can join Accessible Housing Bridge?
             </h3>
             <p className="mt-2 max-w-xl text-base text-[#18324a]/74">
-              Accessible Housing Bridge is currently free to join during our initial rollout.
+              During our initial rollout, access is available by invitation to housing providers,
+              organizations, and social workers helping clients find suitable housing.
             </p>
           </div>
           <div>
             <h3 className="text-xl font-semibold text-[#18324a]">How can I list a property?</h3>
             <p className="mt-2 max-w-xl text-base text-[#18324a]/74">
-              To list a property, create an account and navigate to the "List Your Property"
-              section. Fill out the form with details about the property, including accessibility
-              features, location, and contact information.
+              Housing providers can contact us to request access. Once invited, you can create a
+              listing with details about the home’s accessibility features, location, cost, and
+              application process.
             </p>
           </div>
           <div>
             <h3 className="text-xl font-semibold text-[#18324a]">
-              How do I find accessible and affordable housing on the platform?
+              How does the platform help match people with housing?
             </h3>
             <p className="mt-2 max-w-xl text-base text-[#18324a]/74">
-              Once you have access, you can browse listings on an interactive map, filter by
-              accessibility and affordability criteria, save your filters, and set up alerts so
-              you're notified when a matching home becomes available.
+              Providers share detailed information about their available homes. Organizations and
+              social workers can then search by accessibility needs and affordability to identify
+              suitable options for their clients.
             </p>
           </div>
         </div>
