@@ -30,7 +30,21 @@ export function mapListingFormToReplaceListingInput(
     ...buildListingPayloadFromForm(data),
     status,
   };
-  const replacement: ReplaceListingInput = { ...payload };
+  const replacement: ReplaceListingInput = {
+    ...payload,
+    description: normalizeOptionalString(data.description) ?? null,
+    address: {
+      ...payload.address,
+      street2: normalizeOptionalString(data.street2) ?? null,
+    },
+    units: [
+      {
+        ...payload.units[0],
+        sqft: data.squareFeet ?? null,
+        availableDate: normalizeOptionalString(data.availableOn) ?? null,
+      },
+    ],
+  };
 
   if (
     rawInput?.unitNumber !== undefined &&
@@ -52,6 +66,7 @@ export function mapListingFormToReplaceListingInput(
 export function mapListingFormToAutosavePatchInput(
   data: ListingFormInput,
   status = data.status ?? "draft",
+  nullableFieldEditIntent: NullableListingFormFieldEditIntent = {},
 ): PatchListingInput | null {
   const patch: PatchListingInput = {};
   const address: NonNullable<PatchListingInput["address"]> = {};
@@ -60,9 +75,14 @@ export function mapListingFormToAutosavePatchInput(
 
   assignTrimmedString(patch, "title", data.title);
   assignTrimmedString(patch, "name", data.name);
-  assignTrimmedString(patch, "description", data.description);
+  assignNullableTrimmedString(
+    patch,
+    "description",
+    data.description,
+    nullableFieldEditIntent.description,
+  );
   assignTrimmedString(address, "street", data.street1);
-  assignTrimmedString(address, "street2", data.street2);
+  assignNullableTrimmedString(address, "street2", data.street2, nullableFieldEditIntent.street2);
   assignTrimmedString(address, "city", data.city);
   assignTrimmedString(address, "province", data.province);
   assignTrimmedString(address, "postalCode", data.postalCode);
@@ -100,6 +120,8 @@ export function mapListingFormToAutosavePatchInput(
 
   if (Number.isFinite(data.squareFeet)) {
     unit.sqft = data.squareFeet;
+  } else if (nullableFieldEditIntent.squareFeet) {
+    unit.sqft = null;
   }
 
   if (Number.isFinite(data.monthlyRentCents)) {
@@ -110,6 +132,8 @@ export function mapListingFormToAutosavePatchInput(
 
   if (availableDate) {
     unit.availableDate = availableDate;
+  } else if (nullableFieldEditIntent.availableOn) {
+    unit.availableDate = null;
   }
 
   if (Object.keys(address).length > 0) {
@@ -254,6 +278,25 @@ function assignTrimmedString(
 
   if (normalized) {
     target[key] = normalized;
+  }
+}
+
+type NullableListingFormFieldEditIntent = Partial<
+  Record<"description" | "street2" | "squareFeet" | "availableOn", boolean>
+>;
+
+function assignNullableTrimmedString(
+  target: Record<string, unknown>,
+  key: string,
+  value: string | undefined,
+  wasEdited = false,
+) {
+  const normalized = normalizeOptionalString(value);
+
+  if (normalized) {
+    target[key] = normalized;
+  } else if (wasEdited) {
+    target[key] = null;
   }
 }
 

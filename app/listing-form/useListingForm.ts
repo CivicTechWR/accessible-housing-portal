@@ -47,9 +47,23 @@ export function useListingForm(initialListingId?: string) {
   } = useGetListingQuery(initialListingId);
   const { createDraftListing, isLoading: isCreatingDraft } = useCreateDraftListingQuery();
   const { patchListing, replaceListing, isLoading: isEditing } = useEditListingQuery();
+  const nullableFieldEditIntent = {
+    description:
+      form.formState.dirtyFields.description === true ||
+      form.formState.touchedFields.description === true,
+    street2:
+      form.formState.dirtyFields.street2 === true || form.formState.touchedFields.street2 === true,
+    squareFeet:
+      form.formState.dirtyFields.squareFeet === true ||
+      form.formState.touchedFields.squareFeet === true,
+    availableOn:
+      form.formState.dirtyFields.availableOn === true ||
+      form.formState.touchedFields.availableOn === true,
+  };
   const autosavePayload = mapListingFormToAutosavePatchInput(
     watchedValues,
     initialListingId ? watchedValues.status : "draft",
+    nullableFieldEditIntent,
   );
   const autosavePayloadKey = autosavePayload ? JSON.stringify(autosavePayload) : null;
   const isPublishedEditMode = Boolean(initialListingId && initialData?.status === "published");
@@ -101,7 +115,11 @@ export function useListingForm(initialListingId?: string) {
       return listingId;
     }
 
-    const currentDraftPayload = mapListingFormToAutosavePatchInput(form.getValues(), "draft");
+    const currentDraftPayload = mapListingFormToAutosavePatchInput(
+      form.getValues(),
+      "draft",
+      nullableFieldEditIntent,
+    );
 
     if (!currentDraftPayload) {
       return listingId;
@@ -114,7 +132,7 @@ export function useListingForm(initialListingId?: string) {
     lastAutosavedPayloadRef.current = JSON.stringify(currentDraftPayload);
 
     return listingId;
-  }, [createDraftListingId, form, patchListing]);
+  }, [createDraftListingId, form, nullableFieldEditIntent, patchListing]);
 
   useEffect(() => {
     setActiveListingId(initialListingId);

@@ -148,7 +148,7 @@ describe("mapListingFormToCreateListingInput", () => {
     expect(mapListingFormToReplaceListingInput(validFormData, "published")).toEqual({
       title: "Accessible Two Bedroom",
       name: "Cedar Court",
-      description: undefined,
+      description: null,
       address: {
         street: "123 Main Street",
         street2: "Building A",
