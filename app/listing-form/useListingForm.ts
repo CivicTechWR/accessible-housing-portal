@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { mapListingFormToAutosaveUpdateInput, mapListingFormToUpdateListingInput } from "./api";
+import { mapListingFormToAutosavePatchInput, mapListingFormToReplaceListingInput } from "./api";
 import {
   listingFormSchema,
   ListingFormContext,
@@ -46,8 +46,8 @@ export function useListingForm(initialListingId?: string) {
     isError: isFetchError,
   } = useGetListingQuery(initialListingId);
   const { createDraftListing, isLoading: isCreatingDraft } = useCreateDraftListingQuery();
-  const { editListing, isLoading: isEditing } = useEditListingQuery();
-  const autosavePayload = mapListingFormToAutosaveUpdateInput(
+  const { patchListing, replaceListing, isLoading: isEditing } = useEditListingQuery();
+  const autosavePayload = mapListingFormToAutosavePatchInput(
     watchedValues,
     initialListingId ? watchedValues.status : "draft",
   );
@@ -101,20 +101,20 @@ export function useListingForm(initialListingId?: string) {
       return listingId;
     }
 
-    const currentDraftPayload = mapListingFormToAutosaveUpdateInput(form.getValues(), "draft");
+    const currentDraftPayload = mapListingFormToAutosavePatchInput(form.getValues(), "draft");
 
     if (!currentDraftPayload) {
       return listingId;
     }
 
-    await editListing({
+    await patchListing({
       listingId,
       payload: currentDraftPayload,
     });
     lastAutosavedPayloadRef.current = JSON.stringify(currentDraftPayload);
 
     return listingId;
-  }, [createDraftListingId, editListing, form]);
+  }, [createDraftListingId, form, patchListing]);
 
   useEffect(() => {
     setActiveListingId(initialListingId);
@@ -125,7 +125,7 @@ export function useListingForm(initialListingId?: string) {
       if (!form.formState.isDirty || initialListingId) {
         form.reset(initialData);
         lastAutosavedPayloadRef.current = JSON.stringify(
-          mapListingFormToAutosaveUpdateInput(
+          mapListingFormToAutosavePatchInput(
             initialData,
             initialListingId ? initialData.status : "draft",
           ),
@@ -161,7 +161,7 @@ export function useListingForm(initialListingId?: string) {
             })),
       )
         .then(({ listingId, shouldActivateDraft }) =>
-          editListing({
+          patchListing({
             listingId,
             payload: autosavePayload,
           }).then(() => {
@@ -201,7 +201,7 @@ export function useListingForm(initialListingId?: string) {
     autosavePayload,
     autosavePayloadKey,
     createDraftListingId,
-    editListing,
+    patchListing,
     shouldAutosaveDraft,
   ]);
 
@@ -298,9 +298,9 @@ export function useListingForm(initialListingId?: string) {
         createdDraftListingId = listingId;
       }
 
-      await editListing({
+      await replaceListing({
         listingId,
-        payload: mapListingFormToUpdateListingInput(data, "published", watchedValues),
+        payload: mapListingFormToReplaceListingInput(data, "published", watchedValues),
       });
       router.push(`/listings/${listingId}`);
       router.refresh();

@@ -17,7 +17,7 @@ import { DEFAULT_PROPERTY_COUNTRY } from "@/lib/listings/store";
 import type {
   CreateListingInput,
   ListingIdParam,
-  UpdateListingInput,
+  ListingMutationInput,
 } from "@/shared/schemas/listings";
 
 export type ListingSummaryRow = {
@@ -585,7 +585,7 @@ export async function updateListingGraph(input: {
     publishedAt: Date | null;
     archivedAt: Date | null;
   };
-  images?: NonNullable<UpdateListingInput["images"]>;
+  images?: NonNullable<ListingMutationInput["images"]>;
   imageAltTextBase: string;
 }) {
   await db.transaction(async (tx) => {

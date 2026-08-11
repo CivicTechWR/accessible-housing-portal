@@ -1,17 +1,22 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/app/query-keys";
-import type { UpdateListingInput } from "@/shared/schemas/listings";
+import type { PatchListingInput, ReplaceListingInput } from "@/shared/schemas/listings";
 import { parseCreateListingResponse } from "./api";
 
-interface EditListingInput {
+interface ReplaceListingVariables {
   listingId: string;
-  payload: UpdateListingInput;
+  payload: ReplaceListingInput;
+}
+
+interface PatchListingVariables {
+  listingId: string;
+  payload: PatchListingInput;
 }
 
 export function useEditListingQuery() {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async ({ listingId, payload }: EditListingInput) => {
+  const replaceMutation = useMutation({
+    mutationFn: async ({ listingId, payload }: ReplaceListingVariables) => {
       const response = await fetch(`/api/listings/${listingId}`, {
         method: "PUT",
         headers: {
@@ -23,17 +28,41 @@ export function useEditListingQuery() {
       return await parseCreateListingResponse(response);
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.listingEditor(variables.listingId),
+      invalidateListingQueries(queryClient, variables.listingId);
+    },
+  });
+  const patchMutation = useMutation({
+    mutationFn: async ({ listingId, payload }: PatchListingVariables) => {
+      const response = await fetch(`/api/listings/${listingId}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.myListings() });
-      void queryClient.invalidateQueries({ queryKey: ["listings"] });
+
+      return await parseCreateListingResponse(response);
+    },
+    onSuccess: (_data, variables) => {
+      invalidateListingQueries(queryClient, variables.listingId);
     },
   });
 
   return {
-    editListing: mutation.mutateAsync,
-    isLoading: mutation.isPending,
-    isError: mutation.isError,
+    replaceListing: replaceMutation.mutateAsync,
+    patchListing: patchMutation.mutateAsync,
+    isLoading: replaceMutation.isPending || patchMutation.isPending,
+    isError: replaceMutation.isError || patchMutation.isError,
   };
+}
+
+function invalidateListingQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  listingId: string,
+) {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.listingEditor(listingId),
+  });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.myListings() });
+  void queryClient.invalidateQueries({ queryKey: ["listings"] });
 }
