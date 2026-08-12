@@ -57,6 +57,7 @@ export function CustomListingFieldsTable({
   onRowDrop,
   onDeleteField,
   onTextChange,
+  onApplicabilityChange,
   onVisibilityChange,
   onFilterableChange,
   onRequiredChange,
@@ -92,6 +93,7 @@ export function CustomListingFieldsTable({
   onRowDrop: (event: DragEvent<HTMLDivElement>, field: AdminCustomListingField) => void;
   onDeleteField: (field: AdminCustomListingField) => void;
   onTextChange: (fieldId: string, payload: UpdateCustomListingFieldInput) => Promise<void>;
+  onApplicabilityChange: (fieldId: string, appliesTo: AdminCustomListingField["appliesTo"]) => void;
   onVisibilityChange: (fieldId: string, publicOnly: boolean) => void;
   onFilterableChange: (fieldId: string, filterableOnly: boolean) => void;
   onRequiredChange: (fieldId: string, required: boolean) => void;
@@ -225,6 +227,14 @@ export function CustomListingFieldsTable({
               onSort={onSort}
             />
             <SortHeader
+              label="Applies To"
+              sortKey="appliesTo"
+              helperText={FIELD_HELP_TEXT.appliesTo}
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+            />
+            <SortHeader
               label="Description"
               sortKey="description"
               helperText={FIELD_HELP_TEXT.description}
@@ -304,6 +314,9 @@ export function CustomListingFieldsTable({
                           onDrop={(event) => onRowDrop(event, field)}
                           onDelete={() => onDeleteField(field)}
                           onTextChange={(payload) => onTextChange(field.id, payload)}
+                          onApplicabilityChange={(appliesTo) =>
+                            onApplicabilityChange(field.id, appliesTo)
+                          }
                           onVisibilityChange={(publicOnly) =>
                             onVisibilityChange(field.id, publicOnly)
                           }

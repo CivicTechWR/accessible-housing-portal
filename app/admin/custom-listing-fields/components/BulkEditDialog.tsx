@@ -44,6 +44,7 @@ export function BulkEditDialog({
     defaultValues: getDefaultBulkEditDialogValues(categories),
   });
   const categoryEnabled = form.watch("categoryEnabled");
+  const applicabilityEnabled = form.watch("applicabilityEnabled");
   const visibilityEnabled = form.watch("visibilityEnabled");
   const filterableEnabled = form.watch("filterableEnabled");
   const requiredEnabled = form.watch("requiredEnabled");
@@ -91,6 +92,8 @@ export function BulkEditDialog({
             <DialogTitle>Bulk Edit Fields</DialogTitle>
             <DialogDescription>
               Apply changes to {selectedCount} selected {selectedCount === 1 ? "field" : "fields"}.
+              Applicability changes affect future duplications; existing duplicated listings are
+              unaffected.
             </DialogDescription>
           </DialogHeader>
 
@@ -113,6 +116,33 @@ export function BulkEditDialog({
                       onValueChange={field.onChange}
                       disabled={!categoryEnabled || isSaving}
                     />
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </BulkEditOption>
+
+            <BulkEditOption
+              control={form.control}
+              name="applicabilityEnabled"
+              label="Set applicability"
+              disabled={isSaving}
+            >
+              <FormField
+                control={form.control}
+                name="appliesTo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <NativeSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={!applicabilityEnabled || isSaving}
+                      >
+                        <option value="building">Building — shared across units</option>
+                        <option value="unit">Unit — specific to one unit</option>
+                      </NativeSelect>
+                    </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
                 )}
@@ -227,7 +257,12 @@ function BulkEditOption({
   children,
 }: {
   control: Control<BulkEditDialogValues>;
-  name: "categoryEnabled" | "visibilityEnabled" | "filterableEnabled" | "requiredEnabled";
+  name:
+    | "categoryEnabled"
+    | "applicabilityEnabled"
+    | "visibilityEnabled"
+    | "filterableEnabled"
+    | "requiredEnabled";
   label: string;
   disabled?: boolean;
   children: ReactNode;

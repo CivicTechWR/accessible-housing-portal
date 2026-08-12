@@ -42,6 +42,7 @@ async function main() {
             description: field.description,
             fieldType: field.fieldType,
             category: field.category,
+            appliesTo: field.appliesTo,
             helpText: field.helpText,
             placeholder: field.placeholder,
             isPublic: field.isPublic,
