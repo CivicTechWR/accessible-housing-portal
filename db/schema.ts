@@ -38,18 +38,7 @@ export const utilityIncludedEnum = pgEnum("utility_included", [
   "gas",
   "internet",
 ]);
-/** Kinds of transactional email the application sends. */
 export const emailDeliveryTypeEnum = pgEnum("email_delivery_type", ["account_invite"]);
-/**
- * Normalized provider outcome for one attempt.
- *
- * These are exactly the delivery-related values Resend reports, and both of
- * its reporting paths use the same vocabulary: webhook event names prefix them
- * with `email.`, and `resend.emails.get(id).last_event` returns them bare. An
- * outcome is therefore stored the same way regardless of how it was learned.
- * Engagement events (`opened`, `clicked`) are excluded on purpose — they say
- * nothing about delivery.
- */
 export const emailDeliveryOutcomeEnum = pgEnum("email_delivery_outcome", [
   "queued",
   "sent",
@@ -185,21 +174,13 @@ export const userInvites = pgTable(
   ],
 );
 
-/**
- * One logical transactional email: "the invite email for invite X", not one
- * provider submission of it. Genuine resends add attempts to the same row, so
- * the whole history of an email stays reachable from the entity it is about.
- */
 export const emailDeliveries = pgTable(
   "email_deliveries",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     emailType: emailDeliveryTypeEnum("email_type").notNull(),
-    /**
-     * The row this email is about — an invite id for `account_invite`.
-     * Deliberately not a foreign key: the referenced table varies by email
-     * type, and delivery history should outlive what it describes.
-     */
+    // No foreign key: the source table depends on emailType, and delivery history
+    // must survive source deletion.
     sourceEntityId: uuid("source_entity_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -211,13 +192,6 @@ export const emailDeliveries = pgTable(
   ],
 );
 
-/**
- * One provider submission of a logical delivery. Ordinary queue retries of the
- * same send reuse their attempt row — and so its idempotency key, which is what
- * stops the provider from delivering the message twice. Only a genuine resend
- * inserts a new attempt, which is what earns a fresh identity everywhere: a new
- * attempt number, idempotency key, queue job, and provider email id.
- */
 export const emailDeliveryAttempts = pgTable(
   "email_delivery_attempts",
   {
@@ -225,37 +199,16 @@ export const emailDeliveryAttempts = pgTable(
     deliveryId: uuid("delivery_id")
       .notNull()
       .references(() => emailDeliveries.id, { onDelete: "cascade" }),
-    /** 1 for the first submission of the delivery, incrementing per resend. */
     attemptNumber: integer("attempt_number").notNull(),
-    /**
-     * Resend idempotency key for this attempt, and the logical email key the
-     * queue derives its deterministic job id from, so provider-side and
-     * queue-side dedupe agree on what "the same send" means.
-     */
     idempotencyKey: text("idempotency_key").notNull(),
-    /**
-     * The pg-boss job enqueued for this attempt; null for senders that submit
-     * without going through the queue. Quota deferrals re-enqueue the same
-     * attempt under a fresh job id, so this stays the job the attempt started
-     * on — the whole chain is reachable from the job payload, not from here.
-     */
+    // Deferred jobs are linked through their payloads; this stays the original job ID.
     queueJobId: uuid("queue_job_id"),
-    /**
-     * Resend's email id, returned when it accepts the submission. This is the
-     * correlation key for later delivery outcomes, whether they arrive by
-     * webhook or are polled from the provider.
-     */
     providerEmailId: text("provider_email_id"),
-    /** When the provider accepted the submission; null until then. */
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     outcome: emailDeliveryOutcomeEnum("outcome").notNull().default("queued"),
-    /** Provider event time for `outcome`, so out-of-order reports can be ordered. */
+    // Provider timestamp used to handle out-of-order updates.
     outcomeAt: timestamp("outcome_at", { withTimezone: true }),
-    /**
-     * Short sanitized provider diagnostic for `outcome` (a bounce type/subtype
-     * or an error name). Never a rendered message, recipient address, invite
-     * URL, or any other one-time secret.
-     */
+    // Provider codes only. Never store message or recipient data here.
     outcomeDetail: text("outcome_detail"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -265,8 +218,7 @@ export const emailDeliveryAttempts = pgTable(
       table.attemptNumber,
     ),
     uniqueIndex("email_delivery_attempts_idempotency_key_unique").on(table.idempotencyKey),
-    // Postgres treats nulls as distinct, so unsubmitted attempts do not
-    // collide; submitted ones stay a unique handle for outcome correlation.
+    // Null provider IDs do not conflict in PostgreSQL.
     uniqueIndex("email_delivery_attempts_provider_email_id_unique").on(table.providerEmailId),
   ],
 );

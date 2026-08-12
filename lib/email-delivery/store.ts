@@ -9,20 +9,12 @@ import {
   type EmailDeliveryAttemptRef,
 } from "@/lib/email-delivery/attempt";
 
-/** The `db` handle or a transaction from `db.transaction`. */
 export type EmailDeliveryDatabase = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
- * Open the next attempt of a logical delivery, creating the delivery on first
- * use. Callers should run this in the transaction that writes the record the
- * email is about, so a committed record always has an attempt to send.
+ * Call inside the source record's transaction.
  *
- * The delivery upsert takes a row lock, so concurrent callers are serialized
- * and each reads the other's committed attempts: numbering stays contiguous
- * and the unique index is never hit. That protects numbering only — it is not
- * a resend guard. Two concurrent resend requests legitimately produce two
- * attempts and two emails, so a caller that must not resend twice (an admin
- * resend action) has to deduplicate the request itself.
+ * The upsert serializes attempt numbers, but does not dedupe resend requests.
  */
 export async function startEmailDeliveryAttempt(
   tx: EmailDeliveryDatabase,
@@ -31,8 +23,7 @@ export async function startEmailDeliveryAttempt(
   const [delivery] = await tx
     .insert(emailDeliveries)
     .values({ emailType: params.emailType, sourceEntityId: params.sourceEntityId })
-    // A no-op update rather than `doNothing`, so an existing delivery is
-    // returned instead of no row at all.
+    // Use a no-op update so RETURNING also works for an existing delivery.
     .onConflictDoUpdate({
       target: [emailDeliveries.emailType, emailDeliveries.sourceEntityId],
       set: { sourceEntityId: params.sourceEntityId },
@@ -75,7 +66,6 @@ export async function startEmailDeliveryAttempt(
   };
 }
 
-/** Record which queue job owns an attempt, for tracing a send back to its job row. */
 export async function recordEmailDeliveryAttemptQueueJob(
   tx: EmailDeliveryDatabase,
   params: { attemptId: string; queueJobId: string },
@@ -86,17 +76,6 @@ export async function recordEmailDeliveryAttemptQueueJob(
     .where(eq(emailDeliveryAttempts.id, params.attemptId));
 }
 
-/**
- * Record that the provider accepted this attempt. The provider email id is the
- * correlation key for every later delivery outcome, so it is stored even when
- * the caller goes on to fail — a submission that landed must stay traceable.
- *
- * An attempt can reach here more than once: a job whose send succeeded but
- * that then expired (or failed to mark its source record) retries, and the
- * provider replays the original submission under the same idempotency key.
- * Every field is therefore written first-wins, so a replay describes the same
- * submission it did the first time instead of moving it forward.
- */
 export async function recordEmailDeliveryAttemptSubmission(params: {
   attemptId: string;
   providerEmailId: string | null;
@@ -104,10 +83,10 @@ export async function recordEmailDeliveryAttemptSubmission(params: {
   await db
     .update(emailDeliveryAttempts)
     .set({
+      // A retry may get here after a successful send, so keep the first submission.
       providerEmailId: sql`coalesce(${emailDeliveryAttempts.providerEmailId}, ${params.providerEmailId})`,
       submittedAt: sql`coalesce(${emailDeliveryAttempts.submittedAt}, now())`,
-      // An outcome can only be learned after submission, but a late-arriving
-      // one must not be walked back to "sent" by a slow submission write.
+      // Keep any provider outcome that arrived before this write.
       outcome: sql`case when ${emailDeliveryAttempts.outcome} = 'queued' then 'sent'::"email_delivery_outcome" else ${emailDeliveryAttempts.outcome} end`,
     })
     .where(eq(emailDeliveryAttempts.id, params.attemptId));

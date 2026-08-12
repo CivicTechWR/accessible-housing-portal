@@ -14,11 +14,6 @@ const INVITE_ID = "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204";
 let insertedAttempt: Record<string, unknown> | undefined;
 let latestAttemptNumber: number | undefined;
 
-/**
- * Minimal stand-in for the drizzle query builders `startEmailDeliveryAttempt`
- * uses: the delivery upsert, the highest existing attempt number, and the
- * attempt insert.
- */
 const tx = {
   insert: () => ({
     values: (values: Record<string, unknown>) => ({
