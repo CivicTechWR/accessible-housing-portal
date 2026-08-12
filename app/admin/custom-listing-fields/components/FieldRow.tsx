@@ -152,6 +152,7 @@ export function FieldRow({
   onDrop,
   onDelete,
   onTextChange,
+  onApplicabilityChange,
   onVisibilityChange,
   onFilterableChange,
   onRequiredChange,
@@ -167,6 +168,7 @@ export function FieldRow({
   onDrop: (event: DragEvent<HTMLDivElement>) => void;
   onDelete: () => void;
   onTextChange: (payload: UpdateCustomListingFieldInput) => Promise<void>;
+  onApplicabilityChange: (appliesTo: AdminCustomListingField["appliesTo"]) => void;
   onVisibilityChange: (publicOnly: boolean) => void;
   onFilterableChange: (filterableOnly: boolean) => void;
   onRequiredChange: (required: boolean) => void;
@@ -243,6 +245,21 @@ export function FieldRow({
           onTextChange({ category: getCanonicalCategoryValue(category, categoryOptions) })
         }
       />
+      <div className="px-4 py-3">
+        <select
+          aria-label={`Edit applicability for ${field.label}`}
+          title="Changing applicability affects future duplications; existing duplicated listings are unaffected."
+          value={field.appliesTo}
+          onChange={(event) =>
+            onApplicabilityChange(event.target.value as AdminCustomListingField["appliesTo"])
+          }
+          disabled={isPending}
+          className="h-8 w-28 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60"
+        >
+          <option value="building">Building</option>
+          <option value="unit">Unit</option>
+        </select>
+      </div>
       <EditableTextCell
         value={field.description ?? ""}
         displayValue={field.description || "No description."}

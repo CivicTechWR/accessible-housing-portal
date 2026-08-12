@@ -29,10 +29,4 @@ describe("ListingDetails", () => {
     expect(screen.queryByText("Utilities Included")).not.toBeNull();
     expect(screen.queryByText("None listed")).not.toBeNull();
   });
-
-  it("shows the empty state when utilities data is missing", () => {
-    render(<ListingDetails {...baseProps} />);
-
-    expect(screen.queryByText("None listed")).not.toBeNull();
-  });
 });

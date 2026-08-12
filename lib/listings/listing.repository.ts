@@ -503,7 +503,7 @@ export async function createListing(input: {
         monthlyRentCents: input.primaryUnitRentCents,
         availableOn: primaryUnit.availableDate ?? null,
         leaseTermMonths: input.payload.leaseTermMonths,
-        utilitiesIncluded: input.payload.utilitiesIncluded ?? [],
+        utilitiesIncluded: input.payload.utilitiesIncluded,
         maxIncomeCents: null,
         applicationUrl: input.payload.applicationUrl ?? null,
         applicationEmail: input.payload.contact.email,

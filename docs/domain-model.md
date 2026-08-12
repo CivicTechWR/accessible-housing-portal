@@ -102,6 +102,11 @@ Important fields:
 - `label`, `description`, `help_text`, and `placeholder` drive UI display.
 - `field_type` describes expected value shape.
 - `category` groups fields for display and reordering.
+<<<<<<< HEAD
+=======
+- `applies_to` is required and records whether the value is shared across units in a `building`
+  or specific to one `unit`; it is independent of `category`.
+>>>>>>> origin/main
 - `is_public` controls whether the field is visible outside admin surfaces.
 - `is_filterable` controls whether it can be used as a public filter.
 - `is_required` is available for validation/UI policy.

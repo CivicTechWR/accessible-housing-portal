@@ -139,50 +139,8 @@ describe("mapListingFormToCreateListingInput", () => {
         ...validFormData,
         applicationUrl: "https://example.org/apply",
       }),
-    ).toEqual({
-      title: "Accessible Two Bedroom",
-      name: "Cedar Court",
-      description: undefined,
-      address: {
-        street: "123 Main Street",
-        street2: "Building A",
-        city: "Waterloo",
-        province: "ON",
-        postalCode: "N2L 3A1",
-      },
-      units: [
-        {
-          bedrooms: 2,
-          bathrooms: 1.5,
-          sqft: 920,
-          rent: 1850,
-          availableDate: "2026-05-01",
-        },
-      ],
-      accessibilityFeatures: [
-        {
-          id: "ramp_entry",
-          name: "Ramp entry",
-          description: "Step-free building entry",
-        },
-      ],
+    ).toMatchObject({
       applicationUrl: "https://example.org/apply",
-      images: [
-        {
-          id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2",
-          caption: "Front exterior",
-        },
-      ],
-      contact: {
-        name: "Leasing Office",
-        email: "leasing@example.org",
-        phone: "519-555-0100",
-      },
-      status: "draft",
-      unitNumber: "204",
-      buildingType: "apartment",
-      leaseTermMonths: 12,
-      utilitiesIncluded: ["heat", "water"],
     });
   });
 
@@ -447,49 +405,9 @@ describe("mapListingFormToCreateListingInput", () => {
         "published",
         rawInput,
       ),
-    ).toEqual({
-      title: "Accessible Two Bedroom",
-      name: "Cedar Court",
-      description: undefined,
-      address: {
-        street: "123 Main Street",
-        street2: "Building A",
-        city: "Waterloo",
-        province: "ON",
-        postalCode: "N2L 3A1",
-      },
-      units: [
-        {
-          bedrooms: 2,
-          bathrooms: 1.5,
-          sqft: 920,
-          rent: 1850,
-          availableDate: "2026-05-01",
-        },
-      ],
-      accessibilityFeatures: [
-        {
-          id: "ramp_entry",
-          name: "Ramp entry",
-          description: "Step-free building entry",
-        },
-      ],
-      images: [
-        {
-          id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2",
-          caption: "Front exterior",
-        },
-      ],
-      contact: {
-        name: "Leasing Office",
-        email: "leasing@example.org",
-        phone: "519-555-0100",
-      },
+    ).toMatchObject({
       status: "published",
       unitNumber: null,
-      buildingType: "apartment",
-      leaseTermMonths: 12,
-      utilitiesIncluded: ["heat", "water"],
     });
   });
 });

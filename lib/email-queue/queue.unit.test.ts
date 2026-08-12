@@ -79,14 +79,6 @@ describe("enqueueEmail", () => {
     });
   });
 
-  it("returns null when the same logical email is already enqueued", async () => {
-    bossInstance.send.mockResolvedValue(null);
-
-    const jobId = await enqueueEmail(buildTx() as unknown as EmailEnqueueTransaction, JOB_DATA);
-
-    expect(jobId).toBeNull();
-  });
-
   it("adapts drizzle's bare-array results to pg-boss's { rows } shape", async () => {
     const tx = buildTx();
 

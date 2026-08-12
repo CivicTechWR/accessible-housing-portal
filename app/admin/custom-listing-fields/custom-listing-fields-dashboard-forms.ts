@@ -18,22 +18,25 @@ export const createFieldDialogSchema = z.object({
   label: z.string().trim().min(1, "Label is required."),
   description: z.string(),
   category: z.string().trim().min(1, "Category is required."),
+  appliesTo: z.enum(["", "building", "unit"]).refine((value) => value !== "", {
+    message: "Applicability is required.",
+  }),
   helpText: z.string(),
   publicOnly: z.boolean(),
   filterableOnly: z.boolean(),
   required: z.boolean(),
 });
 
-export type CreateFieldDialogValues = z.infer<typeof createFieldDialogSchema>;
+export type CreateFieldDialogInput = z.input<typeof createFieldDialogSchema>;
+export type CreateFieldDialogValues = z.output<typeof createFieldDialogSchema>;
 
-export function getDefaultCreateFieldDialogValues(
-  state: FieldDialogState,
-): CreateFieldDialogValues {
+export function getDefaultCreateFieldDialogValues(state: FieldDialogState): CreateFieldDialogInput {
   return {
     key: "",
     label: "",
     description: "",
     category: state.category,
+    appliesTo: "",
     helpText: "",
     publicOnly: true,
     filterableOnly: true,
@@ -42,15 +45,20 @@ export function getDefaultCreateFieldDialogValues(
 }
 
 export function toCreateFieldDialogPayload(
-  values: CreateFieldDialogValues,
+  values: CreateFieldDialogInput,
   categories: string[],
 ): CreateFieldDialogPayload {
+  if (values.appliesTo === "") {
+    throw new Error("Applicability is required.");
+  }
+
   return {
     key: values.key,
     label: values.label,
     description: nullableTrim(values.description),
     type: "boolean",
     category: getCanonicalCategoryValue(values.category, categories),
+    appliesTo: values.appliesTo,
     helpText: nullableTrim(values.helpText),
     publicOnly: values.publicOnly,
     filterableOnly: values.filterableOnly,
@@ -63,6 +71,8 @@ export const bulkEditDialogSchema = z
   .object({
     categoryEnabled: z.boolean(),
     category: z.string(),
+    applicabilityEnabled: z.boolean(),
+    appliesTo: z.enum(["building", "unit"]),
     visibilityEnabled: z.boolean(),
     visibility: z.enum(["public", "internal"]),
     filterableEnabled: z.boolean(),
@@ -73,6 +83,7 @@ export const bulkEditDialogSchema = z
   .superRefine((values, context) => {
     if (
       !values.categoryEnabled &&
+      !values.applicabilityEnabled &&
       !values.visibilityEnabled &&
       !values.filterableEnabled &&
       !values.requiredEnabled
@@ -99,6 +110,8 @@ export function getDefaultBulkEditDialogValues(categories: string[]): BulkEditDi
   return {
     categoryEnabled: false,
     category: categories[0] ?? "",
+    applicabilityEnabled: false,
+    appliesTo: "building",
     visibilityEnabled: false,
     visibility: "public",
     filterableEnabled: false,
@@ -116,6 +129,10 @@ export function toBulkEditPayload(
 
   if (values.categoryEnabled) {
     payload.category = getCanonicalCategoryValue(values.category, categories);
+  }
+
+  if (values.applicabilityEnabled) {
+    payload.appliesTo = values.appliesTo;
   }
 
   if (values.visibilityEnabled) {

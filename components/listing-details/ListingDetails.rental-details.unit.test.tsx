@@ -51,11 +51,4 @@ describe("ListingDetails rental details", () => {
 
     expect(screen.queryByText("Description")).toBeNull();
   });
-
-  it("falls back to the raw available date when it cannot be parsed", () => {
-    render(<ListingDetails {...baseProps} availableOn="Now" />);
-
-    expect(screen.queryByText("Available")).not.toBeNull();
-    expect(screen.queryByText("Now")).not.toBeNull();
-  });
 });

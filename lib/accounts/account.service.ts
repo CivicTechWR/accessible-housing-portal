@@ -110,14 +110,13 @@ export async function createAccountService(
     role: input.role,
     organization: input.organization,
     invitedByUserId: actorResult.value.actor.userId,
-    sendInviteEmail: input.sendInviteEmail === true,
+    sendInviteEmail: input.sendInviteEmail,
   });
 
   return succeed({
-    message:
-      input.sendInviteEmail === true
-        ? "Account invited. The invite email is queued for delivery."
-        : "Account invited",
+    message: input.sendInviteEmail
+      ? "Account invited. The invite email is queued for delivery."
+      : "Account invited",
     data: {
       id: invite.userId,
       email: invite.email,

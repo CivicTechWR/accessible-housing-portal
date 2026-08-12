@@ -34,6 +34,7 @@ const baseField: AdminCustomListingField = {
   description: null,
   type: "boolean",
   category: "BUILDING AMENITIES",
+  appliesTo: "building",
   helpText: null,
   placeholder: null,
   publicOnly: true,
@@ -209,6 +210,7 @@ describe("custom listing field dashboard utilities", () => {
 
     expect(defaults).toMatchObject({
       category: "BUILDING AMENITIES",
+      appliesTo: "",
       publicOnly: true,
       filterableOnly: true,
       required: false,
@@ -220,6 +222,7 @@ describe("custom listing field dashboard utilities", () => {
           key: "shared_laundry",
           label: "Shared Laundry",
           description: "  Laundry room is shared. ",
+          appliesTo: "building",
           helpText: "   ",
         },
         ["BUILDING AMENITIES"],
@@ -230,6 +233,7 @@ describe("custom listing field dashboard utilities", () => {
       description: "Laundry room is shared.",
       type: "boolean",
       category: "BUILDING AMENITIES",
+      appliesTo: "building",
       helpText: null,
       publicOnly: true,
       filterableOnly: true,

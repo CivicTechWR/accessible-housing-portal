@@ -158,7 +158,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: true,
     sortOrder: 8,
     placeholder: "E.g. 1500",
-    helpText: "Enter the monthly rent in dollars. Stored in cents internally.",
+    helpText: "Enter the monthly rent in dollars.",
   },
   {
     key: "leaseTerm",

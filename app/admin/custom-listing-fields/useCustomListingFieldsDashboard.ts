@@ -91,6 +91,7 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
           field.label,
           field.key,
           field.category,
+          field.appliesTo,
           field.description ?? "",
           field.helpText ?? "",
         ].some((value) => value.toLowerCase().includes(query));
@@ -536,6 +537,8 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
       onDeleteField: setDeleteTarget,
       onTextChange: (fieldId: string, payload: UpdateCustomListingFieldInput) =>
         handleUpdateField(fieldId, payload, false, true),
+      onApplicabilityChange: (fieldId: string, appliesTo: AdminCustomListingField["appliesTo"]) =>
+        void handleUpdateField(fieldId, { appliesTo }, false),
       onVisibilityChange: (fieldId: string, publicOnly: boolean) =>
         void handleUpdateField(fieldId, { publicOnly }, false),
       onFilterableChange: (fieldId: string, filterableOnly: boolean) =>

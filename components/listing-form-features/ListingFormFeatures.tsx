@@ -60,13 +60,8 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
                     <FormControl>
                       <ToggleField
                         title={option.label}
-                        description={[
-                          option.helpText,
-                          option.description &&
-                            `Public listing text: This is shown to renters and applicants on the listing. ${option.description}`,
-                        ]
-                          .filter(Boolean)
-                          .join("\n\n")}
+                        description={option.helpText}
+                        publicText={option.description}
                         variant="primary"
                         options={[
                           { label: "Yes", value: "yes" },
