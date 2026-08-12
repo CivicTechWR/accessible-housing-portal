@@ -36,6 +36,7 @@ function toAdminCustomListingField(row: {
   description: string | null;
   fieldType: AdminCustomListingField["type"];
   category: string;
+  appliesTo: AdminCustomListingField["appliesTo"];
   helpText: string | null;
   placeholder: string | null;
   isPublic: boolean;
@@ -53,6 +54,7 @@ function toAdminCustomListingField(row: {
     description: row.description,
     type: row.fieldType,
     category: row.category,
+    appliesTo: row.appliesTo,
     helpText: row.helpText,
     placeholder: row.placeholder,
     publicOnly: row.isPublic,
@@ -146,6 +148,7 @@ export async function createAdminCustomListingFieldService(
     description: input.description,
     fieldType: input.type,
     category: normalizeCategory(input.category),
+    appliesTo: input.appliesTo,
     helpText: input.helpText,
     placeholder: input.placeholder,
     isPublic: input.publicOnly,
@@ -203,6 +206,7 @@ export async function updateAdminCustomListingFieldByIdService(input: {
     description: input.payload.description,
     fieldType: input.payload.type,
     category: input.payload.category ? normalizeCategory(input.payload.category) : undefined,
+    appliesTo: input.payload.appliesTo,
     helpText: input.payload.helpText,
     placeholder: input.payload.placeholder,
     isPublic: input.payload.publicOnly,

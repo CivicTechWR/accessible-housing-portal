@@ -8,6 +8,7 @@ export type SortKey =
   | "label"
   | "key"
   | "category"
+  | "appliesTo"
   | "description"
   | "helpText"
   | "visibility"
@@ -16,14 +17,16 @@ export type SortKey =
 export type SortDirection = "asc" | "desc";
 
 export const TABLE_COLUMNS =
-  "grid-cols-[36px_48px_minmax(180px,1.1fr)_minmax(190px,1.15fr)_minmax(150px,0.85fr)_minmax(260px,1.35fr)_minmax(260px,1.35fr)_minmax(132px,0.7fr)_96px_96px_94px]";
+  "grid-cols-[36px_48px_minmax(180px,1.1fr)_minmax(190px,1.15fr)_minmax(150px,0.85fr)_minmax(140px,0.8fr)_minmax(260px,1.35fr)_minmax(260px,1.35fr)_minmax(132px,0.7fr)_96px_96px_94px]";
 
-export const TABLE_MIN_WIDTH = "min-w-[1540px]";
+export const TABLE_MIN_WIDTH = "min-w-[1700px]";
 
 export const FIELD_HELP_TEXT = {
   label: "Human-readable field name shown to partners and renters.",
   key: "Stable identifier used by listing data and APIs.",
   category: "Groups related fields together in forms and listings.",
+  appliesTo:
+    "Whether this information is shared across units in the building or specific to one unit.",
   description: "Public text shown to tenants and applicants.",
   helpText: "Partner guidance shown while creating listings.",
   visibility: "Controls whether renters can see the field.",
@@ -53,7 +56,7 @@ export type DisplayGroup = {
 
 export type BulkEditPayload = Pick<
   UpdateCustomListingFieldInput,
-  "category" | "filterableOnly" | "publicOnly" | "required"
+  "appliesTo" | "category" | "filterableOnly" | "publicOnly" | "required"
 >;
 
 export type DraggingField = {
@@ -234,6 +237,9 @@ export function sortVisibleFields(
         break;
       case "category":
         compare = formatCategoryLabel(a.category).localeCompare(formatCategoryLabel(b.category));
+        break;
+      case "appliesTo":
+        compare = a.appliesTo.localeCompare(b.appliesTo);
         break;
       case "description":
         compare = (a.description ?? "").localeCompare(b.description ?? "");

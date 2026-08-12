@@ -35,8 +35,8 @@ export const createAccountInviteSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email("Invalid email address.")),
   name: nonEmptyString,
   role: accountRoleSchema,
-  organization: z.string().trim().nullable().optional(),
-  sendInviteEmail: z.boolean().optional(),
+  organization: z.string().trim().nullable(),
+  sendInviteEmail: z.boolean(),
 });
 
 export const updateAccountSchema = z

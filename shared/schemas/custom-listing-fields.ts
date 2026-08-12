@@ -10,6 +10,7 @@ export const customListingFieldTypeSchema = z.enum([
   "multi_select",
   "date",
 ]);
+export const customListingFieldApplicabilitySchema = z.enum(["building", "unit"]);
 
 const nonEmptyString = requiredTrimmedString();
 const customListingFieldIdSchema = z.uuid("Invalid custom listing field id.");
@@ -60,6 +61,7 @@ export const adminCustomListingFieldSchema = z.object({
   description: z.string().trim().optional().nullable(),
   type: customListingFieldTypeSchema,
   category: nonEmptyString,
+  appliesTo: customListingFieldApplicabilitySchema,
   helpText: z.string().trim().optional().nullable(),
   placeholder: z.string().trim().optional().nullable(),
   publicOnly: z.boolean(),
@@ -85,6 +87,7 @@ const customListingFieldMutationSchema = z.object({
   description: z.string().trim().nullable().optional(),
   type: customListingFieldTypeSchema,
   category: nonEmptyString,
+  appliesTo: customListingFieldApplicabilitySchema,
   helpText: z.string().trim().nullable().optional(),
   placeholder: z.string().trim().nullable().optional(),
   publicOnly: z.boolean(),
@@ -141,6 +144,7 @@ export const deleteCustomListingFieldResponseSchema = z.object({
 
 export type CustomListingFieldQuery = z.infer<typeof customListingFieldQuerySchema>;
 export type CustomListingFieldType = z.infer<typeof customListingFieldTypeSchema>;
+export type CustomListingFieldApplicability = z.infer<typeof customListingFieldApplicabilitySchema>;
 export type CustomListingFieldSelectableOption = z.infer<
   typeof customListingFieldSelectableOptionSchema
 >;

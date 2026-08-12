@@ -29,6 +29,10 @@ export function CustomListingFieldsDashboard({
               Manage the custom fields that appear on listings and filters. The order in this table
               is the order renters and partners will see on each listing.
             </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Applicability is independent of category. Changing it affects future duplications;
+              existing duplicated listings are unaffected.
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <Button
