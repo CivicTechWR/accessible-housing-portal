@@ -154,7 +154,7 @@ Creation and update behavior is split across service and repository code:
 - `replaceListingByIdService` handles submitted full-form `PUT` replacements.
 - `patchListingByIdService` handles autosave and status-only `PATCH` updates while preserving omitted values.
 - Both update services share edit-access checks, dynamic feature merging in `customFields`, property/listing updates, and image synchronization.
-- `deleteListingByIdService` archives the listing rather than deleting it.
+- `archiveListingByIdService` archives the listing rather than deleting it.
 
 Status timestamps are managed by `resolveListingStatusTimestamps`.
 

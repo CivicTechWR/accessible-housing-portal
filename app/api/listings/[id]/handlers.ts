@@ -2,13 +2,11 @@ import { TypedNextResponse, type TypedNextRequest } from "next-rest-framework";
 
 import { mapDomainErrorToHttpResponse } from "@/lib/http/map-domain-error";
 import {
-  deleteListingByIdService,
   getListingByIdService,
   patchListingByIdService,
   replaceListingByIdService,
 } from "@/lib/listings/listing.service";
 import type {
-  DeleteListingResponse,
   ListingByIdResponse,
   ListingParams,
   PatchListingInput,
@@ -70,21 +68,6 @@ export async function patchListingByIdHandler(
   }
 
   return TypedNextResponse.json<PatchListingResponse, 200, "application/json">({
-    ...result.value,
-  });
-}
-
-export async function deleteListingByIdHandler(
-  _request: TypedNextRequest<"DELETE">,
-  { params }: ListingByIdRouteContext,
-) {
-  const result = await deleteListingByIdService(params.id);
-
-  if (!result.ok) {
-    return mapDomainErrorToHttpResponse(result.error);
-  }
-
-  return TypedNextResponse.json<DeleteListingResponse, 200, "application/json">({
     ...result.value,
   });
 }
