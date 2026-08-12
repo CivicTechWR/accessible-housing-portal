@@ -43,7 +43,7 @@ import {
   createDraftListing,
   createListing,
   duplicateListingGraph,
-  findFeatureDefinitionCategoriesByKeys,
+  findFeatureDefinitionApplicabilityByKeys,
   findListingImagesByListingIds,
   findListingImagesByListingId,
   findOwnerListings,
@@ -385,11 +385,13 @@ async function resolveDuplicateCustomFields(
     return customFields;
   }
 
-  const definitions = await findFeatureDefinitionCategoriesByKeys(Object.keys(customFields));
+  const definitions = await findFeatureDefinitionApplicabilityByKeys(Object.keys(customFields));
 
   return selectDuplicateCustomFields({
     customFields,
-    categoryByKey: new Map(definitions.map((definition) => [definition.key, definition.category])),
+    applicabilityByKey: new Map(
+      definitions.map((definition) => [definition.key, definition.appliesTo]),
+    ),
     scope,
   });
 }

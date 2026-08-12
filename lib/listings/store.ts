@@ -3,6 +3,7 @@ import "server-only";
 import { formatDistanceToNow } from "date-fns";
 
 import type {
+  CustomListingFieldApplicability,
   Listing,
   ListingCustomFields,
   ListingStatus,
@@ -13,7 +14,6 @@ import type {
 import { sortCustomListingFieldsForDisplay } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import {
   buildListingFeatureDefinitionLookup,
-  normalizeListingFeatureToken,
   type ListingFeatureDefinition,
 } from "@/lib/listings/listing-feature-definitions";
 import type {
@@ -107,34 +107,21 @@ export function buildDuplicateListingTitle(title: string) {
   return trimmedTitle ? `Copy of ${trimmedTitle}` : "";
 }
 
-// Admin-editable categories default to unit scope unless explicitly recognized as building scope.
-export const BUILDING_SCOPE_FEATURE_CATEGORIES = ["BUILDING AMENITIES", "ENTRY & EXTERIOR"];
-
-const buildingScopeFeatureCategoryTokens = new Set(
-  BUILDING_SCOPE_FEATURE_CATEGORIES.map(normalizeListingFeatureToken),
-);
-
-export function isBuildingScopeFeatureCategory(category: string) {
-  return buildingScopeFeatureCategoryTokens.has(normalizeListingFeatureToken(category));
-}
-
 export function selectDuplicateCustomFields(input: {
   customFields: ListingCustomFields;
-  categoryByKey: Map<string, string>;
+  applicabilityByKey: Map<string, CustomListingFieldApplicability>;
   scope: ListingDuplicateScope;
 }): ListingCustomFields {
   if (input.scope === "all") {
     return { ...input.customFields };
   }
 
-  const wantsBuildingFeatures = input.scope === "building";
   const selected: ListingCustomFields = {};
 
   for (const [key, value] of Object.entries(input.customFields)) {
-    const category = input.categoryByKey.get(key);
-    const isBuildingFeature = category ? isBuildingScopeFeatureCategory(category) : false;
+    const applicability = input.applicabilityByKey.get(key) ?? "unit";
 
-    if (isBuildingFeature === wantsBuildingFeatures) {
+    if (applicability === input.scope) {
       selected[key] = value;
     }
   }

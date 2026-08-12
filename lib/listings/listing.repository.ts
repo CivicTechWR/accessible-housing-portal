@@ -331,7 +331,7 @@ export async function findPublicFeatureDefinitionsByKeys(keys: string[]) {
     );
 }
 
-export async function findFeatureDefinitionCategoriesByKeys(keys: string[]) {
+export async function findFeatureDefinitionApplicabilityByKeys(keys: string[]) {
   if (keys.length === 0) {
     return [];
   }
@@ -339,7 +339,7 @@ export async function findFeatureDefinitionCategoriesByKeys(keys: string[]) {
   return db
     .select({
       key: customListingFields.key,
-      category: customListingFields.category,
+      appliesTo: customListingFields.appliesTo,
     })
     .from(customListingFields)
     .where(inArray(customListingFields.key, keys));

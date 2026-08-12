@@ -1,6 +1,11 @@
 import { describe, expect, it } from "@jest/globals";
 
-import type { Listing, ListingCustomFields, Property } from "@/db/schema";
+import type {
+  CustomListingFieldApplicability,
+  Listing,
+  ListingCustomFields,
+  Property,
+} from "@/db/schema";
 import {
   buildDuplicateListingPlan,
   buildDuplicateListingTitle,
@@ -8,7 +13,6 @@ import {
   buildListingFeatureCategories,
   DEFAULT_PROPERTY_COUNTRY,
   getDisplayAccessibilityFeatures,
-  isBuildingScopeFeatureCategory,
   selectDuplicateCustomFields,
   getListingApplicationUrl,
   mergeListingCustomFields,
@@ -31,38 +35,34 @@ describe("selectDuplicateCustomFields", () => {
     roll_in_shower: true,
     legacy_unmapped_feature: true,
   };
-  const categoryByKey = new Map([
-    ["elevator_in_building", "BUILDING AMENITIES"],
-    ["main_entrance_is_barrier_free", "ENTRY & EXTERIOR"],
-    ["roll_in_shower", "KITCHEN & BATH"],
+  const applicabilityByKey = new Map<string, CustomListingFieldApplicability>([
+    ["elevator_in_building", "building"],
+    ["main_entrance_is_barrier_free", "building"],
+    ["roll_in_shower", "unit"],
   ]);
 
   it("keeps every feature when all fields are copied", () => {
-    expect(selectDuplicateCustomFields({ customFields, categoryByKey, scope: "all" })).toEqual(
+    expect(selectDuplicateCustomFields({ customFields, applicabilityByKey, scope: "all" })).toEqual(
       customFields,
     );
   });
 
   it("keeps only building-level features for the building scope", () => {
-    expect(selectDuplicateCustomFields({ customFields, categoryByKey, scope: "building" })).toEqual(
-      {
-        elevator_in_building: true,
-        main_entrance_is_barrier_free: true,
-      },
-    );
-  });
-
-  it("keeps unit-level and unrecognized features for the unit scope", () => {
-    expect(selectDuplicateCustomFields({ customFields, categoryByKey, scope: "unit" })).toEqual({
-      roll_in_shower: true,
-      legacy_unmapped_feature: true,
+    expect(
+      selectDuplicateCustomFields({ customFields, applicabilityByKey, scope: "building" }),
+    ).toEqual({
+      elevator_in_building: true,
+      main_entrance_is_barrier_free: true,
     });
   });
 
-  it("matches building categories regardless of case and punctuation", () => {
-    expect(isBuildingScopeFeatureCategory("Entry and Exterior")).toBe(true);
-    expect(isBuildingScopeFeatureCategory("building amenities")).toBe(true);
-    expect(isBuildingScopeFeatureCategory("UNIT INTERIOR")).toBe(false);
+  it("keeps unit-level and unrecognized features for the unit scope", () => {
+    expect(
+      selectDuplicateCustomFields({ customFields, applicabilityByKey, scope: "unit" }),
+    ).toEqual({
+      roll_in_shower: true,
+      legacy_unmapped_feature: true,
+    });
   });
 });
 
