@@ -55,11 +55,6 @@ const SCOPE_OPTIONS: Array<{
     label: "Building information only",
     description: "Address, building details, contact information, and shared amenities.",
   },
-  {
-    value: "unit",
-    label: "Unit information only",
-    description: "Rent, bedrooms, lease details, and unit features.",
-  },
 ];
 
 export function DuplicateListingDialog({

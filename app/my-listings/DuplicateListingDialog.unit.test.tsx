@@ -65,23 +65,6 @@ describe("DuplicateListingDialog", () => {
     ).not.toBeNull();
   });
 
-  it("confirms with the selected scope and photo choice", () => {
-    const { onConfirm } = renderDialog();
-
-    fireEvent.click(screen.getByRole("radio", { name: /Unit information only/ }));
-    fireEvent.click(screen.getByRole("switch", { name: "Copy photos?" }));
-
-    expect(
-      screen.queryByText(
-        "Unit information will be copied. Building details will be left blank. 8 photos will be copied to the new draft. The unit number and availability date will be left blank.",
-      ),
-    ).not.toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "Duplicate as draft" }));
-
-    expect(onConfirm).toHaveBeenCalledWith({ scope: "unit", copyPhotos: true });
-  });
-
   it("disables the photo toggle when the listing has no photos", () => {
     renderDialog({ listing: { ...listing, imageCount: 0 } });
 
