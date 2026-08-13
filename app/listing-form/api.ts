@@ -49,9 +49,6 @@ export function mapListingFormToReplaceListingInput(
   return replacement;
 }
 
-/** @deprecated Use mapListingFormToReplaceListingInput for submitted full-form saves. */
-export const mapListingFormToUpdateListingInput = mapListingFormToReplaceListingInput;
-
 export function mapListingFormToAutosavePatchInput(
   data: ListingFormInput,
   status = data.status ?? "draft",
@@ -147,9 +144,6 @@ export function mapListingFormToAutosavePatchInput(
 
   return Object.keys(patch).length > 0 ? patch : null;
 }
-
-/** @deprecated Use mapListingFormToAutosavePatchInput for partial autosaves. */
-export const mapListingFormToAutosaveUpdateInput = mapListingFormToAutosavePatchInput;
 
 export async function parseCreateDraftListingResponse(response: Response): Promise<{ id: string }> {
   if (!response.ok) {

@@ -250,9 +250,6 @@ export const replaceListingSchema = listingPayloadSchema
 
 export const patchListingSchema = patchListingPayloadSchema;
 
-/** @deprecated Use patchListingSchema for the partial update contract. */
-export const updateListingSchema = patchListingSchema;
-
 export const listingEditorDataSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
@@ -317,9 +314,6 @@ export const patchListingResponseSchema = z.object({
   data: listingIdDataSchema.and(patchListingSchema),
 });
 
-/** @deprecated Use patchListingResponseSchema for the partial update contract. */
-export const updateListingResponseSchema = patchListingResponseSchema;
-
 export const deleteListingResponseSchema = z.object({
   message: z.string(),
   data: listingIdDataSchema,
@@ -338,12 +332,8 @@ export type CreateListingInput = z.infer<typeof createListingSchema>;
 export type ReplaceListingInput = z.infer<typeof replaceListingSchema>;
 export type PatchListingInput = z.infer<typeof patchListingSchema>;
 export type ListingMutationInput = ReplaceListingInput | PatchListingInput;
-/** @deprecated Use PatchListingInput for the partial update contract. */
-export type UpdateListingInput = PatchListingInput;
 export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
 export type ReplaceListingResponse = z.infer<typeof replaceListingResponseSchema>;
 export type PatchListingResponse = z.infer<typeof patchListingResponseSchema>;
-/** @deprecated Use PatchListingResponse for the partial update contract. */
-export type UpdateListingResponse = PatchListingResponse;
 export type DeleteListingResponse = z.infer<typeof deleteListingResponseSchema>;
