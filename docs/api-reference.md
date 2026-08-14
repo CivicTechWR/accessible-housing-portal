@@ -48,7 +48,7 @@ Listing create/update payloads submit selected accessibility features as `access
 
 Create payloads may include `applicationUrl` as a valid HTTP(S) URL. Replacement and partial-update payloads may include `applicationUrl` as a valid HTTP(S) URL or `null` to clear the stored URL.
 
-Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighborhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber` and `applicationUrl` fields. Submitted full-form `PUT` payloads serialize cleared form values as `null`.
+Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighborhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber` and `applicationUrl` fields. Submitted full-form `PUT` payloads serialize cleared form-owned values as `null`; publishing without an availability date retains the existing available-today default.
 
 ## Image Uploads
 

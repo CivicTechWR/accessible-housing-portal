@@ -56,9 +56,6 @@ export function useListingForm(initialListingId?: string) {
     squareFeet:
       form.formState.dirtyFields.squareFeet === true ||
       form.formState.touchedFields.squareFeet === true,
-    availableOn:
-      form.formState.dirtyFields.availableOn === true ||
-      form.formState.touchedFields.availableOn === true,
   };
   const autosavePayload = mapListingFormToAutosavePatchInput(
     watchedValues,

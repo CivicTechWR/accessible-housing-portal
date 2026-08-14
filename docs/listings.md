@@ -191,7 +191,7 @@ Built-in listing fields are persisted in normalized columns on `listings` or `pr
 
 `lib/listings/store.ts` maps selected admin-configured accessibility features into `listings.custom_fields`. Current authoring writes selected public boolean feature definitions as boolean keys where `custom_fields[definition.key]` is `true`.
 
-Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, availability date, unit number, and application URL. The update API applies the same contract to neighborhood and coordinates.
+Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, and application URL. The update API applies the same contract to availability date, neighborhood, and coordinates. New listings published without an availability date retain the available-today default.
 
 If a new listing field must be searchable, sortable, joined, or constrained at scale, prefer a normalized column. If it is project-configurable feature metadata, prefer `listing_field_definitions` plus `customFields`.
 

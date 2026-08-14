@@ -41,7 +41,6 @@ export function mapListingFormToReplaceListingInput(
       {
         ...payload.units[0],
         sqft: data.squareFeet ?? null,
-        availableDate: normalizeOptionalString(data.availableOn) ?? null,
       },
     ],
   };
@@ -132,8 +131,6 @@ export function mapListingFormToAutosavePatchInput(
 
   if (availableDate) {
     unit.availableDate = availableDate;
-  } else if (nullableFieldEditIntent.availableOn) {
-    unit.availableDate = null;
   }
 
   if (Object.keys(address).length > 0) {
@@ -282,7 +279,7 @@ function assignTrimmedString(
 }
 
 type NullableListingFormFieldEditIntent = Partial<
-  Record<"description" | "street2" | "squareFeet" | "availableOn", boolean>
+  Record<"description" | "street2" | "squareFeet", boolean>
 >;
 
 function assignNullableTrimmedString(
