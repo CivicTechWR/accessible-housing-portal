@@ -195,7 +195,7 @@ const listingUnitPatchSchema = listingUnitSchema.partial().refine(hasAtLeastOneF
   message: "Each unit update must include at least one field.",
 });
 
-const updateListingBasePayloadSchema = z.object({
+const patchListingBasePayloadSchema = z.object({
   title: nonEmptyString.optional(),
   name: nonEmptyString.optional(),
   description: optionalTrimmedString(),
@@ -211,7 +211,7 @@ const updateListingBasePayloadSchema = z.object({
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
 });
-const updateListingPayloadSchema = updateListingBasePayloadSchema.refine(
+const patchListingPayloadSchema = patchListingBasePayloadSchema.refine(
   (value) => hasAtLeastOneField(value),
   {
     message: "At least one field is required.",
@@ -241,7 +241,14 @@ const listingPayloadSchema = z.object({
 
 export const createListingSchema = listingPayloadSchema;
 
-export const updateListingSchema = updateListingPayloadSchema;
+export const replaceListingSchema = listingPayloadSchema
+  .omit({ imageUploadSessionId: true })
+  .extend({
+    unitNumber: z.union([nonEmptyString, z.null()]).optional(),
+    applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
+  });
+
+export const patchListingSchema = patchListingPayloadSchema;
 
 export const listingEditorDataSchema = z.object({
   title: z.string(),
@@ -297,9 +304,14 @@ export const createDraftListingResponseSchema = z.object({
   data: listingIdDataSchema,
 });
 
-export const updateListingResponseSchema = z.object({
+export const replaceListingResponseSchema = z.object({
   message: z.string(),
-  data: listingIdDataSchema.and(updateListingPayloadSchema),
+  data: listingIdDataSchema.and(replaceListingSchema),
+});
+
+export const patchListingResponseSchema = z.object({
+  message: z.string(),
+  data: listingIdDataSchema.and(patchListingSchema),
 });
 
 export const deleteListingResponseSchema = z.object({
@@ -317,8 +329,11 @@ export type ListingByIdResponse = z.infer<typeof listingByIdResponseSchema>;
 export type ListingEditorData = z.infer<typeof listingEditorDataSchema>;
 export type ListingEditorResponse = z.infer<typeof listingEditorResponseSchema>;
 export type CreateListingInput = z.infer<typeof createListingSchema>;
-export type UpdateListingInput = z.infer<typeof updateListingSchema>;
+export type ReplaceListingInput = z.infer<typeof replaceListingSchema>;
+export type PatchListingInput = z.infer<typeof patchListingSchema>;
+export type ListingMutationInput = ReplaceListingInput | PatchListingInput;
 export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
-export type UpdateListingResponse = z.infer<typeof updateListingResponseSchema>;
+export type ReplaceListingResponse = z.infer<typeof replaceListingResponseSchema>;
+export type PatchListingResponse = z.infer<typeof patchListingResponseSchema>;
 export type DeleteListingResponse = z.infer<typeof deleteListingResponseSchema>;

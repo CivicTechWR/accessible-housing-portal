@@ -6,7 +6,8 @@ import {
   listingEditorResponseSchema,
   type CreateListingInput,
   type ListingEditorData,
-  type UpdateListingInput,
+  type PatchListingInput,
+  type ReplaceListingInput,
 } from "@/shared/schemas/listings";
 import type { ListingFormData, ListingFormInput } from "./types";
 
@@ -20,42 +21,42 @@ export function mapListingFormToCreateListingInput(data: ListingFormData): Creat
   return buildListingPayloadFromForm(data);
 }
 
-export function mapListingFormToUpdateListingInput(
+export function mapListingFormToReplaceListingInput(
   data: ListingFormData,
   status = data.status,
   rawInput?: ListingFormInput,
-): UpdateListingInput {
+): ReplaceListingInput {
   const payload = {
     ...buildListingPayloadFromForm(data),
     status,
   };
-  const patch: UpdateListingInput = { ...payload };
+  const replacement: ReplaceListingInput = { ...payload };
 
   if (
     rawInput?.unitNumber !== undefined &&
     normalizeOptionalString(rawInput.unitNumber) === undefined
   ) {
-    patch.unitNumber = null;
+    replacement.unitNumber = null;
   }
 
   const applicationUrl = normalizeOptionalString(data.applicationUrl);
   if (applicationUrl) {
-    patch.applicationUrl = applicationUrl;
+    replacement.applicationUrl = applicationUrl;
   } else if (rawInput?.applicationUrl !== undefined) {
-    patch.applicationUrl = null;
+    replacement.applicationUrl = null;
   }
 
-  return patch;
+  return replacement;
 }
 
-export function mapListingFormToAutosaveUpdateInput(
+export function mapListingFormToAutosavePatchInput(
   data: ListingFormInput,
   status = data.status ?? "draft",
-): UpdateListingInput | null {
-  const patch: UpdateListingInput = {};
-  const address: NonNullable<UpdateListingInput["address"]> = {};
-  const contact: NonNullable<UpdateListingInput["contact"]> = {};
-  const unit: NonNullable<UpdateListingInput["units"]>[number] = {};
+): PatchListingInput | null {
+  const patch: PatchListingInput = {};
+  const address: NonNullable<PatchListingInput["address"]> = {};
+  const contact: NonNullable<PatchListingInput["contact"]> = {};
+  const unit: NonNullable<PatchListingInput["units"]>[number] = {};
 
   assignTrimmedString(patch, "title", data.title);
   assignTrimmedString(patch, "name", data.name);

@@ -69,9 +69,12 @@ import type {
   ListingEditorResponse,
   ListingIdParam,
   ListingListResponse,
+  ListingMutationInput,
   ListingQuery,
-  UpdateListingInput,
-  UpdateListingResponse,
+  PatchListingInput,
+  PatchListingResponse,
+  ReplaceListingInput,
+  ReplaceListingResponse,
 } from "@/shared/schemas/listings";
 
 type OptionalSessionResult = Awaited<ReturnType<typeof getOptionalSession>>;
@@ -412,10 +415,41 @@ export async function createListingService(
   });
 }
 
-export async function updateListingByIdService(input: {
+export async function replaceListingByIdService(input: {
   listingId: ListingIdParam;
-  payload: UpdateListingInput;
-}): Promise<DomainResult<UpdateListingResponse>> {
+  payload: ReplaceListingInput;
+}): Promise<DomainResult<ReplaceListingResponse>> {
+  return updateListingById({
+    ...input,
+    method: "replace",
+  });
+}
+
+export async function patchListingByIdService(input: {
+  listingId: ListingIdParam;
+  payload: PatchListingInput;
+}): Promise<DomainResult<PatchListingResponse>> {
+  return updateListingById({
+    ...input,
+    method: "patch",
+  });
+}
+
+type ListingUpdateOperation =
+  | {
+      method: "replace";
+      listingId: ListingIdParam;
+      payload: ReplaceListingInput;
+    }
+  | {
+      method: "patch";
+      listingId: ListingIdParam;
+      payload: PatchListingInput;
+    };
+
+async function updateListingById<TPayload extends ListingMutationInput>(
+  input: ListingUpdateOperation & { payload: TPayload },
+): Promise<DomainResult<{ message: string; data: { id: ListingIdParam } & TPayload }>> {
   const actorResult = await requireListingWriteActor();
 
   if (!actorResult.ok) {
@@ -700,7 +734,7 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
 }
 
 function resolveNextApplicationUrl(input: {
-  payload: UpdateListingInput;
+  payload: ListingMutationInput;
   listingApplicationUrl: string | null;
 }) {
   if (input.payload.applicationUrl !== undefined) {
