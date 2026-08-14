@@ -193,10 +193,47 @@ describe("listing API schemas", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts explicit null for nullable replacement and PATCH fields", () => {
+    const nullableFields = {
+      ...validCreatePayload,
+      description: null,
+      address: {
+        ...validCreatePayload.address,
+        street2: null,
+      },
+      units: [
+        {
+          ...validCreatePayload.units[0],
+          sqft: null,
+          availableDate: null,
+        },
+      ],
+      unitNumber: null,
+      applicationUrl: null,
+    };
+
+    expect(replaceListingSchema.safeParse(nullableFields).success).toBe(true);
+    expect(
+      patchListingSchema.safeParse({
+        description: null,
+        address: { street2: null },
+        units: [{ sqft: null, availableDate: null }],
+      }).success,
+    ).toBe(true);
+  });
+
   it("keeps replacement and PATCH payload completeness distinct", () => {
+    const { description: _description, ...withoutDescription } = validCreatePayload;
+    const withoutSquareFeet = {
+      ...validCreatePayload,
+      units: validCreatePayload.units.map(({ sqft: _sqft, ...unit }) => unit),
+    };
+
     expect(patchListingSchema.safeParse({ status: "published" }).success).toBe(true);
     expect(patchListingSchema.safeParse({}).success).toBe(false);
     expect(replaceListingSchema.safeParse(validCreatePayload).success).toBe(true);
+    expect(replaceListingSchema.safeParse(withoutDescription).success).toBe(false);
+    expect(replaceListingSchema.safeParse(withoutSquareFeet).success).toBe(false);
     expect(replaceListingSchema.safeParse({ status: "published" }).success).toBe(false);
   });
 

@@ -24,7 +24,6 @@ export function mapListingFormToCreateListingInput(data: ListingFormData): Creat
 export function mapListingFormToReplaceListingInput(
   data: ListingFormData,
   status = data.status,
-  rawInput?: ListingFormInput,
 ): ReplaceListingInput {
   const payload = {
     ...buildListingPayloadFromForm(data),
@@ -41,25 +40,30 @@ export function mapListingFormToReplaceListingInput(
       {
         ...payload.units[0],
         sqft: data.squareFeet ?? null,
+        availableDate: payload.units[0].availableDate ?? new Date().toISOString().slice(0, 10),
       },
     ],
+    unitNumber: normalizeOptionalString(data.unitNumber) ?? null,
+    applicationUrl: normalizeOptionalString(data.applicationUrl) ?? null,
   };
 
-  if (
-    rawInput?.unitNumber !== undefined &&
-    normalizeOptionalString(rawInput.unitNumber) === undefined
-  ) {
-    replacement.unitNumber = null;
-  }
-
-  const applicationUrl = normalizeOptionalString(data.applicationUrl);
-  if (applicationUrl) {
-    replacement.applicationUrl = applicationUrl;
-  } else if (rawInput?.applicationUrl !== undefined) {
-    replacement.applicationUrl = null;
-  }
-
   return replacement;
+}
+
+export function getPendingAutosaveNullableFieldClearIntent(
+  data: ListingFormInput,
+  lastAutosavedPayload: PatchListingInput | null,
+): NullableListingFormFieldEditIntent {
+  return {
+    description:
+      normalizeOptionalString(data.description) === undefined &&
+      hasConcreteValue(lastAutosavedPayload?.description),
+    street2:
+      normalizeOptionalString(data.street2) === undefined &&
+      hasConcreteValue(lastAutosavedPayload?.address?.street2),
+    squareFeet:
+      !Number.isFinite(data.squareFeet) && hasConcreteValue(lastAutosavedPayload?.units?.[0]?.sqft),
+  };
 }
 
 export function mapListingFormToAutosavePatchInput(
@@ -264,6 +268,10 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
 function normalizeOptionalString(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function hasConcreteValue<T>(value: T | null | undefined): value is T {
+  return value !== undefined && value !== null;
 }
 
 function assignTrimmedString(

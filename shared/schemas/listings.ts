@@ -180,15 +180,25 @@ const listingUnitSchema = z.object({
 });
 
 const nullableListingDescriptionSchema = z.union([nonEmptyString, z.null()]);
+const nullableListingStreet2Schema = z.union([nonEmptyString, z.null()]);
+const nullableListingSquareFeetSchema = z.union([z.number().int().min(0), z.null()]);
+const nullableListingAvailableDateSchema = z.union([z.iso.date(), z.null()]);
 const listingAddressMutationSchema = listingAddressSchema.extend({
-  street2: z.union([nonEmptyString, z.null()]).optional(),
+  street2: nullableListingStreet2Schema.optional(),
   neighborhood: z.union([nonEmptyString, z.null()]).optional(),
   latitude: z.union([z.number().min(-90).max(90), z.null()]).optional(),
   longitude: z.union([z.number().min(-180).max(180), z.null()]).optional(),
 });
 const listingUnitMutationSchema = listingUnitSchema.extend({
-  sqft: z.union([z.number().int().min(0), z.null()]).optional(),
-  availableDate: z.union([z.iso.date(), z.null()]).optional(),
+  sqft: nullableListingSquareFeetSchema.optional(),
+  availableDate: nullableListingAvailableDateSchema.optional(),
+});
+const listingAddressReplacementSchema = listingAddressMutationSchema.extend({
+  street2: nullableListingStreet2Schema,
+});
+const listingUnitReplacementSchema = listingUnitMutationSchema.extend({
+  sqft: nullableListingSquareFeetSchema,
+  availableDate: nullableListingAvailableDateSchema,
 });
 
 const listingPaginationSchema = z.object({
@@ -258,11 +268,11 @@ export const createListingSchema = listingPayloadSchema;
 export const replaceListingSchema = listingPayloadSchema
   .omit({ imageUploadSessionId: true })
   .extend({
-    description: nullableListingDescriptionSchema.optional(),
-    address: listingAddressMutationSchema,
-    units: z.tuple([listingUnitMutationSchema], listingUnitMutationSchema),
-    unitNumber: z.union([nonEmptyString, z.null()]).optional(),
-    applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
+    description: nullableListingDescriptionSchema,
+    address: listingAddressReplacementSchema,
+    units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
+    unitNumber: z.union([nonEmptyString, z.null()]),
+    applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
   });
 
 export const patchListingSchema = patchListingPayloadSchema;
