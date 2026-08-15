@@ -3,7 +3,11 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { mapListingFormToAutosavePatchInput, mapListingFormToReplaceListingInput } from "./api";
+import {
+  getPendingAutosaveNullableFieldClearIntent,
+  mapListingFormToAutosavePatchInput,
+  mapListingFormToReplaceListingInput,
+} from "./api";
 import {
   listingFormSchema,
   ListingFormContext,
@@ -18,7 +22,8 @@ import { useGetListingQuery } from "./useGetListingQuery";
 export function useListingForm(initialListingId?: string) {
   const router = useRouter();
   const draftBootstrapPromiseRef = useRef<Promise<string> | null>(null);
-  const lastAutosavedPayloadRef = useRef<string | null>(null);
+  const lastAutosavedPayloadRef =
+    useRef<ReturnType<typeof mapListingFormToAutosavePatchInput>>(null);
   const autosaveTimeoutRef = useRef<number | null>(null);
   const inFlightAutosaveRef = useRef<Promise<void> | null>(null);
   const [activeListingId, setActiveListingId] = useState(initialListingId);
@@ -47,19 +52,42 @@ export function useListingForm(initialListingId?: string) {
   } = useGetListingQuery(initialListingId);
   const { createDraftListing, isLoading: isCreatingDraft } = useCreateDraftListingQuery();
   const { patchListing, replaceListing, isLoading: isEditing } = useEditListingQuery();
+  const pendingNullableFieldClearIntent = getPendingAutosaveNullableFieldClearIntent(
+    watchedValues,
+    lastAutosavedPayloadRef.current,
+  );
+  const nullableFieldEditIntent = {
+    description:
+      form.formState.dirtyFields.description === true ||
+      form.formState.touchedFields.description === true ||
+      pendingNullableFieldClearIntent.description === true,
+    street2:
+      form.formState.dirtyFields.street2 === true ||
+      form.formState.touchedFields.street2 === true ||
+      pendingNullableFieldClearIntent.street2 === true,
+    squareFeet:
+      form.formState.dirtyFields.squareFeet === true ||
+      form.formState.touchedFields.squareFeet === true ||
+      pendingNullableFieldClearIntent.squareFeet === true,
+  };
+  const hasPendingNullableFieldClear = Object.values(pendingNullableFieldClearIntent).some(Boolean);
   const autosavePayload = mapListingFormToAutosavePatchInput(
     watchedValues,
     initialListingId ? watchedValues.status : "draft",
+    nullableFieldEditIntent,
   );
   const autosavePayloadKey = autosavePayload ? JSON.stringify(autosavePayload) : null;
+  const lastAutosavedPayloadKey = lastAutosavedPayloadRef.current
+    ? JSON.stringify(lastAutosavedPayloadRef.current)
+    : null;
   const isPublishedEditMode = Boolean(initialListingId && initialData?.status === "published");
   const shouldAutosaveDraft =
     !isPublishedEditMode &&
     Boolean(
       autosavePayload &&
       autosavePayloadKey &&
-      lastAutosavedPayloadRef.current !== autosavePayloadKey &&
-      form.formState.isDirty &&
+      lastAutosavedPayloadKey !== autosavePayloadKey &&
+      (form.formState.isDirty || hasPendingNullableFieldClear) &&
       !isAutosaveInFlight &&
       !isPublishing &&
       !form.formState.isSubmitting,
@@ -97,11 +125,15 @@ export function useListingForm(initialListingId?: string) {
   const prepareDraftListing = useCallback(async (): Promise<string> => {
     const listingId = await createDraftListingId();
 
-    if (!form.formState.isDirty) {
+    if (!form.formState.isDirty && !hasPendingNullableFieldClear) {
       return listingId;
     }
 
-    const currentDraftPayload = mapListingFormToAutosavePatchInput(form.getValues(), "draft");
+    const currentDraftPayload = mapListingFormToAutosavePatchInput(
+      form.getValues(),
+      "draft",
+      nullableFieldEditIntent,
+    );
 
     if (!currentDraftPayload) {
       return listingId;
@@ -111,10 +143,16 @@ export function useListingForm(initialListingId?: string) {
       listingId,
       payload: currentDraftPayload,
     });
-    lastAutosavedPayloadRef.current = JSON.stringify(currentDraftPayload);
+    lastAutosavedPayloadRef.current = currentDraftPayload;
 
     return listingId;
-  }, [createDraftListingId, form, patchListing]);
+  }, [
+    createDraftListingId,
+    form,
+    hasPendingNullableFieldClear,
+    nullableFieldEditIntent,
+    patchListing,
+  ]);
 
   useEffect(() => {
     setActiveListingId(initialListingId);
@@ -124,11 +162,9 @@ export function useListingForm(initialListingId?: string) {
     if (initialData) {
       if (!form.formState.isDirty || initialListingId) {
         form.reset(initialData);
-        lastAutosavedPayloadRef.current = JSON.stringify(
-          mapListingFormToAutosavePatchInput(
-            initialData,
-            initialListingId ? initialData.status : "draft",
-          ),
+        lastAutosavedPayloadRef.current = mapListingFormToAutosavePatchInput(
+          initialData,
+          initialListingId ? initialData.status : "draft",
         );
       }
       return;
@@ -171,7 +207,7 @@ export function useListingForm(initialListingId?: string) {
           }),
         )
         .then(() => {
-          lastAutosavedPayloadRef.current = autosavePayloadKey;
+          lastAutosavedPayloadRef.current = autosavePayload;
           setAutosaveFeedback("Draft saved");
         })
         .catch((error) => {
@@ -300,7 +336,7 @@ export function useListingForm(initialListingId?: string) {
 
       await replaceListing({
         listingId,
-        payload: mapListingFormToReplaceListingInput(data, "published", watchedValues),
+        payload: mapListingFormToReplaceListingInput(data, "published"),
       });
       router.push(`/listings/${listingId}`);
       router.refresh();

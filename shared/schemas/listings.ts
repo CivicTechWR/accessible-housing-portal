@@ -179,26 +179,50 @@ const listingUnitSchema = z.object({
   availableDate: z.iso.date().optional(),
 });
 
+const nullableListingDescriptionSchema = z.union([nonEmptyString, z.null()]);
+const nullableListingStreet2Schema = z.union([nonEmptyString, z.null()]);
+const nullableListingSquareFeetSchema = z.union([z.number().int().min(0), z.null()]);
+const nullableListingAvailableDateSchema = z.union([z.iso.date(), z.null()]);
+const listingAddressMutationSchema = listingAddressSchema.extend({
+  street2: nullableListingStreet2Schema.optional(),
+  neighborhood: z.union([nonEmptyString, z.null()]).optional(),
+  latitude: z.union([z.number().min(-90).max(90), z.null()]).optional(),
+  longitude: z.union([z.number().min(-180).max(180), z.null()]).optional(),
+});
+const listingUnitMutationSchema = listingUnitSchema.extend({
+  sqft: nullableListingSquareFeetSchema.optional(),
+  availableDate: nullableListingAvailableDateSchema.optional(),
+});
+const listingAddressReplacementSchema = listingAddressMutationSchema.extend({
+  street2: nullableListingStreet2Schema,
+});
+const listingUnitReplacementSchema = listingUnitMutationSchema.extend({
+  sqft: nullableListingSquareFeetSchema,
+  availableDate: nullableListingAvailableDateSchema,
+});
+
 const listingPaginationSchema = z.object({
   page: z.number().int().min(1),
   limit: z.number().int().min(1),
   total: z.number().int().min(0),
   totalPages: z.number().int().min(0),
 });
-const listingAddressPatchSchema = listingAddressSchema.partial().refine(hasAtLeastOneField, {
-  message: "Address update must include at least one field.",
-});
+const listingAddressPatchSchema = listingAddressMutationSchema
+  .partial()
+  .refine(hasAtLeastOneField, {
+    message: "Address update must include at least one field.",
+  });
 const listingContactPatchSchema = listingContactSchema.partial().refine(hasAtLeastOneField, {
   message: "Contact update must include at least one field.",
 });
-const listingUnitPatchSchema = listingUnitSchema.partial().refine(hasAtLeastOneField, {
+const listingUnitPatchSchema = listingUnitMutationSchema.partial().refine(hasAtLeastOneField, {
   message: "Each unit update must include at least one field.",
 });
 
 const patchListingBasePayloadSchema = z.object({
   title: nonEmptyString.optional(),
   name: nonEmptyString.optional(),
-  description: optionalTrimmedString(),
+  description: nullableListingDescriptionSchema.optional(),
   address: listingAddressPatchSchema.optional(),
   units: z.array(listingUnitPatchSchema).min(1, "At least one unit is required.").optional(),
   accessibilityFeatures: z.array(listingInputFeatureSchema).optional(),
@@ -244,8 +268,11 @@ export const createListingSchema = listingPayloadSchema;
 export const replaceListingSchema = listingPayloadSchema
   .omit({ imageUploadSessionId: true })
   .extend({
-    unitNumber: z.union([nonEmptyString, z.null()]).optional(),
-    applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
+    description: nullableListingDescriptionSchema,
+    address: listingAddressReplacementSchema,
+    units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
+    unitNumber: z.union([nonEmptyString, z.null()]),
+    applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
   });
 
 export const patchListingSchema = patchListingPayloadSchema;

@@ -6,6 +6,7 @@ import {
   type ListingFormInput,
 } from "@/app/listing-form/types";
 import {
+  getPendingAutosaveNullableFieldClearIntent,
   mapListingFormToAutosavePatchInput,
   mapListingFormToCreateListingInput,
   mapListingFormToReplaceListingInput,
@@ -148,7 +149,7 @@ describe("mapListingFormToCreateListingInput", () => {
     expect(mapListingFormToReplaceListingInput(validFormData, "published")).toEqual({
       title: "Accessible Two Bedroom",
       name: "Cedar Court",
-      description: undefined,
+      description: null,
       address: {
         street: "123 Main Street",
         street2: "Building A",
@@ -185,6 +186,7 @@ describe("mapListingFormToCreateListingInput", () => {
       },
       status: "published",
       unitNumber: "204",
+      applicationUrl: null,
       buildingType: "apartment",
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water"],
@@ -213,10 +215,6 @@ describe("mapListingFormToCreateListingInput", () => {
           applicationUrl: undefined,
         },
         "published",
-        {
-          ...validFormData,
-          applicationUrl: "  ",
-        },
       ),
     ).toMatchObject({
       applicationUrl: null,
@@ -257,6 +255,52 @@ describe("mapListingFormToCreateListingInput", () => {
       ],
       status: "draft",
       utilitiesIncluded: [],
+    });
+  });
+
+  it("keeps a nullable clear pending until null has been autosaved", () => {
+    const populatedDraft: ListingFormInput = {
+      ...CREATE_FORM_DEFAULTS,
+      description: "Saved description",
+      street2: "Suite 204",
+      squareFeet: 920,
+      monthlyRentCents: 0,
+    };
+    const lastAutosavedPayload = mapListingFormToAutosavePatchInput(populatedDraft);
+
+    expect(lastAutosavedPayload).not.toBeNull();
+
+    const clearedDraft: ListingFormInput = {
+      ...CREATE_FORM_DEFAULTS,
+      description: "",
+      street2: "",
+      squareFeet: undefined,
+      monthlyRentCents: 0,
+    };
+    const pendingClearIntent = getPendingAutosaveNullableFieldClearIntent(
+      clearedDraft,
+      lastAutosavedPayload,
+    );
+
+    expect(pendingClearIntent).toEqual({
+      description: true,
+      street2: true,
+      squareFeet: true,
+    });
+
+    const clearedPayload = mapListingFormToAutosavePatchInput(
+      clearedDraft,
+      "draft",
+      pendingClearIntent,
+    );
+
+    expect(clearedPayload?.description).toBeNull();
+    expect(clearedPayload?.address?.street2).toBeNull();
+    expect(clearedPayload?.units?.[0]?.sqft).toBeNull();
+    expect(getPendingAutosaveNullableFieldClearIntent(clearedDraft, clearedPayload)).toEqual({
+      description: false,
+      street2: false,
+      squareFeet: false,
     });
   });
 
@@ -390,12 +434,7 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
-  it("preserves explicit unit number clearing on publish replacements", () => {
-    const rawInput: ListingFormInput = {
-      ...validFormData,
-      unitNumber: "   ",
-    };
-
+  it("maps missing unit numbers to null on publish replacements", () => {
     expect(
       mapListingFormToReplaceListingInput(
         {
@@ -403,7 +442,6 @@ describe("mapListingFormToCreateListingInput", () => {
           unitNumber: undefined,
         },
         "published",
-        rawInput,
       ),
     ).toMatchObject({
       status: "published",
