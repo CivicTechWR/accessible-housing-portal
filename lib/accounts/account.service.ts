@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createInvite } from "@/lib/auth/invite-service";
 import { findRecentAccountInvites } from "@/lib/auth/invite-store";
 import { getOptionalSession } from "@/lib/auth/session";
 import { fail, succeed, type DomainResult } from "@/lib/http/domain-result";
@@ -101,8 +102,6 @@ export async function createAccountService(
   if (!actorResult.ok) {
     return actorResult;
   }
-
-  const { createInvite } = await import("@/lib/auth/invite-service.ts");
 
   const invite = await createInvite({
     email: input.email,
