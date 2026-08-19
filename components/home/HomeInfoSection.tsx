@@ -1,7 +1,6 @@
 import Image from "next/image";
-import socialImage from "../../assets/socialworkers.jpg";
-import providerImage from "../../assets/housingProviders.jpg";
-import joinImage from "../../assets/joinimage.jpg";
+
+const placeholderImage = "/home-image-placeholder.svg";
 
 export function HomeInfoSection() {
   return (
@@ -31,7 +30,7 @@ export function HomeInfoSection() {
           >
             <div className="relative h-56 overflow-hidden">
               <Image
-                src={socialImage}
+                src={placeholderImage}
                 alt=""
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
@@ -59,7 +58,7 @@ export function HomeInfoSection() {
           >
             <div className="relative h-56 overflow-hidden">
               <Image
-                src={providerImage}
+                src={placeholderImage}
                 alt=""
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
@@ -87,7 +86,7 @@ export function HomeInfoSection() {
           >
             <div className="relative h-56 overflow-hidden">
               <Image
-                src={joinImage}
+                src={placeholderImage}
                 alt=""
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
