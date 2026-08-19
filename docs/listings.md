@@ -140,8 +140,8 @@ The form uses:
 1. A new form starts with local defaults and no listing ID.
 2. When autosave needs a persisted row, it calls `POST /api/listing-drafts`.
 3. The URL is replaced with `/listing-form/:id` after a draft is created.
-4. Form changes are mapped to update payloads and saved after an 800 ms debounce.
-5. Publish waits for in-flight autosave, then sends a final `PUT /api/listings/:id` with status `published`.
+4. Form changes are mapped to partial-update payloads and saved with `PATCH` after an 800 ms debounce. Untouched nullable fields are omitted, while deliberately cleared fields are sent as `null`.
+5. Publish waits for in-flight autosave, then sends a final `PUT /api/listings/:id` with status `published`; cleared optional form values are represented by explicit `null` values.
 
 Published listing edits do not draft-autosave. The UI warns before navigating away with unsaved published changes.
 
@@ -151,7 +151,9 @@ Creation and update behavior is split across service and repository code:
 
 - `createDraftListingService` creates an empty property and draft listing.
 - `createListingService` creates a property and listing in one transaction.
-- `updateListingByIdService` checks edit access, merges dynamic feature state in `customFields`, updates property/listing columns, and syncs images.
+- `replaceListingByIdService` handles submitted full-form `PUT` replacements.
+- `patchListingByIdService` handles autosave and status-only `PATCH` updates while preserving omitted values.
+- Both update services share edit-access checks, dynamic feature merging in `customFields`, property/listing updates, and image synchronization.
 - `deleteListingByIdService` archives the listing rather than deleting it.
 
 Status timestamps are managed by `resolveListingStatusTimestamps`.
@@ -189,7 +191,7 @@ Built-in listing fields are persisted in normalized columns on `listings` or `pr
 
 `lib/listings/store.ts` maps selected admin-configured accessibility features into `listings.custom_fields`. Current authoring writes selected public boolean feature definitions as boolean keys where `custom_fields[definition.key]` is `true`.
 
-Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Update/autosave payloads use `applicationUrl: null` when an author clears the application URL field.
+Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighborhood, and coordinates while preserving omitted server-managed neighborhood and coordinate data. New listings published without an availability date retain the available-today default.
 
 If a new listing field must be searchable, sortable, joined, or constrained at scale, prefer a normalized column. If it is project-configurable feature metadata, prefer `listing_field_definitions` plus `customFields`.
 

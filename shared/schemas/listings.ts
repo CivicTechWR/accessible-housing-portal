@@ -179,26 +179,50 @@ const listingUnitSchema = z.object({
   availableDate: z.iso.date().optional(),
 });
 
+const nullableListingDescriptionSchema = z.union([nonEmptyString, z.null()]);
+const nullableListingStreet2Schema = z.union([nonEmptyString, z.null()]);
+const nullableListingSquareFeetSchema = z.union([z.number().int().min(0), z.null()]);
+const nullableListingAvailableDateSchema = z.union([z.iso.date(), z.null()]);
+const listingAddressMutationSchema = listingAddressSchema.extend({
+  street2: nullableListingStreet2Schema.optional(),
+  neighborhood: z.union([nonEmptyString, z.null()]).optional(),
+  latitude: z.union([z.number().min(-90).max(90), z.null()]).optional(),
+  longitude: z.union([z.number().min(-180).max(180), z.null()]).optional(),
+});
+const listingUnitMutationSchema = listingUnitSchema.extend({
+  sqft: nullableListingSquareFeetSchema.optional(),
+  availableDate: nullableListingAvailableDateSchema.optional(),
+});
+const listingAddressReplacementSchema = listingAddressMutationSchema.extend({
+  street2: nullableListingStreet2Schema,
+});
+const listingUnitReplacementSchema = listingUnitMutationSchema.extend({
+  sqft: nullableListingSquareFeetSchema,
+  availableDate: nullableListingAvailableDateSchema,
+});
+
 const listingPaginationSchema = z.object({
   page: z.number().int().min(1),
   limit: z.number().int().min(1),
   total: z.number().int().min(0),
   totalPages: z.number().int().min(0),
 });
-const listingAddressPatchSchema = listingAddressSchema.partial().refine(hasAtLeastOneField, {
-  message: "Address update must include at least one field.",
-});
+const listingAddressPatchSchema = listingAddressMutationSchema
+  .partial()
+  .refine(hasAtLeastOneField, {
+    message: "Address update must include at least one field.",
+  });
 const listingContactPatchSchema = listingContactSchema.partial().refine(hasAtLeastOneField, {
   message: "Contact update must include at least one field.",
 });
-const listingUnitPatchSchema = listingUnitSchema.partial().refine(hasAtLeastOneField, {
+const listingUnitPatchSchema = listingUnitMutationSchema.partial().refine(hasAtLeastOneField, {
   message: "Each unit update must include at least one field.",
 });
 
-const updateListingBasePayloadSchema = z.object({
+const patchListingBasePayloadSchema = z.object({
   title: nonEmptyString.optional(),
   name: nonEmptyString.optional(),
-  description: optionalTrimmedString(),
+  description: nullableListingDescriptionSchema.optional(),
   address: listingAddressPatchSchema.optional(),
   units: z.array(listingUnitPatchSchema).min(1, "At least one unit is required.").optional(),
   accessibilityFeatures: z.array(listingInputFeatureSchema).optional(),
@@ -211,7 +235,7 @@ const updateListingBasePayloadSchema = z.object({
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
 });
-const updateListingPayloadSchema = updateListingBasePayloadSchema.refine(
+const patchListingPayloadSchema = patchListingBasePayloadSchema.refine(
   (value) => hasAtLeastOneField(value),
   {
     message: "At least one field is required.",
@@ -241,7 +265,17 @@ const listingPayloadSchema = z.object({
 
 export const createListingSchema = listingPayloadSchema;
 
-export const updateListingSchema = updateListingPayloadSchema;
+export const replaceListingSchema = listingPayloadSchema
+  .omit({ imageUploadSessionId: true })
+  .extend({
+    description: nullableListingDescriptionSchema,
+    address: listingAddressReplacementSchema,
+    units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
+    unitNumber: z.union([nonEmptyString, z.null()]),
+    applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
+  });
+
+export const patchListingSchema = patchListingPayloadSchema;
 
 export const listingEditorDataSchema = z.object({
   title: z.string(),
@@ -297,9 +331,14 @@ export const createDraftListingResponseSchema = z.object({
   data: listingIdDataSchema,
 });
 
-export const updateListingResponseSchema = z.object({
+export const replaceListingResponseSchema = z.object({
   message: z.string(),
-  data: listingIdDataSchema.and(updateListingPayloadSchema),
+  data: listingIdDataSchema.and(replaceListingSchema),
+});
+
+export const patchListingResponseSchema = z.object({
+  message: z.string(),
+  data: listingIdDataSchema.and(patchListingSchema),
 });
 
 export const deleteListingResponseSchema = z.object({
@@ -317,8 +356,11 @@ export type ListingByIdResponse = z.infer<typeof listingByIdResponseSchema>;
 export type ListingEditorData = z.infer<typeof listingEditorDataSchema>;
 export type ListingEditorResponse = z.infer<typeof listingEditorResponseSchema>;
 export type CreateListingInput = z.infer<typeof createListingSchema>;
-export type UpdateListingInput = z.infer<typeof updateListingSchema>;
+export type ReplaceListingInput = z.infer<typeof replaceListingSchema>;
+export type PatchListingInput = z.infer<typeof patchListingSchema>;
+export type ListingMutationInput = ReplaceListingInput | PatchListingInput;
 export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
-export type UpdateListingResponse = z.infer<typeof updateListingResponseSchema>;
+export type ReplaceListingResponse = z.infer<typeof replaceListingResponseSchema>;
+export type PatchListingResponse = z.infer<typeof patchListingResponseSchema>;
 export type DeleteListingResponse = z.infer<typeof deleteListingResponseSchema>;

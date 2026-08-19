@@ -3,7 +3,8 @@ import {
   createListingSchema,
   listingEditorDataSchema,
   listingQuerySchema,
-  updateListingSchema,
+  patchListingSchema,
+  replaceListingSchema,
 } from "@/shared/schemas/listings";
 
 const validCreatePayload = {
@@ -111,15 +112,15 @@ describe("listing API schemas", () => {
     expect(result.error.issues.some((issue) => issue.path.join(".") === "title")).toBe(true);
   });
 
-  it("trims values for partial updates and still validates", () => {
-    const parsed = updateListingSchema.parse({
+  it("trims values in PATCH payloads", () => {
+    const parsed = patchListingSchema.parse({
       name: "  Updated Listing Name  ",
     });
 
     expect(parsed.name).toBe("Updated Listing Name");
   });
 
-  it("rejects effectively empty nested updates", () => {
+  it("rejects effectively empty nested PATCH payloads", () => {
     const cases = [
       { payload: { address: {} }, message: "Address update must include at least one field." },
       { payload: { contact: {} }, message: "Contact update must include at least one field." },
@@ -127,7 +128,7 @@ describe("listing API schemas", () => {
     ];
 
     cases.forEach(({ payload, message }) => {
-      const result = updateListingSchema.safeParse(payload);
+      const result = patchListingSchema.safeParse(payload);
 
       expect(result.success).toBe(false);
 
@@ -137,8 +138,8 @@ describe("listing API schemas", () => {
     });
   });
 
-  it("accepts meaningful nested updates", () => {
-    const result = updateListingSchema.safeParse({
+  it("accepts meaningful nested PATCH payloads", () => {
+    const result = patchListingSchema.safeParse({
       title: "Updated Title",
       address: { city: "Waterloo" },
       contact: { email: "Leasing@Example.com" },
@@ -171,7 +172,7 @@ describe("listing API schemas", () => {
         },
       ],
     });
-    const updateResult = updateListingSchema.safeParse({
+    const patchResult = patchListingSchema.safeParse({
       accessibilityFeatures: [
         {
           name: "Ramp entry",
@@ -181,15 +182,59 @@ describe("listing API schemas", () => {
     });
 
     expect(createResult.success).toBe(false);
-    expect(updateResult.success).toBe(false);
+    expect(patchResult.success).toBe(false);
   });
 
-  it("allows clearing unit number in partial updates", () => {
-    const result = updateListingSchema.safeParse({
+  it("allows clearing unit number in PATCH payloads", () => {
+    const result = patchListingSchema.safeParse({
       unitNumber: null,
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("accepts explicit null for nullable replacement and PATCH fields", () => {
+    const nullableFields = {
+      ...validCreatePayload,
+      description: null,
+      address: {
+        ...validCreatePayload.address,
+        street2: null,
+      },
+      units: [
+        {
+          ...validCreatePayload.units[0],
+          sqft: null,
+          availableDate: null,
+        },
+      ],
+      unitNumber: null,
+      applicationUrl: null,
+    };
+
+    expect(replaceListingSchema.safeParse(nullableFields).success).toBe(true);
+    expect(
+      patchListingSchema.safeParse({
+        description: null,
+        address: { street2: null },
+        units: [{ sqft: null, availableDate: null }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("keeps replacement and PATCH payload completeness distinct", () => {
+    const { description: _description, ...withoutDescription } = validCreatePayload;
+    const withoutSquareFeet = {
+      ...validCreatePayload,
+      units: validCreatePayload.units.map(({ sqft: _sqft, ...unit }) => unit),
+    };
+
+    expect(patchListingSchema.safeParse({ status: "published" }).success).toBe(true);
+    expect(patchListingSchema.safeParse({}).success).toBe(false);
+    expect(replaceListingSchema.safeParse(validCreatePayload).success).toBe(true);
+    expect(replaceListingSchema.safeParse(withoutDescription).success).toBe(false);
+    expect(replaceListingSchema.safeParse(withoutSquareFeet).success).toBe(false);
+    expect(replaceListingSchema.safeParse({ status: "published" }).success).toBe(false);
   });
 
   it("allows optional create fields to be omitted when the form leaves them blank", () => {

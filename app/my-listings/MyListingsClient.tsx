@@ -69,7 +69,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
     }) => {
       const isDelete = nextStatus === "archived";
       const response = await fetch(`/api/listings/${listingId}`, {
-        method: isDelete ? "DELETE" : "PUT",
+        method: isDelete ? "DELETE" : "PATCH",
         headers: isDelete ? undefined : { "content-type": "application/json" },
         body: isDelete ? undefined : JSON.stringify({ status: nextStatus }),
       });

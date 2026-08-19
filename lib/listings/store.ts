@@ -11,7 +11,7 @@ import {
 import type {
   CreateListingInput,
   ListingDetails,
-  UpdateListingInput,
+  ListingMutationInput,
 } from "@/shared/schemas/listings";
 
 export const DEFAULT_PROPERTY_COUNTRY = "Canada";
@@ -31,7 +31,7 @@ export function buildListingCustomFields(
 
 export function mergeListingCustomFields(
   existing: ListingCustomFields,
-  input: UpdateListingInput,
+  input: ListingMutationInput,
   definitions: ListingFeatureDefinition[],
 ): ListingCustomFields {
   const next = { ...existing };
@@ -110,7 +110,7 @@ function applyAccessibilityFeatureState(
   customFields: ListingCustomFields,
   features:
     | CreateListingInput["accessibilityFeatures"]
-    | UpdateListingInput["accessibilityFeatures"],
+    | ListingMutationInput["accessibilityFeatures"],
   definitions: ListingFeatureDefinition[],
 ) {
   const allowedKeys = new Set(definitions.map((definition) => definition.key));

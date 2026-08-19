@@ -5,16 +5,19 @@ import {
   deleteListingResponseSchema,
   listingByIdResponseSchema,
   listingParamsSchema,
-  updateListingResponseSchema,
-  updateListingSchema,
+  patchListingResponseSchema,
+  patchListingSchema,
+  replaceListingResponseSchema,
+  replaceListingSchema,
 } from "@/shared/schemas/listings";
 import {
   deleteListingByIdHandler,
   getListingByIdHandler,
-  updateListingByIdHandler,
+  patchListingByIdHandler,
+  replaceListingByIdHandler,
 } from "./handlers";
 
-export const { GET, PUT, DELETE } = route({
+export const { GET, PUT, PATCH, DELETE } = route({
   getListingById: routeOperation({ method: "GET" })
     .input({ params: listingParamsSchema })
     .outputs([
@@ -24,20 +27,35 @@ export const { GET, PUT, DELETE } = route({
     ])
     .handler(getListingByIdHandler),
 
-  updateListingById: routeOperation({ method: "PUT" })
+  replaceListingById: routeOperation({ method: "PUT" })
     .input({
       params: listingParamsSchema,
       contentType: "application/json",
-      body: updateListingSchema,
+      body: replaceListingSchema,
     })
     .outputs([
-      { status: 200, contentType: "application/json", body: updateListingResponseSchema },
+      { status: 200, contentType: "application/json", body: replaceListingResponseSchema },
       { status: 401, contentType: "application/json", body: errorMessageSchema },
       { status: 403, contentType: "application/json", body: errorMessageSchema },
       { status: 404, contentType: "application/json", body: errorMessageSchema },
       { status: 400, contentType: "application/json", body: errorMessageSchema },
     ])
-    .handler(updateListingByIdHandler),
+    .handler(replaceListingByIdHandler),
+
+  patchListingById: routeOperation({ method: "PATCH" })
+    .input({
+      params: listingParamsSchema,
+      contentType: "application/json",
+      body: patchListingSchema,
+    })
+    .outputs([
+      { status: 200, contentType: "application/json", body: patchListingResponseSchema },
+      { status: 401, contentType: "application/json", body: errorMessageSchema },
+      { status: 403, contentType: "application/json", body: errorMessageSchema },
+      { status: 404, contentType: "application/json", body: errorMessageSchema },
+      { status: 400, contentType: "application/json", body: errorMessageSchema },
+    ])
+    .handler(patchListingByIdHandler),
 
   deleteListingById: routeOperation({ method: "DELETE" })
     .input({ params: listingParamsSchema })

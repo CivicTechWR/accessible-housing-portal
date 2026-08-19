@@ -69,9 +69,12 @@ import type {
   ListingEditorResponse,
   ListingIdParam,
   ListingListResponse,
+  ListingMutationInput,
   ListingQuery,
-  UpdateListingInput,
-  UpdateListingResponse,
+  PatchListingInput,
+  PatchListingResponse,
+  ReplaceListingInput,
+  ReplaceListingResponse,
 } from "@/shared/schemas/listings";
 
 type OptionalSessionResult = Awaited<ReturnType<typeof getOptionalSession>>;
@@ -412,10 +415,41 @@ export async function createListingService(
   });
 }
 
-export async function updateListingByIdService(input: {
+export async function replaceListingByIdService(input: {
   listingId: ListingIdParam;
-  payload: UpdateListingInput;
-}): Promise<DomainResult<UpdateListingResponse>> {
+  payload: ReplaceListingInput;
+}): Promise<DomainResult<ReplaceListingResponse>> {
+  return updateListingById({
+    ...input,
+    method: "replace",
+  });
+}
+
+export async function patchListingByIdService(input: {
+  listingId: ListingIdParam;
+  payload: PatchListingInput;
+}): Promise<DomainResult<PatchListingResponse>> {
+  return updateListingById({
+    ...input,
+    method: "patch",
+  });
+}
+
+type ListingUpdateOperation =
+  | {
+      method: "replace";
+      listingId: ListingIdParam;
+      payload: ReplaceListingInput;
+    }
+  | {
+      method: "patch";
+      listingId: ListingIdParam;
+      payload: PatchListingInput;
+    };
+
+async function updateListingById<TPayload extends ListingMutationInput>(
+  input: ListingUpdateOperation & { payload: TPayload },
+): Promise<DomainResult<{ message: string; data: { id: ListingIdParam } & TPayload }>> {
   const actorResult = await requireListingWriteActor();
 
   if (!actorResult.ok) {
@@ -467,29 +501,35 @@ export async function updateListingByIdService(input: {
     property: {
       name: input.payload.name ?? listing.property.name,
       street1: input.payload.address?.street ?? listing.property.street1,
-      street2: input.payload.address?.street2 ?? listing.property.street2,
+      street2: preserveWhenUndefined(input.payload.address?.street2, listing.property.street2),
       city: input.payload.address?.city ?? listing.property.city,
       province: input.payload.address?.province ?? listing.property.province,
       postalCode: input.payload.address?.postalCode ?? listing.property.postalCode,
-      neighborhood: input.payload.address?.neighborhood ?? listing.property.neighborhood,
-      latitude: input.payload.address?.latitude ?? listing.property.latitude,
-      longitude: input.payload.address?.longitude ?? listing.property.longitude,
+      neighborhood: preserveWhenUndefined(
+        input.payload.address?.neighborhood,
+        listing.property.neighborhood,
+      ),
+      latitude: preserveWhenUndefined(input.payload.address?.latitude, listing.property.latitude),
+      longitude: preserveWhenUndefined(
+        input.payload.address?.longitude,
+        listing.property.longitude,
+      ),
       contactName: input.payload.contact?.name ?? listing.property.contactName,
       contactEmail: input.payload.contact?.email ?? listing.property.contactEmail,
       contactPhone: input.payload.contact?.phone ?? listing.property.contactPhone,
     },
     listing: {
       title: input.payload.title ?? listing.title,
-      description: input.payload.description ?? listing.description,
+      description: preserveWhenUndefined(input.payload.description, listing.description),
       status: nextStatus,
       unitNumber:
         input.payload.unitNumber === undefined ? listing.unitNumber : input.payload.unitNumber,
       buildingType: input.payload.buildingType ?? listing.buildingType,
       bedrooms: primaryUnit?.bedrooms ?? listing.bedrooms,
       bathrooms: primaryUnit?.bathrooms ?? listing.bathrooms,
-      squareFeet: primaryUnit?.sqft ?? listing.squareFeet,
+      squareFeet: preserveWhenUndefined(primaryUnit?.sqft, listing.squareFeet),
       monthlyRentCents,
-      availableOn: primaryUnit?.availableDate ?? listing.availableOn,
+      availableOn: preserveWhenUndefined(primaryUnit?.availableDate, listing.availableOn),
       leaseTermMonths: input.payload.leaseTermMonths ?? listing.leaseTermMonths,
       utilitiesIncluded: input.payload.utilitiesIncluded ?? listing.utilitiesIncluded,
       maxIncomeCents: listing.maxIncomeCents,
@@ -700,11 +740,15 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
 }
 
 function resolveNextApplicationUrl(input: {
-  payload: UpdateListingInput;
+  payload: ListingMutationInput;
   listingApplicationUrl: string | null;
 }) {
   if (input.payload.applicationUrl !== undefined) {
     return { ok: true as const, nextApplicationUrl: input.payload.applicationUrl };
   }
   return { ok: true as const, nextApplicationUrl: input.listingApplicationUrl };
+}
+
+function preserveWhenUndefined<T>(nextValue: T | undefined, currentValue: T): T {
+  return nextValue === undefined ? currentValue : nextValue;
 }

@@ -6,9 +6,10 @@ import {
   type ListingFormInput,
 } from "@/app/listing-form/types";
 import {
-  mapListingFormToAutosaveUpdateInput,
+  getPendingAutosaveNullableFieldClearIntent,
+  mapListingFormToAutosavePatchInput,
   mapListingFormToCreateListingInput,
-  mapListingFormToUpdateListingInput,
+  mapListingFormToReplaceListingInput,
 } from "@/app/listing-form/api";
 
 const validFormData: ListingFormData = {
@@ -144,11 +145,11 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
-  it("maps full form submission into an update payload with a published status", () => {
-    expect(mapListingFormToUpdateListingInput(validFormData, "published")).toEqual({
+  it("maps full form submission into a replacement payload with a published status", () => {
+    expect(mapListingFormToReplaceListingInput(validFormData, "published")).toEqual({
       title: "Accessible Two Bedroom",
       name: "Cedar Court",
-      description: undefined,
+      description: null,
       address: {
         street: "123 Main Street",
         street2: "Building A",
@@ -185,15 +186,16 @@ describe("mapListingFormToCreateListingInput", () => {
       },
       status: "published",
       unitNumber: "204",
+      applicationUrl: null,
       buildingType: "apartment",
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water"],
     });
   });
 
-  it("maps application URLs on full updates", () => {
+  it("maps application URLs on full replacements", () => {
     expect(
-      mapListingFormToUpdateListingInput(
+      mapListingFormToReplaceListingInput(
         {
           ...validFormData,
           applicationUrl: "https://example.org/apply",
@@ -205,18 +207,14 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
-  it("maps explicitly cleared application URLs on full updates to null", () => {
+  it("maps explicitly cleared application URLs on full replacements to null", () => {
     expect(
-      mapListingFormToUpdateListingInput(
+      mapListingFormToReplaceListingInput(
         {
           ...validFormData,
           applicationUrl: undefined,
         },
         "published",
-        {
-          ...validFormData,
-          applicationUrl: "  ",
-        },
       ),
     ).toMatchObject({
       applicationUrl: null,
@@ -239,7 +237,7 @@ describe("mapListingFormToCreateListingInput", () => {
       ],
     };
 
-    expect(mapListingFormToAutosaveUpdateInput(autosaveDraft)).toEqual({
+    expect(mapListingFormToAutosavePatchInput(autosaveDraft)).toEqual({
       title: "Draft title",
       units: [
         {
@@ -260,9 +258,55 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
+  it("keeps a nullable clear pending until null has been autosaved", () => {
+    const populatedDraft: ListingFormInput = {
+      ...CREATE_FORM_DEFAULTS,
+      description: "Saved description",
+      street2: "Suite 204",
+      squareFeet: 920,
+      monthlyRentCents: 0,
+    };
+    const lastAutosavedPayload = mapListingFormToAutosavePatchInput(populatedDraft);
+
+    expect(lastAutosavedPayload).not.toBeNull();
+
+    const clearedDraft: ListingFormInput = {
+      ...CREATE_FORM_DEFAULTS,
+      description: "",
+      street2: "",
+      squareFeet: undefined,
+      monthlyRentCents: 0,
+    };
+    const pendingClearIntent = getPendingAutosaveNullableFieldClearIntent(
+      clearedDraft,
+      lastAutosavedPayload,
+    );
+
+    expect(pendingClearIntent).toEqual({
+      description: true,
+      street2: true,
+      squareFeet: true,
+    });
+
+    const clearedPayload = mapListingFormToAutosavePatchInput(
+      clearedDraft,
+      "draft",
+      pendingClearIntent,
+    );
+
+    expect(clearedPayload?.description).toBeNull();
+    expect(clearedPayload?.address?.street2).toBeNull();
+    expect(clearedPayload?.units?.[0]?.sqft).toBeNull();
+    expect(getPendingAutosaveNullableFieldClearIntent(clearedDraft, clearedPayload)).toEqual({
+      description: false,
+      street2: false,
+      squareFeet: false,
+    });
+  });
+
   it("marks unit number as null in autosave payloads when the field is explicitly cleared", () => {
     expect(
-      mapListingFormToAutosaveUpdateInput({
+      mapListingFormToAutosavePatchInput({
         ...CREATE_FORM_DEFAULTS,
         title: "Draft title",
         monthlyRentCents: 0,
@@ -287,7 +331,7 @@ describe("mapListingFormToCreateListingInput", () => {
 
   it("omits invalid in-progress contact emails from autosave payloads", () => {
     expect(
-      mapListingFormToAutosaveUpdateInput({
+      mapListingFormToAutosavePatchInput({
         ...CREATE_FORM_DEFAULTS,
         title: "Draft title",
         contactName: "Leasing Office",
@@ -317,7 +361,7 @@ describe("mapListingFormToCreateListingInput", () => {
 
   it("maps valid application URLs in autosave payloads", () => {
     expect(
-      mapListingFormToAutosaveUpdateInput({
+      mapListingFormToAutosavePatchInput({
         ...CREATE_FORM_DEFAULTS,
         title: "Draft title",
         applicationUrl: "https://example.org/apply",
@@ -342,7 +386,7 @@ describe("mapListingFormToCreateListingInput", () => {
 
   it("clears application URLs in autosave payloads when the field is emptied", () => {
     expect(
-      mapListingFormToAutosaveUpdateInput({
+      mapListingFormToAutosavePatchInput({
         ...CREATE_FORM_DEFAULTS,
         title: "Draft title",
         applicationUrl: "",
@@ -367,7 +411,7 @@ describe("mapListingFormToCreateListingInput", () => {
 
   it("clears application URLs in autosave payloads when the field is invalid", () => {
     expect(
-      mapListingFormToAutosaveUpdateInput({
+      mapListingFormToAutosavePatchInput({
         ...CREATE_FORM_DEFAULTS,
         title: "Draft title",
         applicationUrl: "https://",
@@ -390,20 +434,14 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
-  it("preserves explicit unit number clearing on publish updates", () => {
-    const rawInput: ListingFormInput = {
-      ...validFormData,
-      unitNumber: "   ",
-    };
-
+  it("maps missing unit numbers to null on publish replacements", () => {
     expect(
-      mapListingFormToUpdateListingInput(
+      mapListingFormToReplaceListingInput(
         {
           ...validFormData,
           unitNumber: undefined,
         },
         "published",
-        rawInput,
       ),
     ).toMatchObject({
       status: "published",
