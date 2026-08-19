@@ -6,7 +6,8 @@ import {
   listingEditorResponseSchema,
   type CreateListingInput,
   type ListingEditorData,
-  type UpdateListingInput,
+  type PatchListingInput,
+  type ReplaceListingInput,
 } from "@/shared/schemas/listings";
 import type { ListingFormData, ListingFormInput } from "./types";
 
@@ -20,48 +21,71 @@ export function mapListingFormToCreateListingInput(data: ListingFormData): Creat
   return buildListingPayloadFromForm(data);
 }
 
-export function mapListingFormToUpdateListingInput(
+export function mapListingFormToReplaceListingInput(
   data: ListingFormData,
   status = data.status,
-  rawInput?: ListingFormInput,
-): UpdateListingInput {
+): ReplaceListingInput {
   const payload = {
     ...buildListingPayloadFromForm(data),
     status,
   };
-  const patch: UpdateListingInput = { ...payload };
+  const replacement: ReplaceListingInput = {
+    ...payload,
+    description: normalizeOptionalString(data.description) ?? null,
+    address: {
+      ...payload.address,
+      street2: normalizeOptionalString(data.street2) ?? null,
+    },
+    units: [
+      {
+        ...payload.units[0],
+        sqft: data.squareFeet ?? null,
+        availableDate: payload.units[0].availableDate ?? new Date().toISOString().slice(0, 10),
+      },
+    ],
+    unitNumber: normalizeOptionalString(data.unitNumber) ?? null,
+    applicationUrl: normalizeOptionalString(data.applicationUrl) ?? null,
+  };
 
-  if (
-    rawInput?.unitNumber !== undefined &&
-    normalizeOptionalString(rawInput.unitNumber) === undefined
-  ) {
-    patch.unitNumber = null;
-  }
-
-  const applicationUrl = normalizeOptionalString(data.applicationUrl);
-  if (applicationUrl) {
-    patch.applicationUrl = applicationUrl;
-  } else if (rawInput?.applicationUrl !== undefined) {
-    patch.applicationUrl = null;
-  }
-
-  return patch;
+  return replacement;
 }
 
-export function mapListingFormToAutosaveUpdateInput(
+export function getPendingAutosaveNullableFieldClearIntent(
+  data: ListingFormInput,
+  lastAutosavedPayload: PatchListingInput | null,
+): NullableListingFormFieldEditIntent {
+  return {
+    description:
+      normalizeOptionalString(data.description) === undefined &&
+      hasConcreteValue(lastAutosavedPayload?.description),
+    street2:
+      normalizeOptionalString(data.street2) === undefined &&
+      hasConcreteValue(lastAutosavedPayload?.address?.street2),
+    squareFeet:
+      !Number.isFinite(data.squareFeet) && hasConcreteValue(lastAutosavedPayload?.units?.[0]?.sqft),
+  };
+}
+
+export function mapListingFormToAutosavePatchInput(
   data: ListingFormInput,
   status = data.status ?? "draft",
-): UpdateListingInput | null {
-  const patch: UpdateListingInput = {};
-  const address: NonNullable<UpdateListingInput["address"]> = {};
-  const contact: NonNullable<UpdateListingInput["contact"]> = {};
-  const unit: NonNullable<UpdateListingInput["units"]>[number] = {};
+  nullableFieldEditIntent: NullableListingFormFieldEditIntent = {},
+): PatchListingInput | null {
+  const patch: PatchListingInput = {};
+  const address: NonNullable<PatchListingInput["address"]> = {};
+  const contact: NonNullable<PatchListingInput["contact"]> = {};
+  const unit: NonNullable<PatchListingInput["units"]>[number] = {};
 
   assignTrimmedString(patch, "title", data.title);
   assignTrimmedString(patch, "name", data.name);
-  assignTrimmedString(patch, "description", data.description);
+  assignNullableTrimmedString(
+    patch,
+    "description",
+    data.description,
+    nullableFieldEditIntent.description,
+  );
   assignTrimmedString(address, "street", data.street1);
-  assignTrimmedString(address, "street2", data.street2);
+  assignNullableTrimmedString(address, "street2", data.street2, nullableFieldEditIntent.street2);
   assignTrimmedString(address, "city", data.city);
   assignTrimmedString(address, "province", data.province);
   assignTrimmedString(address, "postalCode", data.postalCode);
@@ -99,6 +123,8 @@ export function mapListingFormToAutosaveUpdateInput(
 
   if (Number.isFinite(data.squareFeet)) {
     unit.sqft = data.squareFeet;
+  } else if (nullableFieldEditIntent.squareFeet) {
+    unit.sqft = null;
   }
 
   if (Number.isFinite(data.monthlyRentCents)) {
@@ -244,6 +270,10 @@ function normalizeOptionalString(value: string | undefined) {
   return normalized ? normalized : undefined;
 }
 
+function hasConcreteValue<T>(value: T | null | undefined): value is T {
+  return value !== undefined && value !== null;
+}
+
 function assignTrimmedString(
   target: Record<string, unknown>,
   key: string,
@@ -253,6 +283,25 @@ function assignTrimmedString(
 
   if (normalized) {
     target[key] = normalized;
+  }
+}
+
+type NullableListingFormFieldEditIntent = Partial<
+  Record<"description" | "street2" | "squareFeet", boolean>
+>;
+
+function assignNullableTrimmedString(
+  target: Record<string, unknown>,
+  key: string,
+  value: string | undefined,
+  wasEdited = false,
+) {
+  const normalized = normalizeOptionalString(value);
+
+  if (normalized) {
+    target[key] = normalized;
+  } else if (wasEdited) {
+    target[key] = null;
   }
 }
 

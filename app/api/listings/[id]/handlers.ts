@@ -4,14 +4,17 @@ import { mapDomainErrorToHttpResponse } from "@/lib/http/map-domain-error";
 import {
   deleteListingByIdService,
   getListingByIdService,
-  updateListingByIdService,
+  patchListingByIdService,
+  replaceListingByIdService,
 } from "@/lib/listings/listing.service";
 import type {
   DeleteListingResponse,
   ListingByIdResponse,
   ListingParams,
-  UpdateListingInput,
-  UpdateListingResponse,
+  PatchListingInput,
+  PatchListingResponse,
+  ReplaceListingInput,
+  ReplaceListingResponse,
 } from "@/shared/schemas/listings";
 
 type ListingByIdRouteContext = {
@@ -33,12 +36,12 @@ export async function getListingByIdHandler(
   });
 }
 
-export async function updateListingByIdHandler(
-  request: TypedNextRequest<"PUT", "application/json", UpdateListingInput>,
+export async function replaceListingByIdHandler(
+  request: TypedNextRequest<"PUT", "application/json", ReplaceListingInput>,
   { params }: ListingByIdRouteContext,
 ) {
   const body = await request.json();
-  const result = await updateListingByIdService({
+  const result = await replaceListingByIdService({
     listingId: params.id,
     payload: body,
   });
@@ -47,7 +50,26 @@ export async function updateListingByIdHandler(
     return mapDomainErrorToHttpResponse(result.error);
   }
 
-  return TypedNextResponse.json<UpdateListingResponse, 200, "application/json">({
+  return TypedNextResponse.json<ReplaceListingResponse, 200, "application/json">({
+    ...result.value,
+  });
+}
+
+export async function patchListingByIdHandler(
+  request: TypedNextRequest<"PATCH", "application/json", PatchListingInput>,
+  { params }: ListingByIdRouteContext,
+) {
+  const body = await request.json();
+  const result = await patchListingByIdService({
+    listingId: params.id,
+    payload: body,
+  });
+
+  if (!result.ok) {
+    return mapDomainErrorToHttpResponse(result.error);
+  }
+
+  return TypedNextResponse.json<PatchListingResponse, 200, "application/json">({
     ...result.value,
   });
 }

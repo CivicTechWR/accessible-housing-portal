@@ -31,21 +31,24 @@ Error responses use:
 
 ## Listings
 
-| Method   | Path                       | Auth                                                     | Purpose                                                 | Contract source                                      |
-| -------- | -------------------------- | -------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
-| `GET`    | `/api/listings`            | Active session; draft/archive visibility is role-limited | List listings with filters and pagination.              | `listingQuerySchema`, `listingListResponseSchema`    |
-| `POST`   | `/api/listings`            | Admin or partner                                         | Create a full listing.                                  | `createListingSchema`, `createListingResponseSchema` |
-| `GET`    | `/api/listings/:id`        | Active session; owner/admin for private                  | Get listing details.                                    | `listingParamsSchema`, `listingByIdResponseSchema`   |
-| `PUT`    | `/api/listings/:id`        | Admin or owning partner                                  | Update listing data, status, images, and custom fields. | `updateListingSchema`, `updateListingResponseSchema` |
-| `DELETE` | `/api/listings/:id`        | Admin or owning partner                                  | Archive a listing.                                      | `deleteListingResponseSchema`                        |
-| `GET`    | `/api/listings/:id/editor` | Admin or owning partner                                  | Load editor-shaped listing data.                        | `listingEditorResponseSchema`                        |
-| `POST`   | `/api/listing-drafts`      | Admin or partner                                         | Create an empty draft listing and property.             | `createDraftListingResponseSchema`                   |
+| Method   | Path                       | Auth                                                     | Purpose                                                          | Contract source                                        |
+| -------- | -------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| `GET`    | `/api/listings`            | Active session; draft/archive visibility is role-limited | List listings with filters and pagination.                       | `listingQuerySchema`, `listingListResponseSchema`      |
+| `POST`   | `/api/listings`            | Admin or partner                                         | Create a full listing.                                           | `createListingSchema`, `createListingResponseSchema`   |
+| `GET`    | `/api/listings/:id`        | Active session; owner/admin for private                  | Get listing details.                                             | `listingParamsSchema`, `listingByIdResponseSchema`     |
+| `PUT`    | `/api/listings/:id`        | Admin or owning partner                                  | Replace the complete client-owned listing representation.        | `replaceListingSchema`, `replaceListingResponseSchema` |
+| `PATCH`  | `/api/listings/:id`        | Admin or owning partner                                  | Partially update listing data, status, images, or custom fields. | `patchListingSchema`, `patchListingResponseSchema`     |
+| `DELETE` | `/api/listings/:id`        | Admin or owning partner                                  | Archive a listing.                                               | `deleteListingResponseSchema`                          |
+| `GET`    | `/api/listings/:id/editor` | Admin or owning partner                                  | Load editor-shaped listing data.                                 | `listingEditorResponseSchema`                          |
+| `POST`   | `/api/listing-drafts`      | Admin or partner                                         | Create an empty draft listing and property.                      | `createDraftListingResponseSchema`                     |
 
 Listing query parameters are documented in [Listings](listings.md).
 
 Listing create/update payloads submit selected accessibility features as `accessibilityFeatures`. Each submitted feature must include the field-definition `id`; storage persists selected public boolean field definitions as boolean keys in `listings.custom_fields`.
 
-Create payloads may include `applicationUrl` as a valid HTTP(S) URL. Update payloads may include `applicationUrl` as a valid HTTP(S) URL or `null` to clear the stored URL.
+Create payloads may include `applicationUrl` as a valid HTTP(S) URL. Replacement and partial-update payloads may include `applicationUrl` as a valid HTTP(S) URL or `null` to clear the stored URL.
+
+Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighborhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber` and `applicationUrl` fields. Full-form `PUT` payloads require every form-owned nullable field as a concrete value or `null`; server-managed neighborhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
 
 ## Image Uploads
 
