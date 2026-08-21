@@ -8,17 +8,29 @@ import { AlertBanner } from "@/components/ui/alert-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const initialState: ManageAccountState = {
-  error: "",
-  success: "",
-};
+const initialState: ManageAccountState = {};
 
 type ManageAccountPasswordFormProps = {
   email: string;
 };
 
+function FieldError({ fieldId, messages }: { fieldId: string; messages?: string[] }) {
+  if (!messages || messages.length === 0) {
+    return null;
+  }
+
+  return (
+    <p id={`${fieldId}-error`} className="text-xs text-destructive">
+      {messages[0]}
+    </p>
+  );
+}
+
 export function ManageAccountPasswordForm({ email }: ManageAccountPasswordFormProps) {
   const [state, action, pending] = useActionState(resetPasswordAction, initialState);
+
+  const describedBy = (field: keyof NonNullable<ManageAccountState["fieldErrors"]>) =>
+    state.fieldErrors?.[field]?.length ? `${field}-error` : undefined;
 
   return (
     <form action={action}>
@@ -41,7 +53,10 @@ export function ManageAccountPasswordForm({ email }: ManageAccountPasswordFormPr
             type="password"
             autoComplete="current-password"
             required
+            aria-invalid={Boolean(state.fieldErrors?.currentPassword?.length)}
+            aria-describedby={describedBy("currentPassword")}
           />
+          <FieldError fieldId="currentPassword" messages={state.fieldErrors?.currentPassword} />
         </div>
 
         <div className="space-y-1.5">
@@ -54,7 +69,10 @@ export function ManageAccountPasswordForm({ email }: ManageAccountPasswordFormPr
             type="password"
             autoComplete="new-password"
             required
+            aria-invalid={Boolean(state.fieldErrors?.newPassword?.length)}
+            aria-describedby={describedBy("newPassword")}
           />
+          <FieldError fieldId="newPassword" messages={state.fieldErrors?.newPassword} />
         </div>
 
         <div className="space-y-1.5">
@@ -67,6 +85,12 @@ export function ManageAccountPasswordForm({ email }: ManageAccountPasswordFormPr
             type="password"
             autoComplete="new-password"
             required
+            aria-invalid={Boolean(state.fieldErrors?.confirmNewPassword?.length)}
+            aria-describedby={describedBy("confirmNewPassword")}
+          />
+          <FieldError
+            fieldId="confirmNewPassword"
+            messages={state.fieldErrors?.confirmNewPassword}
           />
         </div>
 

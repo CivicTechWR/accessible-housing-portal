@@ -64,6 +64,13 @@
       "when": 1786379640367,
       "tag": "20260810163400_add_listing_field_applicability",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787330308655,
+      "tag": "20260821163828_panoramic_mastermind",
+      "breakpoints": true
     }
   ]
 }

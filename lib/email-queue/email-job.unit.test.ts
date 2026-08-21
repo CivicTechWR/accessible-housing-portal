@@ -5,8 +5,10 @@ import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 
 import {
   buildAccountInviteEmailJob,
+  buildPasswordResetEmailJob,
   getEmailJobId,
   getEmailJobIdempotencyKey,
+  getEmailJobMatch,
   openEmailJobSecret,
   sealEmailJobSecret,
 } from "@/lib/email-queue/email-job";
@@ -14,6 +16,8 @@ import {
 const ORIGINAL_ENV = process.env;
 const INVITE_ID = "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204";
 const INVITE_URL = "https://housing.example.org/invite?token=raw-one-time-token";
+const RESET_ROW_ID = "8c3f0a52-9b1d-4e6f-a7c2-d4b8e1f0a399";
+const RESET_URL = "https://housing.example.org/reset-password?oneTimeLink=raw-one-time-reset-link";
 
 beforeEach(() => {
   process.env = {
@@ -108,5 +112,50 @@ describe("buildAccountInviteEmailJob", () => {
     expect(job.inviteId).toBe(INVITE_ID);
     expect(JSON.stringify(job)).not.toContain("raw-one-time-token");
     expect(openEmailJobSecret(job.secret)).toBe(INVITE_URL);
+  });
+});
+
+describe("password reset jobs", () => {
+  it("keys idempotency off the token row id, never the raw token or URL", () => {
+    const data = buildPasswordResetEmailJob({ tokenId: RESET_ROW_ID, resetUrl: RESET_URL });
+
+    expect(getEmailJobIdempotencyKey(data)).toBe(`password_reset/${RESET_ROW_ID}`);
+    expect(getEmailJobIdempotencyKey(data)).not.toContain("raw-one-time-reset-link");
+  });
+
+  it("derives a stable job id independent of the sealed secret", () => {
+    const data = buildPasswordResetEmailJob({ tokenId: RESET_ROW_ID, resetUrl: RESET_URL });
+    const otherData = buildPasswordResetEmailJob({
+      tokenId: RESET_ROW_ID,
+      resetUrl: `${RESET_URL}&resealed=1`,
+    });
+
+    expect(getEmailJobId(data)).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    // A deferral replacement re-seals the secret; the logical email must keep
+    // one stable identity across the chain.
+    expect(getEmailJobId(otherData)).toBe(getEmailJobId(data));
+    expect(getEmailJobId(data)).not.toBe(
+      getEmailJobId(buildAccountInviteEmailJob({ inviteId: INVITE_ID, inviteUrl: INVITE_URL })),
+    );
+  });
+
+  it("matches every row of the logical email by type and token id", () => {
+    const data = buildPasswordResetEmailJob({ tokenId: RESET_ROW_ID, resetUrl: RESET_URL });
+
+    expect(getEmailJobMatch(data)).toEqual({
+      type: "password_reset",
+      passwordResetTokenId: RESET_ROW_ID,
+    });
+  });
+
+  it("stores only the token reference and a sealed secret", () => {
+    const job = buildPasswordResetEmailJob({ tokenId: RESET_ROW_ID, resetUrl: RESET_URL });
+
+    expect(Object.keys(job).sort()).toEqual(["passwordResetTokenId", "secret", "type"]);
+    expect(job.passwordResetTokenId).toBe(RESET_ROW_ID);
+    expect(JSON.stringify(job)).not.toContain("raw-one-time-reset-link");
+    expect(openEmailJobSecret(job.secret)).toBe(RESET_URL);
   });
 });

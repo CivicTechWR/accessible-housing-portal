@@ -1,32 +1,33 @@
 import "server-only";
 
-import { sendEmail } from "@/lib/email";
+import { sendEmail, type TransactionalEmailSendOptions } from "@/lib/email";
 
-export async function sendPasswordResetEmail(params: {
-  email: string;
-  fullName: string;
-  resetUrl: string;
-}) {
+export async function sendPasswordResetEmail(
+  params: {
+    email: string;
+    fullName: string;
+    resetUrl: string;
+    signal?: AbortSignal;
+  } & TransactionalEmailSendOptions,
+) {
   const resetUrl = getSafeResetUrl(params.resetUrl);
-  const idempotencyKey = getPasswordResetEmailIdempotencyKey(resetUrl);
-
   return await sendEmail({
     to: params.email,
+    signal: params.signal,
     subject: "Reset your Affordable Housing Portal password",
     text: `Hello ${params.fullName},\n\nWe received a request to reset your password for the Affordable Housing Portal.\n\nUse the link below to set a new password:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
     html: `<p>Hello ${escapeHtml(params.fullName)},</p><p>We received a request to reset your password for the Affordable Housing Portal.</p><p><a href="${escapeHtml(resetUrl)}">Reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`,
-    idempotencyKey,
+    idempotencyKey: params.idempotencyKey,
   });
 }
 
-export function getPasswordResetEmailIdempotencyKey(resetUrl: string) {
-  const token = new URL(resetUrl).searchParams.get("token")?.trim();
-
-  if (!token) {
-    throw new Error("Reset URL must include a token query parameter.");
-  }
-
-  return `password_reset/${token}`;
+/**
+ * Stable per-logical-email key derived from the password reset token row id —
+ * never from the raw token or reset URL, which must not be recoverable from
+ * the key.
+ */
+export function getPasswordResetEmailIdempotencyKey(passwordResetTokenId: string) {
+  return `password_reset/${passwordResetTokenId}`;
 }
 
 function getSafeResetUrl(value: string) {

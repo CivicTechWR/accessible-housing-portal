@@ -8,6 +8,15 @@ import {
   markInviteEmailFailed,
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
+import {
+  findPasswordResetEmailJobTarget,
+  markPasswordResetEmailFailed,
+  markPasswordResetEmailSubmitted,
+} from "@/lib/auth/password-reset-service";
+import {
+  getPasswordResetEmailIdempotencyKey,
+  sendPasswordResetEmail,
+} from "@/lib/auth/password-reset-email";
 import { EmailSendError } from "@/lib/email";
 import {
   EMAIL_JOB_PRIORITY,
@@ -15,6 +24,7 @@ import {
   openEmailJobSecret,
   type AccountInviteEmailJobData,
   type EmailJobData,
+  type PasswordResetEmailJobData,
 } from "@/lib/email-queue/email-job";
 import {
   EMAIL_DEAD_LETTER_QUEUE,
@@ -152,6 +162,12 @@ async function recordEmailJobFailure(data: EmailJobData): Promise<EmailDeadLette
         `[email-queue] Invite email for invite ${data.inviteId} permanently failed and was dead-lettered; the invite must be re-sent.`,
       );
       return { status: "failure_recorded" };
+    case "password_reset":
+      await markPasswordResetEmailFailed(data.passwordResetTokenId);
+      console.error(
+        `[email-queue] Password reset email for token ${data.passwordResetTokenId} permanently failed and was dead-lettered; a new reset must be requested.`,
+      );
+      return { status: "failure_recorded" };
   }
 }
 
@@ -208,6 +224,8 @@ async function sendEmailForJob(data: EmailJobData, signal: AbortSignal): Promise
   switch (data.type) {
     case "account_invite":
       return await sendAccountInviteEmailJob(data, signal);
+    case "password_reset":
+      return await sendPasswordResetEmailJob(data, signal);
   }
 }
 
@@ -260,6 +278,60 @@ async function sendAccountInviteEmailJob(
   }
 
   await markInviteEmailSubmitted(data.inviteId);
+
+  return { status: "submitted", providerMessageId: submission?.id ?? null };
+}
+
+async function sendPasswordResetEmailJob(
+  data: PasswordResetEmailJobData,
+  signal: AbortSignal,
+): Promise<EmailJobResult> {
+  const target = await findPasswordResetEmailJobTarget(data.passwordResetTokenId);
+
+  if (!target) {
+    return { status: "skipped", reason: "password_reset_token_not_found" };
+  }
+
+  if (target.usedAt) {
+    return { status: "skipped", reason: "password_reset_token_used" };
+  }
+
+  // The worker only sets sentAt after the provider accepts the send request,
+  // so this email was already submitted. This is how a job recovered after a
+  // crash completes instead of re-submitting.
+  if (target.sentAt) {
+    return { status: "skipped", reason: "password_reset_already_submitted" };
+  }
+
+  // Also covers superseded requests: creating a new request expires older ones.
+  if (target.expiresAt.getTime() <= Date.now()) {
+    return { status: "skipped", reason: "password_reset_token_expired" };
+  }
+
+  if (!data.secret) {
+    // Unsent reset with a missing secret cannot be recovered; fail into the
+    // retry/dead-letter cycle so it gets operational attention.
+    throw new Error(
+      `Email job for password reset token ${data.passwordResetTokenId} has no sealed payload secret.`,
+    );
+  }
+
+  const submission = await sendPasswordResetEmail({
+    email: target.email,
+    fullName: target.fullName,
+    resetUrl: openEmailJobSecret(data.secret),
+    idempotencyKey: getPasswordResetEmailIdempotencyKey(data.passwordResetTokenId),
+    signal,
+  });
+
+  if (signal.aborted) {
+    // pg-boss expired this job mid-send and will retry it; stop before
+    // touching state the retry now owns. The idempotency key reconciles the
+    // provider side if this send actually landed.
+    throw new Error(`Email job ${data.passwordResetTokenId} expired during send.`);
+  }
+
+  await markPasswordResetEmailSubmitted(data.passwordResetTokenId);
 
   return { status: "submitted", providerMessageId: submission?.id ?? null };
 }

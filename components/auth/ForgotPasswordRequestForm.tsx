@@ -2,7 +2,10 @@
 
 import { useActionState } from "react";
 
-import { type ForgotPasswordState, requestPasswordResetAction } from "@/app/forgot-password/actions";
+import {
+  type ForgotPasswordState,
+  requestPasswordResetAction,
+} from "@/app/forgot-password/actions";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { Button } from "@/components/ui/button";

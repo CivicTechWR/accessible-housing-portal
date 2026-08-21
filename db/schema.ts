@@ -161,6 +161,30 @@ export const userInvites = pgTable(
   ],
 );
 
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    // Password reset email lifecycle, mirroring user_invites: emailQueuedAt is
+    // set when the email job is enqueued; the worker then sets sentAt on
+    // provider submission, or emailFailedAt when the job permanently fails.
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    emailQueuedAt: timestamp("email_queued_at", { withTimezone: true }),
+    emailFailedAt: timestamp("email_failed_at", { withTimezone: true }),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("password_reset_tokens_token_hash_unique").on(table.tokenHash),
+    index("password_reset_tokens_user_id_idx").on(table.userId),
+  ],
+);
+
 export const properties = pgTable(
   "properties",
   {
@@ -357,6 +381,8 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserInvite = typeof userInvites.$inferSelect;
 export type NewUserInvite = typeof userInvites.$inferInsert;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 export type Property = typeof properties.$inferSelect;
 export type NewProperty = typeof properties.$inferInsert;
 export type Listing = typeof listings.$inferSelect;

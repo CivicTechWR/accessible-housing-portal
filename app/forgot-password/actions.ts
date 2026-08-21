@@ -1,17 +1,19 @@
 "use server";
 
 import { getUserForAuth, isUserAllowedToSignIn } from "@/lib/auth/user-store";
-import { sendPasswordResetEmail } from "@/lib/auth/password-reset-email";
-import { createPasswordResetToken } from "@/lib/auth/password-reset-token";
+import {
+  countRecentPasswordResets,
+  createPasswordReset,
+  PASSWORD_RESET_MAX_PER_HOUR,
+} from "@/lib/auth/password-reset-service";
 import { forgotPasswordRequestSchema } from "@/lib/auth/validation";
 
 export type ForgotPasswordState = {
-  error: string;
-  success: string;
+  error?: string;
+  success?: string;
 };
 
-const SUCCESS_MESSAGE =
-  "If an account exists for that email, a password reset link has been sent.";
+const SUCCESS_MESSAGE = "If an account exists for that email, a password reset link has been sent.";
 
 export async function requestPasswordResetAction(
   _state: ForgotPasswordState,
@@ -30,36 +32,27 @@ export async function requestPasswordResetAction(
 
   const user = await getUserForAuth(parsed.data.email);
 
+  // Every path below returns the same neutral message so the form can never
+  // reveal whether an account exists.
   if (!user?.passwordHash || !isUserAllowedToSignIn(user.status)) {
-    return {
-      error: "",
-      success: SUCCESS_MESSAGE,
-    };
+    return { success: SUCCESS_MESSAGE };
   }
 
-  const token = createPasswordResetToken({
-    userId: user.id,
-    passwordHash: user.passwordHash,
-  });
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000";
-  const resetUrl = new URL(`/reset-password?token=${token}`, baseUrl).toString();
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const recentCount = await countRecentPasswordResets({ userId: user.id, since: hourAgo });
 
+  if (recentCount >= PASSWORD_RESET_MAX_PER_HOUR) {
+    return { success: SUCCESS_MESSAGE };
+  }
+
+  // The service expires outstanding tokens and enqueues the email in one
+  // transaction. Enqueue failures here are transient infrastructure issues;
+  // surfacing them would leak account existence, so log and stay neutral.
   try {
-    await sendPasswordResetEmail({
-      email: user.email,
-      fullName: user.fullName,
-      resetUrl,
-    });
-  } catch {
-    return {
-      error: "Unable to send reset email right now.",
-      success: "",
-    };
+    await createPasswordReset({ userId: user.id });
+  } catch (error) {
+    console.error("[forgot-password] Failed to create password reset request:", error);
   }
 
-  return {
-    error: "",
-    success: SUCCESS_MESSAGE,
-  };
+  return { success: SUCCESS_MESSAGE };
 }

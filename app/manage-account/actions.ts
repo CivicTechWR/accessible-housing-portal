@@ -6,9 +6,12 @@ import { getOptionalSession } from "@/lib/auth/session";
 import { getUserPasswordRecord, updateUserPasswordHash } from "@/lib/auth/user-store";
 import { resetPasswordSchema } from "@/lib/auth/validation";
 
+export type ManageAccountField = "currentPassword" | "newPassword" | "confirmNewPassword";
+
 export type ManageAccountState = {
-  error: string;
-  success: string;
+  error?: string;
+  success?: string;
+  fieldErrors?: Partial<Record<ManageAccountField, string[]>>;
 };
 
 export async function resetPasswordAction(
@@ -18,10 +21,7 @@ export async function resetPasswordAction(
   const { session } = await getOptionalSession(await auth());
 
   if (!session?.user?.id) {
-    return {
-      error: "You must be signed in to reset your password.",
-      success: "",
-    };
+    return { error: "You must be signed in to reset your password." };
   }
 
   const parsed = resetPasswordSchema.safeParse({
@@ -31,19 +31,27 @@ export async function resetPasswordAction(
   });
 
   if (!parsed.success) {
+    const flattened = parsed.error.flatten().fieldErrors;
+    const fieldErrors: NonNullable<ManageAccountState["fieldErrors"]> = {};
+
+    for (const field of ["currentPassword", "newPassword", "confirmNewPassword"] as const) {
+      const messages = flattened[field];
+
+      if (messages && messages.length > 0) {
+        fieldErrors[field] = messages;
+      }
+    }
+
     return {
-      error: parsed.error.issues[0]?.message ?? "Invalid password details.",
-      success: "",
+      error: "Please fix the errors below.",
+      fieldErrors: Object.keys(fieldErrors).length > 0 ? fieldErrors : undefined,
     };
   }
 
   const userRecord = await getUserPasswordRecord(session.user.id);
 
   if (!userRecord?.passwordHash) {
-    return {
-      error: "Unable to reset password for this account.",
-      success: "",
-    };
+    return { error: "Unable to reset password for this account." };
   }
 
   let currentPasswordMatches = false;
@@ -60,15 +68,12 @@ export async function resetPasswordAction(
   if (!currentPasswordMatches) {
     return {
       error: "Current password is incorrect.",
-      success: "",
+      fieldErrors: { currentPassword: ["Current password is incorrect."] },
     };
   }
 
   const passwordHash = await hashPassword(parsed.data.newPassword);
   await updateUserPasswordHash(userRecord.id, passwordHash);
 
-  return {
-    error: "",
-    success: "Password updated successfully.",
-  };
+  return { success: "Password updated successfully." };
 }

@@ -11,6 +11,8 @@ This guide covers sign-in, sessions, invites, roles, protected routes, account m
 | Session helpers       | `lib/auth/session.ts`                                                                                                      |
 | Credentials and users | `lib/auth/user-store.ts`, `lib/auth/password.ts`, `lib/auth/validation.ts`                                                 |
 | Invites               | `lib/auth/invite-service.ts`, `lib/auth/invite-store.ts`, `app/invite/actions.ts`                                          |
+| Password reset        | `lib/auth/password-reset-service.ts`, `lib/auth/password-reset-email.ts`, `app/forgot-password/*`, `app/reset-password/*`  |
+| Account management    | `app/manage-account/*` (password change for signed-in users)                                                               |
 | Account admin         | `lib/accounts/*`, `app/api/admin/accounts/*`, `app/(admin)/admin/users/page.tsx`                                           |
 | Email queue           | `instrumentation.ts`, `lib/email-queue/*`, `lib/email.ts`, `lib/auth/invite-email.ts`                                      |
 | Custom field admin    | `lib/custom-listing-fields/*`, `app/api/admin/custom-listing-fields/*`, `app/(admin)/admin/custom-listing-fields/page.tsx` |
@@ -98,6 +100,43 @@ Password rules:
 - at least one number
 - confirmation must match
 
+## Forgot / Reset Password Flow
+
+Password reset uses opaque single-use tokens stored only as hashes in the
+`password_reset_tokens` table, modeled on invites:
+
+- request (`/forgot-password`) → `requestPasswordResetAction`
+- consumption (`/reset-password?token=...`) → `resetPasswordWithTokenAction`
+- TTL is 30 minutes; each row stores `token_hash`, `expires_at`, `used_at`, and the email lifecycle trio `email_queued_at` / `sent_at` / `email_failed_at`
+- creating a request expires all outstanding unused tokens for the user, so old links die immediately on re-request
+- the reset email is enqueued through the pg-boss queue with the reset URL sealed like invite URLs; the recipient is derived from the token row at send time
+- requests are throttled per user (`PASSWORD_RESET_MAX_PER_HOUR`)
+
+Request behavior is deliberately neutral: unknown emails, accounts without a
+password hash, non-active statuses, throttled users, and enqueue failures all
+return the same success message, so the form cannot reveal whether an account
+exists.
+
+Reset behavior:
+
+- the token row is claimed by a conditional `UPDATE ... WHERE used_at IS NULL AND expires_at > now()`, making consumption atomic and single-use
+- the new password hash is written in the same transaction as the claim
+- invalid, expired, used, and superseded tokens all return one generic error
+- user status is never touched: a suspended or deactivated account is not reactivated by a reset (and its reset link can be requested but the account still cannot sign in)
+
+Known follow-ups (out of scope here):
+
+- existing JWT sessions are not invalidated by a password change/reset (would need a `passwordChangedAt` check in the `jwt` callback)
+- repo-wide rate limiting beyond the per-user reset throttle
+
+## Manage Account (Signed-In Password Change)
+
+`/manage-account` lets an active signed-in user change their password:
+current password verification → new password validation →
+`updateUserPasswordHash`. Validation failures are reported per field
+(`fieldErrors`) beside each input with `aria-invalid` + `aria-describedby`; the
+forgot/reset forms use the same pattern. `AcceptInviteForm` still uses banner-only errors and should adopt the same field-level pattern later.
+
 ## Protected Routes
 
 `proxy.ts` exports NextAuth's `auth` as the Next.js proxy. `lib/auth/route-policy.ts` decides which requests require an auth session:
@@ -168,7 +207,7 @@ Email is intentionally isolated and asynchronous:
 - `instrumentation.ts` starts the worker only in the Node.js runtime when `EMAIL_WORKER_ENABLED=true`.
 - `lib/email-queue/worker.ts` is the only provider-submission path and calls the shared service in `lib/email.ts`.
 - transient provider failures retry with bounded exponential backoff; rate limits and daily quota exhaustion can defer submission.
-- permanently failing jobs move to `email_send_dead_letter`, and the worker records `email_failed_at` for the invite.
+- permanently failing jobs move to `email_send_dead_letter`, and the worker records `email_failed_at` for the invite or password reset token.
 - provider acceptance records the legacy `sent_at` field; no requested email leaves `email_queued_at` unset and produces `not_requested`.
 
 Job payloads identify the invite without storing recipient details in the queue. The one-time invite URL is sealed with AES-256-GCM under a key derived from `AUTH_SECRET` and redacted after a terminal outcome. Rotating `AUTH_SECRET` while jobs are queued makes their sealed URLs unreadable and causes those jobs to fail.
