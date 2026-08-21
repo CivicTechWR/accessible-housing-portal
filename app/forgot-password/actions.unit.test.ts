@@ -3,11 +3,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 
-import {
-  NEUTRAL_RESPONSE_MIN_MS,
-  requestPasswordResetAction,
-  setNeutralResponseMinMsForTesting,
-} from "@/app/forgot-password/actions";
+import { requestPasswordResetAction } from "@/app/forgot-password/actions";
+import { setNeutralResponseMinMsForTesting } from "@/app/forgot-password/neutral-response";
 import { createPasswordReset } from "@/lib/auth/password-reset-service";
 
 jest.mock("@/lib/auth/user-store", () => ({
@@ -43,7 +40,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setNeutralResponseMinMsForTesting(NEUTRAL_RESPONSE_MIN_MS);
+  setNeutralResponseMinMsForTesting(400);
   jest.restoreAllMocks();
 });
 

@@ -2,6 +2,7 @@
 
 import { getUserForAuth, isUserAllowedToSignIn } from "@/lib/auth/user-store";
 import { createPasswordReset } from "@/lib/auth/password-reset-service";
+import { ensureMinimumElapsed } from "@/app/forgot-password/neutral-response";
 import { forgotPasswordRequestSchema } from "@/lib/auth/validation";
 
 export type ForgotPasswordState = {
@@ -12,28 +13,13 @@ export type ForgotPasswordState = {
 const SUCCESS_MESSAGE = "If an account exists for that email, a password reset link has been sent.";
 
 /**
- * Minimum wall-clock time for any neutral (success-shaped) response. Unknown
- * and inactive accounts return after a single cheap query, while real
- * accounts run a locked transaction plus a queue enqueue; padding the fast
- * paths to a common floor keeps response timing from distinguishing existing
- * accounts. This narrows, but cannot fully eliminate, the signal — per-IP
- * rate limiting on this endpoint remains a follow-up.
+ * Neutral (success-shaped) responses are padded to a common minimum duration
+ * by app/forgot-password/neutral-response.ts: unknown and inactive accounts
+ * return after a single cheap query while real accounts run a locked
+ * transaction plus a queue enqueue, and padding keeps response timing from
+ * distinguishing existing accounts. This narrows, but cannot fully eliminate,
+ * the signal — per-IP rate limiting on this endpoint remains a follow-up.
  */
-export let NEUTRAL_RESPONSE_MIN_MS = 400;
-
-/** Test hook: shrink or zero the padding so unit tests stay fast. */
-export function setNeutralResponseMinMsForTesting(ms: number) {
-  NEUTRAL_RESPONSE_MIN_MS = ms;
-}
-
-async function ensureMinimumElapsed(startedAt: number) {
-  const remaining = NEUTRAL_RESPONSE_MIN_MS - (Date.now() - startedAt);
-
-  if (remaining > 0) {
-    await new Promise((resolve) => setTimeout(resolve, remaining));
-  }
-}
-
 export async function requestPasswordResetAction(
   _state: ForgotPasswordState,
   formData: FormData,
