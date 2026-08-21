@@ -7,7 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals
 import {
   consumePasswordResetToken,
   createPasswordReset,
+  findUnconsumedPasswordResetToken,
+  PASSWORD_RESET_MAX_PER_HOUR,
   PasswordResetUnavailableError,
+  updateUserPasswordExpiringResets,
 } from "@/lib/auth/password-reset-service";
 
 jest.mock("@/db", () => ({
@@ -31,9 +34,32 @@ const ORIGINAL_ENV = process.env;
 type InsertValues = Record<string, unknown>;
 
 type TxStub = {
+  select: (fields: unknown) => unknown;
   update: (table: unknown) => unknown;
   insert: (table: unknown) => unknown;
 };
+
+/**
+ * A drizzle-style select builder stub: `.from().where().limit().for()` chains
+ * resolve to the given rows.
+ */
+function buildSelectChain(rows: unknown[]) {
+  const chain = Promise.resolve(rows) as unknown as {
+    from: (table: unknown) => unknown;
+    where: (condition: unknown) => unknown;
+    limit: (n: number) => unknown;
+    for: (lock: string) => unknown;
+  };
+
+  chain.from = jest.fn((): unknown => chain);
+  chain.where = jest.fn((): unknown => chain);
+  // Keep every method returning the same promise-based chain, matching
+  // drizzle's order-independent builder (e.g. .limit(1).for("update")).
+  chain.limit = jest.fn((): unknown => chain);
+  chain.for = jest.fn((): unknown => chain);
+
+  return chain;
+}
 
 /**
  * A drizzle-style update builder stub: `.set().where()` chains resolve when
@@ -69,10 +95,6 @@ function buildInsertChain(onValues: (values: InsertValues) => void, returningRow
   return chain;
 }
 
-function stubTransaction(tx: Partial<TxStub>) {
-  transactionMock.mockImplementation(async (callback) => await callback(tx as TxStub));
-}
-
 beforeEach(() => {
   process.env = {
     ...ORIGINAL_ENV,
@@ -88,36 +110,69 @@ afterEach(() => {
 });
 
 describe("createPasswordReset", () => {
-  it("expires outstanding tokens, inserts a hashed token, and enqueues the email in one transaction", async () => {
-    const expiredUpdates: InsertValues[] = [];
-    let insertedRow: InsertValues | undefined;
-    let enqueuedInTransaction = false;
-
+  function buildCreateTransaction(options: {
+    userRows?: unknown[];
+    recentCount?: number;
+    onExpire?: (values: InsertValues) => void;
+    onInsert?: (values: InsertValues) => void;
+    onEnqueue?: (data: unknown) => void;
+  }) {
+    const selects: unknown[] = [];
     const expireChain = buildUpdateChain();
     const originalSet = expireChain.set;
     expireChain.set = (values: InsertValues) => {
-      expiredUpdates.push(values);
+      options.onExpire?.(values);
       return originalSet(values);
     };
 
-    stubTransaction({
+    const tx: TxStub = {
+      select: (fields) => {
+        selects.push(fields);
+        // First select locks the user row; the second counts recent requests.
+        return selects.length === 1
+          ? buildSelectChain(options.userRows ?? [{ id: "user-1" }])
+          : buildSelectChain([{ value: options.recentCount ?? 0 }]);
+      },
       update: () => expireChain,
       insert: () =>
         buildInsertChain(
           (values) => {
-            insertedRow = values;
+            options.onInsert?.(values);
           },
           [{ id: "token-row-1" }],
         ),
+    };
+
+    transactionMock.mockImplementation(async (callback) => await callback(tx));
+
+    if (options.onEnqueue) {
+      enqueueEmailMock.mockImplementation(async (_tx, data) => {
+        options.onEnqueue?.(data);
+        return "job-1";
+      });
+    }
+
+    return { selects };
+  }
+
+  it("locks the user row, expires outstanding tokens, inserts a hashed token, and enqueues the email", async () => {
+    const expiredUpdates: InsertValues[] = [];
+    let insertedRow: InsertValues | undefined;
+    let enqueuedInTransaction = false;
+
+    buildCreateTransaction({
+      onExpire: (values) => expiredUpdates.push(values),
+      onInsert: (values) => {
+        insertedRow = values;
+      },
+      onEnqueue: () => {
+        enqueuedInTransaction = true;
+      },
     });
 
-    enqueueEmailMock.mockImplementation(async () => {
-      enqueuedInTransaction = true;
-      return "job-1";
-    });
+    const result = await createPasswordReset({ userId: "user-1" });
 
-    await createPasswordReset({ userId: "user-1" });
-
+    expect(result.created).toBe(true);
     // Outstanding tokens are expired via expiresAt = now.
     expect(expiredUpdates).toEqual([expect.objectContaining({ expiresAt: expect.any(Date) })]);
     expect(insertedRow?.userId).toBe("user-1");
@@ -132,19 +187,13 @@ describe("createPasswordReset", () => {
     let insertedValues: InsertValues | undefined;
     let jobData: unknown;
 
-    stubTransaction({
-      update: () => buildUpdateChain(),
-      insert: () =>
-        buildInsertChain(
-          (values) => {
-            insertedValues = values;
-          },
-          [{ id: "token-row-1" }],
-        ),
-    });
-    enqueueEmailMock.mockImplementation(async (_tx, data) => {
-      jobData = data;
-      return "job-1";
+    buildCreateTransaction({
+      onInsert: (values) => {
+        insertedValues = values;
+      },
+      onEnqueue: (data) => {
+        jobData = data;
+      },
     });
 
     await createPasswordReset({ userId: "user-1" });
@@ -158,22 +207,96 @@ describe("createPasswordReset", () => {
     expect(JSON.stringify(insertedValues)).not.toContain(rawToken);
     expect(resetUrl.startsWith("https://housing.example.org/reset-password?token=")).toBe(true);
   });
+
+  it("does not create a request when the per-user throttle is exhausted", async () => {
+    const insertSpy = jest.fn();
+    const tx = {
+      select: (fields: unknown) => {
+        void fields;
+        return buildSelectChain([{ id: "user-1" }]);
+      },
+      update: () => buildUpdateChain(),
+      insert: () => {
+        insertSpy();
+        throw new Error("insert must not be reached");
+      },
+    };
+    // Override the second select (recent count) to hit the limit.
+    let selectCalls = 0;
+    tx.select = (fields: unknown) => {
+      selectCalls += 1;
+      void fields;
+      return selectCalls === 1
+        ? buildSelectChain([{ id: "user-1" }])
+        : buildSelectChain([{ value: PASSWORD_RESET_MAX_PER_HOUR }]);
+    };
+    transactionMock.mockImplementation(async (callback) => await callback(tx));
+
+    const result = await createPasswordReset({ userId: "user-1" });
+
+    expect(result.created).toBe(false);
+    expect(insertSpy).not.toHaveBeenCalled();
+    expect(enqueueEmailMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("findUnconsumedPasswordResetToken", () => {
+  it("returns the row when an unused, unexpired token exists", async () => {
+    transactionMock.mockImplementation(async () => "not-a-transaction");
+    const dbProxy = db as unknown as { select: unknown };
+    const originalSelect = dbProxy.select;
+    dbProxy.select = () => buildSelectChain([{ id: "token-row-1" }]);
+
+    try {
+      await expect(findUnconsumedPasswordResetToken("raw-token")).resolves.toEqual({
+        id: "token-row-1",
+      });
+    } finally {
+      dbProxy.select = originalSelect;
+    }
+  });
+
+  it("returns null when no unconsumed token matches", async () => {
+    transactionMock.mockImplementation(async () => "not-a-transaction");
+    const dbProxy = db as unknown as { select: unknown };
+    const originalSelect = dbProxy.select;
+    dbProxy.select = () => buildSelectChain([]);
+
+    try {
+      await expect(findUnconsumedPasswordResetToken("raw-token")).resolves.toBeNull();
+    } finally {
+      dbProxy.select = originalSelect;
+    }
+  });
 });
 
 describe("consumePasswordResetToken", () => {
   function stubConsumption(returningRows: unknown[]) {
     const claimChain = buildUpdateChain(returningRows);
+    const siblingChain = buildUpdateChain();
+    const siblingSets: InsertValues[] = [];
     const updateUserChain = buildUpdateChain();
     const updateTargets: unknown[] = [];
 
-    stubTransaction({
-      update: (table) => {
-        updateTargets.push(table);
-        return updateTargets.length === 1 ? claimChain : updateUserChain;
-      },
-    });
+    const originalSiblingSet = siblingChain.set;
+    siblingChain.set = (values: InsertValues) => {
+      siblingSets.push(values);
+      return originalSiblingSet(values);
+    };
 
-    return { claimChain, updateUserChain };
+    transactionMock.mockImplementation(
+      async (callback) =>
+        await callback({
+          update: (table: unknown) => {
+            updateTargets.push(table);
+            if (updateTargets.length === 1) return claimChain;
+            if (updateTargets.length === 2) return siblingChain;
+            return updateUserChain;
+          },
+        } as TxStub),
+    );
+
+    return { siblingSets, updateUserChain };
   }
 
   it("rejects unknown tokens", async () => {
@@ -214,9 +337,11 @@ describe("consumePasswordResetToken", () => {
     ).rejects.toThrow(PasswordResetUnavailableError);
   });
 
-  it("updates the user's password when the token is claimed", async () => {
+  it("expires sibling tokens and updates the user's password when the token is claimed", async () => {
+    const { siblingSets, updateUserChain } = stubConsumption([
+      { id: "token-row-1", userId: "user-1" },
+    ]);
     const setCalls: InsertValues[] = [];
-    const { updateUserChain } = stubConsumption([{ id: "token-row-1", userId: "user-1" }]);
     const originalSet = updateUserChain.set;
     updateUserChain.set = (values: InsertValues) => {
       setCalls.push(values);
@@ -225,6 +350,41 @@ describe("consumePasswordResetToken", () => {
 
     await consumePasswordResetToken({ token: "valid-token", passwordHash: "new-hash" });
 
+    expect(siblingSets).toEqual([expect.objectContaining({ expiresAt: expect.any(Date) })]);
     expect(setCalls).toEqual([{ passwordHash: "new-hash" }]);
+  });
+});
+
+describe("updateUserPasswordExpiringResets", () => {
+  it("updates the password and expires unused reset tokens in one transaction", async () => {
+    const userSets: InsertValues[] = [];
+    const resetSets: InsertValues[] = [];
+    const userChain = buildUpdateChain();
+    const resetChain = buildUpdateChain();
+    const originalUserSet = userChain.set;
+    const originalResetSet = resetChain.set;
+    userChain.set = (values: InsertValues) => {
+      userSets.push(values);
+      return originalUserSet(values);
+    };
+    resetChain.set = (values: InsertValues) => {
+      resetSets.push(values);
+      return originalResetSet(values);
+    };
+
+    transactionMock.mockImplementation(
+      async (callback) =>
+        await callback({
+          update: (table: unknown) => {
+            void table;
+            return userSets.length === 0 ? userChain : resetChain;
+          },
+        } as TxStub),
+    );
+
+    await updateUserPasswordExpiringResets({ userId: "user-1", passwordHash: "new-hash" });
+
+    expect(userSets).toEqual([{ passwordHash: "new-hash" }]);
+    expect(resetSets).toEqual([expect.objectContaining({ expiresAt: expect.any(Date) })]);
   });
 });

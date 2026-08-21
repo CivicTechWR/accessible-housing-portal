@@ -3,6 +3,7 @@
 import { hashPassword } from "@/lib/auth/password";
 import {
   consumePasswordResetToken,
+  findUnconsumedPasswordResetToken,
   PasswordResetUnavailableError,
 } from "@/lib/auth/password-reset-service";
 import { resetPasswordWithTokenSchema } from "@/lib/auth/validation";
@@ -47,10 +48,27 @@ export async function resetPasswordWithTokenAction(
   });
 
   if (!parsed.success) {
+    // A missing/empty hidden token means a malformed or stripped link — that
+    // is an invalid link, not a fixable form field.
+    const tokenInvalid = parsed.error.issues.some((issue) => issue.path.includes("token"));
+
+    if (tokenInvalid) {
+      return { error: INVALID_LINK_ERROR };
+    }
+
     return {
       error: "Please fix the errors below.",
       fieldErrors: fieldErrorsFromParsed(parsed.error),
     };
+  }
+
+  // Cheap token lookup before the expensive password hashing below, so
+  // arbitrary-token requests cannot exhaust the crypto worker pool. The
+  // conditional UPDATE in the consumption step remains the final race check.
+  const unconsumed = await findUnconsumedPasswordResetToken(parsed.data.token);
+
+  if (!unconsumed) {
+    return { error: INVALID_LINK_ERROR };
   }
 
   const newPasswordHash = await hashPassword(parsed.data.newPassword);

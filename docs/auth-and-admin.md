@@ -108,34 +108,42 @@ Password reset uses opaque single-use tokens stored only as hashes in the
 - request (`/forgot-password`) → `requestPasswordResetAction`
 - consumption (`/reset-password?token=...`) → `resetPasswordWithTokenAction`
 - TTL is 30 minutes; each row stores `token_hash`, `expires_at`, `used_at`, and the email lifecycle trio `email_queued_at` / `sent_at` / `email_failed_at`
-- creating a request expires all outstanding unused tokens for the user, so old links die immediately on re-request
+- creating a request expires all outstanding unused tokens for the user, so old links die immediately on re-request; creation is serialized per user with a `SELECT … FOR UPDATE` on the user row, and the per-user throttle (`PASSWORD_RESET_MAX_PER_HOUR`) is checked under that lock
+- only `active` accounts with a password hash get a reset email; other statuses receive the neutral response without a link
 - the reset email is enqueued through the pg-boss queue with the reset URL sealed like invite URLs; the recipient is derived from the token row at send time
-- requests are throttled per user (`PASSWORD_RESET_MAX_PER_HOUR`)
 
 Request behavior is deliberately neutral: unknown emails, accounts without a
 password hash, non-active statuses, throttled users, and enqueue failures all
 return the same success message, so the form cannot reveal whether an account
-exists.
+exists. Neutral responses are also padded to a common minimum duration so
+response timing is not a signal; per-IP rate limiting on this endpoint remains
+a follow-up.
 
 Reset behavior:
 
 - the token row is claimed by a conditional `UPDATE ... WHERE used_at IS NULL AND expires_at > now()`, making consumption atomic and single-use
 - the new password hash is written in the same transaction as the claim
-- invalid, expired, used, and superseded tokens all return one generic error
-- user status is never touched: a suspended or deactivated account is not reactivated by a reset (and its reset link can be requested but the account still cannot sign in)
+- invalid, expired, used, and superseded tokens all return one generic error; a cheap token lookup runs before password hashing so arbitrary-token requests cannot exhaust the crypto worker pool
+- user status is never touched: a suspended or deactivated account is not reactivated by a reset
 
 Known follow-ups (out of scope here):
 
 - existing JWT sessions are not invalidated by a password change/reset (would need a `passwordChangedAt` check in the `jwt` callback)
-- repo-wide rate limiting beyond the per-user reset throttle
+- per-IP rate limiting for the forgot-password endpoint (the per-user throttle covers known accounts only)
+- field-level errors for `AcceptInviteForm`
 
 ## Manage Account (Signed-In Password Change)
 
 `/manage-account` lets an active signed-in user change their password:
 current password verification → new password validation →
-`updateUserPasswordHash`. Validation failures are reported per field
-(`fieldErrors`) beside each input with `aria-invalid` + `aria-describedby`; the
-forgot/reset forms use the same pattern. `AcceptInviteForm` still uses banner-only errors and should adopt the same field-level pattern later.
+`updateUserPasswordExpiringResets`, which writes the new hash and expires all
+outstanding unused reset tokens in one transaction (so a link issued before
+the change cannot overwrite the new password). Validation failures are
+reported per field (`fieldErrors`) beside each input with `aria-invalid` +
+`aria-describedby`; the reset-password form uses the same pattern. The
+forgot-password form reports only a single email-validation banner;
+`AcceptInviteForm` still uses banner-only errors and should adopt the same
+field-level pattern later.
 
 ## Protected Routes
 
@@ -144,6 +152,7 @@ forgot/reset forms use the same pattern. `AcceptInviteForm` still uses banner-on
 - pages under `/admin`
 - pages under `/listings`
 - pages under `/listing-form`
+- pages under `/manage-account`
 - pages under `/my-listings`
 - APIs under `/api/admin`
 - all APIs under `/api/listings`

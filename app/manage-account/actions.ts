@@ -2,8 +2,9 @@
 
 import { auth } from "@/auth";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { updateUserPasswordExpiringResets } from "@/lib/auth/password-reset-service";
 import { getOptionalSession } from "@/lib/auth/session";
-import { getUserPasswordRecord, updateUserPasswordHash } from "@/lib/auth/user-store";
+import { getUserPasswordRecord } from "@/lib/auth/user-store";
 import { resetPasswordSchema } from "@/lib/auth/validation";
 
 export type ManageAccountField = "currentPassword" | "newPassword" | "confirmNewPassword";
@@ -66,14 +67,16 @@ export async function resetPasswordAction(
   }
 
   if (!currentPasswordMatches) {
-    return {
-      error: "Current password is incorrect.",
-      fieldErrors: { currentPassword: ["Current password is incorrect."] },
-    };
+    // Field-level message only: repeating it in the banner would render the
+    // same text twice.
+    return { fieldErrors: { currentPassword: ["Current password is incorrect."] } };
   }
 
   const passwordHash = await hashPassword(parsed.data.newPassword);
-  await updateUserPasswordHash(userRecord.id, passwordHash);
+
+  // Update the password and expire every outstanding reset link in one
+  // transaction so an older reset email cannot overwrite the new password.
+  await updateUserPasswordExpiringResets({ userId: userRecord.id, passwordHash });
 
   return { success: "Password updated successfully." };
 }
