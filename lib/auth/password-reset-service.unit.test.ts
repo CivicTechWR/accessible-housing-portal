@@ -173,7 +173,6 @@ describe("createPasswordReset", () => {
     const result = await createPasswordReset({ userId: "user-1" });
 
     expect(result.created).toBe(true);
-    // Outstanding tokens are expired via expiresAt = now.
     expect(expiredUpdates).toEqual([expect.objectContaining({ expiresAt: expect.any(Date) })]);
     expect(insertedRow?.userId).toBe("user-1");
     expect(insertedRow?.emailQueuedAt).toBeInstanceOf(Date);

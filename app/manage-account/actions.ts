@@ -67,8 +67,7 @@ export async function resetPasswordAction(
   }
 
   if (!currentPasswordMatches) {
-    // Field-level message only: repeating it in the banner would render the
-    // same text twice.
+    // Field error only — a banner would repeat the same text twice.
     return { fieldErrors: { currentPassword: ["Current password is incorrect."] } };
   }
 

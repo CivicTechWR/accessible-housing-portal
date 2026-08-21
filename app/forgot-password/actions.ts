@@ -39,21 +39,18 @@ export async function requestPasswordResetAction(
 
   const user = await getUserForAuth(parsed.data.email);
 
-  // Every path below returns the same neutral message after comparable work,
-  // so the form can never reveal whether an account exists.
+  // Neutral message on every path below so the form can't reveal whether an
+  // account exists.
   if (!user?.passwordHash || !isUserAllowedToSignIn(user.status)) {
     await ensureMinimumElapsed(startedAt);
     return { success: SUCCESS_MESSAGE };
   }
 
-  // Creates the request under a per-user lock: throttle check, expiry of
-  // outstanding tokens, insert, and email enqueue all happen inside one
-  // serialized transaction. Enqueue failures here are transient
-  // infrastructure issues; surfacing them would leak account existence, so
-  // log and stay neutral either way.
   try {
     await createPasswordReset({ userId: user.id });
   } catch (error) {
+    // Surfacing the failure would leak account existence; log and stay
+    // neutral.
     console.error("[forgot-password] Failed to create password reset request:", error);
   }
 

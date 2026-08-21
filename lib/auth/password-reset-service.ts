@@ -51,11 +51,9 @@ export async function findUnconsumedPasswordResetToken(token: string) {
 }
 
 /**
- * Create a password reset request for a user. Everything happens inside one
- * transaction serialized on the user row (SELECT … FOR UPDATE), so concurrent
- * requests cannot both keep an old token alive while inserting a new one:
- * the throttle check, expiry of outstanding tokens, insert, and email enqueue
- * are all evaluated under the lock. Only the token hash is stored.
+ * Create a password reset request serialized on the user row (SELECT … FOR
+ * UPDATE): without the lock, concurrent requests can each expire the previous
+ * tokens before seeing each other's insert, leaving two live tokens.
  */
 export async function createPasswordReset(params: { userId: string }): Promise<{
   created: boolean;
@@ -68,8 +66,8 @@ export async function createPasswordReset(params: { userId: string }): Promise<{
   const resetUrl = new URL(`/reset-password?token=${token}`, baseUrl).toString();
 
   const created = await db.transaction(async (tx) => {
-    // Lock the user row so concurrent requests for the same user serialize
-    // here instead of racing between expiry and insert.
+    // Lock the user row so concurrent requests serialize here instead of
+    // racing between expiry and insert.
     const [user] = await tx
       .select({ id: users.id })
       .from(users)
@@ -159,11 +157,6 @@ export async function markPasswordResetEmailSubmitted(tokenId: string) {
     .where(eq(passwordResetTokens.id, tokenId));
 }
 
-/**
- * Record that the reset email job permanently failed (dead-lettered). The
- * sentAt guard keeps a stray late failure from masking a provider-accepted
- * email.
- */
 export async function markPasswordResetEmailFailed(tokenId: string) {
   await db
     .update(passwordResetTokens)
@@ -172,13 +165,9 @@ export async function markPasswordResetEmailFailed(tokenId: string) {
 }
 
 /**
- * Consume a password reset token atomically and update the user's password.
- * The conditional UPDATE makes consumption single-use: only an unused,
- * unexpired token row can be claimed, and a repeat call (or a racing one)
- * finds no row and fails. Any sibling unused tokens are expired in the same
- * transaction, so a password can only ever be changed by the newest link.
- * User status is deliberately untouched — a suspended or deactivated account
- * must not be reactivated by a reset.
+ * Sibling unused tokens are expired with the claim so a password can only
+ * ever be changed by the newest link. User status is deliberately untouched:
+ * a suspended or deactivated account must not be reactivated by a reset.
  */
 export async function consumePasswordResetToken(params: { token: string; passwordHash: string }) {
   const now = new Date();
@@ -221,11 +210,6 @@ export async function consumePasswordResetToken(params: { token: string; passwor
   });
 }
 
-/**
- * Update a signed-in user's password and expire every unused, unexpired reset
- * token in one transaction, so a link issued before the change cannot
- * overwrite the new password afterwards.
- */
 export async function updateUserPasswordExpiringResets(params: {
   userId: string;
   passwordHash: string;

@@ -62,9 +62,8 @@ export async function resetPasswordWithTokenAction(
     };
   }
 
-  // Cheap token lookup before the expensive password hashing below, so
-  // arbitrary-token requests cannot exhaust the crypto worker pool. The
-  // conditional UPDATE in the consumption step remains the final race check.
+  // Cheap lookup before scrypt so arbitrary-token requests can't exhaust the
+  // crypto worker pool; the conditional UPDATE below remains the race check.
   const unconsumed = await findUnconsumedPasswordResetToken(parsed.data.token);
 
   if (!unconsumed) {
@@ -73,10 +72,6 @@ export async function resetPasswordWithTokenAction(
 
   const newPasswordHash = await hashPassword(parsed.data.newPassword);
 
-  // Atomic single-use consumption: only an unused, unexpired token row can be
-  // claimed; the new password is written in the same transaction. Outstanding
-  // tokens are expired when a new one is requested, so no staleness check
-  // against the current password hash is needed.
   try {
     await consumePasswordResetToken({
       token: parsed.data.token,
