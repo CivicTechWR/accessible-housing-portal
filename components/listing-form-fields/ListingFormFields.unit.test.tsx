@@ -31,6 +31,31 @@ function TestListingForm({
   );
 }
 
+describe("ListingFormFields deposit information", () => {
+  it("renders an optional deposit information textarea", () => {
+    render(<TestListingForm />);
+
+    expect(screen.queryByText("Deposit Information")).not.toBeNull();
+    expect(
+      screen.queryByText("Describe any deposits required so tenants know what to expect."),
+    ).not.toBeNull();
+    expect(
+      screen.getByPlaceholderText("E.g. First and last month's rent, refundable"),
+    ).not.toBeNull();
+  });
+
+  it("stores typed deposit information on the form", () => {
+    let form: ListingFormMethods | undefined;
+    render(<TestListingForm onFormReady={(f) => (form = f)} />);
+
+    fireEvent.change(screen.getByPlaceholderText("E.g. First and last month's rent, refundable"), {
+      target: { value: "First and last month's rent, refundable" },
+    });
+
+    expect(form?.getValues("depositInfo")).toBe("First and last month's rent, refundable");
+  });
+});
+
 describe("ListingFormFields utilities included", () => {
   it("renders a checkbox for each utility", () => {
     render(<TestListingForm />);
