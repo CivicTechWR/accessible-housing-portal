@@ -16,6 +16,7 @@ import {
   getDisplayAccessibilityFeatures,
   getEnabledBooleanCustomFieldKeys,
   getListingApplicationUrl,
+  getOptionalListingText,
   getListingSquareFeet,
   mergeListingCustomFields,
   resolveListingStatusTimestamps,
@@ -533,6 +534,7 @@ async function updateListingById<TPayload extends ListingMutationInput>(
       leaseTermMonths: input.payload.leaseTermMonths ?? listing.leaseTermMonths,
       utilitiesIncluded: input.payload.utilitiesIncluded ?? listing.utilitiesIncluded,
       maxIncomeCents: listing.maxIncomeCents,
+      depositInfo: preserveWhenUndefined(input.payload.depositInfo, listing.depositInfo),
       applicationUrl: nextApplicationUrlResult.nextApplicationUrl,
       applicationEmail: input.payload.contact?.email ?? listing.applicationEmail,
       applicationPhone: input.payload.contact?.phone ?? listing.applicationPhone,
@@ -663,6 +665,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
     baths: listing.bathrooms,
     sqft: getListingSquareFeet(listing.squareFeet),
     utilitiesIncluded: [...listing.utilitiesIncluded],
+    depositInfo: getOptionalListingText(listing.depositInfo),
     accessibilityFeatures: getDisplayAccessibilityFeatures(
       listing.customFields,
       featureDefinitions,
@@ -717,6 +720,7 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     monthlyRentCents: listing.monthlyRentCents,
     leaseTerm: listing.leaseTermMonths ?? undefined,
     utilitiesIncluded: [...listing.utilitiesIncluded],
+    depositInfo: getOptionalListingText(listing.depositInfo),
     images: imageRows.map((image) => ({
       id: image.id,
       url: getListingImageUrl(image.id, image.imageUrl),

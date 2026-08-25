@@ -51,6 +51,7 @@ export type ListingRecord = {
   leaseTermMonths: number | null;
   utilitiesIncluded: UtilityIncluded[];
   maxIncomeCents: number | null;
+  depositInfo: string | null;
   applicationUrl: string | null;
   applicationEmail: string | null;
   applicationPhone: string | null;
@@ -176,6 +177,7 @@ export async function findListingRecordById(
       leaseTermMonths: listings.leaseTermMonths,
       utilitiesIncluded: listings.utilitiesIncluded,
       maxIncomeCents: listings.maxIncomeCents,
+      depositInfo: listings.depositInfo,
       applicationUrl: listings.applicationUrl,
       applicationEmail: listings.applicationEmail,
       applicationPhone: listings.applicationPhone,
@@ -401,6 +403,7 @@ export async function createDraftListing(input: { actorUserId: string }) {
         leaseTermMonths: null,
         utilitiesIncluded: [],
         maxIncomeCents: null,
+        depositInfo: null,
         applicationUrl: null,
         applicationEmail: "",
         applicationPhone: "",
@@ -505,6 +508,7 @@ export async function createListing(input: {
         leaseTermMonths: input.payload.leaseTermMonths,
         utilitiesIncluded: input.payload.utilitiesIncluded,
         maxIncomeCents: null,
+        depositInfo: input.payload.depositInfo ?? null,
         applicationUrl: input.payload.applicationUrl ?? null,
         applicationEmail: input.payload.contact.email,
         applicationPhone: input.payload.contact.phone,
@@ -578,6 +582,7 @@ export async function updateListingGraph(input: {
     leaseTermMonths: number | null;
     utilitiesIncluded: UtilityIncluded[];
     maxIncomeCents: number | null;
+    depositInfo: string | null;
     applicationUrl: string | null;
     applicationEmail: string | null;
     applicationPhone: string | null;
@@ -624,6 +629,7 @@ export async function updateListingGraph(input: {
         leaseTermMonths: input.listing.leaseTermMonths,
         utilitiesIncluded: input.listing.utilitiesIncluded,
         maxIncomeCents: input.listing.maxIncomeCents,
+        depositInfo: input.listing.depositInfo,
         applicationUrl: input.listing.applicationUrl,
         applicationEmail: input.listing.applicationEmail,
         applicationPhone: input.listing.applicationPhone,

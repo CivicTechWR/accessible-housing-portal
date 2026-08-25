@@ -46,6 +46,7 @@ const validCreatePayload = {
   buildingType: "apartment",
   leaseTermMonths: 12,
   utilitiesIncluded: ["heat"],
+  depositInfo: "First and last month's rent, refundable",
 };
 
 describe("listing API schemas", () => {
@@ -85,6 +86,7 @@ describe("listing API schemas", () => {
       title: "  Suite 204 at Cedar Court  ",
       name: "  Cedar Court  ",
       applicationUrl: "  https://example.org/apply  ",
+      depositInfo: "  First and last month's rent  ",
       contact: {
         ...validCreatePayload.contact,
         email: "  leasing@example.org  ",
@@ -94,6 +96,7 @@ describe("listing API schemas", () => {
     expect(parsed.title).toBe("Suite 204 at Cedar Court");
     expect(parsed.name).toBe("Cedar Court");
     expect(parsed.applicationUrl).toBe("https://example.org/apply");
+    expect(parsed.depositInfo).toBe("First and last month's rent");
     expect(parsed.contact.email).toBe("leasing@example.org");
   });
 
@@ -193,6 +196,14 @@ describe("listing API schemas", () => {
     expect(result.success).toBe(true);
   });
 
+  it("allows clearing deposit information in PATCH payloads", () => {
+    const result = patchListingSchema.safeParse({
+      depositInfo: null,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("accepts explicit null for nullable replacement and PATCH fields", () => {
     const nullableFields = {
       ...validCreatePayload,
@@ -209,6 +220,7 @@ describe("listing API schemas", () => {
         },
       ],
       unitNumber: null,
+      depositInfo: null,
       applicationUrl: null,
     };
 
