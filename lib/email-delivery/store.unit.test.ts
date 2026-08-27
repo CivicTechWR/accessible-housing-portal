@@ -3,7 +3,10 @@
  */
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
-import { startEmailDeliveryAttempt, type EmailDeliveryDatabase } from "@/lib/email-delivery/store";
+import {
+  startEmailDeliveryAttempt,
+  type EmailDeliveryTransaction,
+} from "@/lib/email-delivery/store";
 
 jest.mock("@/db", () => ({ db: {} }));
 
@@ -34,7 +37,7 @@ const tx = {
       }),
     }),
   }),
-} as unknown as EmailDeliveryDatabase;
+} as unknown as EmailDeliveryTransaction;
 
 beforeEach(() => {
   insertedAttempt = undefined;

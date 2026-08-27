@@ -9,7 +9,7 @@ import {
   type EmailDeliveryAttemptRef,
 } from "@/lib/email-delivery/attempt";
 
-export type EmailDeliveryDatabase = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type EmailDeliveryTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Call inside the source record's transaction.
@@ -17,7 +17,7 @@ export type EmailDeliveryDatabase = typeof db | Parameters<Parameters<typeof db.
  * The upsert serializes attempt numbers, but does not dedupe resend requests.
  */
 export async function startEmailDeliveryAttempt(
-  tx: EmailDeliveryDatabase,
+  tx: EmailDeliveryTransaction,
   params: { emailType: EmailDeliveryType; sourceEntityId: string },
 ): Promise<EmailDeliveryAttemptRef> {
   const [delivery] = await tx
@@ -67,7 +67,7 @@ export async function startEmailDeliveryAttempt(
 }
 
 export async function recordEmailDeliveryAttemptQueueJob(
-  tx: EmailDeliveryDatabase,
+  tx: EmailDeliveryTransaction,
   params: { attemptId: string; queueJobId: string },
 ) {
   await tx
