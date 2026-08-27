@@ -31,16 +31,16 @@ Error responses use:
 
 ## Listings
 
-| Method   | Path                       | Auth                                                     | Purpose                                                          | Contract source                                        |
-| -------- | -------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
-| `GET`    | `/api/listings`            | Active session; draft/archive visibility is role-limited | List listings with filters and pagination.                       | `listingQuerySchema`, `listingListResponseSchema`      |
-| `POST`   | `/api/listings`            | Admin or partner                                         | Create a full listing.                                           | `createListingSchema`, `createListingResponseSchema`   |
-| `GET`    | `/api/listings/:id`        | Active session; owner/admin for private                  | Get listing details.                                             | `listingParamsSchema`, `listingByIdResponseSchema`     |
-| `PUT`    | `/api/listings/:id`        | Admin or owning partner                                  | Replace the complete client-owned listing representation.        | `replaceListingSchema`, `replaceListingResponseSchema` |
-| `PATCH`  | `/api/listings/:id`        | Admin or owning partner                                  | Partially update listing data, status, images, or custom fields. | `patchListingSchema`, `patchListingResponseSchema`     |
-| `DELETE` | `/api/listings/:id`        | Admin or owning partner                                  | Archive a listing.                                               | `deleteListingResponseSchema`                          |
-| `GET`    | `/api/listings/:id/editor` | Admin or owning partner                                  | Load editor-shaped listing data.                                 | `listingEditorResponseSchema`                          |
-| `POST`   | `/api/listing-drafts`      | Admin or partner                                         | Create an empty draft listing and property.                      | `createDraftListingResponseSchema`                     |
+| Method  | Path                        | Auth                                                     | Purpose                                                          | Contract source                                        |
+| ------- | --------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| `GET`   | `/api/listings`             | Active session; draft/archive visibility is role-limited | List listings with filters and pagination.                       | `listingQuerySchema`, `listingListResponseSchema`      |
+| `POST`  | `/api/listings`             | Admin or partner                                         | Create a full listing.                                           | `createListingSchema`, `createListingResponseSchema`   |
+| `GET`   | `/api/listings/:id`         | Active session; owner/admin for private                  | Get listing details.                                             | `listingParamsSchema`, `listingByIdResponseSchema`     |
+| `PUT`   | `/api/listings/:id`         | Admin or owning partner                                  | Replace the complete client-owned listing representation.        | `replaceListingSchema`, `replaceListingResponseSchema` |
+| `PATCH` | `/api/listings/:id`         | Admin or owning partner                                  | Partially update listing data, status, images, or custom fields. | `patchListingSchema`, `patchListingResponseSchema`     |
+| `POST`  | `/api/listings/:id/archive` | Admin or owning partner                                  | Archive a listing.                                               | `archiveListingResponseSchema`                         |
+| `GET`   | `/api/listings/:id/editor`  | Admin or owning partner                                  | Load editor-shaped listing data.                                 | `listingEditorResponseSchema`                          |
+| `POST`  | `/api/listing-drafts`       | Admin or partner                                         | Create an empty draft listing and property.                      | `createDraftListingResponseSchema`                     |
 
 Listing query parameters are documented in [Listings](listings.md).
 
