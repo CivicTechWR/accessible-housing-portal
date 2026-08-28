@@ -38,6 +38,17 @@ export const utilityIncludedEnum = pgEnum("utility_included", [
   "gas",
   "internet",
 ]);
+export const emailDeliveryTypeEnum = pgEnum("email_delivery_type", ["account_invite"]);
+export const emailDeliveryOutcomeEnum = pgEnum("email_delivery_outcome", [
+  "queued",
+  "sent",
+  "delivered",
+  "delivery_delayed",
+  "bounced",
+  "complained",
+  "failed",
+  "suppressed",
+]);
 export const customListingFieldTypeEnum = pgEnum("listing_field_type", [
   "boolean",
   "number",
@@ -84,6 +95,8 @@ export type ListingBuildingType = (typeof listingBuildingTypeEnum.enumValues)[nu
 export type UtilityIncluded = (typeof utilityIncludedEnum.enumValues)[number];
 export type CustomListingFieldApplicability =
   (typeof customListingFieldApplicabilityEnum.enumValues)[number];
+export type EmailDeliveryType = (typeof emailDeliveryTypeEnum.enumValues)[number];
+export type EmailDeliveryOutcome = (typeof emailDeliveryOutcomeEnum.enumValues)[number];
 
 const byteaBuffer = customType<{ data: Buffer; driverData: Uint8Array }>({
   dataType() {
@@ -158,6 +171,49 @@ export const userInvites = pgTable(
     index("user_invites_user_id_idx").on(table.userId),
     index("user_invites_email_idx").on(table.email),
     index("user_invites_created_by_user_id_idx").on(table.createdByUserId),
+  ],
+);
+
+export const emailDeliveries = pgTable(
+  "email_deliveries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    emailType: emailDeliveryTypeEnum("email_type").notNull(),
+    sourceEntityId: uuid("source_entity_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("email_deliveries_email_type_source_entity_id_unique").on(
+      table.emailType,
+      table.sourceEntityId,
+    ),
+  ],
+);
+
+export const emailDeliveryAttempts = pgTable(
+  "email_delivery_attempts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    deliveryId: uuid("delivery_id")
+      .notNull()
+      .references(() => emailDeliveries.id, { onDelete: "cascade" }),
+    attemptNumber: integer("attempt_number").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    queueJobId: uuid("queue_job_id"),
+    providerEmailId: text("provider_email_id"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    outcome: emailDeliveryOutcomeEnum("outcome").notNull().default("queued"),
+    outcomeAt: timestamp("outcome_at", { withTimezone: true }),
+    outcomeDetail: text("outcome_detail"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("email_delivery_attempts_delivery_id_attempt_number_unique").on(
+      table.deliveryId,
+      table.attemptNumber,
+    ),
+    uniqueIndex("email_delivery_attempts_idempotency_key_unique").on(table.idempotencyKey),
+    uniqueIndex("email_delivery_attempts_provider_email_id_unique").on(table.providerEmailId),
   ],
 );
 
@@ -357,6 +413,10 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserInvite = typeof userInvites.$inferSelect;
 export type NewUserInvite = typeof userInvites.$inferInsert;
+export type EmailDelivery = typeof emailDeliveries.$inferSelect;
+export type NewEmailDelivery = typeof emailDeliveries.$inferInsert;
+export type EmailDeliveryAttempt = typeof emailDeliveryAttempts.$inferSelect;
+export type NewEmailDeliveryAttempt = typeof emailDeliveryAttempts.$inferInsert;
 export type Property = typeof properties.$inferSelect;
 export type NewProperty = typeof properties.$inferInsert;
 export type Listing = typeof listings.$inferSelect;
