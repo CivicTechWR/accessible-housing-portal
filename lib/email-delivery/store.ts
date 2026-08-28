@@ -11,11 +11,6 @@ import {
 
 export type EmailDeliveryTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/**
- * Call inside the source record's transaction.
- *
- * The upsert serializes attempt numbers, but does not dedupe resend requests.
- */
 export async function startEmailDeliveryAttempt(
   tx: EmailDeliveryTransaction,
   params: { emailType: EmailDeliveryType; sourceEntityId: string },
@@ -23,7 +18,6 @@ export async function startEmailDeliveryAttempt(
   const [delivery] = await tx
     .insert(emailDeliveries)
     .values({ emailType: params.emailType, sourceEntityId: params.sourceEntityId })
-    // Use a no-op update so RETURNING also works for an existing delivery.
     .onConflictDoUpdate({
       target: [emailDeliveries.emailType, emailDeliveries.sourceEntityId],
       set: { sourceEntityId: params.sourceEntityId },
@@ -83,10 +77,8 @@ export async function recordEmailDeliveryAttemptSubmission(params: {
   await db
     .update(emailDeliveryAttempts)
     .set({
-      // A retry may get here after a successful send, so keep the first submission.
       providerEmailId: sql`coalesce(${emailDeliveryAttempts.providerEmailId}, ${params.providerEmailId})`,
       submittedAt: sql`coalesce(${emailDeliveryAttempts.submittedAt}, now())`,
-      // Keep any provider outcome that arrived before this write.
       outcome: sql`case when ${emailDeliveryAttempts.outcome} = 'queued' then 'sent'::"email_delivery_outcome" else ${emailDeliveryAttempts.outcome} end`,
     })
     .where(eq(emailDeliveryAttempts.id, params.attemptId));

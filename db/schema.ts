@@ -179,8 +179,6 @@ export const emailDeliveries = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     emailType: emailDeliveryTypeEnum("email_type").notNull(),
-    // No foreign key: the source table depends on emailType, and delivery history
-    // must survive source deletion.
     sourceEntityId: uuid("source_entity_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -201,14 +199,11 @@ export const emailDeliveryAttempts = pgTable(
       .references(() => emailDeliveries.id, { onDelete: "cascade" }),
     attemptNumber: integer("attempt_number").notNull(),
     idempotencyKey: text("idempotency_key").notNull(),
-    // Deferred jobs are linked through their payloads; this stays the original job ID.
     queueJobId: uuid("queue_job_id"),
     providerEmailId: text("provider_email_id"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     outcome: emailDeliveryOutcomeEnum("outcome").notNull().default("queued"),
-    // Provider timestamp used to handle out-of-order updates.
     outcomeAt: timestamp("outcome_at", { withTimezone: true }),
-    // Provider codes only. Never store message or recipient data here.
     outcomeDetail: text("outcome_detail"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -218,7 +213,6 @@ export const emailDeliveryAttempts = pgTable(
       table.attemptNumber,
     ),
     uniqueIndex("email_delivery_attempts_idempotency_key_unique").on(table.idempotencyKey),
-    // Null provider IDs do not conflict in PostgreSQL.
     uniqueIndex("email_delivery_attempts_provider_email_id_unique").on(table.providerEmailId),
   ],
 );
