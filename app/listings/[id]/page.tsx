@@ -25,6 +25,7 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       description={details.description}
       buildingType={details.buildingType}
       leaseTermMonths={details.leaseTermMonths}
+      depositInfo={details.depositInfo}
       availableOn={details.availableOn}
       unitNumber={details.unitNumber}
       street1={details.address.street1}

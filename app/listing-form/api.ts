@@ -44,6 +44,7 @@ export function mapListingFormToReplaceListingInput(
       },
     ],
     unitNumber: normalizeOptionalString(data.unitNumber) ?? null,
+    depositInfo: normalizeOptionalString(data.depositInfo) ?? null,
     applicationUrl: normalizeOptionalString(data.applicationUrl) ?? null,
   };
 
@@ -101,6 +102,10 @@ export function mapListingFormToAutosavePatchInput(
     patch.applicationUrl = applicationUrl;
   } else if (data.applicationUrl !== undefined) {
     patch.applicationUrl = null;
+  }
+
+  if (data.depositInfo !== undefined) {
+    patch.depositInfo = normalizeOptionalString(data.depositInfo) ?? null;
   }
 
   if (data.unitNumber !== undefined) {
@@ -242,6 +247,7 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
       description: normalizeOptionalString(feature.description) ?? feature.name,
     })),
     applicationUrl: applicationUrl ?? undefined,
+    depositInfo: normalizeOptionalString(data.depositInfo),
     images: data.images.flatMap((image) =>
       image.id
         ? [

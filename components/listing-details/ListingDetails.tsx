@@ -36,6 +36,7 @@ export interface ListingDetailProps {
   description?: string;
   buildingType?: ListingBuildingType;
   leaseTermMonths?: number;
+  depositInfo?: string;
   /** ISO date string (YYYY-MM-DD). */
   availableOn?: string;
   unitNumber?: string;
@@ -69,6 +70,7 @@ export function ListingDetails({
   description,
   buildingType,
   leaseTermMonths,
+  depositInfo,
   availableOn,
   city,
   beds,
@@ -97,6 +99,9 @@ export function ListingDetails({
   const rentalDetailRows: Array<{ label: string; value: string; fullWidth?: boolean }> = [
     { label: "Address", value: address || "Address Here", fullWidth: true },
     { label: "Rental Cost", value: rentalCost },
+    ...(depositInfo?.trim()
+      ? [{ label: "Deposit", value: depositInfo.trim(), fullWidth: true }]
+      : []),
     ...(buildingType
       ? [{ label: "Building Type", value: LISTING_BUILDING_TYPE_LABELS[buildingType] }]
       : []),

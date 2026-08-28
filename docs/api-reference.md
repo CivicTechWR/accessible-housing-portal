@@ -48,7 +48,9 @@ Listing create/update payloads submit selected accessibility features as `access
 
 Create payloads may include `applicationUrl` as a valid HTTP(S) URL. Replacement and partial-update payloads may include `applicationUrl` as a valid HTTP(S) URL or `null` to clear the stored URL.
 
-Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighborhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber` and `applicationUrl` fields. Full-form `PUT` payloads require every form-owned nullable field as a concrete value or `null`; server-managed neighborhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
+Create payloads may include optional `depositInfo` text. Replacement payloads require `depositInfo` as trimmed text or `null`. Partial-update payloads may include `depositInfo` as trimmed text or `null` to clear the stored value.
+
+Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighborhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber`, `depositInfo`, and `applicationUrl` fields. Full-form `PUT` payloads require every form-owned nullable field as a concrete value or `null`; server-managed neighborhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
 
 ## Image Uploads
 

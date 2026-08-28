@@ -6,6 +6,7 @@ import {
   buildListingFeatureCategories,
   getDisplayAccessibilityFeatures,
   getListingApplicationUrl,
+  getOptionalListingText,
   mergeListingCustomFields,
 } from "./store";
 
@@ -232,5 +233,19 @@ describe("getListingApplicationUrl", () => {
     expect(getListingApplicationUrl(null)).toBeUndefined();
     expect(getListingApplicationUrl(undefined)).toBeUndefined();
     expect(getListingApplicationUrl("   ")).toBeUndefined();
+  });
+});
+
+describe("getOptionalListingText", () => {
+  it("returns trimmed text when provided", () => {
+    expect(getOptionalListingText("  First and last month's rent  ")).toBe(
+      "First and last month's rent",
+    );
+  });
+
+  it("returns undefined when empty", () => {
+    expect(getOptionalListingText(null)).toBeUndefined();
+    expect(getOptionalListingText(undefined)).toBeUndefined();
+    expect(getOptionalListingText("   ")).toBeUndefined();
   });
 });

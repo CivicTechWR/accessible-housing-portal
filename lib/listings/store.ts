@@ -47,6 +47,10 @@ export function getListingApplicationUrl(applicationUrl: string | null | undefin
   return applicationUrl?.trim() || undefined;
 }
 
+export function getOptionalListingText(value: string | null | undefined) {
+  return value?.trim() || undefined;
+}
+
 export function getEnabledBooleanCustomFieldKeys(customFields: ListingCustomFields) {
   return Object.entries(customFields)
     .filter(([, value]) => value === true)

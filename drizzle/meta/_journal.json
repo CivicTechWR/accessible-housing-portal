@@ -64,6 +64,13 @@
       "when": 1786379640367,
       "tag": "20260810163400_add_listing_field_applicability",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787162580000,
+      "tag": "20260819212300_add_listing_deposit_info",
+      "breakpoints": true
     }
   ]
 }

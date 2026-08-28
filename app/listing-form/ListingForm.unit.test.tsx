@@ -29,6 +29,7 @@ const editorResponse = {
     squareFeet: 1200,
     monthlyRentCents: 235000,
     leaseTerm: 12,
+    depositInfo: "First and last month's rent, refundable",
     utilitiesIncluded: ["heat", "water"],
     images: [],
     availableOn: "2026-05-15",
@@ -90,5 +91,12 @@ describe("ListingForm hydration", () => {
     expect(valueOf("leaseTerm")).toBe("12");
     expect(valueOf("bedrooms")).toBe("3");
     expect(valueOf("city")).toBe("Waterloo");
+    expect(
+      (
+        document.querySelector(
+          '[data-field-name="depositInfo"] textarea',
+        ) as HTMLTextAreaElement | null
+      )?.value,
+    ).toBe("First and last month's rent, refundable");
   });
 });

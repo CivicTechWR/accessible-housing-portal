@@ -73,6 +73,7 @@ export function ListingFormPreview({
           description={formData.description}
           buildingType={previewBuildingType}
           leaseTermMonths={formData.leaseTerm}
+          depositInfo={formData.depositInfo}
           availableOn={formData.availableOn || undefined}
           unitNumber={previewUnitNumberValue}
           street1={previewStreet1}

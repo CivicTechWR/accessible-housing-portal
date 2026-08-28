@@ -56,6 +56,7 @@ type SeedListing = {
     buildingType: ListingBuildingType;
     leaseTermMonths: number;
     utilitiesIncluded: UtilityIncluded[];
+    depositInfo: string | null;
     maxIncomeCents: number | null;
     applicationUrl: string | null;
     applicationEmail: string;
@@ -127,6 +128,7 @@ export const mockListingSeedListings: SeedListing[] = [
       buildingType: "apartment",
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water"],
+      depositInfo: "First and last month's rent, refundable",
       maxIncomeCents: 7800000,
       // Demo destinations must be absolute HTTPS (schema requires z.httpUrl) and
       // must actually resolve so testers don't hit a 404; example.com only
@@ -198,6 +200,7 @@ export const mockListingSeedListings: SeedListing[] = [
       buildingType: "apartment",
       leaseTermMonths: 12,
       utilitiesIncluded: ["water"],
+      depositInfo: "Equal to one month's rent",
       maxIncomeCents: 6200000,
       applicationUrl: "https://example.com/?demo-application=king-east-lofts",
       applicationEmail: "leasing@waterloocoop.example.com",
@@ -255,6 +258,7 @@ export const mockListingSeedListings: SeedListing[] = [
       buildingType: "townhouse",
       leaseTermMonths: 6,
       utilitiesIncluded: ["water"],
+      depositInfo: null,
       maxIncomeCents: null,
       applicationUrl: "https://example.com/?demo-application=erb-street-townhomes",
       applicationEmail: "housing@civichomes.example.com",
@@ -314,6 +318,7 @@ export const mockListingSeedListings: SeedListing[] = [
       buildingType: "apartment",
       leaseTermMonths: 1,
       utilitiesIncluded: ["heat", "water"],
+      depositInfo: "Key deposit of $100, refundable",
       maxIncomeCents: 5500000,
       applicationUrl: null,
       applicationEmail: "housing@civichomes.example.com",
@@ -373,6 +378,7 @@ export const mockListingSeedListings: SeedListing[] = [
       buildingType: "condo",
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water", "electricity"],
+      depositInfo: "First month's rent plus a $200 key deposit",
       maxIncomeCents: 6400000,
       applicationUrl: "https://example.com/?demo-application=queen-south-residences",
       applicationEmail: "leasing@waterloocoop.example.com",

@@ -108,6 +108,7 @@ Details include:
 - image URLs
 - relative time
 - grouped feature categories
+- optional deposit information in the rental details card
 - contact information when all contact fields are present
 - an Apply button when `applicationUrl` is present
 - a direct-contact instruction when complete contact details exist but no online application URL is set
@@ -185,13 +186,13 @@ The listing form includes built-in fields and admin-configured feature fields.
 Built-in listing fields are persisted in normalized columns on `listings` or `properties`, including:
 
 - title, description, status, and unit number
-- building type, bedrooms, bathrooms, square feet, rent, availability, lease term, and included utilities
+- building type, bedrooms, bathrooms, square feet, rent, availability, lease term, included utilities, and deposit information
 - application URL and contact fields
 - property name and address fields
 
 `lib/listings/store.ts` maps selected admin-configured accessibility features into `listings.custom_fields`. Current authoring writes selected public boolean feature definitions as boolean keys where `custom_fields[definition.key]` is `true`.
 
-Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighborhood, and coordinates while preserving omitted server-managed neighborhood and coordinate data. New listings published without an availability date retain the available-today default.
+Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, deposit information, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighborhood, and coordinates while preserving omitted server-managed neighborhood and coordinate data. New listings published without an availability date retain the available-today default.
 
 If a new listing field must be searchable, sortable, joined, or constrained at scale, prefer a normalized column. If it is project-configurable feature metadata, prefer `listing_field_definitions` plus `customFields`.
 

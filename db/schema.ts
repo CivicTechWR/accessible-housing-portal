@@ -223,6 +223,7 @@ export const listings = pgTable(
     monthlyRentCents: integer("monthly_rent_cents").notNull(),
     availableOn: date("available_on"),
     leaseTermMonths: integer("lease_term_months"),
+    depositInfo: text("deposit_info"),
     utilitiesIncluded: utilityIncludedEnum("utilities_included")
       .array()
       .notNull()
