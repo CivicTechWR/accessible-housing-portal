@@ -102,9 +102,7 @@ export function formatListingAddress(street1: string, unitNumber: string | null)
 }
 
 export function buildDuplicateListingTitle(title: string) {
-  const trimmedTitle = title.trim();
-
-  return trimmedTitle ? `Copy of ${trimmedTitle}` : "";
+  return title ? `Copy of ${title}` : "";
 }
 
 export function selectDuplicateCustomFields(input: {

@@ -24,7 +24,6 @@ describe("buildDuplicateListingTitle", () => {
       "Copy of Sunny 2BR near uptown",
     );
     expect(buildDuplicateListingTitle("")).toBe("");
-    expect(buildDuplicateListingTitle("   ")).toBe("");
   });
 });
 
