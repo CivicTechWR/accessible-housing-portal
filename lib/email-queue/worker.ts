@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Job, PgBoss } from "pg-boss";
 
-import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth/invite-email";
+import { sendInviteEmail } from "@/lib/auth/invite-email";
 import {
   findInviteEmailJobTarget,
   markInviteEmailFailed,
@@ -248,7 +248,7 @@ async function sendAccountInviteEmailJob(
     email: target.email,
     fullName: target.fullName,
     inviteUrl: openEmailJobSecret(data.secret),
-    idempotencyKey: getAccountInviteEmailIdempotencyKey(data.inviteId),
+    attempt: data.attempt,
     signal,
   });
 

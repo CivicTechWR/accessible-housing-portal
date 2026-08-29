@@ -164,14 +164,17 @@ Listing filters currently use public, filterable, boolean field definitions.
 
 Email is intentionally isolated and asynchronous:
 
-- `createInvite` writes the invite and enqueues an `email_send` pg-boss job in one transaction.
+- `createInvite` writes the invite, opens a delivery attempt, and enqueues an `email_send` pg-boss job in one transaction.
+- `lib/email-delivery/store.ts` owns the delivery/attempt records; `startEmailDeliveryAttempt` returns the attempt every sender submits under.
 - `instrumentation.ts` starts the worker only in the Node.js runtime when `EMAIL_WORKER_ENABLED=true`.
 - `lib/email-queue/worker.ts` is the only provider-submission path and calls the shared service in `lib/email.ts`.
 - transient provider failures retry with bounded exponential backoff; rate limits and daily quota exhaustion can defer submission.
 - permanently failing jobs move to `email_send_dead_letter`, and the worker records `email_failed_at` for the invite.
 - provider acceptance records the legacy `sent_at` field; no requested email leaves `email_queued_at` unset and produces `not_requested`.
 
-Job payloads identify the invite without storing recipient details in the queue. The one-time invite URL is sealed with AES-256-GCM under a key derived from `AUTH_SECRET` and redacted after a terminal outcome. Rotating `AUTH_SECRET` while jobs are queued makes their sealed URLs unreadable and causes those jobs to fail.
+Job payloads identify the invite and its delivery attempt without storing recipient details in the queue. The one-time invite URL is sealed with AES-256-GCM under a key derived from `AUTH_SECRET` and redacted after a terminal outcome. Rotating `AUTH_SECRET` while jobs are queued makes their sealed URLs unreadable and causes those jobs to fail.
+
+Send identity comes from the attempt, not the invite: `lib/email.ts` submits under the attempt's idempotency key, tags the submission with the email type and the delivery/attempt ids, and writes Resend's email id back to the attempt. Retries of a job therefore resubmit as the same send and are deduplicated by the provider, while a genuine resend must open a new attempt to be delivered again.
 
 Do not create Resend clients in UI or route handlers or add another provider-submission path around the queue. New email types must extend the job contract and both the send and dead-letter handlers.
 

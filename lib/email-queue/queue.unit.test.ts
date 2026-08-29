@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { fromDrizzle, PgBoss } from "pg-boss";
 
+import { recordEmailDeliveryAttemptQueueJob } from "@/lib/email-delivery/store";
 import { getEmailJobId, type EmailJobData } from "@/lib/email-queue/email-job";
 import {
   EMAIL_DEAD_LETTER_QUEUE,
@@ -27,15 +28,29 @@ jest.mock("pg-boss", () => {
   };
 });
 
+jest.mock("@/lib/email-delivery/store", () => ({
+  recordEmailDeliveryAttemptQueueJob: jest.fn(),
+}));
+
 const PgBossMock = jest.mocked(PgBoss);
+const recordQueueJobMock = jest.mocked(recordEmailDeliveryAttemptQueueJob);
 const fromDrizzleMock = jest.mocked(fromDrizzle);
 const bossInstance = jest.mocked(new PgBossMock("ignored"));
 
 const ORIGINAL_ENV = process.env;
 
+const ATTEMPT = {
+  id: "0f5cce0c-92e5-4ab0-a06d-21c5a8f4ff79",
+  deliveryId: "6d5a1a9a-8f1f-4d1e-9a2e-3b0f5a2c7d11",
+  emailType: "account_invite",
+  attemptNumber: 1,
+  idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204/attempt/1",
+} as const;
+
 const JOB_DATA: EmailJobData = {
   type: "account_invite",
   inviteId: "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204",
+  attempt: ATTEMPT,
   secret: "v1.sealed.invite.url",
 };
 
@@ -67,15 +82,21 @@ afterEach(() => {
 
 describe("enqueueEmail", () => {
   it("sends the job with a deterministic id, its type's priority, and the transaction adapter", async () => {
-    const tx = buildTx();
+    const tx = buildTx() as unknown as EmailEnqueueTransaction;
 
-    const jobId = await enqueueEmail(tx as unknown as EmailEnqueueTransaction, JOB_DATA);
+    const jobId = await enqueueEmail(tx, JOB_DATA);
 
     expect(jobId).toBe("9d2c63b4-13f7-46a5-8a3a-6dca59a87cf2");
     expect(bossInstance.send).toHaveBeenCalledWith(EMAIL_QUEUE, JOB_DATA, {
       db: expect.objectContaining({ kind: "drizzle-adapter" }),
       id: getEmailJobId(JOB_DATA),
       priority: 20,
+    });
+    const [recordedTx, recordedQueueJob] = recordQueueJobMock.mock.calls[0] ?? [];
+    expect(recordedTx).toBe(tx);
+    expect(recordedQueueJob).toEqual({
+      attemptId: ATTEMPT.id,
+      queueJobId: getEmailJobId(JOB_DATA),
     });
   });
 

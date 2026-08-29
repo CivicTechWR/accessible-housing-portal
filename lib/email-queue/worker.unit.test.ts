@@ -27,7 +27,6 @@ jest.mock("pg-boss", () => ({
 }));
 
 jest.mock("@/lib/auth/invite-email", () => ({
-  getAccountInviteEmailIdempotencyKey: (inviteId: string) => `account_invite/${inviteId}`,
   sendInviteEmail: jest.fn(),
 }));
 
@@ -45,6 +44,13 @@ const markInviteEmailSubmittedMock = jest.mocked(markInviteEmailSubmitted);
 const ORIGINAL_ENV = process.env;
 const INVITE_ID = "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204";
 const INVITE_URL = "https://housing.example.org/invite?token=raw-one-time-token";
+const ATTEMPT = {
+  id: "0f5cce0c-92e5-4ab0-a06d-21c5a8f4ff79",
+  deliveryId: "6d5a1a9a-8f1f-4d1e-9a2e-3b0f5a2c7d11",
+  emailType: "account_invite",
+  attemptNumber: 1,
+  idempotencyKey: `account_invite/${INVITE_ID}/attempt/1`,
+} as const;
 
 const executeSqlMock = jest.fn<(text: string, values?: unknown[]) => Promise<{ rows: never[] }>>();
 const sendAfterMock =
@@ -65,7 +71,11 @@ function buildJob(signal: AbortSignal = new AbortController().signal): Job<Email
   return {
     id: "5a2da32a-cc55-4b27-bcb6-7e0bbf0db5c6",
     name: EMAIL_QUEUE,
-    data: buildAccountInviteEmailJob({ inviteId: INVITE_ID, inviteUrl: INVITE_URL }),
+    data: buildAccountInviteEmailJob({
+      inviteId: INVITE_ID,
+      inviteUrl: INVITE_URL,
+      attempt: ATTEMPT,
+    }),
     signal,
   } as Job<EmailJobData>;
 }
@@ -124,7 +134,7 @@ describe("processEmailJob", () => {
       email: "tenant@example.org",
       fullName: "Tenant User",
       inviteUrl: INVITE_URL,
-      idempotencyKey: `account_invite/${INVITE_ID}`,
+      attempt: ATTEMPT,
       signal: job.signal,
     });
     expect(markInviteEmailSubmittedMock).toHaveBeenCalledWith(INVITE_ID);
