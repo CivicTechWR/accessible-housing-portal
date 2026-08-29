@@ -10,7 +10,6 @@ import {
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
-import { adoptEmailDeliveryAttempt } from "@/lib/email-delivery/store";
 import { buildAccountInviteEmailJob, type EmailJobData } from "@/lib/email-queue/email-job";
 import { EMAIL_DEAD_LETTER_QUEUE, EMAIL_QUEUE } from "@/lib/email-queue/queue";
 import {
@@ -37,11 +36,6 @@ jest.mock("@/lib/auth/invite-store", () => ({
   markInviteEmailSubmitted: jest.fn(),
 }));
 
-jest.mock("@/lib/email-delivery/store", () => ({
-  adoptEmailDeliveryAttempt: jest.fn(),
-}));
-
-const adoptEmailDeliveryAttemptMock = jest.mocked(adoptEmailDeliveryAttempt);
 const sendInviteEmailMock = jest.mocked(sendInviteEmail);
 const findInviteEmailJobTargetMock = jest.mocked(findInviteEmailJobTarget);
 const markInviteEmailFailedMock = jest.mocked(markInviteEmailFailed);
@@ -56,13 +50,6 @@ const ATTEMPT = {
   emailType: "account_invite",
   attemptNumber: 1,
   idempotencyKey: `account_invite/${INVITE_ID}/attempt/1`,
-} as const;
-/** What adopting a pre-attempt job payload yields: the legacy key it already used. */
-const ADOPTED_ATTEMPT = {
-  ...ATTEMPT,
-  id: "9b1f3d2a-1c4e-4f5a-8d6b-7e8f9a0b1c2d",
-  idempotencyKey: `account_invite/${INVITE_ID}`,
-  adopted: true,
 } as const;
 
 const executeSqlMock = jest.fn<(text: string, values?: unknown[]) => Promise<{ rows: never[] }>>();
@@ -130,7 +117,6 @@ beforeEach(() => {
   sendAfterMock.mockResolvedValue("b3398ac1-43cf-4e54-92ee-9f7e2a4e7f6a");
   findInviteEmailJobTargetMock.mockResolvedValue(buildInviteTarget());
   sendInviteEmailMock.mockResolvedValue({ id: "email_123" });
-  adoptEmailDeliveryAttemptMock.mockResolvedValue(ADOPTED_ATTEMPT);
 });
 
 afterEach(() => {
@@ -152,26 +138,6 @@ describe("processEmailJob", () => {
       signal: job.signal,
     });
     expect(markInviteEmailSubmittedMock).toHaveBeenCalledWith(INVITE_ID);
-    expect(adoptEmailDeliveryAttemptMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ status: "submitted", providerMessageId: "email_123" });
-  });
-
-  it("adopts a job enqueued before attempts existed instead of failing the invite", async () => {
-    const job = buildJob();
-    delete (job.data as { attempt?: unknown }).attempt;
-
-    const result = await processEmailJob(boss, job);
-
-    // Adopted under the key the job was already submitting with, so a send
-    // that already landed is deduplicated by the provider rather than repeated.
-    expect(adoptEmailDeliveryAttemptMock).toHaveBeenCalledWith({
-      emailType: "account_invite",
-      sourceEntityId: INVITE_ID,
-      idempotencyKey: `account_invite/${INVITE_ID}`,
-    });
-    expect(sendInviteEmailMock).toHaveBeenCalledWith(
-      expect.objectContaining({ attempt: ADOPTED_ATTEMPT }),
-    );
     expect(result).toEqual({ status: "submitted", providerMessageId: "email_123" });
   });
 

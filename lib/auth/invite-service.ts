@@ -90,11 +90,6 @@ export async function createInvite(params: {
       throw new Error("Failed to create invite.");
     }
 
-    // Open the delivery attempt and enqueue in the same transaction as the
-    // invite so a committed invite can never lose its email job, and the job
-    // can never reference an attempt that was rolled back. The email is
-    // queued, not sent: the worker submits it to the provider and then sets
-    // the legacy sentAt field.
     if (params.sendInviteEmail) {
       const attempt = await startEmailDeliveryAttempt(tx, {
         emailType: "account_invite",

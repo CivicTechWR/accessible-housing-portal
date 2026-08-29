@@ -92,8 +92,6 @@ describe("enqueueEmail", () => {
       id: getEmailJobId(JOB_DATA),
       priority: 20,
     });
-    // Recorded in the caller's transaction, so a committed attempt always
-    // names the job that owns it.
     const [recordedTx, recordedQueueJob] = recordQueueJobMock.mock.calls[0] ?? [];
     expect(recordedTx).toBe(tx);
     expect(recordedQueueJob).toEqual({

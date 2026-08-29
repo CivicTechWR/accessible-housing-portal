@@ -9,13 +9,6 @@ import {
 import { recordEmailDeliveryAttemptSubmission } from "@/lib/email-delivery/store";
 
 export type TransactionalEmailSendOptions = {
-  /**
-   * The delivery attempt this send submits, opened with
-   * startEmailDeliveryAttempt. It supplies the provider idempotency key and
-   * the correlation tags, and it is the record the Resend email id is written
-   * back to. Retrying a send must reuse its attempt so the provider
-   * deduplicates it; only a genuine resend opens a new one.
-   */
   attempt: EmailDeliveryAttemptRef;
 };
 
@@ -89,11 +82,6 @@ export async function sendEmail(params: SendEmailParams) {
     });
   }
 
-  // Every sender records its submission here rather than at its own boundary,
-  // so the Resend email id that later delivery outcomes are correlated by is
-  // persisted no matter which path submitted the email. If this write fails
-  // the caller retries under the same idempotency key, and the provider
-  // returns the original submission to be recorded then.
   await recordEmailDeliveryAttemptSubmission({
     attemptId: params.attempt.id,
     providerEmailId: result.data?.id ?? null,

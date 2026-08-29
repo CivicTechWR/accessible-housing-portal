@@ -86,24 +86,6 @@ describe("sendEmail", () => {
     expect(result).toEqual({ id: "email_123" });
   });
 
-  it("submits an adopted attempt untagged, reproducing the payload its key was first used with", async () => {
-    await sendEmail({
-      to: "tenant@example.org",
-      subject: "Subject line",
-      text: "Plain text body",
-      html: "<p>HTML body</p>",
-      attempt: { ...ATTEMPT, idempotencyKey: "account_invite/legacy", adopted: true },
-    });
-
-    // Resend rejects a reused idempotency key whose payload changed
-    // (invalid_idempotent_request), so adding tags here would fail the send
-    // rather than return the original submission.
-    const [payload, options] = sendMock.mock.calls[0] as [Record<string, unknown>, unknown];
-    expect(payload.tags).toBeUndefined();
-    expect(JSON.parse(JSON.stringify(payload))).not.toHaveProperty("tags");
-    expect(options).toEqual({ idempotencyKey: "account_invite/legacy" });
-  });
-
   it("persists the Resend email id on the attempt once the provider accepts the send", async () => {
     await sendEmail({
       to: "tenant@example.org",

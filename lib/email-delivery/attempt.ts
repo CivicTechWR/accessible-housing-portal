@@ -8,8 +8,6 @@ export type EmailDeliveryAttemptRef = {
   emailType: EmailDeliveryType;
   attemptNumber: number;
   idempotencyKey: string;
-  /** Legacy attempts omit tags because their original Resend payload had none. */
-  adopted?: boolean;
 };
 
 export function getEmailDeliveryAttemptIdempotencyKey(params: {
@@ -21,10 +19,6 @@ export function getEmailDeliveryAttemptIdempotencyKey(params: {
 }
 
 export function getEmailDeliveryAttemptTags(attempt: EmailDeliveryAttemptRef) {
-  if (attempt.adopted) {
-    return undefined;
-  }
-
   return [
     { name: "email_type", value: attempt.emailType },
     { name: "delivery_id", value: attempt.deliveryId },

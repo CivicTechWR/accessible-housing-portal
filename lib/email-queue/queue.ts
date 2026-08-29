@@ -5,12 +5,7 @@ import { fromDrizzle, PgBoss } from "pg-boss";
 
 import { db } from "@/db";
 import { recordEmailDeliveryAttemptQueueJob } from "@/lib/email-delivery/store";
-import {
-  EMAIL_JOB_PRIORITY,
-  getEmailJobId,
-  requireEmailJobAttempt,
-  type EmailJobData,
-} from "@/lib/email-queue/email-job";
+import { EMAIL_JOB_PRIORITY, getEmailJobId, type EmailJobData } from "@/lib/email-queue/email-job";
 
 export const EMAIL_QUEUE = "email_send";
 export const EMAIL_DEAD_LETTER_QUEUE = "email_send_dead_letter";
@@ -122,7 +117,7 @@ export async function enqueueEmail(
   const jobId = getEmailJobId(data);
 
   await recordEmailDeliveryAttemptQueueJob(tx, {
-    attemptId: requireEmailJobAttempt(data).id,
+    attemptId: data.attempt.id,
     queueJobId: jobId,
   });
 
