@@ -115,7 +115,6 @@ test/                 Test-only mocks and helpers
 
 ## Contributing
 
-
 ### Choosing an Issue
 
 Please choose work based on your availability:
