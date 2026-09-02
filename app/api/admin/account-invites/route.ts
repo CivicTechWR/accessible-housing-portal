@@ -7,6 +7,8 @@ import {
 } from "@/shared/schemas/account-management";
 import { getAccountInvitesHandler } from "./handlers";
 
+export const runtime = "nodejs";
+
 export const { GET } = route({
   getAccountInvites: routeOperation({ method: "GET" })
     .input({ query: accountInviteQuerySchema })

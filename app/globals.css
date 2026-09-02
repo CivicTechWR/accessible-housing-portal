@@ -186,6 +186,9 @@
   html {
     @apply font-sans;
   }
+  body {
+    overflow-y: auto;
+  }
   h1,
   h2,
   h3 {
