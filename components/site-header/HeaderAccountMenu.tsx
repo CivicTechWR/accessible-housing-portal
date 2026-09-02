@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { UserIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { usePathname } from "next/navigation";
@@ -54,10 +55,13 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
       </PopoverTrigger>
 
       <PopoverContent align="end" sideOffset={10} className="w-60 gap-2 p-1.5">
-        <div className="rounded-2xl bg-muted/60 px-3 py-2 text-sm font-medium text-foreground/70">
-          <p>Manage Account</p>
-          <p className="mt-1 text-foreground/60">Coming soon</p>
-        </div>
+        <Link
+          href="/manage-account"
+          className={cn(menuItemClass, "text-foreground hover:bg-muted")}
+          onClick={() => setIsOpen(false)}
+        >
+          Manage Account
+        </Link>
 
         <form action={signOutFromHeader}>
           <button
