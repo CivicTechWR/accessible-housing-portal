@@ -16,6 +16,7 @@ import {
   DuplicateListingDialog,
   type DuplicateListingSelection,
 } from "@/app/my-listings/DuplicateListingDialog";
+import type { DuplicateListingResponse } from "@/shared/schemas/listings";
 
 type MyListingItem = {
   id: string;
@@ -144,12 +145,12 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
         throw new Error(payload?.message ?? "Unable to duplicate listing.");
       }
 
-      return { listingId };
+      const payload = (await response.json()) as DuplicateListingResponse;
+      return { id: payload.data.id };
     },
-    onSuccess: () => {
+    onSuccess: ({ id }) => {
       setDuplicateTarget(null);
-      void queryClient.invalidateQueries({ queryKey: ["listings"] });
-      router.refresh();
+      router.push(`/listing-form/${id}`);
     },
   });
 
