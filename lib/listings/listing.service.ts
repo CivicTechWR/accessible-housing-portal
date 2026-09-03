@@ -359,6 +359,10 @@ export async function duplicateListingByIdService(
     return fail("forbidden", "Forbidden");
   }
 
+  if (listing.status === "archived") {
+    return fail("forbidden", "Archived listings cannot be duplicated");
+  }
+
   const { scope, copyPhotos } = input;
   const duplicatedListing = await duplicateListingGraph({
     listingId,
