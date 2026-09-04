@@ -89,7 +89,7 @@ export function DuplicateListingDialog({
   return (
     <DialogOverlay open onOpenChange={handleOpenChange}>
       <DialogPanel
-        className="max-w-lg"
+        className="max-h-[calc(100dvh-2rem)] max-w-lg overflow-y-auto"
         onCloseAutoFocus={restoreFocusToOpener}
         onEscapeKeyDown={handleDismiss}
         onInteractOutside={handleDismiss}

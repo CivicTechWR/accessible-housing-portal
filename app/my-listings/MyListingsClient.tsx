@@ -151,6 +151,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
     onSuccess: ({ id }) => {
       setDuplicateTarget(null);
       router.push(`/listing-form/${id}`);
+      router.refresh();
     },
   });
 
