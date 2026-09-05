@@ -5,6 +5,7 @@ import { and, count, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { passwordResetTokens, users } from "@/db/schema";
 import { createOpaqueToken, hashOpaqueToken } from "@/lib/auth/token";
+import { startEmailDeliveryAttempt } from "@/lib/email-delivery/store";
 import { buildPasswordResetEmailJob } from "@/lib/email-queue/email-job";
 import { enqueueEmail } from "@/lib/email-queue/queue";
 
@@ -60,7 +61,6 @@ export async function createPasswordReset(params: { userId: string }): Promise<{
 }> {
   const token = createOpaqueToken();
   const tokenHash = hashOpaqueToken(token);
-  const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000";
   const resetUrl = new URL(`/reset-password?token=${token}`, baseUrl).toString();
@@ -111,7 +111,7 @@ export async function createPasswordReset(params: { userId: string }): Promise<{
       .values({
         userId: params.userId,
         tokenHash,
-        expiresAt,
+        expiresAt: new Date(now.getTime() + PASSWORD_RESET_TTL_MS),
         emailQueuedAt: now,
       })
       .returning();
@@ -120,7 +120,14 @@ export async function createPasswordReset(params: { userId: string }): Promise<{
       throw new Error("Failed to create password reset request.");
     }
 
-    await enqueueEmail(tx, buildPasswordResetEmailJob({ tokenId: resetToken.id, resetUrl }));
+    const attempt = await startEmailDeliveryAttempt(tx, {
+      emailType: "password_reset",
+      sourceEntityId: resetToken.id,
+    });
+    await enqueueEmail(
+      tx,
+      buildPasswordResetEmailJob({ tokenId: resetToken.id, resetUrl, attempt }),
+    );
 
     return true;
   });
@@ -170,10 +177,33 @@ export async function markPasswordResetEmailFailed(tokenId: string) {
  * a suspended or deactivated account must not be reactivated by a reset.
  */
 export async function consumePasswordResetToken(params: { token: string; passwordHash: string }) {
-  const now = new Date();
   const tokenHash = hashOpaqueToken(params.token);
 
   await db.transaction(async (tx) => {
+    const [token] = await tx
+      .select({ userId: passwordResetTokens.userId })
+      .from(passwordResetTokens)
+      .where(eq(passwordResetTokens.tokenHash, tokenHash))
+      .limit(1);
+
+    if (!token) {
+      throw new PasswordResetUnavailableError();
+    }
+
+    // Match creation and account password changes: lock the user before any
+    // token rows. Check expiry after the wait so a revoked link stays invalid.
+    const [user] = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, token.userId))
+      .limit(1)
+      .for("update");
+
+    if (!user) {
+      throw new PasswordResetUnavailableError();
+    }
+
+    const now = new Date();
     const consumed = await tx
       .update(passwordResetTokens)
       .set({ usedAt: now })
@@ -214,14 +244,13 @@ export async function updateUserPasswordExpiringResets(params: {
   userId: string;
   passwordHash: string;
 }) {
-  const now = new Date();
-
   await db.transaction(async (tx) => {
     await tx
       .update(users)
       .set({ passwordHash: params.passwordHash })
       .where(eq(users.id, params.userId));
 
+    const now = new Date();
     await tx
       .update(passwordResetTokens)
       .set({ expiresAt: now })

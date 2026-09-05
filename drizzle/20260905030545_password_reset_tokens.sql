@@ -1,3 +1,4 @@
+ALTER TYPE "public"."email_delivery_type" ADD VALUE 'password_reset';--> statement-breakpoint
 CREATE TABLE "password_reset_tokens" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,

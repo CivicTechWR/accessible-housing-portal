@@ -341,7 +341,7 @@ export const patchListingResponseSchema = z.object({
   data: listingIdDataSchema.and(patchListingSchema),
 });
 
-export const deleteListingResponseSchema = z.object({
+export const archiveListingResponseSchema = z.object({
   message: z.string(),
   data: listingIdDataSchema,
 });
@@ -363,4 +363,4 @@ export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
 export type ReplaceListingResponse = z.infer<typeof replaceListingResponseSchema>;
 export type PatchListingResponse = z.infer<typeof patchListingResponseSchema>;
-export type DeleteListingResponse = z.infer<typeof deleteListingResponseSchema>;
+export type ArchiveListingResponse = z.infer<typeof archiveListingResponseSchema>;

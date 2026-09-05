@@ -2,7 +2,6 @@ import { route, routeOperation } from "next-rest-framework";
 
 import { errorMessageSchema } from "@/shared/schemas/common";
 import {
-  deleteListingResponseSchema,
   listingByIdResponseSchema,
   listingParamsSchema,
   patchListingResponseSchema,
@@ -11,13 +10,12 @@ import {
   replaceListingSchema,
 } from "@/shared/schemas/listings";
 import {
-  deleteListingByIdHandler,
   getListingByIdHandler,
   patchListingByIdHandler,
   replaceListingByIdHandler,
 } from "./handlers";
 
-export const { GET, PUT, PATCH, DELETE } = route({
+export const { GET, PUT, PATCH } = route({
   getListingById: routeOperation({ method: "GET" })
     .input({ params: listingParamsSchema })
     .outputs([
@@ -56,14 +54,4 @@ export const { GET, PUT, PATCH, DELETE } = route({
       { status: 400, contentType: "application/json", body: errorMessageSchema },
     ])
     .handler(patchListingByIdHandler),
-
-  deleteListingById: routeOperation({ method: "DELETE" })
-    .input({ params: listingParamsSchema })
-    .outputs([
-      { status: 200, contentType: "application/json", body: deleteListingResponseSchema },
-      { status: 401, contentType: "application/json", body: errorMessageSchema },
-      { status: 403, contentType: "application/json", body: errorMessageSchema },
-      { status: 404, contentType: "application/json", body: errorMessageSchema },
-    ])
-    .handler(deleteListingByIdHandler),
 });

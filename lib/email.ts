@@ -2,12 +2,14 @@ import "server-only";
 
 import { Resend, type ErrorResponse } from "resend";
 
+import {
+  getEmailDeliveryAttemptTags,
+  type EmailDeliveryAttemptRef,
+} from "@/lib/email-delivery/attempt";
+import { recordEmailDeliveryAttemptSubmission } from "@/lib/email-delivery/store";
+
 export type TransactionalEmailSendOptions = {
-  /**
-   * Stable key for the logical email, such as account_invite/<inviteId>.
-   * Do not use a random per-attempt value or provider retries can duplicate sends.
-   */
-  idempotencyKey: string;
+  attempt: EmailDeliveryAttemptRef;
 };
 
 export type SendEmailParams = {
@@ -63,9 +65,10 @@ export async function sendEmail(params: SendEmailParams) {
         subject: params.subject,
         text: params.text,
         html: params.html,
+        tags: getEmailDeliveryAttemptTags(params.attempt),
       },
       {
-        idempotencyKey: params.idempotencyKey,
+        idempotencyKey: params.attempt.idempotencyKey,
       },
     ),
     params.signal,
@@ -78,6 +81,11 @@ export async function sendEmail(params: SendEmailParams) {
       retryAfterSeconds: parseRetryAfterSeconds(result.headers),
     });
   }
+
+  await recordEmailDeliveryAttemptSubmission({
+    attemptId: params.attempt.id,
+    providerEmailId: result.data?.id ?? null,
+  });
 
   return result.data;
 }

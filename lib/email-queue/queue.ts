@@ -4,6 +4,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { fromDrizzle, PgBoss } from "pg-boss";
 
 import { db } from "@/db";
+import { recordEmailDeliveryAttemptQueueJob } from "@/lib/email-delivery/store";
 import { EMAIL_JOB_PRIORITY, getEmailJobId, type EmailJobData } from "@/lib/email-queue/email-job";
 
 export const EMAIL_QUEUE = "email_send";
@@ -113,6 +114,12 @@ export async function enqueueEmail(
   data: EmailJobData,
 ): Promise<string | null> {
   const boss = await getEmailQueue();
+  const jobId = getEmailJobId(data);
+
+  await recordEmailDeliveryAttemptQueueJob(tx, {
+    attemptId: data.attempt.id,
+    queueJobId: jobId,
+  });
 
   return await boss.send(EMAIL_QUEUE, data, {
     db: fromDrizzle(
@@ -123,7 +130,7 @@ export async function enqueueEmail(
       },
       sql,
     ),
-    id: getEmailJobId(data),
+    id: jobId,
     priority: EMAIL_JOB_PRIORITY[data.type],
   });
 }

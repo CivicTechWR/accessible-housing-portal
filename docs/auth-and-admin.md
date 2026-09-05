@@ -110,7 +110,7 @@ Password reset uses opaque single-use tokens stored only as hashes in the
 - TTL is 30 minutes; each row stores `token_hash`, `expires_at`, `used_at`, and the email lifecycle trio `email_queued_at` / `sent_at` / `email_failed_at`
 - creating a request expires all outstanding unused tokens for the user, so old links die immediately on re-request; creation is serialized per user with a `SELECT … FOR UPDATE` on the user row, and the per-user throttle (`PASSWORD_RESET_MAX_PER_HOUR`) is checked under that lock
 - only `active` accounts with a password hash get a reset email; other statuses receive the neutral response without a link
-- the reset email is enqueued through the pg-boss queue with the reset URL sealed like invite URLs; the recipient is derived from the token row at send time
+- the reset email and its delivery attempt are created in the same transaction; the pg-boss job carries the attempt and a sealed reset URL, and the worker derives the recipient from the token row
 
 Request behavior is deliberately neutral: unknown emails, accounts without a
 password hash, non-active statuses, throttled users, and enqueue failures all
@@ -121,7 +121,7 @@ a follow-up.
 
 Reset behavior:
 
-- the token row is claimed by a conditional `UPDATE ... WHERE used_at IS NULL AND expires_at > now()`, making consumption atomic and single-use
+- consumption locks the user before the token, matching creation and account password changes; it checks expiry after acquiring the lock, then conditionally claims the unused token
 - the new password hash is written in the same transaction as the claim
 - invalid, expired, used, and superseded tokens all return one generic error; a cheap token lookup runs before password hashing so arbitrary-token requests cannot exhaust the crypto worker pool
 - user status is never touched: a suspended or deactivated account is not reactivated by a reset
@@ -212,14 +212,17 @@ Listing filters currently use public, filterable, boolean field definitions.
 
 Email is intentionally isolated and asynchronous:
 
-- `createInvite` writes the invite and enqueues an `email_send` pg-boss job in one transaction.
+- `createInvite` writes the invite, opens a delivery attempt, and enqueues an `email_send` pg-boss job in one transaction.
+- `lib/email-delivery/store.ts` owns the delivery/attempt records; `startEmailDeliveryAttempt` returns the attempt every sender submits under.
 - `instrumentation.ts` starts the worker only in the Node.js runtime when `EMAIL_WORKER_ENABLED=true`.
 - `lib/email-queue/worker.ts` is the only provider-submission path and calls the shared service in `lib/email.ts`.
 - transient provider failures retry with bounded exponential backoff; rate limits and daily quota exhaustion can defer submission.
 - permanently failing jobs move to `email_send_dead_letter`, and the worker records `email_failed_at` for the invite or password reset token.
 - provider acceptance records the legacy `sent_at` field; no requested email leaves `email_queued_at` unset and produces `not_requested`.
 
-Job payloads identify the invite without storing recipient details in the queue. The one-time invite URL is sealed with AES-256-GCM under a key derived from `AUTH_SECRET` and redacted after a terminal outcome. Rotating `AUTH_SECRET` while jobs are queued makes their sealed URLs unreadable and causes those jobs to fail.
+Job payloads identify the invite and its delivery attempt without storing recipient details in the queue. The one-time invite URL is sealed with AES-256-GCM under a key derived from `AUTH_SECRET` and redacted after a terminal outcome. Rotating `AUTH_SECRET` while jobs are queued makes their sealed URLs unreadable and causes those jobs to fail.
+
+Send identity comes from the attempt, not the invite: `lib/email.ts` submits under the attempt's idempotency key, tags the submission with the email type and the delivery/attempt ids, and writes Resend's email id back to the attempt. Retries of a job therefore resubmit as the same send and are deduplicated by the provider, while a genuine resend must open a new attempt to be delivered again.
 
 Do not create Resend clients in UI or route handlers or add another provider-submission path around the queue. New email types must extend the job contract and both the send and dead-letter handlers.
 

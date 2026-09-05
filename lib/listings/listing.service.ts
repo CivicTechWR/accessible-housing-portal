@@ -62,7 +62,7 @@ import type {
   CreateListingInput,
   CreateListingResponse,
   CreateDraftListingResponse,
-  DeleteListingResponse,
+  ArchiveListingResponse,
   ListingByIdResponse,
   ListingDetails,
   ListingEditorData,
@@ -553,9 +553,9 @@ async function updateListingById<TPayload extends ListingMutationInput>(
   });
 }
 
-export async function deleteListingByIdService(
+export async function archiveListingByIdService(
   listingId: ListingIdParam,
-): Promise<DomainResult<DeleteListingResponse>> {
+): Promise<DomainResult<ArchiveListingResponse>> {
   const actorResult = await requireListingWriteActor();
 
   if (!actorResult.ok) {
@@ -587,7 +587,7 @@ export async function deleteListingByIdService(
   });
 
   return succeed({
-    message: "Listing deleted",
+    message: "Listing archived",
     data: {
       id: listingId,
     },

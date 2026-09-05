@@ -17,17 +17,8 @@ export async function sendPasswordResetEmail(
     subject: "Reset your Affordable Housing Portal password",
     text: `Hello ${params.fullName},\n\nWe received a request to reset your password for the Affordable Housing Portal.\n\nUse the link below to set a new password:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
     html: `<p>Hello ${escapeHtml(params.fullName)},</p><p>We received a request to reset your password for the Affordable Housing Portal.</p><p><a href="${escapeHtml(resetUrl)}">Reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`,
-    idempotencyKey: params.idempotencyKey,
+    attempt: params.attempt,
   });
-}
-
-/**
- * Stable per-logical-email key derived from the password reset token row id —
- * never from the raw token or reset URL, which must not be recoverable from
- * the key.
- */
-export function getPasswordResetEmailIdempotencyKey(passwordResetTokenId: string) {
-  return `password_reset/${passwordResetTokenId}`;
 }
 
 function getSafeResetUrl(value: string) {

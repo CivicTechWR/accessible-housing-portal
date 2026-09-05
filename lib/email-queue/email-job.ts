@@ -2,11 +2,10 @@ import "server-only";
 
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from "node:crypto";
 
-import { getAccountInviteEmailIdempotencyKey } from "@/lib/auth/invite-email";
-import { getPasswordResetEmailIdempotencyKey } from "@/lib/auth/password-reset-email";
+import type { EmailDeliveryAttemptRef } from "@/lib/email-delivery/attempt";
 
-/** Fields shared by every email job payload. */
 type EmailJobBase = {
+  attempt: EmailDeliveryAttemptRef;
   /**
    * Times this logical email has been re-enqueued by a quota/rate-limit
    * deferral. The worker caps the chain (MAX_EMAIL_JOB_DEFERRALS) so a
@@ -54,26 +53,13 @@ export const EMAIL_JOB_PRIORITY = {
   password_reset: 20,
 } as const satisfies Record<EmailJobType, number>;
 
-/**
- * Stable key for the logical email, shared with the Resend idempotency key so
- * provider-side dedupe and queue-side dedupe agree on identity.
- */
 export function getEmailJobIdempotencyKey(data: EmailJobData): string {
-  switch (data.type) {
-    case "account_invite":
-      return getAccountInviteEmailIdempotencyKey(data.inviteId);
-    case "password_reset":
-      // Key off the token row id — never the raw token or URL.
-      return getPasswordResetEmailIdempotencyKey(data.passwordResetTokenId);
-  }
+  return data.attempt.idempotencyKey;
 }
 
 /**
- * Deterministic job id (UUID) derived from the logical email key, so enqueueing
- * the same logical email twice dedupes via primary-key conflict for as long as
- * the first job row is retained — unlike singletonKey, which only dedupes
- * queued/active jobs. The Resend idempotency key remains the provider-side
- * guarantee against double sends.
+ * Derives a deterministic UUID from the attempt key so duplicate enqueues use
+ * the same pg-boss job id while a resend gets a new one.
  */
 export function getEmailJobId(data: EmailJobData): string {
   const hex = createHash("sha256").update(getEmailJobIdempotencyKey(data)).digest("hex");
@@ -100,10 +86,12 @@ export function getEmailJobMatch(data: EmailJobData): Record<string, string> {
 export function buildPasswordResetEmailJob(params: {
   tokenId: string;
   resetUrl: string;
+  attempt: EmailDeliveryAttemptRef;
 }): PasswordResetEmailJobData {
   return {
     type: "password_reset",
     passwordResetTokenId: params.tokenId,
+    attempt: params.attempt,
     secret: sealEmailJobSecret(params.resetUrl),
   };
 }
@@ -111,10 +99,12 @@ export function buildPasswordResetEmailJob(params: {
 export function buildAccountInviteEmailJob(params: {
   inviteId: string;
   inviteUrl: string;
+  attempt: EmailDeliveryAttemptRef;
 }): AccountInviteEmailJobData {
   return {
     type: "account_invite",
     inviteId: params.inviteId,
+    attempt: params.attempt,
     secret: sealEmailJobSecret(params.inviteUrl),
   };
 }

@@ -4,14 +4,16 @@ The database schema is defined in `db/schema.ts` with Drizzle. SQL migrations an
 
 ## Enums
 
-| Enum                    | Values                                                        | Used by                                               |
-| ----------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
-| `user_role`             | `admin`, `partner`, `user`                                    | Access control and UI navigation.                     |
-| `user_status`           | `invited`, `active`, `suspended`, `deactivated`               | Sign-in eligibility and account lifecycle.            |
-| `listing_status`        | `draft`, `published`, `archived`                              | Listing visibility, authoring, and deletion behavior. |
-| `listing_building_type` | `apartment`, `house`, `townhouse`, `condo`                    | Built-in listing building type values.                |
-| `utility_included`      | `heat`, `water`, `electricity`, `gas`, `internet`             | Built-in listing utility inclusion values.            |
-| `listing_field_type`    | `boolean`, `number`, `text`, `select`, `multi_select`, `date` | Admin-configured listing field definitions.           |
+| Enum                     | Values                                                                                             | Used by                                               |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `user_role`              | `admin`, `partner`, `user`                                                                         | Access control and UI navigation.                     |
+| `user_status`            | `invited`, `active`, `suspended`, `deactivated`                                                    | Sign-in eligibility and account lifecycle.            |
+| `listing_status`         | `draft`, `published`, `archived`                                                                   | Listing visibility, authoring, and deletion behavior. |
+| `listing_building_type`  | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                |
+| `utility_included`       | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.            |
+| `listing_field_type`     | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.           |
+| `email_delivery_type`    | `account_invite`                                                                                   | Kinds of transactional email the application sends.   |
+| `email_delivery_outcome` | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.       |
 
 Only users with status `active` can sign in.
 
@@ -45,6 +47,18 @@ Important behavior:
 - those timestamps derive the admin-facing states `not_requested`, `queued`, `submitted`, and `failed`; recipient-server delivery is not currently tracked.
 
 pg-boss stores email jobs in its own `pgboss` schema, outside the Drizzle-managed application schema. Queue payloads reference the invite rather than duplicating recipient details. The one-time invite URL is encrypted under a key derived from `AUTH_SECRET` while queued and redacted after a terminal outcome.
+
+### `email_deliveries` and `email_delivery_attempts`
+
+Application-owned records of transactional email, separate from the pg-boss job rows.
+
+Important behavior:
+
+- `email_deliveries` is one logical email — `(email_type, source_entity_id)` is unique, so "the invite email for invite X" is a single row. `source_entity_id` is deliberately not a foreign key because the referenced table varies by email type.
+- `email_delivery_attempts` is one provider submission of that email. An ordinary queue retry reuses its attempt row and therefore its `idempotency_key`; a genuine resend inserts a new attempt and gets a new attempt number, idempotency key, queue job, and provider email id.
+- `provider_email_id` holds Resend's email id and is the correlation key for later delivery outcomes.
+- `outcome` uses the vocabulary Resend reports identically through webhook event names (`email.<outcome>`) and `resend.emails.get(id).last_event`, so an outcome is stored the same way however it was learned.
+- `outcome_detail` is a short sanitized provider diagnostic only. Invite URLs, reset tokens, recipient addresses, and rendered message bodies are never stored here.
 
 ### `properties`
 

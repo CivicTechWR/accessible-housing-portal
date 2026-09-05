@@ -37,7 +37,6 @@ jest.mock("pg-boss", () => ({
 }));
 
 jest.mock("@/lib/auth/invite-email", () => ({
-  getAccountInviteEmailIdempotencyKey: (inviteId: string) => `account_invite/${inviteId}`,
   sendInviteEmail: jest.fn(),
 }));
 
@@ -48,7 +47,6 @@ jest.mock("@/lib/auth/invite-store", () => ({
 }));
 
 jest.mock("@/lib/auth/password-reset-email", () => ({
-  getPasswordResetEmailIdempotencyKey: (tokenId: string) => `password_reset/${tokenId}`,
   sendPasswordResetEmail: jest.fn(),
 }));
 
@@ -73,6 +71,20 @@ const INVITE_ID = "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204";
 const INVITE_URL = "https://housing.example.org/invite?token=raw-one-time-token";
 const RESET_ROW_ID = "8c3f0a52-9b1d-4e6f-a7c2-d4b8e1f0a399";
 const RESET_URL = "https://housing.example.org/reset-password?oneTimeLink=raw-one-time-reset-link";
+const RESET_ATTEMPT = {
+  id: "11f1f52a-74c0-4c23-a9d7-687c5cfa6dfc",
+  deliveryId: "831c7af7-1421-424a-b40e-b1b8a2f731a2",
+  emailType: "password_reset",
+  attemptNumber: 1,
+  idempotencyKey: `password_reset/${RESET_ROW_ID}/attempt/1`,
+} as const;
+const ATTEMPT = {
+  id: "0f5cce0c-92e5-4ab0-a06d-21c5a8f4ff79",
+  deliveryId: "6d5a1a9a-8f1f-4d1e-9a2e-3b0f5a2c7d11",
+  emailType: "account_invite",
+  attemptNumber: 1,
+  idempotencyKey: `account_invite/${INVITE_ID}/attempt/1`,
+} as const;
 
 const executeSqlMock = jest.fn<(text: string, values?: unknown[]) => Promise<{ rows: never[] }>>();
 const sendAfterMock =
@@ -93,7 +105,11 @@ function buildJob(signal: AbortSignal = new AbortController().signal): Job<Email
   return {
     id: "5a2da32a-cc55-4b27-bcb6-7e0bbf0db5c6",
     name: EMAIL_QUEUE,
-    data: buildAccountInviteEmailJob({ inviteId: INVITE_ID, inviteUrl: INVITE_URL }),
+    data: buildAccountInviteEmailJob({
+      inviteId: INVITE_ID,
+      inviteUrl: INVITE_URL,
+      attempt: ATTEMPT,
+    }),
     signal,
   } as Job<EmailJobData>;
 }
@@ -110,7 +126,11 @@ function buildPasswordResetJob(
   return {
     id: "6b3eb43b-dd66-4c38-bcb7-8f1e2a5b4c77",
     name: EMAIL_QUEUE,
-    data: buildPasswordResetEmailJob({ tokenId: RESET_ROW_ID, resetUrl: RESET_URL }),
+    data: buildPasswordResetEmailJob({
+      tokenId: RESET_ROW_ID,
+      resetUrl: RESET_URL,
+      attempt: RESET_ATTEMPT,
+    }),
     signal,
   } as Job<EmailJobData>;
 }
@@ -175,7 +195,7 @@ describe("processEmailJob", () => {
       email: "tenant@example.org",
       fullName: "Tenant User",
       inviteUrl: INVITE_URL,
-      idempotencyKey: `account_invite/${INVITE_ID}`,
+      attempt: ATTEMPT,
       signal: job.signal,
     });
     expect(markInviteEmailSubmittedMock).toHaveBeenCalledWith(INVITE_ID);
@@ -469,7 +489,7 @@ describe("password reset email jobs", () => {
       email: "tenant@example.org",
       fullName: "Tenant User",
       resetUrl: RESET_URL,
-      idempotencyKey: `password_reset/${RESET_ROW_ID}`,
+      attempt: RESET_ATTEMPT,
       signal: job.signal,
     });
     expect(markPasswordResetEmailSubmittedMock).toHaveBeenCalledWith(RESET_ROW_ID);

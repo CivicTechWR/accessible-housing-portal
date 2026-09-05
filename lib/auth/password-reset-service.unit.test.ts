@@ -17,14 +17,20 @@ jest.mock("@/db", () => ({
   db: { transaction: jest.fn() },
 }));
 
+jest.mock("@/lib/email-delivery/store", () => ({
+  startEmailDeliveryAttempt: jest.fn(),
+}));
+
 jest.mock("@/lib/email-queue/queue", () => ({
   enqueueEmail: jest.fn(),
 }));
 
 import { db } from "@/db";
 import { openEmailJobSecret } from "@/lib/email-queue/email-job";
+import { startEmailDeliveryAttempt } from "@/lib/email-delivery/store";
 import { enqueueEmail } from "@/lib/email-queue/queue";
 
+const startEmailDeliveryAttemptMock = jest.mocked(startEmailDeliveryAttempt);
 const enqueueEmailMock = jest.mocked(enqueueEmail);
 const transactionMock = db.transaction as unknown as jest.Mock<
   (callback: (tx: unknown) => Promise<unknown>) => Promise<unknown>
@@ -103,6 +109,13 @@ beforeEach(() => {
   };
   jest.clearAllMocks();
   enqueueEmailMock.mockResolvedValue("job-1");
+  startEmailDeliveryAttemptMock.mockResolvedValue({
+    id: "attempt-1",
+    deliveryId: "delivery-1",
+    emailType: "password_reset",
+    attemptNumber: 1,
+    idempotencyKey: "password_reset/token-row-1/attempt/1",
+  });
 });
 
 afterEach(() => {
@@ -180,6 +193,16 @@ describe("createPasswordReset", () => {
     const expiresAt = (insertedRow as InsertValues).expiresAt as Date;
     expect(expiresAt.getTime()).toBeGreaterThan(Date.now());
     expect(enqueuedInTransaction).toBe(true);
+    expect(startEmailDeliveryAttemptMock).toHaveBeenCalledWith(expect.anything(), {
+      emailType: "password_reset",
+      sourceEntityId: "token-row-1",
+    });
+    expect(enqueueEmailMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        attempt: expect.objectContaining({ id: "attempt-1" }),
+      }),
+    );
   });
 
   it("never persists the raw token; only its hash", async () => {
@@ -286,13 +309,14 @@ describe("consumePasswordResetToken", () => {
     transactionMock.mockImplementation(
       async (callback) =>
         await callback({
+          select: () => buildSelectChain([{ id: "user-1", userId: "user-1" }]),
           update: (table: unknown) => {
             updateTargets.push(table);
             if (updateTargets.length === 1) return claimChain;
             if (updateTargets.length === 2) return siblingChain;
             return updateUserChain;
           },
-        } as TxStub),
+        }),
     );
 
     return { siblingSets, updateUserChain };
@@ -378,7 +402,7 @@ describe("updateUserPasswordExpiringResets", () => {
             void table;
             return userSets.length === 0 ? userChain : resetChain;
           },
-        } as TxStub),
+        }),
     );
 
     await updateUserPasswordExpiringResets({ userId: "user-1", passwordHash: "new-hash" });

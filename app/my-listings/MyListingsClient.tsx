@@ -44,7 +44,7 @@ const statusVariantByLabel = {
 const statusLabelByValue = {
   draft: "Draft",
   published: "Published",
-  archived: "Deleted",
+  archived: "Archived",
 } as const;
 
 export function MyListingsClient({ initialListings, renderedAt }: MyListingsClientProps) {
@@ -67,18 +67,21 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
       listingId: string;
       nextStatus: MyListingItem["status"];
     }) => {
-      const isDelete = nextStatus === "archived";
-      const response = await fetch(`/api/listings/${listingId}`, {
-        method: isDelete ? "DELETE" : "PATCH",
-        headers: isDelete ? undefined : { "content-type": "application/json" },
-        body: isDelete ? undefined : JSON.stringify({ status: nextStatus }),
-      });
+      const isArchive = nextStatus === "archived";
+      const response = await fetch(
+        isArchive ? `/api/listings/${listingId}/archive` : `/api/listings/${listingId}`,
+        {
+          method: isArchive ? "POST" : "PATCH",
+          headers: isArchive ? undefined : { "content-type": "application/json" },
+          body: isArchive ? undefined : JSON.stringify({ status: nextStatus }),
+        },
+      );
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { message?: string } | null;
         throw new Error(
           payload?.message ??
-            (isDelete ? "Unable to delete listing." : "Unable to restore listing."),
+            (isArchive ? "Unable to archive listing." : "Unable to restore listing."),
         );
       }
 
@@ -155,11 +158,11 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
 
       <div className="grid gap-4">
         {listings.map((listing) => {
-          const isDeleted = listing.status === "archived";
+          const isArchived = listing.status === "archived";
           const isMutating =
             statusMutation.isPending && statusMutation.variables?.listingId === listing.id;
           const pendingLabel =
-            statusMutation.variables?.nextStatus === "archived" ? "Deleting..." : "Restoring...";
+            statusMutation.variables?.nextStatus === "archived" ? "Archiving..." : "Restoring...";
 
           return (
             <Card key={listing.id}>
@@ -211,7 +214,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   </CardHeader>
 
                   <CardContent className="mt-auto flex flex-wrap items-center justify-end gap-3 px-0 pt-4">
-                    {!isDeleted ? (
+                    {!isArchived ? (
                       <>
                         {listing.status === "published" ? (
                           <Button asChild variant="outline">
@@ -230,7 +233,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                           onClick={() => {
                             if (
                               window.confirm(
-                                "Delete this listing? It will be kept in a deleted state and can be recovered later from the database if needed.",
+                                "Archive this listing? It will be kept in an archived state and can be restored later.",
                               )
                             ) {
                               statusMutation.mutate({
@@ -240,13 +243,13 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                             }
                           }}
                         >
-                          {isMutating ? pendingLabel : "Delete"}
+                          {isMutating ? pendingLabel : "Archive"}
                         </Button>
                       </>
                     ) : (
                       <>
                         <p className="text-sm text-muted-foreground">
-                          This listing is in a deleted state and is no longer publicly visible.
+                          This listing is archived and is no longer publicly visible.
                         </p>
                         <Button
                           type="button"
@@ -259,7 +262,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                             })
                           }
                         >
-                          {isMutating ? pendingLabel : "Undelete"}
+                          {isMutating ? pendingLabel : "Restore"}
                         </Button>
                       </>
                     )}

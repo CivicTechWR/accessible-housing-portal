@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Job, PgBoss } from "pg-boss";
 
-import { getAccountInviteEmailIdempotencyKey, sendInviteEmail } from "@/lib/auth/invite-email";
+import { sendInviteEmail } from "@/lib/auth/invite-email";
 import {
   findInviteEmailJobTarget,
   markInviteEmailFailed,
@@ -13,10 +13,7 @@ import {
   markPasswordResetEmailFailed,
   markPasswordResetEmailSubmitted,
 } from "@/lib/auth/password-reset-service";
-import {
-  getPasswordResetEmailIdempotencyKey,
-  sendPasswordResetEmail,
-} from "@/lib/auth/password-reset-email";
+import { sendPasswordResetEmail } from "@/lib/auth/password-reset-email";
 import { EmailSendError } from "@/lib/email";
 import {
   EMAIL_JOB_PRIORITY,
@@ -266,7 +263,7 @@ async function sendAccountInviteEmailJob(
     email: target.email,
     fullName: target.fullName,
     inviteUrl: openEmailJobSecret(data.secret),
-    idempotencyKey: getAccountInviteEmailIdempotencyKey(data.inviteId),
+    attempt: data.attempt,
     signal,
   });
 
@@ -320,7 +317,7 @@ async function sendPasswordResetEmailJob(
     email: target.email,
     fullName: target.fullName,
     resetUrl: openEmailJobSecret(data.secret),
-    idempotencyKey: getPasswordResetEmailIdempotencyKey(data.passwordResetTokenId),
+    attempt: data.attempt,
     signal,
   });
 
