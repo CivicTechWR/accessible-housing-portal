@@ -118,6 +118,7 @@ export async function createAccountService(
       : "Account invited",
     data: {
       id: invite.userId,
+      inviteId: invite.inviteId,
       email: invite.email,
       name: input.name,
       role: input.role,

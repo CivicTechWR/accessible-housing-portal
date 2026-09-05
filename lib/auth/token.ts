@@ -1,10 +1,5 @@
 import "server-only";
-
-import { createHash, randomBytes } from "node:crypto";
-
-export function createOpaqueToken(size = 32) {
-  return randomBytes(size).toString("base64url");
-}
+import { createHash } from "node:crypto";
 
 export function hashOpaqueToken(token: string) {
   return createHash("sha256").update(token).digest("hex");

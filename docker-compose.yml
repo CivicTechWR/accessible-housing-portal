@@ -30,10 +30,11 @@ services:
       NODE_ENV: development
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@db:5432/affordable_housing_portal
-      AUTH_SECRET: ${AUTH_SECRET:-replace-with-a-random-secret}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe123}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET}
+      EMAIL_JOB_SECRET: ${EMAIL_JOB_SECRET:?Set EMAIL_JOB_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:-capture}
+      EMAIL_CAPTURE_DIR: /app/.review/emails
       RESEND_API_KEY: ${RESEND_API_KEY:-re_replace_me}
       EMAIL_FROM: ${EMAIL_FROM:-Affordable Housing Portal <no-reply@example.com>}
       EMAIL_WORKER_ENABLED: ${EMAIL_WORKER_ENABLED:-true}

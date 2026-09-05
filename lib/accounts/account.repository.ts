@@ -1,9 +1,9 @@
 import "server-only";
 
-import { count, desc, eq, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, isNull, type SQL } from "drizzle-orm";
 
 import { db } from "@/db";
-import { users, type UserRole, type UserStatus } from "@/db/schema";
+import { sessions, userInvites, users, type UserRole, type UserStatus } from "@/db/schema";
 
 export type AccountListRow = {
   id: string;
@@ -98,28 +98,30 @@ export async function updateAccountById(input: {
   status?: UserStatus;
   organization?: string | null;
 }) {
-  const [updatedUser] = await db
-    .update(users)
-    .set({
-      fullName: input.name,
-      role: input.role,
-      status: input.status,
-      organization: input.organization,
-    })
-    .where(eq(users.id, input.accountId))
-    .returning({ id: users.id });
+  return db.transaction(async (tx) => {
+    const [updatedUser] = await tx
+      .update(users)
+      .set({
+        fullName: input.name,
+        role: input.role,
+        status: input.status,
+        organization: input.organization,
+      })
+      .where(eq(users.id, input.accountId))
+      .returning({ id: users.id });
 
-  return updatedUser ?? null;
+    if (input.status && input.status !== "active")
+      await tx.delete(sessions).where(eq(sessions.userId, input.accountId));
+    if (input.status === "suspended" || input.status === "deactivated") {
+      await tx
+        .update(userInvites)
+        .set({ expiresAt: new Date(), revokedAt: new Date(), sealedUrl: null })
+        .where(and(eq(userInvites.userId, input.accountId), isNull(userInvites.acceptedAt)));
+    }
+    return updatedUser ?? null;
+  });
 }
 
 export async function deactivateAccountById(accountId: string) {
-  const [updatedUser] = await db
-    .update(users)
-    .set({
-      status: "deactivated",
-    })
-    .where(eq(users.id, accountId))
-    .returning({ id: users.id });
-
-  return updatedUser ?? null;
+  return updateAccountById({ accountId, status: "deactivated" });
 }

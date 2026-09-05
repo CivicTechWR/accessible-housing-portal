@@ -26,7 +26,7 @@ The main runtime stack is:
 - React `19.2.4`
 - TypeScript `6.0.2`
 - Tailwind CSS 4 and shadcn/ui primitives
-- NextAuth `5.0.0-beta.31` credentials provider
+- Better Auth 1.7 with database sessions, passkeys, and authenticator-app 2FA
 - Drizzle ORM with Postgres
 - pg-boss for durable transactional email jobs
 - Zod schemas in `shared/schemas`
@@ -93,7 +93,7 @@ createInvite transaction
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | App routes and pages  | `app/**/page.tsx`, `app/**/layout.tsx`, `app/**/loading.tsx`, `app/**/error.tsx`, `app/**/route.ts`                                                |
 | Listing services      | `lib/listings/*`, `app/listings/*`, `app/listing-form/*`, `components/listing-*`, `components/listings-*`                                          |
-| Auth and sessions     | `auth.ts`, `proxy.ts`, `lib/auth/*`, `components/auth/*`, `app/sign-in/*`, `app/invite/*`                                                          |
+| Auth and sessions     | `lib/auth.ts`, `lib/auth-client.ts`, `proxy.ts`, `lib/auth/*`, `components/auth/*`, `app/sign-in/*`, `app/invite/*`                                |
 | Admin accounts        | `lib/accounts/*`, `app/(admin)/admin/users/*`, `app/(admin)/admin/invite/*`, `app/api/admin/accounts*`                                             |
 | Transactional email   | `instrumentation.ts`, `lib/email.ts`, `lib/email-queue/*`, `lib/auth/invite-email.ts`                                                              |
 | Custom listing fields | `lib/custom-listing-fields/*`, `app/admin/custom-listing-fields/*`, `app/(admin)/admin/custom-listing-fields/*`, `app/api/*custom-listing-fields*` |

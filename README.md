@@ -2,7 +2,7 @@
 
 Affordable Housing Portal is [Civic Tech Waterloo Region](https://github.com/CivicTechWR)'s affordable housing platform. It helps housing seekers find affordable housing listings and gives housing providers a place to publish richer, more accessible listing information.
 
-The app is a Next.js 16 App Router application using React 19, TypeScript, Tailwind CSS 4, shadcn/ui primitives, NextAuth credentials auth, Drizzle ORM, Postgres, and Zod-based API contracts.
+The app is a Next.js 16 App Router application using React 19, TypeScript, Tailwind CSS 4, shadcn/ui primitives, Better Auth, Drizzle ORM, Postgres, and Zod-based API contracts.
 
 Current product areas include:
 
@@ -20,7 +20,7 @@ Start with [docs/README.md](docs/README.md). The developer reference is split by
 - [Architecture](docs/architecture.md) for the App Router structure, service/repository boundaries, and feature workflow
 - [Domain Model](docs/domain-model.md) for database tables, enums, relationships, and migration rules
 - [Listings](docs/listings.md) for listing search, listing details, authoring, draft autosave, image uploads, and custom fields
-- [Auth and Admin](docs/auth-and-admin.md) for NextAuth credentials auth, invites, roles, access checks, and admin tools
+- [Auth and Admin](docs/auth-and-admin.md) for Better Auth, invites, roles, access checks, and admin tools
 - [API Reference](docs/api-reference.md) for route handlers, schemas, endpoint behavior, and error responses
 - [Deployment and Operations](docs/deployment.md) for CI, Docker, Infisical, runtime settings, and migration expectations
 - [Testing and Quality](docs/testing-and-quality.md) for Jest, linting, formatting, hooks, and review expectations
