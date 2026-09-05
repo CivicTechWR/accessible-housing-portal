@@ -71,6 +71,13 @@
       "when": 1786386995016,
       "tag": "20260810183635_email_delivery_records",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788577545012,
+      "tag": "20260905030545_password_reset_tokens",
+      "breakpoints": true
     }
   ]
 }

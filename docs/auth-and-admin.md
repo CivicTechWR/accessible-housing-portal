@@ -11,6 +11,8 @@ This guide covers sign-in, sessions, invites, roles, protected routes, account m
 | Session helpers       | `lib/auth/session.ts`                                                                                                      |
 | Credentials and users | `lib/auth/user-store.ts`, `lib/auth/password.ts`, `lib/auth/validation.ts`                                                 |
 | Invites               | `lib/auth/invite-service.ts`, `lib/auth/invite-store.ts`, `app/invite/actions.ts`                                          |
+| Password reset        | `lib/auth/password-reset-service.ts`, `lib/auth/password-reset-email.ts`, `app/forgot-password/*`, `app/reset-password/*`  |
+| Account management    | `app/manage-account/*` (password change for signed-in users)                                                               |
 | Account admin         | `lib/accounts/*`, `app/api/admin/accounts/*`, `app/(admin)/admin/users/page.tsx`                                           |
 | Email queue           | `instrumentation.ts`, `lib/email-queue/*`, `lib/email.ts`, `lib/auth/invite-email.ts`                                      |
 | Custom field admin    | `lib/custom-listing-fields/*`, `app/api/admin/custom-listing-fields/*`, `app/(admin)/admin/custom-listing-fields/page.tsx` |
@@ -98,6 +100,51 @@ Password rules:
 - at least one number
 - confirmation must match
 
+## Forgot / Reset Password Flow
+
+Password reset uses opaque single-use tokens stored only as hashes in the
+`password_reset_tokens` table, modeled on invites:
+
+- request (`/forgot-password`) → `requestPasswordResetAction`
+- consumption (`/reset-password?token=...`) → `resetPasswordWithTokenAction`
+- TTL is 30 minutes; each row stores `token_hash`, `expires_at`, `used_at`, and the email lifecycle trio `email_queued_at` / `sent_at` / `email_failed_at`
+- creating a request expires all outstanding unused tokens for the user, so old links die immediately on re-request; creation is serialized per user with a `SELECT … FOR UPDATE` on the user row, and the per-user throttle (`PASSWORD_RESET_MAX_PER_HOUR`) is checked under that lock
+- only `active` accounts with a password hash get a reset email; other statuses receive the neutral response without a link
+- the reset email and its delivery attempt are created in the same transaction; the pg-boss job carries the attempt and a sealed reset URL, and the worker derives the recipient from the token row
+
+Request behavior is deliberately neutral: unknown emails, accounts without a
+password hash, non-active statuses, throttled users, and enqueue failures all
+return the same success message, so the form cannot reveal whether an account
+exists. Neutral responses are also padded to a common minimum duration so
+response timing is not a signal; per-IP rate limiting on this endpoint remains
+a follow-up.
+
+Reset behavior:
+
+- consumption locks the user before the token, matching creation and account password changes; it checks expiry after acquiring the lock, then conditionally claims the unused token
+- the new password hash is written in the same transaction as the claim
+- invalid, expired, used, and superseded tokens all return one generic error; a cheap token lookup runs before password hashing so arbitrary-token requests cannot exhaust the crypto worker pool
+- user status is never touched: a suspended or deactivated account is not reactivated by a reset
+
+Known follow-ups (out of scope here):
+
+- existing JWT sessions are not invalidated by a password change/reset (would need a `passwordChangedAt` check in the `jwt` callback)
+- per-IP rate limiting for the forgot-password endpoint (the per-user throttle covers known accounts only)
+- field-level errors for `AcceptInviteForm`
+
+## Manage Account (Signed-In Password Change)
+
+`/manage-account` lets an active signed-in user change their password:
+current password verification → new password validation →
+`updateUserPasswordExpiringResets`, which writes the new hash and expires all
+outstanding unused reset tokens in one transaction (so a link issued before
+the change cannot overwrite the new password). Validation failures are
+reported per field (`fieldErrors`) beside each input with `aria-invalid` +
+`aria-describedby`; the reset-password form uses the same pattern. The
+forgot-password form reports only a single email-validation banner;
+`AcceptInviteForm` still uses banner-only errors and should adopt the same
+field-level pattern later.
+
 ## Protected Routes
 
 `proxy.ts` exports NextAuth's `auth` as the Next.js proxy. `lib/auth/route-policy.ts` decides which requests require an auth session:
@@ -105,6 +152,7 @@ Password rules:
 - pages under `/admin`
 - pages under `/listings`
 - pages under `/listing-form`
+- pages under `/manage-account`
 - pages under `/my-listings`
 - APIs under `/api/admin`
 - all APIs under `/api/listings`
@@ -169,7 +217,7 @@ Email is intentionally isolated and asynchronous:
 - `instrumentation.ts` starts the worker only in the Node.js runtime when `EMAIL_WORKER_ENABLED=true`.
 - `lib/email-queue/worker.ts` is the only provider-submission path and calls the shared service in `lib/email.ts`.
 - transient provider failures retry with bounded exponential backoff; rate limits and daily quota exhaustion can defer submission.
-- permanently failing jobs move to `email_send_dead_letter`, and the worker records `email_failed_at` for the invite.
+- permanently failing jobs move to `email_send_dead_letter`, and the worker records `email_failed_at` for the invite or password reset token.
 - provider acceptance records the legacy `sent_at` field; no requested email leaves `email_queued_at` unset and produces `not_requested`.
 
 Job payloads identify the invite and its delivery attempt without storing recipient details in the queue. The one-time invite URL is sealed with AES-256-GCM under a key derived from `AUTH_SECRET` and redacted after a terminal outcome. Rotating `AUTH_SECRET` while jobs are queued makes their sealed URLs unreadable and causes those jobs to fail.

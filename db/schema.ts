@@ -38,7 +38,10 @@ export const utilityIncludedEnum = pgEnum("utility_included", [
   "gas",
   "internet",
 ]);
-export const emailDeliveryTypeEnum = pgEnum("email_delivery_type", ["account_invite"]);
+export const emailDeliveryTypeEnum = pgEnum("email_delivery_type", [
+  "account_invite",
+  "password_reset",
+]);
 export const emailDeliveryOutcomeEnum = pgEnum("email_delivery_outcome", [
   "queued",
   "sent",
@@ -214,6 +217,30 @@ export const emailDeliveryAttempts = pgTable(
     ),
     uniqueIndex("email_delivery_attempts_idempotency_key_unique").on(table.idempotencyKey),
     uniqueIndex("email_delivery_attempts_provider_email_id_unique").on(table.providerEmailId),
+  ],
+);
+
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    // Password reset email lifecycle, mirroring user_invites: emailQueuedAt is
+    // set when the email job is enqueued; the worker then sets sentAt on
+    // provider submission, or emailFailedAt when the job permanently fails.
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    emailQueuedAt: timestamp("email_queued_at", { withTimezone: true }),
+    emailFailedAt: timestamp("email_failed_at", { withTimezone: true }),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("password_reset_tokens_token_hash_unique").on(table.tokenHash),
+    index("password_reset_tokens_user_id_idx").on(table.userId),
   ],
 );
 
@@ -417,6 +444,8 @@ export type EmailDelivery = typeof emailDeliveries.$inferSelect;
 export type NewEmailDelivery = typeof emailDeliveries.$inferInsert;
 export type EmailDeliveryAttempt = typeof emailDeliveryAttempts.$inferSelect;
 export type NewEmailDeliveryAttempt = typeof emailDeliveryAttempts.$inferInsert;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 export type Property = typeof properties.$inferSelect;
 export type NewProperty = typeof properties.$inferInsert;
 export type Listing = typeof listings.$inferSelect;

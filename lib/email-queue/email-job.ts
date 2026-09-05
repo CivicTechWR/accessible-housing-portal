@@ -31,7 +31,14 @@ export type AccountInviteEmailJobData = EmailJobBase & {
   secret: string;
 };
 
-export type EmailJobData = AccountInviteEmailJobData;
+export type PasswordResetEmailJobData = EmailJobBase & {
+  type: "password_reset";
+  passwordResetTokenId: string;
+  /** Sealed reset URL; contains the raw one-time token, so never store it in plaintext. */
+  secret: string;
+};
+
+export type EmailJobData = AccountInviteEmailJobData | PasswordResetEmailJobData;
 
 export type EmailJobType = EmailJobData["type"];
 
@@ -43,6 +50,7 @@ export type EmailJobType = EmailJobData["type"];
  */
 export const EMAIL_JOB_PRIORITY = {
   account_invite: 20,
+  password_reset: 20,
 } as const satisfies Record<EmailJobType, number>;
 
 export function getEmailJobIdempotencyKey(data: EmailJobData): string {
@@ -70,7 +78,22 @@ export function getEmailJobMatch(data: EmailJobData): Record<string, string> {
   switch (data.type) {
     case "account_invite":
       return { type: data.type, inviteId: data.inviteId };
+    case "password_reset":
+      return { type: data.type, passwordResetTokenId: data.passwordResetTokenId };
   }
+}
+
+export function buildPasswordResetEmailJob(params: {
+  tokenId: string;
+  resetUrl: string;
+  attempt: EmailDeliveryAttemptRef;
+}): PasswordResetEmailJobData {
+  return {
+    type: "password_reset",
+    passwordResetTokenId: params.tokenId,
+    attempt: params.attempt,
+    secret: sealEmailJobSecret(params.resetUrl),
+  };
 }
 
 export function buildAccountInviteEmailJob(params: {

@@ -68,7 +68,13 @@ Add focused tests when changing:
 - custom-field ordering or display behavior
 - hooks with non-trivial state transitions
 
-Repository methods that require a real database should usually be covered by integration tests once an integration test database pattern exists. Until then, keep business logic in services/helpers where it can be unit tested without a database.
+Password-reset concurrency tests run against PostgreSQL when `TEST_DATABASE_URL` is set. They create an isolated database, apply the migrations, and remove the database after the tests. Use a local test server and a role with permission to create databases:
+
+```bash
+TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run test:integration -- --runInBand
+```
+
+CI provides a PostgreSQL service for these tests. Without `TEST_DATABASE_URL`, Jest skips them.
 
 ## Hooks
 

@@ -96,6 +96,19 @@ export async function getUserForSession(userId: string) {
   return user ?? null;
 }
 
+export async function getUserPasswordRecord(userId: string) {
+  const [user] = await db
+    .select({
+      id: users.id,
+      passwordHash: users.passwordHash,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  return user ?? null;
+}
+
 export function isUserAllowedToSignIn(status: UserStatus) {
   return status === "active";
 }
