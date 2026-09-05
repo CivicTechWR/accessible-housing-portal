@@ -99,6 +99,7 @@ function buildInviteTarget() {
   return {
     email: "tenant@example.org",
     fullName: "Tenant User",
+    userStatus: "invited" as const,
     expiresAt: new Date(Date.now() + 60_000),
     acceptedAt: null,
     sentAt: null,
@@ -108,7 +109,7 @@ function buildInviteTarget() {
 beforeEach(() => {
   process.env = {
     ...ORIGINAL_ENV,
-    AUTH_SECRET: "test-auth-secret",
+    EMAIL_JOB_SECRET: "test-auth-secret",
   };
   jest.clearAllMocks();
   jest.spyOn(console, "warn").mockImplementation(() => {});

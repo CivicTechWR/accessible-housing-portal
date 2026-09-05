@@ -11,6 +11,7 @@ export const inviteRoleLabels: Record<InviteRole, string> = {
 export const inviteRoleOptions = [
   { value: "user", label: inviteRoleLabels.user },
   { value: "partner", label: inviteRoleLabels.partner },
+  { value: "admin", label: inviteRoleLabels.admin },
 ] as const;
 
 export const defaultInviteRole = inviteRoleOptions[0].value;
@@ -22,11 +23,6 @@ export type InviteFormValues = {
   organization: string;
 };
 
-/**
- * Email submission state of an invite: "queued" until Resend accepts the
- * request ("submitted") or the job permanently fails ("failed");
- * "not_requested" when the invite URL is shared manually instead.
- */
 export type InviteEmailStatus = "not_requested" | "queued" | "failed" | "submitted";
 
 export const inviteStatusLabels: Record<InviteEmailStatus, string> = {
@@ -50,4 +46,5 @@ export type InviteActionResult = {
   status: InviteStatus;
   message: string;
   invite?: InviteRecord;
+  inviteUrl?: string;
 };

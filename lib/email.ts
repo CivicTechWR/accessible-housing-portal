@@ -1,5 +1,8 @@
 import "server-only";
 
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import { Resend, type ErrorResponse } from "resend";
 
 import {
@@ -56,6 +59,28 @@ export class EmailSendError extends Error {
 export async function sendEmail(params: SendEmailParams) {
   params.signal?.throwIfAborted();
 
+  if (process.env.EMAIL_TRANSPORT === "capture") {
+    if (process.env.NODE_ENV === "production")
+      throw new Error("Email capture is only available in local development.");
+    const directory = process.env.EMAIL_CAPTURE_DIR;
+    if (!directory) throw new Error("EMAIL_CAPTURE_DIR is required for captured emails.");
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const id = `capture-${params.attempt.id}`;
+    await writeFile(
+      join(directory, `${id}.json`),
+      JSON.stringify(
+        { id, to: params.to, subject: params.subject, text: params.text, html: params.html },
+        null,
+        2,
+      ),
+      { mode: 0o600 },
+    );
+    await recordEmailDeliveryAttemptSubmission({
+      attemptId: params.attempt.id,
+      providerEmailId: id,
+    });
+    return { id };
+  }
   const resend = createResendClient();
   const result = await rejectOnAbort(
     resend.emails.send(

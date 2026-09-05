@@ -70,6 +70,7 @@ export const createAccountResponseSchema = z.object({
   message: z.string(),
   data: z.object({
     id: accountIdSchema,
+    inviteId: z.uuid(),
     email: z.email(),
     name: nonEmptyString,
     role: accountRoleSchema,

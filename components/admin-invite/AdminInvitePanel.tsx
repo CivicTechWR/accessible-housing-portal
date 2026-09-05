@@ -6,7 +6,7 @@ import { InviteResultBanner } from "@/components/admin-invite/InviteResultBanner
 import { RecentInvitesList } from "@/components/admin-invite/RecentInvitesList";
 import type { InviteRecord } from "@/components/admin-invite/types";
 import { useAdminInvite } from "@/components/admin-invite/useAdminInvite";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function AdminInvitePanel({
   initialInvites,
@@ -31,7 +31,6 @@ export function AdminInvitePanel({
       <Card>
         <CardHeader>
           <CardTitle>{copy.formTitle}</CardTitle>
-          <CardDescription>{copy.formDescription}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <AdminInviteForm onResult={handleInviteResult} />

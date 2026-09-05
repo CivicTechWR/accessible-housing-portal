@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.HOMEHUB_REVIEW === "true" ? ".next-review" : ".next",
   turbopack: {
     root: __dirname,
   },

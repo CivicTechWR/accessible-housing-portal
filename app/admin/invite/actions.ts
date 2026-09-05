@@ -31,7 +31,7 @@ export async function sendAdminInviteAction(
       name: formData.get("name"),
       role: formData.get("role"),
       organization: normalizeOptionalString(formData.get("organization")),
-      sendInviteEmail: true,
+      sendInviteEmail: formData.get("sendInviteEmail") === "on",
     };
 
     const parsed = createAccountInviteSchema.safeParse(rawValues);
@@ -53,14 +53,15 @@ export async function sendAdminInviteAction(
     }
 
     return {
-      status: "queued",
+      status: parsed.data.sendInviteEmail ? "queued" : "not_requested",
       message: result.value.message,
+      inviteUrl: result.value.data.inviteUrl,
       invite: {
-        id: result.value.data.id,
+        id: result.value.data.inviteId,
         email: result.value.data.email.trim().toLowerCase(),
         role: result.value.data.role,
         invitedAt: new Date().toISOString(),
-        status: "queued",
+        status: parsed.data.sendInviteEmail ? "queued" : "not_requested",
       },
     };
   } catch (error) {

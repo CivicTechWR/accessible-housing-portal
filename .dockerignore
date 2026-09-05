@@ -5,3 +5,6 @@ api
 node_modules
 npm-debug.log*
 .env*
+
+.review
+.next-review

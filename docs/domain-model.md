@@ -12,7 +12,7 @@ The database schema is defined in `db/schema.ts` with Drizzle. SQL migrations an
 | `listing_building_type`  | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                |
 | `utility_included`       | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.            |
 | `listing_field_type`     | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.           |
-| `email_delivery_type`    | `account_invite`                                                                                   | Kinds of transactional email the application sends.   |
+| `email_delivery_type`    | `account_invite`, `password_reset`                                                                 | Kinds of transactional email the application sends.   |
 | `email_delivery_outcome` | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.       |
 
 Only users with status `active` can sign in.
@@ -26,27 +26,26 @@ Stores local account records.
 Important fields:
 
 - `email` has a case-insensitive unique index through `lower(email)`.
-- `external_auth_id` is unique but currently optional.
-- `password_hash` is present for local credentials users.
+- Better Auth stores password credentials in `accounts`; `sessions`, `verifications`, `passkeys`, and `two_factors` store its other authentication data.
 - `role` controls admin, partner, and normal user behavior.
 - `status` controls sign-in eligibility.
 - `invite_accepted_at` and `last_login_at` support invite and audit workflows.
 
 ### `user_invites`
 
-Stores account invite tokens by hash.
+Tracks administrator invitations and their email submission state.
 
 Important behavior:
 
-- Raw invite tokens are not stored. `lib/auth/token.ts` creates opaque tokens and hashes them.
+- Better Auth owns the setup token. `token_hash` identifies its invitation; `sealed_url` holds an encrypted copy for the admin copy-link action.
 - New invites expire previous unaccepted invites for the same user.
 - Invites expire after seven days.
-- Accepting an invite marks the invite accepted and activates the user with a password hash.
+- Better Auth sets the password in `accounts`. Acceptance activates the user and removes the copyable invitation URL.
 - `email_queued_at` records that provider submission was requested and durably enqueued.
 - the worker sets the legacy `sent_at` field after the provider accepts the request or `email_failed_at` after permanent queue failure.
 - those timestamps derive the admin-facing states `not_requested`, `queued`, `submitted`, and `failed`; recipient-server delivery is not currently tracked.
 
-pg-boss stores email jobs in its own `pgboss` schema, outside the Drizzle-managed application schema. Queue payloads reference the invite rather than duplicating recipient details. The one-time invite URL is encrypted under a key derived from `AUTH_SECRET` while queued and redacted after a terminal outcome.
+pg-boss stores email jobs in its own `pgboss` schema, outside the Drizzle-managed application schema. Queue payloads reference the invite rather than duplicating recipient details. The one-time invite URL is encrypted under a key derived from `EMAIL_JOB_SECRET` while queued and redacted after a terminal outcome.
 
 ### `email_deliveries` and `email_delivery_attempts`
 

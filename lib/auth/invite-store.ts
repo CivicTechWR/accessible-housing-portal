@@ -6,13 +6,6 @@ import { db } from "@/db";
 import { userInvites, users, type UserRole } from "@/db/schema";
 import { hashOpaqueToken } from "@/lib/auth/token";
 
-/**
- * Email submission state of an invite, derived from persisted columns:
- * "submitted" (provider accepted the request; legacy sentAt set), "failed"
- * (job dead-lettered, emailFailedAt set), "queued" (job enqueued,
- * emailQueuedAt set), or "not_requested" (no email; the invite URL is shared
- * manually). Recipient-server delivery is not currently tracked.
- */
 export type AccountInviteEmailStatus = "not_requested" | "queued" | "failed" | "submitted";
 
 export type RecentAccountInviteRow = {
@@ -25,16 +18,11 @@ export type RecentAccountInviteRow = {
   status: AccountInviteEmailStatus;
 };
 
-export type PendingAccountInviteRow = RecentAccountInviteRow & {
+export type AccountInviteRow = RecentAccountInviteRow & {
   expiresAt: Date;
+  lifecycle: "pending" | "accepted" | "expired" | "revoked";
+  canResend: boolean;
 };
-
-export class InviteUnavailableError extends Error {
-  constructor() {
-    super("Invite is no longer valid.");
-    this.name = "InviteUnavailableError";
-  }
-}
 
 export async function getPendingInviteByToken(token: string) {
   const tokenHash = hashOpaqueToken(token);
@@ -55,6 +43,7 @@ export async function getPendingInviteByToken(token: string) {
         eq(userInvites.tokenHash, tokenHash),
         isNull(userInvites.acceptedAt),
         gt(userInvites.expiresAt, new Date()),
+        eq(users.status, "invited"),
       ),
     )
     .limit(1);
@@ -62,12 +51,6 @@ export async function getPendingInviteByToken(token: string) {
   return invite ?? null;
 }
 
-/**
- * Invites whose email has not been submitted yet are included too, so an
- * invite stays visible between enqueue and provider acceptance ("queued"),
- * after its email job permanently failed ("failed"), and when no invite email
- * was requested and the URL is shared manually ("not_requested").
- */
 export async function findRecentAccountInvites(limit: number): Promise<RecentAccountInviteRow[]> {
   const rows = await db
     .select({
@@ -90,7 +73,7 @@ export async function findRecentAccountInvites(limit: number): Promise<RecentAcc
   return rows.map(toAccountInviteRow);
 }
 
-export async function findPendingAccountInvites(): Promise<PendingAccountInviteRow[]> {
+export async function findAccountInvites(): Promise<AccountInviteRow[]> {
   const rows = await db
     .select({
       id: userInvites.id,
@@ -103,13 +86,28 @@ export async function findPendingAccountInvites(): Promise<PendingAccountInviteR
       emailFailedAt: userInvites.emailFailedAt,
       createdAt: userInvites.createdAt,
       expiresAt: userInvites.expiresAt,
+      acceptedAt: userInvites.acceptedAt,
+      revokedAt: userInvites.revokedAt,
+      userStatus: users.status,
+      inviteAcceptedAt: users.inviteAcceptedAt,
     })
     .from(userInvites)
     .innerJoin(users, eq(userInvites.userId, users.id))
-    .where(and(isNull(userInvites.acceptedAt), gt(userInvites.expiresAt, new Date())))
-    .orderBy(desc(sql`coalesce(${userInvites.sentAt}, ${userInvites.createdAt})`));
+    .orderBy(desc(userInvites.createdAt))
+    .limit(100);
 
-  return rows.map((row) => ({ ...toAccountInviteRow(row), expiresAt: row.expiresAt }));
+  return rows.map((row) => ({
+    ...toAccountInviteRow(row),
+    expiresAt: row.expiresAt,
+    lifecycle: row.acceptedAt
+      ? "accepted"
+      : row.revokedAt
+        ? "revoked"
+        : row.expiresAt <= new Date()
+          ? "expired"
+          : "pending",
+    canResend: row.userStatus === "invited" && !row.inviteAcceptedAt,
+  }));
 }
 
 function toAccountInviteRow(row: {
@@ -150,16 +148,12 @@ function toEmailStatus(row: {
   return row.emailQueuedAt ? "queued" : "not_requested";
 }
 
-/**
- * Resolve the recipient details for a queued invite email at send time. The
- * job payload only stores the invite id, so the email and name stay out of
- * the job table and reflect the current database state.
- */
 export async function findInviteEmailJobTarget(inviteId: string) {
   const [row] = await db
     .select({
       email: userInvites.email,
       fullName: users.fullName,
+      userStatus: users.status,
       expiresAt: userInvites.expiresAt,
       acceptedAt: userInvites.acceptedAt,
       sentAt: userInvites.sentAt,
@@ -176,52 +170,9 @@ export async function markInviteEmailSubmitted(inviteId: string) {
   await db.update(userInvites).set({ sentAt: new Date() }).where(eq(userInvites.id, inviteId));
 }
 
-/**
- * Record that the invite's email job permanently failed (dead-lettered), so
- * admin lists can show "failed" instead of an eternal "queued". The sentAt
- * guard keeps a stray late failure from masking a provider-accepted email.
- */
 export async function markInviteEmailFailed(inviteId: string) {
   await db
     .update(userInvites)
     .set({ emailFailedAt: new Date() })
     .where(and(eq(userInvites.id, inviteId), isNull(userInvites.sentAt)));
-}
-
-export async function acceptInvite(params: {
-  inviteId: string;
-  userId: string;
-  passwordHash: string;
-}) {
-  const now = new Date();
-
-  await db.transaction(async (tx) => {
-    const acceptedInvites = await tx
-      .update(userInvites)
-      .set({
-        acceptedAt: now,
-      })
-      .where(
-        and(
-          eq(userInvites.id, params.inviteId),
-          eq(userInvites.userId, params.userId),
-          isNull(userInvites.acceptedAt),
-          gt(userInvites.expiresAt, now),
-        ),
-      )
-      .returning({ id: userInvites.id });
-
-    if (acceptedInvites.length === 0) {
-      throw new InviteUnavailableError();
-    }
-
-    await tx
-      .update(users)
-      .set({
-        passwordHash: params.passwordHash,
-        status: "active",
-        inviteAcceptedAt: now,
-      })
-      .where(eq(users.id, params.userId));
-  });
 }
