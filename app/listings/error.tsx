@@ -14,10 +14,10 @@ export default function ListingsError({
   }, [error]);
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4 bg-white p-8 text-center">
+    <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background p-8 text-center">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-900">We couldn't load listings.</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold text-foreground">We couldn't load listings.</h1>
+        <p className="text-sm text-muted-foreground">
           Try again in a moment. If the issue keeps happening, there may be a data or network
           problem.
         </p>
@@ -25,7 +25,7 @@ export default function ListingsError({
       <button
         type="button"
         onClick={() => reset()}
-        className="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+        className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
       >
         Try again
       </button>
