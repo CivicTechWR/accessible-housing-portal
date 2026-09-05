@@ -2,7 +2,15 @@ import "server-only";
 
 import { formatDistanceToNow } from "date-fns";
 
-import type { ListingCustomFields, ListingStatus } from "@/db/schema";
+import type {
+  CustomListingFieldApplicability,
+  Listing,
+  ListingCustomFields,
+  ListingStatus,
+  NewListing,
+  NewProperty,
+  Property,
+} from "@/db/schema";
 import { sortCustomListingFieldsForDisplay } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import {
   buildListingFeatureDefinitionLookup,
@@ -11,6 +19,7 @@ import {
 import type {
   CreateListingInput,
   ListingDetails,
+  ListingDuplicateScope,
   ListingMutationInput,
 } from "@/shared/schemas/listings";
 
@@ -90,6 +99,100 @@ export function getDisplayAccessibilityFeatures(
 
 export function formatListingAddress(street1: string, unitNumber: string | null) {
   return unitNumber ? `${street1} #${unitNumber}` : street1;
+}
+
+export function buildDuplicateListingTitle(title: string) {
+  return title ? `Copy of ${title}` : "";
+}
+
+export function selectDuplicateCustomFields(input: {
+  customFields: ListingCustomFields;
+  applicabilityByKey: Map<string, CustomListingFieldApplicability>;
+  scope: ListingDuplicateScope;
+}): ListingCustomFields {
+  if (input.scope === "all") {
+    return { ...input.customFields };
+  }
+
+  const selected: ListingCustomFields = {};
+
+  for (const [key, value] of Object.entries(input.customFields)) {
+    const applicability = input.applicabilityByKey.get(key) ?? "unit";
+
+    if (applicability === input.scope) {
+      selected[key] = value;
+    }
+  }
+
+  return selected;
+}
+
+// propertyId is assigned after the copied property is inserted.
+export type DuplicateListingPlan = {
+  property: NewProperty;
+  listing: Omit<NewListing, "propertyId">;
+};
+
+// Keep duplication policy pure so it can be tested without a database.
+export function buildDuplicateListingPlan(input: {
+  source: Listing;
+  sourceProperty: Property;
+  actorUserId: string;
+  title: string;
+  scope: ListingDuplicateScope;
+  customFields: ListingCustomFields;
+}): DuplicateListingPlan {
+  // Keep blank values aligned with createDraftListing.
+  const copiesBuilding = input.scope !== "unit";
+  const copiesUnit = input.scope !== "building";
+  const { source, sourceProperty, actorUserId } = input;
+
+  return {
+    property: {
+      // Preserve the source owner when an admin duplicates on their behalf.
+      ownerUserId: sourceProperty.ownerUserId,
+      name: copiesBuilding ? sourceProperty.name : "",
+      street1: copiesBuilding ? sourceProperty.street1 : "",
+      street2: copiesBuilding ? sourceProperty.street2 : null,
+      city: copiesBuilding ? sourceProperty.city : "",
+      province: copiesBuilding ? sourceProperty.province : "",
+      postalCode: copiesBuilding ? sourceProperty.postalCode : "",
+      country: copiesBuilding ? sourceProperty.country : DEFAULT_PROPERTY_COUNTRY,
+      neighborhood: copiesBuilding ? sourceProperty.neighborhood : null,
+      latitude: copiesBuilding ? sourceProperty.latitude : null,
+      longitude: copiesBuilding ? sourceProperty.longitude : null,
+      contactName: copiesBuilding ? sourceProperty.contactName : "",
+      contactEmail: copiesBuilding ? sourceProperty.contactEmail : "",
+      contactPhone: copiesBuilding ? sourceProperty.contactPhone : "",
+      createdByUserId: actorUserId,
+      updatedByUserId: actorUserId,
+    },
+    listing: {
+      createdByUserId: actorUserId,
+      updatedByUserId: actorUserId,
+      title: input.title,
+      status: "draft",
+      // These unit-specific values are likely stale on a copy.
+      unitNumber: null,
+      availableOn: null,
+      description: copiesUnit ? source.description : null,
+      bedrooms: copiesUnit ? source.bedrooms : 0,
+      bathrooms: copiesUnit ? source.bathrooms : 0,
+      squareFeet: copiesUnit ? source.squareFeet : null,
+      monthlyRentCents: copiesUnit ? source.monthlyRentCents : 0,
+      leaseTermMonths: copiesUnit ? source.leaseTermMonths : null,
+      utilitiesIncluded: copiesUnit ? source.utilitiesIncluded : [],
+      maxIncomeCents: copiesUnit ? source.maxIncomeCents : null,
+      buildingType: copiesBuilding ? source.buildingType : null,
+      applicationUrl: copiesBuilding ? source.applicationUrl : null,
+      applicationEmail: copiesBuilding ? source.applicationEmail : "",
+      applicationPhone: copiesBuilding ? source.applicationPhone : "",
+      applicationInstructions: copiesBuilding ? source.applicationInstructions : null,
+      customFields: input.customFields,
+      publishedAt: null,
+      archivedAt: null,
+    },
+  };
 }
 
 export function getListingImageUrl(imageId: string, imageUrl: string | null) {
