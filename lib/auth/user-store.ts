@@ -116,7 +116,3 @@ export function isUserAllowedToSignIn(status: UserStatus) {
 export async function recordSuccessfulLogin(userId: string) {
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
 }
-
-export async function updateUserPasswordHash(userId: string, passwordHash: string) {
-  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
-}

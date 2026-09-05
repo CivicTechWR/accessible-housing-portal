@@ -20,7 +20,7 @@ function FieldError({ fieldId, messages }: { fieldId: string; messages?: string[
   }
 
   return (
-    <p id={`${fieldId}-error`} className="text-xs text-destructive">
+    <p id={`${fieldId}-error`} role="alert" className="text-xs text-destructive">
       {messages[0]}
     </p>
   );
