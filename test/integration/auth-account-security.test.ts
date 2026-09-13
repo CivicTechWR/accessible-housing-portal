@@ -4,6 +4,8 @@ import { setTimeout } from "node:timers/promises";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { base32 } from "@better-auth/utils/base32";
+import { createOTP } from "@better-auth/utils/otp";
 import { hashPassword } from "better-auth/crypto";
 import { eq, inArray, sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -338,6 +340,78 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
         );
         const remaining = await db.select().from(sessions).where(eq(sessions.userId, user.id));
         assert.equal(remaining.length, !resetFirst && operation === "change-password" ? 1 : 0);
+        await db.delete(authRateLimits).where(inArray(authRateLimits.key, rateLimitKeys));
+      });
+    }
+  }
+
+  for (const factor of ["verify-totp", "verify-backup-code"] as const) {
+    for (const resetFirst of [true, false]) {
+      it(`serializes ${factor} and reset with ${resetFirst ? "reset" : "verification"} first`, async () => {
+        const user = await createUser("active");
+        const cookies = (response: Response) =>
+          response.headers
+            .getSetCookie()
+            .map((value) => value.split(";")[0])
+            .join("; ");
+        const signedIn = await POST(
+          request("sign-in/email", { email: user.email, password }, "192.0.2.230"),
+        );
+        assert.equal(signedIn.status, 200);
+        const sessionCookie = cookies(signedIn);
+        const enabled = await POST(
+          request("two-factor/enable", { password }, "192.0.2.230", sessionCookie),
+        );
+        assert.equal(enabled.status, 200);
+        const setup = await enabled.json();
+        const secret = new URL(setup.totpURI).searchParams.get("secret");
+        assert.ok(secret);
+        const code = () => createOTP(new TextDecoder().decode(base32.decode(secret))).totp();
+        const confirmed = await POST(
+          request("two-factor/verify-totp", { code: await code() }, "192.0.2.230", sessionCookie),
+        );
+        assert.equal(confirmed.status, 200);
+        const pending = await POST(
+          request("sign-in/email", { email: user.email, password }, "192.0.2.231"),
+        );
+        assert.equal(pending.status, 200);
+        assert.equal((await pending.json()).twoFactorRedirect, true);
+        const challengeCookie = cookies(pending);
+        const token = await createResetToken(user.id);
+        const reset = () =>
+          POST(
+            request(
+              "reset-password",
+              { token, newPassword: "Reset-two-factor-password" },
+              "192.0.2.232",
+            ),
+          );
+        const verify = async () =>
+          POST(
+            request(
+              `two-factor/${factor}`,
+              { code: factor === "verify-totp" ? await code() : setup.backupCodes[0] },
+              "192.0.2.233",
+              challengeCookie,
+            ),
+          );
+        const responses = await raceAuthRequests(
+          user.id,
+          resetFirst ? reset : verify,
+          resetFirst ? verify : reset,
+        );
+        assert.equal(responses[0]!.status, 200);
+        assert.equal(responses[1]!.status, resetFirst ? 401 : 200);
+        assert.equal(
+          (await db.select().from(sessions).where(eq(sessions.userId, user.id))).length,
+          0,
+        );
+        if (!resetFirst) {
+          const revoked = await auth.api.getSession({
+            headers: new Headers({ cookie: cookies(responses[0]!) }),
+          });
+          assert.equal(revoked, null);
+        }
         await db.delete(authRateLimits).where(inArray(authRateLimits.key, rateLimitKeys));
       });
     }

@@ -134,6 +134,25 @@ export function createAuth(
             });
           }
         }
+        if (
+          database !== db &&
+          ["/two-factor/verify-totp", "/two-factor/verify-backup-code"].includes(ctx.path)
+        ) {
+          const cookie = ctx.context.createAuthCookie("two_factor");
+          const challengeId = await ctx.getSignedCookie(cookie.name, ctx.context.secret);
+          const challenge = challengeId
+            ? await ctx.context.internalAdapter.findVerificationValue(challengeId)
+            : null;
+          if (challenge) {
+            // Reset and password change delete this challenge under the same lock.
+            // Better Auth rechecks it after the lock before creating a session.
+            await database
+              .select({ id: users.id })
+              .from(users)
+              .where(eq(users.id, challenge.value))
+              .for("update");
+          }
+        }
         if (ctx.path !== "/reset-password") return;
         const token = ctx.body?.token ?? ctx.query?.token;
         if (typeof token !== "string") return;

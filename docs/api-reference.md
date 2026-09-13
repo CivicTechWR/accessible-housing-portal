@@ -146,7 +146,7 @@ Creating an account with `sendInviteEmail: true` returns success after the email
 | ------------ | -------------------- | ------------------- | ---------------------------------------------------------------- |
 | `GET`/`POST` | `/api/auth/[...all]` | Better Auth-managed | Better Auth credential, session, passkey, and two-factor routes. |
 
-Interactive sign-in uses the server action in `app/sign-in/actions.ts`; invite acceptance uses the server action in `app/invite/actions.ts`.
+Interactive sign-in and invite acceptance use the Better Auth client in `lib/auth-client.ts`, which calls `/api/auth/[...all]`.
 
 ## Adding Or Changing An Endpoint
 

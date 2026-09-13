@@ -19,6 +19,23 @@ export async function POST(request: Request) {
   if (pathname === "/api/auth/reset-password") return handleResetPassword(request, url);
   if (pathname === "/api/auth/change-password") return handleChangePassword(request);
   if (pathname === "/api/auth/sign-in/email") return handleSignInEmail(request);
+  if (
+    pathname === "/api/auth/two-factor/verify-totp" ||
+    pathname === "/api/auth/two-factor/verify-backup-code"
+  ) {
+    try {
+      return await db.transaction(async (tx) => {
+        // The auth hook locks the challenge's user before Better Auth consumes it.
+        // Commit rejected codes too, preserving attempt counts and account lockouts.
+        const response = await toNextJsHandler(createAuth(tx)).POST(request);
+        if (response.status >= 500) throw response;
+        return response;
+      });
+    } catch (error) {
+      if (error instanceof Response) return error;
+      throw error;
+    }
+  }
   return handlers.POST(request);
 }
 
