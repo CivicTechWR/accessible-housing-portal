@@ -86,14 +86,17 @@ import type {
 
 type OptionalSessionResult = Awaited<ReturnType<typeof getOptionalSession>>;
 
-export async function getListingsService(query: ListingQuery): Promise<ListingListResponse> {
-  const optionalSession =
-    query.status === "draft" || query.status === "archived"
-      ? await getAuthSession()
-      : {
-          session: null,
-          authzUser: null,
-        };
+export async function getListingsService(
+  query: ListingQuery,
+): Promise<DomainResult<ListingListResponse>> {
+  // All listing routes are protected. The proxy only checks cookie presence,
+  // so reads must validate the database session and current role here.
+  // A fabricated cookie has no database session and must not receive listings.
+  const optionalSession = await getAuthSession();
+
+  if (!optionalSession.session || !optionalSession.authzUser) {
+    return fail("unauthorized", "Unauthorized");
+  }
 
   const actor = toListingActor(optionalSession);
   const page = query.page ? Number(query.page) : 1;
@@ -106,7 +109,7 @@ export async function getListingsService(query: ListingQuery): Promise<ListingLi
   const bathroomFilter = parseCountFilter(query.bathrooms);
 
   if (!visibility.isAccessible) {
-    return {
+    return succeed({
       data: [],
       pagination: {
         page,
@@ -114,7 +117,7 @@ export async function getListingsService(query: ListingQuery): Promise<ListingLi
         total: 0,
         totalPages: 0,
       },
-    };
+    });
   }
 
   const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
@@ -154,7 +157,7 @@ export async function getListingsService(query: ListingQuery): Promise<ListingLi
     }
   }
 
-  return {
+  return succeed({
     data: rows.map((row) => {
       const accessibilityFeatures = getDisplayAccessibilityFeatures(
         row.customFields,
@@ -189,7 +192,7 @@ export async function getListingsService(query: ListingQuery): Promise<ListingLi
       total,
       totalPages: total === 0 ? 0 : Math.ceil(total / limit),
     },
-  };
+  });
 }
 
 function parseCountFilter(rawValue: string | undefined) {
@@ -242,7 +245,13 @@ function getListingSortOrder(sort: ListingQuery["sort"]): SQL<unknown>[] {
 export async function getListingByIdService(
   listingId: ListingIdParam,
 ): Promise<DomainResult<ListingByIdResponse>> {
+  // Authoritative check: cookie presence alone (proxy) is not sufficient.
   const optionalSession = await getAuthSession();
+
+  if (!optionalSession.session || !optionalSession.authzUser) {
+    return fail("unauthorized", "Unauthorized");
+  }
+
   const actor = toListingActor(optionalSession);
   const listing = await findListingRecordById(listingId);
 

@@ -19,7 +19,7 @@ const INVITE_URL = "https://housing.example.org/invite?token=raw-one-time-token"
 beforeEach(() => {
   process.env = {
     ...ORIGINAL_ENV,
-    AUTH_SECRET: "test-auth-secret",
+    EMAIL_JOB_SECRET: "test-auth-secret",
   };
 });
 
@@ -58,17 +58,17 @@ describe("sealEmailJobSecret/openEmailJobSecret", () => {
     );
   });
 
-  it("rejects secrets sealed under a different AUTH_SECRET", () => {
+  it("rejects secrets sealed under a different EMAIL_JOB_SECRET", () => {
     const sealed = sealEmailJobSecret(INVITE_URL);
-    process.env.AUTH_SECRET = "rotated-auth-secret";
+    process.env.EMAIL_JOB_SECRET = "rotated-auth-secret";
 
     expect(() => openEmailJobSecret(sealed)).toThrow();
   });
 
-  it("requires AUTH_SECRET", () => {
-    delete process.env.AUTH_SECRET;
+  it("requires EMAIL_JOB_SECRET", () => {
+    delete process.env.EMAIL_JOB_SECRET;
 
-    expect(() => sealEmailJobSecret(INVITE_URL)).toThrow("AUTH_SECRET is not set.");
+    expect(() => sealEmailJobSecret(INVITE_URL)).toThrow("EMAIL_JOB_SECRET is not set.");
   });
 });
 

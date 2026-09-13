@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { getListingByIdService } from "@/lib/listings/listing.service";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
@@ -12,6 +12,9 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
   const result = await getListingByIdService(id);
 
   if (!result.ok) {
+    if (result.error.code === "unauthorized") {
+      redirect(`/sign-in?callbackUrl=/listings/${encodeURIComponent(id)}`);
+    }
     notFound();
   }
 

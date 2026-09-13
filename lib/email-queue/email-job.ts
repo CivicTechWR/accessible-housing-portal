@@ -31,7 +31,15 @@ export type AccountInviteEmailJobData = EmailJobBase & {
   secret: string;
 };
 
-export type EmailJobData = AccountInviteEmailJobData;
+export type PasswordResetEmailJobData = EmailJobBase & {
+  type: "password_reset";
+  resetId: string;
+  userId: string;
+  expiresAt: string;
+  secret: string;
+};
+
+export type EmailJobData = AccountInviteEmailJobData | PasswordResetEmailJobData;
 
 export type EmailJobType = EmailJobData["type"];
 
@@ -43,6 +51,7 @@ export type EmailJobType = EmailJobData["type"];
  */
 export const EMAIL_JOB_PRIORITY = {
   account_invite: 20,
+  password_reset: 20,
 } as const satisfies Record<EmailJobType, number>;
 
 export function getEmailJobIdempotencyKey(data: EmailJobData): string {
@@ -70,6 +79,8 @@ export function getEmailJobMatch(data: EmailJobData): Record<string, string> {
   switch (data.type) {
     case "account_invite":
       return { type: data.type, inviteId: data.inviteId };
+    case "password_reset":
+      return { type: data.type, resetId: data.resetId };
   }
 }
 
@@ -120,10 +131,10 @@ export function openEmailJobSecret(sealed: string): string {
 }
 
 function getSecretKey() {
-  const authSecret = process.env.AUTH_SECRET;
+  const authSecret = process.env.EMAIL_JOB_SECRET;
 
   if (!authSecret) {
-    throw new Error("AUTH_SECRET is not set.");
+    throw new Error("EMAIL_JOB_SECRET is not set.");
   }
 
   return Buffer.from(hkdfSync("sha256", authSecret, "", SECRET_KEY_INFO, 32));

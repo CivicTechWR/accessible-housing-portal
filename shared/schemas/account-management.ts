@@ -52,6 +52,7 @@ const accountResponseDataSchema = z.object({
   role: accountRoleSchema.nullable(),
   organization: z.string().nullable(),
   status: accountStatusSchema.nullable(),
+  inviteAcceptedAt: z.string().nullable(),
   lastLoginAt: z.string().nullable(),
   createdAt: z.string().nullable(),
   updatedAt: z.string().nullable(),
@@ -70,6 +71,7 @@ export const createAccountResponseSchema = z.object({
   message: z.string(),
   data: z.object({
     id: accountIdSchema,
+    inviteId: z.uuid(),
     email: z.email(),
     name: nonEmptyString,
     role: accountRoleSchema,

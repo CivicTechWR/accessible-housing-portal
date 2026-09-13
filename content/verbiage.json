@@ -7,7 +7,6 @@
     "heading": "Admin invites",
     "subheading": "Invite housing searchers and housing listers by email.",
     "formTitle": "Send invitation",
-    "formDescription": "Sends account invitations through the admin accounts API.",
     "fields": {
       "nameLabel": "Name",
       "namePlaceholder": "Jane Doe",
@@ -24,7 +23,6 @@
     },
     "recentInvites": {
       "heading": "Recent invites",
-      "description": "Shows the most recent active invites from the admin API.",
       "emptyState": "No recent invites found."
     },
     "roles": {

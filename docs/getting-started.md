@@ -28,20 +28,19 @@ cp .env.example .env.local
 
 Variables used by the app:
 
-| Variable               | Required                    | Used by                                 | Notes                                                                               |
-| ---------------------- | --------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | Yes                         | Drizzle, app services, migrations, seed | Must point at Postgres. `drizzle.config.ts` loads `.env.local` and then `.env`.     |
-| `AUTH_SECRET`          | Yes                         | NextAuth, queued-secret encryption      | Use a random secret and do not rotate it while email jobs are queued.               |
-| `RESEND_API_KEY`       | Email worker processes only | `lib/email.ts`                          | Required when the worker submits a queued invite email to Resend.                   |
-| `EMAIL_FROM`           | Email worker processes only | `lib/email.ts`                          | Sender address used when the worker submits an email to Resend.                     |
-| `EMAIL_WORKER_ENABLED` | Worker processes only       | `instrumentation.ts`, email queue       | Set to `true` only on a long-lived server that should process queued email.         |
-| `NEXT_PUBLIC_APP_URL`  | Recommended                 | Invite URL generation                   | Falls back to `AUTH_URL` and then `http://localhost:3000`.                          |
-| `ADMIN_EMAIL`          | Optional                    | Bootstrap admin                         | Defaults to `admin@example.com`.                                                    |
-| `ADMIN_PASSWORD`       | Optional                    | Bootstrap admin                         | Enables one-time bootstrap admin sign-in until an admin user has a stored password. |
-| `AUTH_TRUST_HOST`      | Deployment                  | NextAuth                                | Use when running behind a trusted proxy/container host.                             |
-| `INFISICAL_TOKEN`      | Production Docker           | Docker image entrypoint                 | Used by the production Dockerfile command.                                          |
+| Variable                                            | Purpose                                                                        |
+| --------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `DATABASE_URL`                                      | PostgreSQL connection for the app and queue.                                   |
+| `BETTER_AUTH_URL`                                   | Exact application origin, including the local port.                            |
+| `BETTER_AUTH_SECRET`                                | At least 32 random characters for authentication and authenticator encryption. |
+| `EMAIL_JOB_SECRET`                                  | A separate random secret for queued links and copyable invitations.            |
+| `EMAIL_WORKER_ENABLED`                              | Set to `true` on a long-lived Node.js server to process emails.                |
+| `EMAIL_TRANSPORT`                                   | `capture` locally or `resend` for real delivery.                               |
+| `EMAIL_CAPTURE_DIR`                                 | Private local directory used by the capture transport.                         |
+| `RESEND_API_KEY`, `EMAIL_FROM`                      | Required for the Resend transport. Use a verified sender domain.               |
+| `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | Used only by `npm run auth:admin`. Remove the password afterward.              |
 
-Generate a local auth secret with:
+Generate the authentication and email secrets separately with:
 
 ```bash
 openssl rand -base64 32
@@ -84,7 +83,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-If `ADMIN_PASSWORD` is set, you can sign in with `ADMIN_EMAIL` and `ADMIN_PASSWORD` to bootstrap an admin account, but only until there is already an admin user with a stored local password.
+Run `npm run auth:admin` once to create the first administrator, then sign in with that account. The listing seed does not create login credentials. Administrators invite additional users through the app. See [authentication and account management](auth-and-admin.md).
 
 ## Docker Notes
 
@@ -95,7 +94,7 @@ Current compose behavior:
 - starts a `postgres:16-alpine` database on host port `${POSTGRES_PORT:-5433}`
 - builds the app from `Dockerfile.dev`
 - mounts the repository into `/app`
-- sets development defaults for auth, app URL, bootstrap admin, and email variables
+- reads local authentication and email configuration
 - enables the transactional email worker by default
 - runs `npm run db:migrate`, `npm run db:seed`, then `npm run dev`
 - exposes the app on [http://localhost:3000](http://localhost:3000)
@@ -154,7 +153,7 @@ Confirm that:
 
 Creating an invite queues its email instead of waiting for provider acceptance. If its status remains `queued`, confirm that a long-lived app server has `EMAIL_WORKER_ENABLED=true`, valid `RESEND_API_KEY` and `EMAIL_FROM` values, and access to the same Postgres database. Check server logs for `[email-queue]` errors.
 
-A `failed` status means the job permanently exhausted provider submission attempts and reached the `email_send_dead_letter` queue. Re-send the invite after correcting the provider or configuration problem. Do not rotate `AUTH_SECRET` while jobs are queued because it is used to encrypt their one-time URLs.
+A `failed` status means the job permanently exhausted provider submission attempts and reached the `email_send_dead_letter` queue. Re-send the invite after correcting the provider or configuration problem. Do not rotate `EMAIL_JOB_SECRET` while jobs are queued because it is used to encrypt their one-time URLs.
 
 ### Image uploads fail
 

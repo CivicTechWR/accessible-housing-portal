@@ -99,12 +99,15 @@ export function HeaderMobileMenu({
                   </div>
                 ) : null}
 
+                <Link
+                  href="/manage-account"
+                  className={mobileMenuItemClass}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Manage account
+                </Link>
                 <form action={signOutFromHeader}>
-                  <button
-                    type="submit"
-                    className={mobileMenuItemClass}
-                    onClick={() => setIsOpen(false)}
-                  >
+                  <button type="submit" className={mobileMenuItemClass}>
                     <span>Sign out</span>
                   </button>
                 </form>

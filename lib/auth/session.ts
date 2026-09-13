@@ -2,14 +2,20 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { getUserForSession, isUserAllowedToSignIn } from "@/lib/auth/user-store";
+
+async function readSession() {
+  const requestHeaders = await headers();
+  return auth.api.getSession({ headers: requestHeaders });
+}
 
 type SessionErrorBody = {
   message: string;
 };
 
-type AuthSession = NonNullable<Awaited<ReturnType<typeof auth>>>;
+type AuthSession = NonNullable<Awaited<ReturnType<typeof readSession>>>;
 type AuthorizedUser = NonNullable<Awaited<ReturnType<typeof getUserForSession>>>;
 
 type SessionGuardResult =
@@ -29,10 +35,8 @@ type OptionalSessionResult = {
   authzUser: AuthorizedUser | null;
 };
 
-export async function getOptionalSession(
-  preloadedSession?: Awaited<ReturnType<typeof auth>> | null,
-) {
-  const session = preloadedSession ?? (await auth());
+export async function getOptionalSession() {
+  const session = await readSession();
 
   if (!session?.user?.id) {
     return {

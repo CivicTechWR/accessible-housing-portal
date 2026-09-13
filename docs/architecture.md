@@ -138,8 +138,8 @@ When an endpoint changes, update the schema first, then route outputs, handlers,
 
 Auth is deliberately layered:
 
-- `auth.ts` configures NextAuth credentials, JWT session state, and broad authorization.
-- `proxy.ts` exports the NextAuth proxy so protected requests can be redirected or rejected early.
+- `lib/auth.ts` configures Better Auth, database sessions, passkeys, authenticator-app 2FA, and invite-only password setup.
+- `proxy.ts` checks for a session cookie to redirect unauthenticated visitors; services verify the database session and application permissions.
 - Route-group layouts such as `app/(admin)/admin/layout.tsx` and `app/(listing-author)/layout.tsx` enforce route-level UI access.
 - API handlers and services call `requireAdminSession`, `requireListingWriteSession`, or `getOptionalSession` as needed.
 - Policies in `lib/policies/*` make role and ownership decisions.

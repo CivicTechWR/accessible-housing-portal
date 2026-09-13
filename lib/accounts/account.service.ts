@@ -62,6 +62,7 @@ export async function getAccountsService(
   return succeed({
     data: rows.map((row) => ({
       ...row,
+      inviteAcceptedAt: row.inviteAcceptedAt?.toISOString() ?? null,
       lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -118,6 +119,7 @@ export async function createAccountService(
       : "Account invited",
     data: {
       id: invite.userId,
+      inviteId: invite.inviteId,
       email: invite.email,
       name: input.name,
       role: input.role,
@@ -145,6 +147,7 @@ export async function getAccountByIdService(
   return succeed({
     data: {
       ...account,
+      inviteAcceptedAt: account.inviteAcceptedAt?.toISOString() ?? null,
       lastLoginAt: account.lastLoginAt?.toISOString() ?? null,
       createdAt: account.createdAt.toISOString(),
       updatedAt: account.updatedAt.toISOString(),
@@ -190,9 +193,7 @@ export async function updateAccountByIdService(input: {
     organization: input.payload.organization,
   });
 
-  if (!updated) {
-    return fail("not_found", "Account not found");
-  }
+  if (!updated.ok) return updated;
 
   return succeed({
     message: "Account updated",
@@ -223,9 +224,7 @@ export async function deactivateAccountByIdService(
 
   const updated = await deactivateAccountById(accountId);
 
-  if (!updated) {
-    return fail("not_found", "Account not found");
-  }
+  if (!updated.ok) return updated;
 
   return succeed({
     message: "Account deactivated",
