@@ -51,3 +51,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Isolated local review data and builds
+/.review/
+/.next-review/

@@ -104,15 +104,10 @@ export function HeaderMobileMenu({
                   className={mobileMenuItemClass}
                   onClick={() => setIsOpen(false)}
                 >
-                  <span>Manage Account</span>
+                  Manage account
                 </Link>
-
                 <form action={signOutFromHeader}>
-                  <button
-                    type="submit"
-                    className={mobileMenuItemClass}
-                    onClick={() => setIsOpen(false)}
-                  >
+                  <button type="submit" className={mobileMenuItemClass}>
                     <span>Sign out</span>
                   </button>
                 </form>

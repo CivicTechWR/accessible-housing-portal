@@ -1,17 +1,9 @@
 import "server-only";
-
-import { randomUUID } from "node:crypto";
-
-import { and, eq, gt, isNull } from "drizzle-orm";
-
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { lower, userInvites, users, type UserRole } from "@/db/schema";
-import { createOpaqueToken, hashOpaqueToken } from "@/lib/auth/token";
-import { startEmailDeliveryAttempt } from "@/lib/email-delivery/store";
-import { buildAccountInviteEmailJob } from "@/lib/email-queue/email-job";
-import { enqueueEmail } from "@/lib/email-queue/queue";
-
-const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+import { lower, users, type UserRole } from "@/db/schema";
+import { auth } from "@/lib/auth";
+import { invitationEmailContext } from "@/lib/auth/invite-context";
 
 export async function createInvite(params: {
   email: string;
@@ -21,97 +13,45 @@ export async function createInvite(params: {
   invitedByUserId: string;
   sendInviteEmail: boolean;
 }) {
-  const normalizedEmail = params.email.trim().toLowerCase();
-  const now = new Date();
-  const token = createOpaqueToken();
-  const tokenHash = hashOpaqueToken(token);
-  const expiresAt = new Date(now.getTime() + INVITE_TTL_MS);
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000";
-  const inviteUrl = new URL(`/invite?token=${token}`, baseUrl).toString();
-
-  const result = await db.transaction(async (tx) => {
-    const [existingUser] = await tx
+  const email = params.email.trim().toLowerCase();
+  const user = await db.transaction(async (tx) => {
+    const [existing] = await tx
       .select()
       .from(users)
-      .where(eq(lower(users.email), normalizedEmail))
-      .limit(1);
-
-    const userId = existingUser?.id ?? randomUUID();
-
-    if (existingUser) {
-      await tx
-        .update(users)
-        .set({
-          fullName: params.fullName,
-          organization: params.organization,
-          role: params.role,
-          status: existingUser.passwordHash ? existingUser.status : "invited",
-        })
-        .where(eq(users.id, existingUser.id));
-    } else {
-      await tx.insert(users).values({
-        id: userId,
-        email: normalizedEmail,
-        fullName: params.fullName,
-        organization: params.organization,
-        role: params.role,
-        status: "invited",
-      });
+      .where(eq(lower(users.email), email))
+      .for("update");
+    if (existing && (existing.status !== "invited" || existing.inviteAcceptedAt)) {
+      throw new Error("This account already exists. Manage its access from the users page.");
     }
-
-    await tx
-      .update(userInvites)
-      .set({
-        expiresAt: now,
-      })
-      .where(
-        and(
-          eq(userInvites.userId, userId),
-          isNull(userInvites.acceptedAt),
-          gt(userInvites.expiresAt, now),
-        ),
-      );
-
-    const [invite] = await tx
-      .insert(userInvites)
-      .values({
-        userId,
-        email: normalizedEmail,
-        tokenHash,
-        expiresAt,
-        sentAt: null,
-        emailQueuedAt: params.sendInviteEmail ? now : null,
-        createdByUserId: params.invitedByUserId,
-      })
-      .returning();
-
-    if (!invite) {
-      throw new Error("Failed to create invite.");
-    }
-
-    if (params.sendInviteEmail) {
-      const attempt = await startEmailDeliveryAttempt(tx, {
-        emailType: "account_invite",
-        sourceEntityId: invite.id,
-      });
-
-      await enqueueEmail(
-        tx,
-        buildAccountInviteEmailJob({ inviteId: invite.id, inviteUrl, attempt }),
-      );
-    }
-
-    return {
-      invite,
-      userId,
-      email: normalizedEmail,
+    const values = {
+      email,
+      fullName: params.fullName,
+      role: params.role,
       organization: params.organization,
+      status: "invited" as const,
     };
+    const [result] = existing
+      ? await tx.update(users).set(values).where(eq(users.id, existing.id)).returning()
+      : await tx.insert(users).values(values).returning();
+    return result;
   });
-
+  if (!user) throw new Error("Unable to create account.");
+  const context = {
+    userId: user.id,
+    invitedByUserId: params.invitedByUserId,
+    sendEmail: params.sendInviteEmail,
+    inviteUrl: undefined as string | undefined,
+    inviteId: undefined as string | undefined,
+  };
+  await invitationEmailContext.run(context, () =>
+    auth.api.requestPasswordReset({ body: { email } }),
+  );
+  if (!context.inviteUrl || !context.inviteId) throw new Error("Unable to create invitation.");
   return {
-    ...result,
-    inviteUrl,
+    userId: user.id,
+    email,
+    organization: params.organization,
+    inviteUrl: context.inviteUrl,
+    inviteId: context.inviteId,
   };
 }

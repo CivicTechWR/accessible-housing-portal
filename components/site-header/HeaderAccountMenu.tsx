@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { UserIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { usePathname } from "next/navigation";
@@ -58,9 +58,8 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
         <Link
           href="/manage-account"
           className={cn(menuItemClass, "text-foreground hover:bg-muted")}
-          onClick={() => setIsOpen(false)}
         >
-          Manage Account
+          Manage account
         </Link>
 
         <form action={signOutFromHeader}>

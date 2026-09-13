@@ -37,9 +37,13 @@ export async function getListingsHandler(
           : (rawFeatures[0] ?? undefined),
     search: searchParams.get("search") ?? undefined,
   };
-  const payload = await getListingsService(query);
+  const result = await getListingsService(query);
 
-  return TypedNextResponse.json<ListingListResponse, 200, "application/json">(payload);
+  if (!result.ok) {
+    return mapDomainErrorToHttpResponse(result.error);
+  }
+
+  return TypedNextResponse.json<ListingListResponse, 200, "application/json">(result.value);
 }
 
 export async function createListingHandler(

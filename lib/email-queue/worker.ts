@@ -1,5 +1,11 @@
 import "server-only";
 
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { emailDeliveryAttempts, users } from "@/db/schema";
+import { sendEmail } from "@/lib/email";
+import { auth } from "@/lib/auth";
+
 import type { Job, PgBoss } from "pg-boss";
 
 import { sendInviteEmail } from "@/lib/auth/invite-email";
@@ -8,12 +14,6 @@ import {
   markInviteEmailFailed,
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
-import {
-  findPasswordResetEmailJobTarget,
-  markPasswordResetEmailFailed,
-  markPasswordResetEmailSubmitted,
-} from "@/lib/auth/password-reset-service";
-import { sendPasswordResetEmail } from "@/lib/auth/password-reset-email";
 import { EmailSendError } from "@/lib/email";
 import {
   EMAIL_JOB_PRIORITY,
@@ -21,7 +21,6 @@ import {
   openEmailJobSecret,
   type AccountInviteEmailJobData,
   type EmailJobData,
-  type PasswordResetEmailJobData,
 } from "@/lib/email-queue/email-job";
 import {
   EMAIL_DEAD_LETTER_QUEUE,
@@ -112,15 +111,8 @@ export async function processEmailJob(
 ): Promise<EmailJobResult> {
   const result = await runEmailJob(boss, job);
 
-  // Job rows are retained for audit; strip the sealed secret once no attempt
-  // can need it again. Submitted and skipped recoveries get by without it
-  // (sentAt guard, or skip guards that run before decryption). A deferral is
-  // not terminal: redacting the original before its replacement runs would
-  // let a crash between redaction and completion recover the original as
-  // unsendable and falsely dead-letter it, so its row keeps the secret until
-  // the chain ends and the chain-wide redaction sweeps it. If the job expired
-  // mid-handler, pg-boss has already failed it and a retry may own the row,
-  // so leave its payload alone.
+  // Deferred jobs still need the secret for crash recovery. Expired jobs may
+  // already have a retry running, so redact only completed, non-deferred jobs.
   if (result.status !== "deferred" && !job.signal.aborted) {
     await redactEmailJobSecret(boss, job);
   }
@@ -128,22 +120,12 @@ export async function processEmailJob(
   return result;
 }
 
-/**
- * Process a job that exhausted its retries and landed in the dead letter
- * queue: record the permanent failure on the source entity so admin UIs can
- * show "failed" instead of an eternal "queued". Dead-lettering copies the
- * original payload, so the sealed secret is redacted here too — no send will
- * ever use the dead-lettered copy, the failed source row, or a deferral
- * ancestor.
- */
 export async function processDeadLetteredEmailJob(
   boss: EmailWorkerBoss,
   job: Job<EmailJobData>,
 ): Promise<EmailDeadLetterJobResult> {
   const result = await recordEmailJobFailure(job.data);
 
-  // As in processEmailJob: an expired job has already been failed by pg-boss
-  // and a retry may own the row, so leave its payload alone.
   if (!job.signal.aborted) {
     await redactEmailJobSecret(boss, job);
   }
@@ -153,16 +135,16 @@ export async function processDeadLetteredEmailJob(
 
 async function recordEmailJobFailure(data: EmailJobData): Promise<EmailDeadLetterJobResult> {
   switch (data.type) {
+    case "password_reset":
+      await db
+        .update(emailDeliveryAttempts)
+        .set({ outcome: "failed" })
+        .where(eq(emailDeliveryAttempts.id, data.attempt.id));
+      return { status: "failure_recorded" };
     case "account_invite":
       await markInviteEmailFailed(data.inviteId);
       console.error(
         `[email-queue] Invite email for invite ${data.inviteId} permanently failed and was dead-lettered; the invite must be re-sent.`,
-      );
-      return { status: "failure_recorded" };
-    case "password_reset":
-      await markPasswordResetEmailFailed(data.passwordResetTokenId);
-      console.error(
-        `[email-queue] Password reset email for token ${data.passwordResetTokenId} permanently failed and was dead-lettered; a new reset must be requested.`,
       );
       return { status: "failure_recorded" };
   }
@@ -221,8 +203,34 @@ async function sendEmailForJob(data: EmailJobData, signal: AbortSignal): Promise
   switch (data.type) {
     case "account_invite":
       return await sendAccountInviteEmailJob(data, signal);
-    case "password_reset":
-      return await sendPasswordResetEmailJob(data, signal);
+    case "password_reset": {
+      const [attempt] = await db
+        .select()
+        .from(emailDeliveryAttempts)
+        .where(eq(emailDeliveryAttempts.id, data.attempt.id));
+      if (attempt?.submittedAt) return { status: "skipped", reason: "already_submitted" };
+      const [user] = await db.select().from(users).where(eq(users.id, data.userId));
+      if (user?.status !== "active" || new Date(data.expiresAt) <= new Date())
+        return { status: "skipped", reason: "reset_unavailable" };
+      const url = openEmailJobSecret(data.secret);
+      const token = new URL(url).searchParams.get("token");
+      const verification = token
+        ? await (
+            await auth.$context
+          ).internalAdapter.findVerificationValue(`reset-password:${token}`)
+        : null;
+      if (verification?.value !== user.id || verification.expiresAt.getTime() <= Date.now())
+        return { status: "skipped", reason: "reset_unavailable" };
+      const result = await sendEmail({
+        to: user.email,
+        subject: "Reset your HomeHub password",
+        text: `Use this link to reset your password. It expires in one hour.\n\n${url}\n\nIf you did not request this, ignore this email.`,
+        html: `<p>Use this link to reset your password. It expires in one hour.</p><p><a href="${url.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}">Reset password</a></p><p>If you did not request this, ignore this email.</p>`,
+        attempt: data.attempt,
+        signal,
+      });
+      return { status: "submitted", providerMessageId: result?.id ?? null };
+    }
   }
 }
 
@@ -236,14 +244,15 @@ async function sendAccountInviteEmailJob(
     return { status: "skipped", reason: "invite_not_found" };
   }
 
+  if (target.userStatus !== "invited") {
+    return { status: "skipped", reason: "account_not_invited" };
+  }
+
   if (target.acceptedAt) {
     return { status: "skipped", reason: "invite_accepted" };
   }
 
-  // The worker only sets sentAt after the provider accepts the send request,
-  // so this invite was already submitted. This is how a job recovered after a
-  // crash (or an expired attempt whose request still landed) completes instead
-  // of re-submitting — its payload secret may already be redacted by then.
+  // Check before decrypting: a recovered send may have an already-redacted secret.
   if (target.sentAt) {
     return { status: "skipped", reason: "invite_already_submitted" };
   }
@@ -254,8 +263,6 @@ async function sendAccountInviteEmailJob(
   }
 
   if (!data.secret) {
-    // Unsent invite with a missing secret cannot be recovered; fail into the
-    // retry/dead-letter cycle so it gets operational attention.
     throw new Error(`Email job for invite ${data.inviteId} has no sealed payload secret.`);
   }
 
@@ -275,60 +282,6 @@ async function sendAccountInviteEmailJob(
   }
 
   await markInviteEmailSubmitted(data.inviteId);
-
-  return { status: "submitted", providerMessageId: submission?.id ?? null };
-}
-
-async function sendPasswordResetEmailJob(
-  data: PasswordResetEmailJobData,
-  signal: AbortSignal,
-): Promise<EmailJobResult> {
-  const target = await findPasswordResetEmailJobTarget(data.passwordResetTokenId);
-
-  if (!target) {
-    return { status: "skipped", reason: "password_reset_token_not_found" };
-  }
-
-  if (target.usedAt) {
-    return { status: "skipped", reason: "password_reset_token_used" };
-  }
-
-  // The worker only sets sentAt after the provider accepts the send request,
-  // so this email was already submitted. This is how a job recovered after a
-  // crash completes instead of re-submitting.
-  if (target.sentAt) {
-    return { status: "skipped", reason: "password_reset_already_submitted" };
-  }
-
-  // Also covers superseded requests: creating a new request expires older ones.
-  if (target.expiresAt.getTime() <= Date.now()) {
-    return { status: "skipped", reason: "password_reset_token_expired" };
-  }
-
-  if (!data.secret) {
-    // Unsent reset with a missing secret cannot be recovered; fail into the
-    // retry/dead-letter cycle so it gets operational attention.
-    throw new Error(
-      `Email job for password reset token ${data.passwordResetTokenId} has no sealed payload secret.`,
-    );
-  }
-
-  const submission = await sendPasswordResetEmail({
-    email: target.email,
-    fullName: target.fullName,
-    resetUrl: openEmailJobSecret(data.secret),
-    attempt: data.attempt,
-    signal,
-  });
-
-  if (signal.aborted) {
-    // pg-boss expired this job mid-send and will retry it; stop before
-    // touching state the retry now owns. The idempotency key reconciles the
-    // provider side if this send actually landed.
-    throw new Error(`Email job ${data.passwordResetTokenId} expired during send.`);
-  }
-
-  await markPasswordResetEmailSubmitted(data.passwordResetTokenId);
 
   return { status: "submitted", providerMessageId: submission?.id ?? null };
 }

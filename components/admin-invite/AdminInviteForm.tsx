@@ -115,9 +115,13 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
         </Select>
       </div>
 
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="sendInviteEmail" defaultChecked disabled={pending} />
+        Send invitation email
+      </label>
       <div className="flex items-center gap-3">
         <Button type="submit" size="lg" disabled={pending}>
-          {pending ? verbiage.adminInvite.actions.sending : verbiage.adminInvite.actions.send}
+          {pending ? "Creating invitation..." : "Create invitation"}
         </Button>
       </div>
     </form>

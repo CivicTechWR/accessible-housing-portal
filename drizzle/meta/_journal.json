@@ -75,8 +75,8 @@
     {
       "idx": 10,
       "version": "7",
-      "when": 1788577545012,
-      "tag": "20260905030545_password_reset_tokens",
+      "when": 1788634045407,
+      "tag": "20260905184725_better_auth",
       "breakpoints": true
     }
   ]

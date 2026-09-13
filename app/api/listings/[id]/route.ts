@@ -20,6 +20,7 @@ export const { GET, PUT, PATCH } = route({
     .input({ params: listingParamsSchema })
     .outputs([
       { status: 200, contentType: "application/json", body: listingByIdResponseSchema },
+      { status: 401, contentType: "application/json", body: errorMessageSchema },
       { status: 404, contentType: "application/json", body: errorMessageSchema },
       { status: 400, contentType: "application/json", body: errorMessageSchema },
     ])

@@ -20,7 +20,6 @@ export function RecentInvitesList({ invites }: RecentInvitesListProps) {
     <section className="space-y-3 rounded-lg border bg-card p-4 text-card-foreground">
       <header className="space-y-0.5">
         <h2 className="font-heading text-sm font-semibold text-foreground">{copy.heading}</h2>
-        <p className="text-xs text-muted-foreground">{copy.description}</p>
       </header>
 
       {invites.length === 0 ? (

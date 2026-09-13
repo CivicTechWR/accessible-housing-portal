@@ -1,21 +1,21 @@
 # Testing And Quality
 
-This project uses Jest for tests, oxlint for linting, oxfmt for formatting, TypeScript strictness, and Husky hooks for local quality gates.
+This project uses Jest for unit tests, the Node.js test runner for PostgreSQL integration tests, oxlint for linting, oxfmt for formatting, TypeScript strictness, and Husky hooks for local quality gates.
 
 ## Commands
 
-| Command                    | Purpose                                  |
-| -------------------------- | ---------------------------------------- |
-| `npm test`                 | Run all Jest tests.                      |
-| `npm run test:unit`        | Run tests matching `.unit.test.`.        |
-| `npm run test:integration` | Run tests matching `.integration.test.`. |
-| `npm run typecheck`        | Run `tsc --noEmit`.                      |
-| `npm run lint`             | Run oxlint.                              |
-| `npm run lint:fix`         | Apply oxlint fixes.                      |
-| `npm run format`           | Format with oxfmt.                       |
-| `npm run format:check`     | Check formatting.                        |
-| `npm run build`            | Run a production Next.js build.          |
-| `npm run lockfile:check`   | Check package lockfile integrity.        |
+| Command                    | Purpose                                                       |
+| -------------------------- | ------------------------------------------------------------- |
+| `npm test`                 | Run all Jest tests.                                           |
+| `npm run test:unit`        | Run tests matching `.unit.test.`.                             |
+| `npm run test:integration` | Run `test/integration/*.test.ts` against `TEST_DATABASE_URL`. |
+| `npm run typecheck`        | Run `tsc --noEmit`.                                           |
+| `npm run lint`             | Run oxlint.                                                   |
+| `npm run lint:fix`         | Apply oxlint fixes.                                           |
+| `npm run format`           | Format with oxfmt.                                            |
+| `npm run format:check`     | Check formatting.                                             |
+| `npm run build`            | Run a production Next.js build.                               |
+| `npm run lockfile:check`   | Check package lockfile integrity.                             |
 
 ## Jest Setup
 
@@ -68,13 +68,9 @@ Add focused tests when changing:
 - custom-field ordering or display behavior
 - hooks with non-trivial state transitions
 
-Password-reset concurrency tests run against PostgreSQL when `TEST_DATABASE_URL` is set. They create an isolated database, apply the migrations, and remove the database after the tests. Use a local test server and a role with permission to create databases:
+Database integration tests use `node --test` with `--conditions=react-server` and `tsx`. Set `TEST_DATABASE_URL` to a disposable PostgreSQL database before running `npm run test:integration`. The tests apply the committed migrations and exercise authentication concurrency and email delivery. Without `TEST_DATABASE_URL`, the integration suite is skipped. CI supplies a dedicated PostgreSQL service and runs both test commands.
 
-```bash
-TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run test:integration -- --runInBand
-```
-
-CI provides a PostgreSQL service for these tests. Without `TEST_DATABASE_URL`, Jest skips them.
+Use this integration pattern for behavior that depends on database transactions or locking. Keep pure business logic in focused unit tests.
 
 ## Hooks
 

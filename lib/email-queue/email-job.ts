@@ -33,8 +33,9 @@ export type AccountInviteEmailJobData = EmailJobBase & {
 
 export type PasswordResetEmailJobData = EmailJobBase & {
   type: "password_reset";
-  passwordResetTokenId: string;
-  /** Sealed reset URL; contains the raw one-time token, so never store it in plaintext. */
+  resetId: string;
+  userId: string;
+  expiresAt: string;
   secret: string;
 };
 
@@ -79,21 +80,8 @@ export function getEmailJobMatch(data: EmailJobData): Record<string, string> {
     case "account_invite":
       return { type: data.type, inviteId: data.inviteId };
     case "password_reset":
-      return { type: data.type, passwordResetTokenId: data.passwordResetTokenId };
+      return { type: data.type, resetId: data.resetId };
   }
-}
-
-export function buildPasswordResetEmailJob(params: {
-  tokenId: string;
-  resetUrl: string;
-  attempt: EmailDeliveryAttemptRef;
-}): PasswordResetEmailJobData {
-  return {
-    type: "password_reset",
-    passwordResetTokenId: params.tokenId,
-    attempt: params.attempt,
-    secret: sealEmailJobSecret(params.resetUrl),
-  };
 }
 
 export function buildAccountInviteEmailJob(params: {
@@ -143,10 +131,10 @@ export function openEmailJobSecret(sealed: string): string {
 }
 
 function getSecretKey() {
-  const authSecret = process.env.AUTH_SECRET;
+  const authSecret = process.env.EMAIL_JOB_SECRET;
 
   if (!authSecret) {
-    throw new Error("AUTH_SECRET is not set.");
+    throw new Error("EMAIL_JOB_SECRET is not set.");
   }
 
   return Buffer.from(hkdfSync("sha256", authSecret, "", SECRET_KEY_INFO, 32));

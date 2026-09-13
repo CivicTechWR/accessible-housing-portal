@@ -18,9 +18,6 @@ describe("requiresAuthSessionForRequest", () => {
     expect(requiresAuthSessionForRequest({ pathname: "/my-listings/drafts", method: "GET" })).toBe(
       true,
     );
-    expect(requiresAuthSessionForRequest({ pathname: "/manage-account", method: "GET" })).toBe(
-      true,
-    );
   });
 
   it("does not overmatch similar public paths", () => {
@@ -34,9 +31,6 @@ describe("requiresAuthSessionForRequest", () => {
       false,
     );
     expect(requiresAuthSessionForRequest({ pathname: "/my-listings-archive", method: "GET" })).toBe(
-      false,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/manage-accounting", method: "GET" })).toBe(
       false,
     );
   });

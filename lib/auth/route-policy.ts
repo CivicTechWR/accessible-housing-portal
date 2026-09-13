@@ -7,10 +7,10 @@ type RoutePattern = `/${string}`;
 
 const PROTECTED_PAGE_PATTERNS = [
   "/admin/:path*",
+  "/manage-account",
   "/listings/:path*",
   "/listing-form/:path*",
   "/my-listings/:path*",
-  "/manage-account/:path*",
 ] as const;
 
 const PROTECTED_API_PATTERNS = ["/api/admin/:path*", "/api/listings/:path*"] as const;

@@ -12,7 +12,10 @@ import { createListingHandler, getListingsHandler } from "./handlers";
 export const { GET, POST } = route({
   getListings: routeOperation({ method: "GET" })
     .input({ query: listingQuerySchema })
-    .outputs([{ status: 200, contentType: "application/json", body: listingListResponseSchema }])
+    .outputs([
+      { status: 200, contentType: "application/json", body: listingListResponseSchema },
+      { status: 401, contentType: "application/json", body: errorMessageSchema },
+    ])
     .handler(getListingsHandler),
 
   createListing: routeOperation({ method: "POST" })

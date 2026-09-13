@@ -1,3 +1,5 @@
+import { AdminAccountActions } from "@/components/admin-users/AdminAccountActions";
+import { AdminInviteActions } from "@/components/admin-users/AdminInviteActions";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -7,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { findPendingAccountInvites, type PendingAccountInviteRow } from "@/lib/auth/invite-store";
+import { findAccountInvites, type AccountInviteRow } from "@/lib/auth/invite-store";
 import { inviteStatusLabels } from "@/components/admin-invite/types";
 import { getAccountsService } from "@/lib/accounts/account.service";
 import { cn } from "@/lib/utils";
@@ -96,7 +98,7 @@ function roleBadgeVariant(role: AccountListResponse["data"][number]["role"]) {
   }
 }
 
-function inviteEmailBadgeVariant(status: PendingAccountInviteRow["status"]) {
+function inviteEmailBadgeVariant(status: AccountInviteRow["status"]) {
   return status === "failed" ? ("destructive" as const) : ("outline" as const);
 }
 
@@ -218,7 +220,7 @@ function MobileDetail({ label, children }: { label: string; children: ReactNode 
 
 export default async function AdminUsersPage() {
   const result = await getAllAccounts();
-  const pendingInvites = await findPendingAccountInvites();
+  const invites = await findAccountInvites();
 
   if (!result.ok) {
     return <PageMessage title="Unable to load users">{result.error.message}</PageMessage>;
@@ -241,12 +243,12 @@ export default async function AdminUsersPage() {
           </Button>
         </div>
 
-        <AdminDataSection title="Pending invites">
+        <AdminDataSection title="Invitations">
           <DesktopDataTable
-            columns={["Invitee", "Organization", "Role", "Status", "Invited", "Expires"]}
+            columns={["Invitee", "Organization", "Role", "Status", "Invited", "Expires", "Actions"]}
           >
-            {pendingInvites.length > 0 ? (
-              pendingInvites.map((invite) => (
+            {invites.length > 0 ? (
+              invites.map((invite) => (
                 <DesktopDataRow key={invite.id}>
                   <DesktopDataCell>
                     <div className="space-y-1">
@@ -260,7 +262,7 @@ export default async function AdminUsersPage() {
                   </DesktopDataCell>
                   <DesktopDataCell>
                     <Badge variant={inviteEmailBadgeVariant(invite.status)}>
-                      {inviteStatusLabels[invite.status]}
+                      {inviteStatusLabels[invite.status]} • {invite.lifecycle}
                     </Badge>
                   </DesktopDataCell>
                   <DesktopDataCell muted>
@@ -269,13 +271,20 @@ export default async function AdminUsersPage() {
                   <DesktopDataCell muted>
                     {formatDateTime(invite.expiresAt.toISOString())}
                   </DesktopDataCell>
+                  <DesktopDataCell>
+                    <AdminInviteActions
+                      inviteId={invite.id}
+                      available={invite.lifecycle === "pending" && invite.canResend}
+                      canResend={invite.canResend}
+                    />
+                  </DesktopDataCell>
                 </DesktopDataRow>
               ))
             ) : (
               <tr className="border-t border-border/80">
-                <td colSpan={6} className="px-4 py-8">
+                <td colSpan={7} className="px-4 py-8">
                   <EmptyState className="border-0 bg-transparent py-0">
-                    No active invites found.
+                    No invitations found.
                   </EmptyState>
                 </td>
               </tr>
@@ -283,8 +292,8 @@ export default async function AdminUsersPage() {
           </DesktopDataTable>
 
           <MobileDataList>
-            {pendingInvites.length > 0 ? (
-              pendingInvites.map((invite) => (
+            {invites.length > 0 ? (
+              invites.map((invite) => (
                 <MobileDataCard key={invite.id}>
                   <MobileDataHeader
                     title={invite.name}
@@ -295,7 +304,7 @@ export default async function AdminUsersPage() {
                           {formatRole(invite.role)}
                         </Badge>
                         <Badge variant={inviteEmailBadgeVariant(invite.status)}>
-                          {inviteStatusLabels[invite.status]}
+                          {inviteStatusLabels[invite.status]} • {invite.lifecycle}
                         </Badge>
                       </>
                     }
@@ -311,17 +320,24 @@ export default async function AdminUsersPage() {
                       {formatDateTime(invite.expiresAt.toISOString())}
                     </MobileDetail>
                   </MobileDetails>
+                  <div className="mt-4">
+                    <AdminInviteActions
+                      inviteId={invite.id}
+                      available={invite.lifecycle === "pending" && invite.canResend}
+                      canResend={invite.canResend}
+                    />
+                  </div>
                 </MobileDataCard>
               ))
             ) : (
-              <EmptyState>No active invites found.</EmptyState>
+              <EmptyState>No invitations found.</EmptyState>
             )}
           </MobileDataList>
         </AdminDataSection>
 
         <AdminDataSection title="User directory">
           <DesktopDataTable
-            columns={["User", "Organization", "Role", "Status", "Created", "Last login"]}
+            columns={["User", "Organization", "Role", "Status", "Created", "Last login", "Actions"]}
           >
             {accounts.map((account) => (
               <DesktopDataRow key={account.id}>
@@ -349,6 +365,9 @@ export default async function AdminUsersPage() {
                   </div>
                 </DesktopDataCell>
                 <DesktopDataCell muted>{formatDateTime(account.lastLoginAt)}</DesktopDataCell>
+                <DesktopDataCell>
+                  <AdminAccountActions account={account} />
+                </DesktopDataCell>
               </DesktopDataRow>
             ))}
           </DesktopDataTable>
@@ -380,6 +399,9 @@ export default async function AdminUsersPage() {
                     {formatDateTime(account.lastLoginAt)}
                   </MobileDetail>
                 </MobileDetails>
+                <div className="mt-4">
+                  <AdminAccountActions account={account} />
+                </div>
               </MobileDataCard>
             ))}
           </MobileDataList>
