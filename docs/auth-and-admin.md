@@ -40,6 +40,8 @@ Passwords must contain 12 to 128 characters. Password resets revoke sessions but
 
 Reset emails also have a per-account limit of three queued emails in the preceding hour. Requests above that limit receive the same neutral response without queuing another email. Password changes and resets do not clear this email budget. Administrator invitations use a separate delivery path.
 
+Administrator password resets share this limit. The admin action reports when the account is throttled or the email could not be queued, and confirms success only after enqueueing commits.
+
 ## Administrator setup
 
 Create the first administrator explicitly after applying migrations:

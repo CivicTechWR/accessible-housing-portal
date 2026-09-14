@@ -25,6 +25,7 @@ import {
 import { updateAccountById } from "@/lib/accounts/account.repository";
 import { auth, createAuth } from "@/lib/auth";
 import { createInvite } from "@/lib/auth/invite-service";
+import { resetEmailContext, type ResetEmailContext } from "@/lib/auth/reset-email-context";
 import { hashOpaqueToken } from "@/lib/auth/token";
 import { openEmailJobSecret, type EmailJobData } from "@/lib/email-queue/email-job";
 import { getEmailQueue, EMAIL_QUEUE } from "@/lib/email-queue/queue";
@@ -561,6 +562,12 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     `);
     assert.equal(afterReset[0]?.count, 3);
 
+    const adminReset: ResetEmailContext = { userId: user.id };
+    await resetEmailContext.run(adminReset, () =>
+      auth.api.requestPasswordReset({ body: { email: user.email } }),
+    );
+    assert.equal(adminReset.outcome, "throttled");
+
     const [delivery] = await db
       .select()
       .from(emailDeliveries)
@@ -580,6 +587,17 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
       where data->>'userId' = ${user.id} and data->>'type' = 'password_reset'
     `);
     assert.equal(afterWindow[0]?.count, 4);
+
+    const resumedAdminReset: ResetEmailContext = { userId: user.id };
+    await resetEmailContext.run(resumedAdminReset, () =>
+      auth.api.requestPasswordReset({ body: { email: user.email } }),
+    );
+    assert.equal(resumedAdminReset.outcome, "queued");
+    const afterAdminReset = await db.execute<{ count: number }>(sql`
+      select count(*)::int as count from pgboss.job
+      where data->>'userId' = ${user.id} and data->>'type' = 'password_reset'
+    `);
+    assert.equal(afterAdminReset[0]?.count, 5);
   });
 
   it("awaits invitation creation and returns its usable link", async () => {
