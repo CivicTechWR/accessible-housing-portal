@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { userInvites, users } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { requireAdminSession } from "@/lib/auth/session";
+import { resetEmailContext, type ResetEmailContext } from "@/lib/auth/reset-email-context";
 import { createInvite } from "@/lib/auth/invite-service";
 import { openEmailJobSecret } from "@/lib/email-queue/email-job";
 import { updateAccountByIdService } from "@/lib/accounts/account.service";
@@ -51,7 +52,14 @@ export async function manageAccountAction(
   } else if (action === "reset-password") {
     if (user.status !== "active")
       return { error: "Only active accounts can receive a password reset." };
-    await auth.api.requestPasswordReset({ body: { email: user.email } });
+    const context: ResetEmailContext = { userId: user.id };
+    await resetEmailContext.run(context, () =>
+      auth.api.requestPasswordReset({ body: { email: user.email } }),
+    );
+    if (context.outcome === "throttled")
+      return { error: "This account has reached its reset email limit. Try again in an hour." };
+    if (context.outcome !== "queued")
+      return { error: "Unable to queue the password reset email. Try again." };
   } else if (action === "revoke-sessions") {
     const context = await auth.$context;
     await context.internalAdapter.deleteUserSessions(user.id);

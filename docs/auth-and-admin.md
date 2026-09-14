@@ -38,6 +38,10 @@ Password sign-in requires a second factor when enabled. A passkey uses the devic
 
 Passwords must contain 12 to 128 characters. Password resets revoke sessions but do not remove the user's authenticator or passkeys. Reset links and other verification identifiers use Better Auth's hashed storage. Rate limiting uses PostgreSQL so it is shared across application instances.
 
+Reset emails also have a per-account limit of three queued emails in the preceding hour. Requests above that limit receive the same neutral response without queuing another email. Password changes and resets do not clear this email budget. Administrator invitations use a separate delivery path.
+
+Administrator password resets share this limit. The admin action reports when the account is throttled or the email could not be queued, and confirms success only after enqueueing commits.
+
 ## Administrator setup
 
 Create the first administrator explicitly after applying migrations:
