@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { Map, Marker, Popup } from "@vis.gl/react-maplibre";
+import { Map, Marker, Popup, type ErrorEvent } from "@vis.gl/react-maplibre";
 import type { Listing } from "@/components/listing-card-list/ListingsCardList";
 import { ListingsCard } from "../listings-card/ListingsCard";
 
@@ -12,6 +12,7 @@ const DEFAULT_VIEW = { longitude: -80.52, latitude: 43.46, zoom: 12 } as const;
 
 export function MapView({ listings }: { listings: Listing[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
   const mappableListings = useMemo(
     () =>
       listings.filter(
@@ -30,14 +31,33 @@ export function MapView({ listings }: { listings: Listing[] }) {
     setSelectedId((prev) => (prev === id ? null : id));
   }, []);
 
+  if (mapUnavailable) {
+    return (
+      <div
+        role="status"
+        className="flex h-full items-center justify-center bg-muted/30 p-6 text-center text-sm text-muted-foreground"
+      >
+        The map is unavailable in this browser. Switch to List view to browse listings.
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full min-h-0 w-full flex-1">
       <div className="absolute inset-0">
         <Map
+          workerUrl="/maplibre/maplibre-gl-worker.mjs"
           mapStyle={OPENFREEMAP_STYLE}
           initialViewState={DEFAULT_VIEW}
           style={{ width: "100%", height: "100%" }}
           scrollZoom={true}
+          onError={({ error }: ErrorEvent) => {
+            if (error.name === "GPUInitializationError") {
+              setMapUnavailable(true);
+            } else {
+              console.error(error);
+            }
+          }}
         >
           {mappableListings.map((listing) => (
             <Marker
