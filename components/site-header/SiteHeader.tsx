@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { HeaderAccountMenu } from "@/components/site-header/HeaderAccountMenu";
 import { HeaderMobileMenu } from "@/components/site-header/HeaderMobileMenu";
+import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
 import { getOptionalSession } from "@/lib/auth/session";
 
 export async function SiteHeader() {
@@ -20,6 +21,10 @@ export async function SiteHeader() {
           <Link href="/" className="text-lg font-semibold tracking-tight text-primary-foreground">
             WR Housing Bridge
           </Link>
+
+          <div className="absolute left-0 hidden lg:block">
+            <ThemeToggle />
+          </div>
 
           <nav className="absolute right-0 hidden items-center gap-2 lg:flex">
             {isSignedIn ? (

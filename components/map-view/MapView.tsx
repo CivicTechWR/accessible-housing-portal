@@ -2,15 +2,18 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { Map, Marker, Popup } from "@vis.gl/react-maplibre";
+import { useTheme } from "next-themes";
 import type { Listing } from "@/components/listing-card-list/ListingsCardList";
 import { ListingsCard } from "../listings-card/ListingsCard";
 
-const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const OPENFREEMAP_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const OPENFREEMAP_DARK_STYLE = "https://tiles.openfreemap.org/styles/fiord";
 
 /** Default view centred on Waterloo Region */
 const DEFAULT_VIEW = { longitude: -80.52, latitude: 43.46, zoom: 12 } as const;
 
 export function MapView({ listings }: { listings: Listing[] }) {
+  const { resolvedTheme } = useTheme();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const mappableListings = useMemo(
     () =>
@@ -34,7 +37,7 @@ export function MapView({ listings }: { listings: Listing[] }) {
     <div className="relative h-full min-h-0 w-full flex-1">
       <div className="absolute inset-0">
         <Map
-          mapStyle={OPENFREEMAP_STYLE}
+          mapStyle={resolvedTheme === "dark" ? OPENFREEMAP_DARK_STYLE : OPENFREEMAP_LIGHT_STYLE}
           initialViewState={DEFAULT_VIEW}
           style={{ width: "100%", height: "100%" }}
           scrollZoom={true}
