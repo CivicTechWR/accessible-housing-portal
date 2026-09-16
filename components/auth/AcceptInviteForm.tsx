@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { AuthCard } from "@/components/auth/AuthCard";
+import { CommunityAgreement } from "@/components/auth/CommunityAgreement";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -14,6 +15,7 @@ export function AcceptInviteForm({ token, email }: { token: string; email?: stri
   );
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
+  const [agreementAccepted, setAgreementAccepted] = useState(!email);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const element = event.currentTarget;
@@ -56,6 +58,11 @@ export function AcceptInviteForm({ token, email }: { token: string; email?: stri
         </Button>
       </AuthCard>
     );
+
+  if (!agreementAccepted) {
+    return <CommunityAgreement onAccept={() => setAgreementAccepted(true)} />;
+  }
+
   return (
     <form onSubmit={submit} noValidate>
       <AuthCard
