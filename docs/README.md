@@ -22,7 +22,7 @@ Affordable Housing Portal is a single Next.js App Router application. Pages, API
 
 The main runtime stack is:
 
-- Next.js `16.2.6` with App Router and root-level `proxy.ts`
+- Next.js `16.3.0` with App Router and root-level `proxy.ts`
 - React `19.2.4`
 - TypeScript `6.0.2`
 - Tailwind CSS 4 and shadcn/ui primitives
