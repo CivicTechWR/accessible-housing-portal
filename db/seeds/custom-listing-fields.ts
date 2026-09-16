@@ -686,4 +686,23 @@ export const customListingFieldSeed = [
     sortOrder: 40,
     options: null,
   },
+
+  // ── OTHER ──────────────────────────────────────────────────────────
+  {
+    key: "housing_provider_open_to_accessibility_modifications",
+    label: "Housing Provider Open to Accessibility Modifications",
+    description:
+      "The housing provider is willing to discuss modifications to help meet a tenant's accessibility needs.",
+    fieldType: "boolean",
+    category: "OTHER",
+    appliesTo: "unit",
+    helpText:
+      "Select if the housing provider is open to discussing reasonable accessibility modifications for this listing.",
+    placeholder: null,
+    isPublic: true,
+    isFilterable: false,
+    isRequired: false,
+    sortOrder: 41,
+    options: null,
+  },
 ] satisfies SeedCustomListingField[];
