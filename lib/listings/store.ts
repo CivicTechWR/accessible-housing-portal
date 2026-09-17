@@ -56,6 +56,10 @@ export function getListingApplicationUrl(applicationUrl: string | null | undefin
   return applicationUrl?.trim() || undefined;
 }
 
+export function getOptionalListingText(value: string | null | undefined) {
+  return value?.trim() || undefined;
+}
+
 export function getEnabledBooleanCustomFieldKeys(customFields: ListingCustomFields) {
   return Object.entries(customFields)
     .filter(([, value]) => value === true)
@@ -181,6 +185,7 @@ export function buildDuplicateListingPlan(input: {
       squareFeet: copiesUnit ? source.squareFeet : null,
       monthlyRentCents: copiesUnit ? source.monthlyRentCents : 0,
       leaseTermMonths: copiesUnit ? source.leaseTermMonths : null,
+      depositInfo: copiesUnit ? source.depositInfo : null,
       utilitiesIncluded: copiesUnit ? source.utilitiesIncluded : [],
       maxIncomeCents: copiesUnit ? source.maxIncomeCents : null,
       buildingType: copiesBuilding ? source.buildingType : null,
