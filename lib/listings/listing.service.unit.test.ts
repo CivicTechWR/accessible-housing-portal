@@ -38,6 +38,7 @@ const archivedListing: ListingRecord = {
   monthlyRentCents: 145000,
   availableOn: null,
   leaseTermMonths: 12,
+  depositInfo: null,
   utilitiesIncluded: ["water"],
   maxIncomeCents: null,
   applicationUrl: null,
