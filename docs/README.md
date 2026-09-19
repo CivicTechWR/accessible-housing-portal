@@ -1,6 +1,6 @@
 # Developer Documentation
 
-This directory is the developer reference for Affordable Housing Portal. It is written for new contributors who need to understand how the app fits together before changing code.
+This directory is the developer reference for HomeHub. It is written for new contributors who need to understand how the app fits together before changing code.
 
 ## Start Here
 
@@ -18,7 +18,7 @@ This directory is the developer reference for Affordable Housing Portal. It is w
 
 ## System At A Glance
 
-Affordable Housing Portal is a single Next.js App Router application. Pages, API routes, server actions, and route groups live under `app/`. Shared product UI lives under `components/`. Server-side domain logic lives under `lib/`. Database shape lives in `db/schema.ts`, with generated migrations under `drizzle/`.
+HomeHub is a single Next.js App Router application. Pages, API routes, server actions, and route groups live under `app/`. Shared product UI lives under `components/`. Server-side domain logic lives under `lib/`. Database shape lives in `db/schema.ts`, with generated migrations under `drizzle/`.
 
 The main runtime stack is:
 

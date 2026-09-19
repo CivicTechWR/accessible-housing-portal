@@ -44,7 +44,7 @@ describe("sendEmail", () => {
     process.env = {
       ...ORIGINAL_ENV,
       RESEND_API_KEY: "re_test_key",
-      EMAIL_FROM: "Affordable Housing Portal <no-reply@example.org>",
+      EMAIL_FROM: "HomeHub <no-reply@example.org>",
     };
     ResendMock.mockClear();
     sendMock.mockReset();
@@ -68,7 +68,7 @@ describe("sendEmail", () => {
     expect(ResendMock).toHaveBeenCalledWith("re_test_key");
     expect(sendMock).toHaveBeenCalledWith(
       {
-        from: "Affordable Housing Portal <no-reply@example.org>",
+        from: "HomeHub <no-reply@example.org>",
         to: "tenant@example.org",
         subject: "Subject line",
         text: "Plain text body",
