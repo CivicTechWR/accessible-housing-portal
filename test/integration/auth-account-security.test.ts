@@ -54,6 +54,13 @@ function request(path: string, body: unknown, ip: string, cookie = "") {
   });
 }
 
+function sessionCookie(response: Response) {
+  return response.headers
+    .getSetCookie()
+    .map((value) => value.split(";")[0])
+    .join("; ");
+}
+
 async function createUser(status: "active" | "invited") {
   const id = crypto.randomUUID();
   const email = `${id}@example.test`;
@@ -224,13 +231,131 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     }
     assert.deepEqual(statuses, [400, 400, 400, 429, 429]);
     assert.ok(await context.internalAdapter.findVerificationValue(identifier));
+    assert.ok(await auth.api.getSession({ headers: new Headers({ cookie }) }));
 
     const changed = await POST(
-      request("change-password", { currentPassword: password, newPassword }, "192.0.2.219", cookie),
+      request(
+        "change-password",
+        { currentPassword: password, newPassword, revokeOtherSessions: false },
+        "192.0.2.219",
+        cookie,
+      ),
     );
     assert.equal(changed.status, 200);
     assert.equal(await context.internalAdapter.findVerificationValue(identifier), null);
+    assert.equal(await auth.api.getSession({ headers: new Headers({ cookie }) }), null);
   });
+
+  for (const path of ["change-password", "reset-password"] as const) {
+    it(`${path} revokes every session and permits a fresh sign-in with the new password`, async () => {
+      const user = await createUser("active");
+      const cookies: string[] = [];
+      for (const ip of ["192.0.2.10", "192.0.2.11"]) {
+        const signedIn = await POST(request("sign-in/email", { email: user.email, password }, ip));
+        assert.equal(signedIn.status, 200);
+        const cookie = sessionCookie(signedIn);
+        assert.ok(await auth.api.getSession({ headers: new Headers({ cookie }) }));
+        cookies.push(cookie);
+      }
+      const newPassword = "Replacement-password-413!";
+      const token = await createResetToken(user.id);
+      const body =
+        path === "change-password"
+          ? { currentPassword: password, newPassword }
+          : { token, newPassword };
+      if (path === "reset-password") {
+        const invalid = await POST(
+          request(path, { token: "invalid-reset-token", newPassword }, "192.0.2.12"),
+        );
+        assert.equal(invalid.status, 400);
+        for (const cookie of cookies) {
+          assert.ok(await auth.api.getSession({ headers: new Headers({ cookie }) }));
+        }
+      }
+
+      const response = await POST(request(path, body, "192.0.2.13", cookies[0]));
+      assert.equal(response.status, 200);
+      assert.equal(
+        (await db.select().from(sessions).where(eq(sessions.userId, user.id))).length,
+        0,
+      );
+      if (path === "change-password") {
+        assert.equal((await response.json()).token, null);
+        assert.ok(
+          response.headers
+            .getSetCookie()
+            .some(
+              (cookie) =>
+                cookie.startsWith("better-auth.session_token=;") && cookie.includes("Max-Age=0"),
+            ),
+        );
+      }
+      for (const cookie of cookies) {
+        assert.equal(await auth.api.getSession({ headers: new Headers({ cookie }) }), null);
+        const mutation = await POST(
+          request("update-user", { name: "Revoked session" }, "192.0.2.14", cookie),
+        );
+        assert.equal(mutation.status, 401);
+      }
+      const rejected = await POST(
+        request("sign-in/email", { email: user.email, password }, "192.0.2.15"),
+      );
+      assert.equal(rejected.status, 401);
+      const signedIn = await POST(
+        request("sign-in/email", { email: user.email, password: newPassword }, "192.0.2.16"),
+      );
+      assert.equal(signedIn.status, 200);
+      const session = await auth.api.getSession({
+        headers: new Headers({ cookie: sessionCookie(signedIn) }),
+      });
+      assert.equal(session?.user.id, user.id);
+      assert.equal(session.user.name, "Integration user");
+      await db.delete(authRateLimits).where(inArray(authRateLimits.key, rateLimitKeys));
+    });
+
+    it(`${path} rolls back the password if session revocation fails`, async () => {
+      const user = await createUser("active");
+      const signedIn = await POST(
+        request("sign-in/email", { email: user.email, password }, "192.0.2.17"),
+      );
+      assert.equal(signedIn.status, 200);
+      const cookie = sessionCookie(signedIn);
+      const session = await auth.api.getSession({ headers: new Headers({ cookie }) });
+      assert.ok(session);
+      const token = await createResetToken(user.id);
+      const [credential] = await db.select().from(accounts).where(eq(accounts.userId, user.id));
+      await db.execute(sql`
+        create table session_revocation_guard (session_id uuid references sessions(id))
+      `);
+      try {
+        // Make the real database reject deletion after the password has been written.
+        await db.execute(sql`insert into session_revocation_guard values (${session.session.id})`);
+        const newPassword = "Rolled-back-password-413!";
+        const response = await POST(
+          request(
+            path,
+            path === "change-password"
+              ? { currentPassword: password, newPassword }
+              : { token, newPassword },
+            "192.0.2.18",
+            cookie,
+          ),
+        );
+        assert.equal(response.status, 500);
+        const [unchanged] = await db.select().from(accounts).where(eq(accounts.userId, user.id));
+        assert.equal(unchanged?.password, credential?.password);
+        assert.ok(await auth.api.getSession({ headers: new Headers({ cookie }) }));
+        assert.ok(
+          await (
+            await auth.$context
+          ).internalAdapter.findVerificationValue(`reset-password:${token}`),
+        );
+      } finally {
+        await db.execute(sql`drop table session_revocation_guard`);
+        await db.delete(authRateLimits).where(inArray(authRateLimits.key, rateLimitKeys));
+      }
+    });
+  }
 
   it("rejects an invited status update waiting behind invitation acceptance", async () => {
     const user = await createUser("invited");
@@ -341,7 +466,7 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
           null,
         );
         const remaining = await db.select().from(sessions).where(eq(sessions.userId, user.id));
-        assert.equal(remaining.length, !resetFirst && operation === "change-password" ? 1 : 0);
+        assert.equal(remaining.length, 0);
         await db.delete(authRateLimits).where(inArray(authRateLimits.key, rateLimitKeys));
       });
     }

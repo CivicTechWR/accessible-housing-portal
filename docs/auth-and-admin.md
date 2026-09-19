@@ -28,7 +28,7 @@ Accepting a valid invitation sets the password through Better Auth, marks the em
 
 `/manage-account` lets users:
 
-- Change their password and sign out other sessions.
+- Change their password and sign out all sessions, including the current browser.
 - Add or remove passkeys.
 - Enable an authenticator app by scanning a QR code and verifying a TOTP code.
 - Save or replace single-use recovery codes and disable authenticator verification with their password.
@@ -36,7 +36,7 @@ Accepting a valid invitation sets the password through Better Auth, marks the em
 
 Password sign-in requires a second factor when enabled. A passkey uses the device's verification and does not prompt for an additional authenticator code. Enrollment requires an authenticated session. No SMS, paid dashboard, or managed Better Auth service is configured.
 
-Passwords must contain 12 to 128 characters. Password resets revoke sessions but do not remove the user's authenticator or passkeys. Reset links and other verification identifiers use Better Auth's hashed storage. Rate limiting uses PostgreSQL so it is shared across application instances.
+Passwords must contain 12 to 128 characters. Password changes and resets delete all stored sessions in the same transaction as the password update and require a fresh sign-in. The server enforces this even when a client omits or disables `revokeOtherSessions`. Failed changes and invalid reset links leave sessions valid. Neither path removes the user's authenticator or passkeys. Reset links and other verification identifiers use Better Auth's hashed storage. Rate limiting uses PostgreSQL so it is shared across application instances.
 
 Reset emails also have a per-account limit of three queued emails in the preceding hour. Requests above that limit receive the same neutral response without queuing another email. Password changes and resets do not clear this email budget. Administrator invitations use a separate delivery path.
 

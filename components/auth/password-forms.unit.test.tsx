@@ -30,7 +30,7 @@ it("associates reset validation with each field and focuses the first error", ()
   expect(authClient.resetPassword).not.toHaveBeenCalled();
 });
 
-it("shows a rejected current password beside its input and clears it on retry", async () => {
+it("shows a rejected current password and requires sign-in after a successful retry", async () => {
   jest
     .mocked(authClient.changePassword)
     .mockResolvedValueOnce({
@@ -52,9 +52,15 @@ it("shows a rejected current password beside its input and clears it on retry", 
   );
   expect(current).toHaveAttribute("aria-invalid", "true");
   expect(current).toHaveFocus();
+  expect(screen.queryByRole("link", { name: "Go to sign in" })).not.toBeInTheDocument();
   fireEvent.change(current, { target: { value: "Correct-password" } });
   fireEvent.click(screen.getByRole("button", { name: "Change password" }));
-  await screen.findByText("Password changed. Other sessions have been signed out.");
-  expect(current).toHaveAttribute("aria-invalid", "false");
-  expect(current).not.toHaveAttribute("aria-describedby");
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "All sessions have been signed out. Sign in with your new password to continue.",
+  );
+  expect(screen.getByRole("link", { name: "Go to sign in" })).toHaveAttribute(
+    "href",
+    "/sign-in?callbackUrl=/manage-account",
+  );
+  expect(screen.queryByRole("button", { name: "Change password" })).not.toBeInTheDocument();
 });

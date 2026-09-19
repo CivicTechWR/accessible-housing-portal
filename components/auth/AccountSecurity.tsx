@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { authClient } from "@/lib/auth-client";
+import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -10,6 +11,7 @@ export function AccountSecurity() {
   const { data: session } = authClient.useSession();
   const { data: passkeys, refetch } = authClient.useListPasskeys();
   const [message, setMessage] = useState("");
+  const [passwordChanged, setPasswordChanged] = useState(false);
   const [passkeyMessage, setPasskeyMessage] = useState("");
   const [passwordErrors, setPasswordErrors] = useState<{
     password?: string;
@@ -92,7 +94,6 @@ export function AccountSecurity() {
       const result = await authClient.changePassword({
         currentPassword,
         newPassword,
-        revokeOtherSessions: true,
       });
       if (result.error?.code === "INVALID_PASSWORD") {
         setPasswordErrors({ password: "Your current password is incorrect." });
@@ -106,7 +107,7 @@ export function AccountSecurity() {
       }
       check(result.error);
       form.reset();
-      setMessage("Password changed. Other sessions have been signed out.");
+      setPasswordChanged(true);
     });
   }
 
@@ -131,6 +132,21 @@ export function AccountSecurity() {
       }
       form.reset();
     });
+  }
+
+  if (passwordChanged) {
+    return (
+      <div role="status">
+        <AuthCard
+          title="Password changed"
+          description="All sessions have been signed out. Sign in with your new password to continue."
+        >
+          <Button asChild>
+            <a href="/sign-in?callbackUrl=/manage-account">Go to sign in</a>
+          </Button>
+        </AuthCard>
+      </div>
+    );
   }
 
   return (

@@ -2,6 +2,7 @@ import "server-only";
 
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
+import { deleteSessionCookie } from "better-auth/cookies";
 import { nextCookies } from "better-auth/next-js";
 import { twoFactor } from "better-auth/plugins";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
@@ -153,6 +154,10 @@ export function createAuth(
               .for("update");
           }
         }
+        if (ctx.path === "/change-password") {
+          // Revoke all sessions after success without Better Auth issuing a replacement.
+          return { context: { body: { ...ctx.body, revokeOtherSessions: false } } };
+        }
         if (ctx.path !== "/reset-password") return;
         const token = ctx.body?.token ?? ctx.query?.token;
         if (typeof token !== "string") return;
@@ -194,8 +199,10 @@ export function createAuth(
             typeof changedUser.id !== "string"
           )
             return;
-          // Only a successful password change retires outstanding reset links.
+          // The route's transaction commits the password and revocation together.
+          await database.delete(sessions).where(eq(sessions.userId, changedUser.id));
           await database.delete(verifications).where(eq(verifications.value, changedUser.id));
+          deleteSessionCookie(ctx);
           return;
         }
         const returned: unknown = ctx.context.returned;
