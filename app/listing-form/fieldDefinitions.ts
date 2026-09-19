@@ -83,7 +83,7 @@ export const CORE_FIELD_CATEGORIES = [
     key: "application",
     displayName: "How to apply",
     description:
-      "Applications happen outside the portal. Add application contacts and explain the next steps for searchers.",
+      "Applications happen outside the portal. Add application contacts and any other information applicants should know.",
   },
 ] as const;
 
@@ -315,13 +315,13 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "applicationInstructions",
-    displayName: "Application instructions and next steps",
+    displayName: "Additional application information",
     fieldType: "textarea",
     category: "application",
     isRequired: false,
     sortOrder: 22,
     colSpan: 2,
     helpText:
-      "Explain how to apply, how to book a viewing, what happens after a viewing, and the expected response time.",
+      "Share anything else applicants should know, such as required documents, viewing arrangements, or response times. This appears on the listing as a note from you.",
   },
 ];
