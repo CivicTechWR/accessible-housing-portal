@@ -108,7 +108,7 @@ Details include:
 - image URLs
 - relative time
 - grouped feature categories
-- contact information when all contact fields are present
+- contact information when name, email, and phone are present, including the optional contact role
 - an Apply button when `applicationUrl` is present
 - a direct-contact instruction when complete contact details exist but no online application URL is set
 - a check-back-later message when neither contact nor online application details are available
@@ -186,7 +186,7 @@ Built-in listing fields are persisted in normalized columns on `listings` or `pr
 
 - title, description, status, and unit number
 - building type, bedrooms, bathrooms, square feet, rent, availability, lease term, and included utilities
-- application URL and contact fields
+- application URL and contact fields, including an optional free-text contact role
 - property name and address fields
 
 `lib/listings/store.ts` maps selected admin-configured accessibility features into `listings.custom_fields`. Current authoring writes selected public boolean feature definitions as boolean keys where `custom_fields[definition.key]` is `true`.
@@ -194,6 +194,12 @@ Built-in listing fields are persisted in normalized columns on `listings` or `pr
 Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighborhood, and coordinates while preserving omitted server-managed neighborhood and coordinate data. New listings published without an availability date retain the available-today default.
 
 If a new listing field must be searchable, sortable, joined, or constrained at scale, prefer a normalized column. If it is project-configurable feature metadata, prefer `listing_field_definitions` plus `customFields`.
+
+### Contact role
+
+The Property & Contact Info section accepts an optional contact role, such as "Property manager" or "Leasing coordinator". The preview and listing details show the role with the contact name. Existing listings can leave it blank.
+
+The role is stored in `properties.contact_role`. Listing mutation payloads accept `contact.role`; omitting it preserves the saved role on updates, while `null` clears it. The editor returns `contactRole`, and the form sends `null` when a lister clears it. Duplication copies the role with building information for `all` and `building` scopes and leaves it blank for `unit` scope.
 
 ## Adding A Listing Feature
 

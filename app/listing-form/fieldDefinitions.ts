@@ -243,12 +243,21 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     sortOrder: 16,
   },
   {
+    key: "contactRole",
+    displayName: "Contact Role",
+    fieldType: "text",
+    category: "property_info",
+    isRequired: false,
+    sortOrder: 17,
+    placeholder: "e.g. Property manager",
+  },
+  {
     key: "contactEmail",
     displayName: "Contact Email",
     fieldType: "email",
     category: "property_info",
     isRequired: true,
-    sortOrder: 17,
+    sortOrder: 18,
   },
   {
     key: "contactPhone",
@@ -256,7 +265,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "tel",
     category: "property_info",
     isRequired: true,
-    sortOrder: 18,
+    sortOrder: 19,
   },
   {
     key: "applicationUrl",
@@ -264,7 +273,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "url",
     category: "property_info",
     isRequired: false,
-    sortOrder: 19,
+    sortOrder: 20,
     placeholder: "https://example.org/apply",
   },
 ];

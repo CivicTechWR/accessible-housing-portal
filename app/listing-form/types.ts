@@ -45,6 +45,7 @@ export const listingFormSchema = z.object({
   province: requiredTrimmedString("Province is required"),
   postalCode: requiredTrimmedString("Postal code is required"),
   contactName: requiredTrimmedString("Contact name is required"),
+  contactRole: optionalTrimmedStringToUndefined(),
   contactEmail: requiredTrimmedString("Contact email is required")
     .toLowerCase()
     .pipe(z.email("Invalid email")),
@@ -94,6 +95,7 @@ export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents" | "
   province: "",
   postalCode: "",
   contactName: "",
+  contactRole: undefined,
   contactEmail: "",
   contactPhone: "",
   applicationUrl: undefined,

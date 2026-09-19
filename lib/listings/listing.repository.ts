@@ -73,6 +73,7 @@ export type ListingRecord = {
     latitude: number | null;
     longitude: number | null;
     contactName: string | null;
+    contactRole: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
   };
@@ -198,6 +199,7 @@ export async function findListingRecordById(
         latitude: properties.latitude,
         longitude: properties.longitude,
         contactName: properties.contactName,
+        contactRole: properties.contactRole,
         contactEmail: properties.contactEmail,
         contactPhone: properties.contactPhone,
       },
@@ -386,6 +388,7 @@ export async function createDraftListing(input: { actorUserId: string }) {
         latitude: null,
         longitude: null,
         contactName: "",
+        contactRole: null,
         contactEmail: "",
         contactPhone: "",
         createdByUserId: input.actorUserId,
@@ -562,6 +565,7 @@ export async function createListing(input: {
         latitude: input.payload.address.latitude ?? null,
         longitude: input.payload.address.longitude ?? null,
         contactName: input.payload.contact.name,
+        contactRole: input.payload.contact.role ?? null,
         contactEmail: input.payload.contact.email,
         contactPhone: input.payload.contact.phone,
         createdByUserId: input.actorUserId,
@@ -650,6 +654,7 @@ export async function updateListingGraph(input: {
     latitude: number | null;
     longitude: number | null;
     contactName: string | null;
+    contactRole: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
   };
@@ -691,6 +696,7 @@ export async function updateListingGraph(input: {
         latitude: input.property.latitude,
         longitude: input.property.longitude,
         contactName: input.property.contactName,
+        contactRole: input.property.contactRole,
         contactEmail: input.property.contactEmail,
         contactPhone: input.property.contactPhone,
         updatedByUserId: input.actorUserId,

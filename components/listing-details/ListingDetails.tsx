@@ -48,6 +48,7 @@ export interface ListingDetailProps {
   sqft: number;
   utilitiesIncluded?: UtilityIncluded[];
   contactName?: string;
+  contactRole?: string;
   contactEmail?: string;
   contactPhone?: string;
   applicationUrl?: string;
@@ -76,6 +77,7 @@ export function ListingDetails({
   sqft,
   utilitiesIncluded,
   contactName,
+  contactRole,
   contactEmail,
   contactPhone,
   applicationUrl,
@@ -120,6 +122,7 @@ export function ListingDetails({
     {
       label: "Name",
       value: contactName?.trim(),
+      role: contactRole?.trim(),
     },
     {
       label: "Email",
@@ -131,7 +134,7 @@ export function ListingDetails({
       value: contactPhone?.trim(),
       href: contactPhone ? `tel:${contactPhone}` : undefined,
     },
-  ].filter((row): row is { label: string; value: string; href?: string } => Boolean(row.value));
+  ].filter((row) => Boolean(row.value));
 
   const wrapperClasses = embedded ? "w-full" : "min-h-screen bg-muted/30 px-4 py-8 sm:px-6 lg:px-8";
   const contentClasses = embedded
@@ -239,6 +242,11 @@ export function ListingDetails({
                       ) : (
                         row.value
                       )}
+                      {row.role ? (
+                        <span className="mt-1 block text-sm font-normal text-muted-foreground">
+                          {row.role}
+                        </span>
+                      ) : null}
                     </dd>
                   </div>
                 ))}
