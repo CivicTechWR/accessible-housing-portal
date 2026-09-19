@@ -616,6 +616,70 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     }
   });
 
+  it("allows only one concurrent reset when the IP has one request left", async () => {
+    boss = await getEmailQueue();
+    const targets = await Promise.all(Array.from({ length: 2 }, () => createUser("active")));
+    const ip = "192.0.2.183";
+    const key = `${ip}|/request-password-reset`;
+    for (let index = 0; index < 2; index++) {
+      const response = await POST(
+        request("request-password-reset", { email: `budget-${index}@example.test` }, ip),
+      );
+      assert.equal(response.status, 200);
+    }
+
+    const locked = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const blocker = db.transaction(async (tx) => {
+      await tx
+        .select({ id: authRateLimits.id })
+        .from(authRateLimits)
+        .where(eq(authRateLimits.key, key))
+        .for("update");
+      locked.resolve();
+      await release.promise;
+    });
+    let pending: Promise<Response>[] = [];
+    try {
+      await Promise.race([locked.promise, blocker]);
+      pending = targets.map((user) =>
+        POST(request("request-password-reset", { email: user.email }, ip)),
+      );
+      // Both requests must reach the counter before either can take the last slot.
+      const deadline = Date.now() + 5_000;
+      let waiting = 0;
+      while (Date.now() < deadline) {
+        const [row] = await db.execute<{ count: number }>(sql`
+          select count(*)::int as count from pg_stat_activity
+          where datname = current_database()
+            and wait_event_type = 'Lock' and query like '%auth_rate_limits%'
+        `);
+        waiting = row?.count ?? 0;
+        if (waiting >= 2) break;
+        await setTimeout(20);
+      }
+      assert.equal(waiting, 2);
+    } finally {
+      release.resolve();
+      await Promise.allSettled([blocker, ...pending]);
+    }
+    const responses = await Promise.all(pending);
+    assert.deepEqual(responses.map((response) => response.status).sort(), [200, 429]);
+    await Promise.all(backgroundTasks);
+    for (const [index, user] of targets.entries()) {
+      const expected = responses[index]!.status === 200 ? 1 : 0;
+      assert.equal(
+        (await db.select().from(verifications).where(eq(verifications.value, user.id))).length,
+        expected,
+      );
+      const queued = await db.execute<{ count: number }>(sql`
+        select count(*)::int as count from pgboss.job
+        where data->>'userId' = ${user.id} and data->>'type' = 'password_reset'
+      `);
+      assert.equal(queued[0]?.count, expected);
+    }
+  });
+
   it("shares a fallback reset budget when the trusted IP is missing or invalid", async () => {
     rateLimitKeys.push(
       "no-trusted-ip|/request-password-reset",
