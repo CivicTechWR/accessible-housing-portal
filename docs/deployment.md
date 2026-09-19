@@ -96,7 +96,11 @@ Use distinct `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `EMAIL_JOB_SECRET` values
 
 Configure each custom domain and its TLS certificate in Railway. Add only the DNS records Railway supplies for the selected service. For email, configure the sender-domain verification records supplied by Resend, including DKIM and SPF, and choose an appropriate DMARC policy. The web domain and sender domain need not be the same.
 
-The application uses a fixed public origin and host-only cookies. Keep production and staging cookies separate. Do not add wildcard trusted origins, cross-domain cookies, or forwarded-host trust. Rate limiting reads Railway's `X-Real-IP` header. Keep the service behind Railway's edge; any additional proxy must preserve the original Origin and supply a trustworthy client IP. See [Railway request headers](https://docs.railway.com/networking/public-networking/specs-and-limits).
+The application uses a fixed public origin and host-only cookies. Keep production and staging cookies separate. Do not add wildcard trusted origins, cross-domain cookies, or forwarded-host trust.
+
+Rate limiting trusts only Railway's edge-supplied `X-Real-IP` header. It ignores `X-Forwarded-For`, `Forwarded`, and `CF-Connecting-IP`. Keep the application origin reachable only through the trusted edge. An exposed origin would let callers forge `X-Real-IP`. Any additional proxy must preserve the original Origin and overwrite the trusted client-IP header, never pass through a caller's value or append to it. See [Railway request headers](https://docs.railway.com/networking/public-networking/specs-and-limits) and [Better Auth proxy trust](https://www.better-auth.com/docs/concepts/rate-limit#connecting-ip-address).
+
+All application instances must use the same PostgreSQL database for the `auth_rate_limits` table. See [password-reset limits](auth-and-admin.md#account-security) for the request budget and recovery period.
 
 Passkeys require HTTPS outside localhost. Because these hostnames have different registrable domains, users enroll passkeys separately on each. Use `http://localhost:<port>` consistently for local development rather than alternating between localhost and 127.0.0.1.
 

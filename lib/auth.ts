@@ -4,20 +4,11 @@ import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { twoFactor } from "better-auth/plugins";
-import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { passkey } from "@better-auth/passkey";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import {
-  accounts,
-  authRateLimits,
-  passkeys,
-  sessions,
-  twoFactors,
-  userInvites,
-  users,
-  verifications,
-} from "@/db/schema";
+import { userInvites, users, verifications } from "@/db/schema";
+import { createAuthDatabaseAdapter } from "@/lib/auth/database-adapter";
 import { queueAuthEmail } from "@/lib/auth/email";
 import { invitationEmailContext } from "@/lib/auth/invite-context";
 import { hashOpaqueToken } from "@/lib/auth/token";
@@ -42,22 +33,11 @@ export function createAuth(
     baseURL,
     secret,
     trustedOrigins: [new URL(baseURL).origin],
-    database: drizzleAdapter(database, {
-      provider: "pg",
-      transaction: database === db,
-      schema: {
-        user: users,
-        session: sessions,
-        account: accounts,
-        verification: verifications,
-        twoFactor: twoFactors,
-        passkey: passkeys,
-        rateLimit: authRateLimits,
-      },
-    }),
+    database: createAuthDatabaseAdapter(database),
     advanced: {
       database: { generateId: "uuid" },
-      ipAddress: { ipAddressHeaders: ["x-real-ip"] },
+      // Railway's edge sets X-Real-IP. Never fall back to client-supplied forwarding headers.
+      ipAddress: { ipAddressHeaders: ["x-real-ip"], ipv6Subnet: 64 },
       backgroundTasks,
     },
     user: {
@@ -92,7 +72,13 @@ export function createAuth(
       cookieCache: { enabled: false },
     },
     verification: { storeIdentifier: "hashed" },
-    rateLimit: { enabled: true, storage: "database" },
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      customRules: {
+        "/request-password-reset": { window: 60, max: 3 },
+      },
+    },
     databaseHooks: {
       verification: {
         create: {

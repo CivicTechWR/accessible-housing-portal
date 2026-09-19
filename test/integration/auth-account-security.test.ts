@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, mock } from "node:test";
 import { setTimeout } from "node:timers/promises";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -9,6 +9,7 @@ import { createOTP } from "@better-auth/utils/otp";
 import { hashPassword } from "better-auth/crypto";
 import { eq, inArray, sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import nextServer from "next/server";
 
 import { POST } from "@/app/api/auth/[...all]/route";
 import { db } from "@/db";
@@ -145,6 +146,10 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
       EMAIL_WORKER_ENABLED: "false",
     });
     await migrate(db, { migrationsFolder: "./drizzle" });
+    // Direct route calls lack Next's request scope. Capture only its after-response scheduler.
+    mock.method(nextServer, "after", (task: Parameters<typeof nextServer.after>[0]) => {
+      backgroundTasks.push(typeof task === "function" ? Promise.resolve().then(task) : task);
+    });
   });
 
   after(async () => {
@@ -168,6 +173,7 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
         await db.delete(authRateLimits).where(inArray(authRateLimits.key, rateLimitKeys));
       }
     } finally {
+      mock.restoreAll();
       await boss?.stop();
       await db.$client.end();
       if (captureDir) await rm(captureDir, { recursive: true, force: true });
@@ -507,22 +513,203 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     assert.equal((await readdir(captureDir)).length, beforeEmails.length + 1);
   });
 
+  it("limits public resets across addresses and resumes after the IP window expires", async () => {
+    boss = await getEmailQueue();
+    const user = await createUser("active");
+    const ip = "192.0.2.180";
+    let attempt = 0;
+    const submit = (email: string) => {
+      const req = request("request-password-reset", { email }, ip);
+      // These caller-controlled headers must not change the trusted edge IP's budget.
+      attempt++;
+      req.headers.set("x-forwarded-for", `198.51.100.${attempt}`);
+      req.headers.set("forwarded", `for=198.51.100.${attempt}`);
+      req.headers.set("cf-connecting-ip", `203.0.113.${attempt}`);
+      return POST(req);
+    };
+    const accepted = await submit(user.email);
+    assert.equal(accepted.status, 200);
+    const neutral = await accepted.json();
+    for (const email of ["unknown-ip-one@example.test", "unknown-ip-two@example.test"]) {
+      const response = await submit(email);
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), neutral);
+    }
+    const [budget] = await db
+      .select()
+      .from(authRateLimits)
+      .where(eq(authRateLimits.key, `${ip}|/request-password-reset`));
+    assert.ok(budget);
+    for (const email of [user.email, "unknown-ip-blocked@example.test"]) {
+      const response = await submit(email);
+      assert.equal(response.status, 429);
+      assert.deepEqual(await response.json(), {
+        message: "Too many requests. Please try again later.",
+      });
+      const retryAfter = Number(response.headers.get("x-retry-after"));
+      assert.ok(retryAfter > 0 && retryAfter <= 60);
+    }
+    await Promise.all(backgroundTasks);
+    assert.equal(
+      (await db.select().from(verifications).where(eq(verifications.value, user.id))).length,
+      1,
+    );
+    const queued = await db.execute<{ count: number }>(sql`
+      select count(*)::int as count from pgboss.job
+      where data->>'userId' = ${user.id} and data->>'type' = 'password_reset'
+    `);
+    assert.equal(queued[0]?.count, 1);
+    const [blockedBudget] = await db
+      .select()
+      .from(authRateLimits)
+      .where(eq(authRateLimits.key, budget.key));
+    assert.equal(blockedBudget?.lastRequest, budget.lastRequest);
+
+    const otherIp = await POST(
+      request("request-password-reset", { email: user.email }, "192.0.2.181"),
+    );
+    assert.equal(otherIp.status, 200);
+    await db
+      .update(authRateLimits)
+      .set({ lastRequest: Date.now() - 60_001 })
+      .where(eq(authRateLimits.key, budget.key));
+    const resumed = await submit(user.email);
+    assert.equal(resumed.status, 200);
+    assert.deepEqual(await resumed.json(), neutral);
+    await Promise.all(backgroundTasks);
+    assert.equal(
+      (await db.select().from(verifications).where(eq(verifications.value, user.id))).length,
+      3,
+    );
+    const afterWindow = await db.execute<{ count: number }>(sql`
+      select count(*)::int as count from pgboss.job
+      where data->>'userId' = ${user.id} and data->>'type' = 'password_reset'
+    `);
+    assert.equal(afterWindow[0]?.count, 3);
+  });
+
+  it("shares the public reset budget across concurrent auth instances", async () => {
+    boss = await getEmailQueue();
+    const targets = await Promise.all(Array.from({ length: 6 }, () => createUser("active")));
+    // Each POST constructs a new auth instance, all backed by the real database.
+    const responses = await Promise.all(
+      targets.map((user) =>
+        POST(request("request-password-reset", { email: user.email }, "192.0.2.182")),
+      ),
+    );
+    assert.deepEqual(
+      responses.map((response) => response.status).sort(),
+      [200, 200, 200, 429, 429, 429],
+    );
+    await Promise.all(backgroundTasks);
+    for (const [index, user] of targets.entries()) {
+      const expected = responses[index]!.status === 200 ? 1 : 0;
+      assert.equal(
+        (await db.select().from(verifications).where(eq(verifications.value, user.id))).length,
+        expected,
+      );
+      const queued = await db.execute<{ count: number }>(sql`
+        select count(*)::int as count from pgboss.job
+        where data->>'userId' = ${user.id} and data->>'type' = 'password_reset'
+      `);
+      assert.equal(queued[0]?.count, expected);
+    }
+  });
+
+  it("allows only one concurrent reset when the IP has one request left", async () => {
+    boss = await getEmailQueue();
+    const targets = await Promise.all(Array.from({ length: 2 }, () => createUser("active")));
+    const ip = "192.0.2.183";
+    const key = `${ip}|/request-password-reset`;
+    for (let index = 0; index < 2; index++) {
+      const response = await POST(
+        request("request-password-reset", { email: `budget-${index}@example.test` }, ip),
+      );
+      assert.equal(response.status, 200);
+    }
+
+    const locked = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const blocker = db.transaction(async (tx) => {
+      await tx
+        .select({ id: authRateLimits.id })
+        .from(authRateLimits)
+        .where(eq(authRateLimits.key, key))
+        .for("update");
+      locked.resolve();
+      await release.promise;
+    });
+    let pending: Promise<Response>[] = [];
+    try {
+      await Promise.race([locked.promise, blocker]);
+      pending = targets.map((user) =>
+        POST(request("request-password-reset", { email: user.email }, ip)),
+      );
+      // Both requests must reach the counter before either can take the last slot.
+      const deadline = Date.now() + 5_000;
+      let waiting = 0;
+      while (Date.now() < deadline) {
+        const [row] = await db.execute<{ count: number }>(sql`
+          select count(*)::int as count from pg_stat_activity
+          where datname = current_database()
+            and wait_event_type = 'Lock' and query like '%auth_rate_limits%'
+        `);
+        waiting = row?.count ?? 0;
+        if (waiting >= 2) break;
+        await setTimeout(20);
+      }
+      assert.equal(waiting, 2);
+    } finally {
+      release.resolve();
+      await Promise.allSettled([blocker, ...pending]);
+    }
+    const responses = await Promise.all(pending);
+    assert.deepEqual(responses.map((response) => response.status).sort(), [200, 429]);
+    await Promise.all(backgroundTasks);
+    for (const [index, user] of targets.entries()) {
+      const expected = responses[index]!.status === 200 ? 1 : 0;
+      assert.equal(
+        (await db.select().from(verifications).where(eq(verifications.value, user.id))).length,
+        expected,
+      );
+      const queued = await db.execute<{ count: number }>(sql`
+        select count(*)::int as count from pgboss.job
+        where data->>'userId' = ${user.id} and data->>'type' = 'password_reset'
+      `);
+      assert.equal(queued[0]?.count, expected);
+    }
+  });
+
+  it("shares a fallback reset budget when the trusted IP is missing or invalid", async () => {
+    rateLimitKeys.push(
+      "no-trusted-ip|/request-password-reset",
+      "127.0.0.1|/request-password-reset",
+    );
+    const statuses: number[] = [];
+    for (const [index, ip] of ["", "invalid", "192.0.2.1, 192.0.2.2", "", "invalid"].entries()) {
+      const req = request(
+        "request-password-reset",
+        { email: `missing-ip-${index}@example.test` },
+        ip,
+      );
+      if (!ip) req.headers.delete("x-real-ip");
+      req.headers.set("x-forwarded-for", `198.51.100.${index + 1}`);
+      req.headers.set("forwarded", `for=198.51.100.${index + 1}`);
+      req.headers.set("cf-connecting-ip", `198.51.100.${index + 1}`);
+      statuses.push((await POST(req)).status);
+    }
+    assert.deepEqual(statuses, [200, 200, 200, 429, 429]);
+  });
+
   it("limits reset emails across IPs and resumes after the account window expires", async () => {
     boss = await getEmailQueue();
     const user = await createUser("active");
-    const backgroundAuth = createAuth(db, {
-      handler: (task) => {
-        backgroundTasks.push(task);
-      },
-    });
     const responses = await Promise.all(
       Array.from({ length: 5 }, (_, index) =>
-        backgroundAuth.handler(
-          request("request-password-reset", { email: user.email }, `192.0.2.${240 + index}`),
-        ),
+        POST(request("request-password-reset", { email: user.email }, `192.0.2.${240 + index}`)),
       ),
     );
-    const unknown = await backgroundAuth.handler(
+    const unknown = await POST(
       request("request-password-reset", { email: "unknown-reset@example.test" }, "192.0.2.245"),
     );
     assert.equal(unknown.status, 200);
@@ -552,9 +739,7 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
       ).status,
       200,
     );
-    await backgroundAuth.handler(
-      request("request-password-reset", { email: user.email }, "192.0.2.247"),
-    );
+    await POST(request("request-password-reset", { email: user.email }, "192.0.2.247"));
     await Promise.all(backgroundTasks);
     const afterReset = await db.execute<{ count: number }>(sql`
       select count(*)::int as count from pgboss.job
@@ -577,7 +762,7 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
       .update(emailDeliveryAttempts)
       .set({ createdAt: new Date(Date.now() - 3_600_001) })
       .where(eq(emailDeliveryAttempts.deliveryId, delivery.id));
-    const resumed = await backgroundAuth.handler(
+    const resumed = await POST(
       request("request-password-reset", { email: user.email }, "192.0.2.248"),
     );
     assert.equal(resumed.status, 200);
