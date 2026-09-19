@@ -18,7 +18,7 @@ export async function SiteHeader() {
       <div className="w-full px-4 sm:px-6">
         <div className="relative flex min-h-14 items-center justify-center py-2">
           <Link href="/" className="text-lg font-semibold tracking-tight text-primary-foreground">
-            WR Housing Bridge
+            HomeHub
           </Link>
 
           <nav className="absolute right-0 hidden items-center gap-2 lg:flex">

@@ -5,7 +5,7 @@ import { CustomListingFieldsDashboard } from "@/app/admin/custom-listing-fields/
 import { getAdminCustomListingFieldsService } from "@/lib/custom-listing-fields/custom-listing-field-admin.service";
 
 export const metadata: Metadata = {
-  title: "Custom Listing Fields | WR Housing Bridge",
+  title: "Custom Listing Fields | HomeHub",
 };
 
 export const dynamic = "force-dynamic";

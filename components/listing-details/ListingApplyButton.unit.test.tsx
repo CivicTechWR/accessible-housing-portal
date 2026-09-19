@@ -9,7 +9,7 @@ describe("ListingApplyButton", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 
-    expect(screen.queryByText("Leaving Affordable Housing Portal")).not.toBeNull();
+    expect(screen.queryByText("Leaving HomeHub")).not.toBeNull();
     expect(
       screen.queryByText("You're now leaving the site. This will take you to:"),
     ).not.toBeNull();
@@ -24,7 +24,7 @@ describe("ListingApplyButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
-    expect(screen.queryByText("Leaving Affordable Housing Portal")).toBeNull();
+    expect(screen.queryByText("Leaving HomeHub")).toBeNull();
   });
 
   it("navigates to the application URL when the user confirms", () => {
