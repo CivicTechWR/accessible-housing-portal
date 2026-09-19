@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
 import { LEASE_TERM_DESCRIPTION } from "@/shared/lease-term";
+import { InfoPopover } from "@/components/info-popover/InfoPopover";
 import {
   LISTING_BUILDING_TYPE_LABELS,
   UTILITY_INCLUDED_LABELS,
@@ -192,15 +193,16 @@ export function ListingDetails({
                   key={row.label}
                   className={`bg-background p-3 ${row.fullWidth ? "sm:col-span-2" : ""}`}
                 >
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                  <dt className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
                     {row.label}
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium text-foreground">
-                    {row.value}
                     {row.description && (
-                      <p className="mt-2 font-normal text-muted-foreground">{row.description}</p>
+                      <InfoPopover
+                        label="About initial lease terms"
+                        description={row.description}
+                      />
                     )}
-                  </dd>
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium text-foreground">{row.value}</dd>
                 </div>
               ))}
             </dl>
