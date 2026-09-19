@@ -7,7 +7,6 @@ import { FeatureAccordion, DynamicFilterGroup } from "../feature-accordian/Featu
 import { ComponentProps } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { LEASE_TERM_DESCRIPTION } from "@/shared/lease-term";
 
 // --- Interfaces ---
 export interface ListingFiltersProps {
@@ -45,11 +44,6 @@ export function ListingFilters({
       <div className="space-y-4">
         <DatePicker {...datePickerProps} />
       </div>
-
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium">About lease terms</h3>
-        <p className="text-sm text-muted-foreground">{LEASE_TERM_DESCRIPTION}</p>
-      </section>
 
       <FeatureAccordion groups={dynamicGroups} getCheckboxProps={getFeatureCheckboxProps} />
 
