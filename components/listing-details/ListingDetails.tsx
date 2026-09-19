@@ -3,6 +3,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardDescription, CardAction, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
+import { LEASE_TERM_DESCRIPTION } from "@/shared/lease-term";
 import {
   LISTING_BUILDING_TYPE_LABELS,
   UTILITY_INCLUDED_LABELS,
@@ -107,6 +108,7 @@ export function ListingDetails({
   const rentalDetailRows: Array<{
     label: string;
     value: string;
+    description?: string;
     fullWidth?: boolean;
     preserveWhitespace?: boolean;
   }> = [
@@ -137,7 +139,15 @@ export function ListingDetails({
               .join(", ")
           : "None listed",
     },
-    ...(leaseTermMonths ? [{ label: "Lease Term", value: `${leaseTermMonths}-month lease` }] : []),
+    ...(leaseTermMonths
+      ? [
+          {
+            label: "Initial Lease Term",
+            value: `${leaseTermMonths}-month lease`,
+            description: `${LEASE_TERM_DESCRIPTION} Confirm the final lease terms and renewal options with the lister.`,
+          },
+        ]
+      : []),
     ...(availableOn ? [{ label: "Available", value: formatAvailableDate(availableOn) }] : []),
     { label: "Posted", value: timeAgo },
   ];
@@ -231,6 +241,9 @@ export function ListingDetails({
                     }`}
                   >
                     {row.value}
+                    {row.description && (
+                      <p className="mt-2 font-normal text-muted-foreground">{row.description}</p>
+                    )}
                   </dd>
                 </div>
               ))}

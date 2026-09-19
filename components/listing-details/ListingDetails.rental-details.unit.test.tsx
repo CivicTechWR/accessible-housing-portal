@@ -36,7 +36,7 @@ describe("ListingDetails rental details", () => {
     expect(screen.queryByText("First and last month's rent, refundable")).not.toBeNull();
     const labels = screen.getAllByRole("term").map((node) => node.textContent);
     expect(labels.indexOf("Deposit")).toBeLessThan(labels.indexOf("Rental Cost"));
-    expect(screen.queryByText("Lease Term")).not.toBeNull();
+    expect(screen.queryByText("Initial Lease Term")).not.toBeNull();
     expect(screen.queryByText("12-month lease")).not.toBeNull();
     expect(screen.queryByText("Available")).not.toBeNull();
     expect(screen.queryByText("September 1, 2026")).not.toBeNull();
@@ -47,7 +47,7 @@ describe("ListingDetails rental details", () => {
 
     expect(screen.queryByText("Description")).toBeNull();
     expect(screen.queryByText("Building Type")).toBeNull();
-    expect(screen.queryByText("Lease Term")).toBeNull();
+    expect(screen.queryByText("Initial Lease Term")).toBeNull();
     expect(screen.queryByText("Available")).toBeNull();
     expect(screen.queryByText("Deposit")).toBeNull();
   });
