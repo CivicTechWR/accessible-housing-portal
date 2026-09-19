@@ -85,6 +85,13 @@
       "when": 1789599918759,
       "tag": "20260916230400_add_listing_deposit_info",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790130753985,
+      "tag": "20260923023233_add_contact_role",
+      "breakpoints": true
     }
   ]
 }

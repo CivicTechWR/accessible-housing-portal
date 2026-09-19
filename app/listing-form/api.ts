@@ -32,6 +32,10 @@ export function mapListingFormToReplaceListingInput(
   const replacement: ReplaceListingInput = {
     ...payload,
     description: normalizeOptionalString(data.description) ?? null,
+    contact: {
+      ...payload.contact,
+      role: normalizeOptionalString(data.contactRole) ?? null,
+    },
     address: {
       ...payload.address,
       street2: normalizeOptionalString(data.street2) ?? null,
@@ -91,6 +95,9 @@ export function mapListingFormToAutosavePatchInput(
   assignTrimmedString(address, "province", data.province);
   assignTrimmedString(address, "postalCode", data.postalCode);
   assignTrimmedString(contact, "name", data.contactName);
+  if (data.contactRole !== undefined) {
+    contact.role = normalizeOptionalString(data.contactRole) ?? null;
+  }
   const contactEmail = normalizeOptionalString(data.contactEmail);
   if (contactEmail && z.email().safeParse(contactEmail).success) {
     contact.email = contactEmail;
@@ -260,6 +267,7 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
     ),
     contact: {
       name: data.contactName,
+      role: normalizeOptionalString(data.contactRole),
       email: data.contactEmail,
       phone: data.contactPhone,
     },

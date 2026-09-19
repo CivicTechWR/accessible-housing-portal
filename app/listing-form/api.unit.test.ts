@@ -182,6 +182,7 @@ describe("mapListingFormToCreateListingInput", () => {
       ],
       contact: {
         name: "Leasing Office",
+        role: null,
         email: "leasing@example.org",
         phone: "519-555-0100",
       },
@@ -500,5 +501,25 @@ describe("mapListingFormToCreateListingInput", () => {
       status: "published",
       unitNumber: null,
     });
+  });
+});
+
+describe("contact role payloads", () => {
+  it("sends the role through create, publish, and draft autosave", () => {
+    const form = { ...validFormData, contactRole: "  Property manager  " };
+    expect(mapListingFormToCreateListingInput(form).contact.role).toBe("Property manager");
+    expect(mapListingFormToReplaceListingInput(form).contact.role).toBe("Property manager");
+    expect(mapListingFormToAutosavePatchInput(form)?.contact?.role).toBe("Property manager");
+  });
+
+  it("clears a blank role while leaving omitted autosave fields untouched", () => {
+    expect(
+      mapListingFormToAutosavePatchInput({ ...validFormData, contactRole: "   " })?.contact?.role,
+    ).toBeNull();
+    expect(
+      mapListingFormToReplaceListingInput({ ...validFormData, contactRole: undefined }).contact
+        .role,
+    ).toBeNull();
+    expect(mapListingFormToAutosavePatchInput(validFormData)?.contact).not.toHaveProperty("role");
   });
 });
