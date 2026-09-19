@@ -42,6 +42,7 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       timeAgo={details.timeAgo}
       features={details.features}
       contactName={details.contact?.name}
+      contactRole={details.contact?.role}
       contactEmail={details.contact?.email}
       contactPhone={details.contact?.phone}
       applicationUrl={details.applicationUrl}

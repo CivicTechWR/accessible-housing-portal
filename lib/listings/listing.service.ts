@@ -614,6 +614,7 @@ async function updateListingById<TPayload extends ListingMutationInput>(
         listing.property.longitude,
       ),
       contactName: input.payload.contact?.name ?? listing.property.contactName,
+      contactRole: preserveWhenUndefined(input.payload.contact?.role, listing.property.contactRole),
       contactEmail: input.payload.contact?.email ?? listing.property.contactEmail,
       contactPhone: input.payload.contact?.phone ?? listing.property.contactPhone,
     },
@@ -776,6 +777,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
       listing.property.contactName && listing.property.contactEmail && listing.property.contactPhone
         ? {
             name: listing.property.contactName,
+            role: listing.property.contactRole ?? undefined,
             email: listing.property.contactEmail,
             phone: listing.property.contactPhone,
           }
@@ -831,6 +833,7 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     province: listing.property.province,
     postalCode: listing.property.postalCode,
     contactName: listing.property.contactName ?? "",
+    contactRole: listing.property.contactRole ?? "",
     contactEmail: listing.property.contactEmail ?? "",
     contactPhone: listing.property.contactPhone ?? "",
     applicationUrl: getListingApplicationUrl(listing.applicationUrl),

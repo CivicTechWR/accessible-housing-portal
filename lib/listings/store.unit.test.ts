@@ -83,6 +83,7 @@ describe("buildDuplicateListingPlan", () => {
     latitude: 43.4516,
     longitude: -80.4925,
     contactName: "Dana Reyes",
+    contactRole: "Property manager",
     contactEmail: "dana@example.com",
     contactPhone: "519-555-0142",
     createdByUserId: OWNER_USER_ID,
@@ -139,6 +140,7 @@ describe("buildDuplicateListingPlan", () => {
       city: "Kitchener",
       country: "Canada",
       contactEmail: "dana@example.com",
+      contactRole: "Property manager",
     });
     expect(plan.listing).toMatchObject({
       description: "Bright corner unit.",
@@ -153,7 +155,11 @@ describe("buildDuplicateListingPlan", () => {
   it("blanks the unit fields for the building scope", () => {
     const plan = planFor("building");
 
-    expect(plan.property).toMatchObject({ street1: "120 King St W", city: "Kitchener" });
+    expect(plan.property).toMatchObject({
+      street1: "120 King St W",
+      city: "Kitchener",
+      contactRole: "Property manager",
+    });
     expect(plan.listing).toMatchObject({
       description: null,
       bedrooms: 0,
@@ -182,6 +188,7 @@ describe("buildDuplicateListingPlan", () => {
       latitude: null,
       longitude: null,
       contactName: "",
+      contactRole: null,
       contactEmail: "",
       contactPhone: "",
     });

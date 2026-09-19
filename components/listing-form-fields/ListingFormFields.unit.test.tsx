@@ -9,6 +9,7 @@ import {
   type ListingFormInput,
   type ListingFormMethods,
 } from "@/app/listing-form/types";
+import { mapListingFormToAutosavePatchInput } from "@/app/listing-form/api";
 import { Form } from "@/components/ui/form";
 import { ListingFormFields } from "./ListingFormFields";
 
@@ -73,5 +74,24 @@ describe("ListingFormFields utilities included", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Water" }));
     expect(form?.getValues("utilitiesIncluded")).toEqual(["heat"]);
+  });
+});
+
+describe("contact role editing", () => {
+  it("sends an explicit clear after removing a saved role", () => {
+    let form: ListingFormMethods | undefined;
+    render(
+      <TestListingForm
+        defaultValues={{ ...CREATE_FORM_DEFAULTS, contactRole: "Property manager" }}
+        onFormReady={(value) => (form = value)}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Contact Role" }), {
+      target: { value: "" },
+    });
+
+    if (!form) throw new Error("Form was not initialized");
+    expect(mapListingFormToAutosavePatchInput(form.getValues())?.contact?.role).toBeNull();
   });
 });
