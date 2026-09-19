@@ -31,7 +31,7 @@ describe("ListingDetails rental details", () => {
     expect(screen.queryByText("Bright corner unit near the LRT.")).not.toBeNull();
     expect(screen.queryByText("Building Type")).not.toBeNull();
     expect(screen.queryByText("Apartment")).not.toBeNull();
-    expect(screen.queryByText("Lease Term")).not.toBeNull();
+    expect(screen.queryByText("Initial Lease Term")).not.toBeNull();
     expect(screen.queryByText("12-month lease")).not.toBeNull();
     expect(screen.queryByText("Available")).not.toBeNull();
     expect(screen.queryByText("September 1, 2026")).not.toBeNull();
@@ -42,7 +42,7 @@ describe("ListingDetails rental details", () => {
 
     expect(screen.queryByText("Description")).toBeNull();
     expect(screen.queryByText("Building Type")).toBeNull();
-    expect(screen.queryByText("Lease Term")).toBeNull();
+    expect(screen.queryByText("Initial Lease Term")).toBeNull();
     expect(screen.queryByText("Available")).toBeNull();
   });
 
