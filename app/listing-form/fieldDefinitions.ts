@@ -79,6 +79,12 @@ export const CORE_FIELD_CATEGORIES = [
     displayName: "Property & Contact Info",
     description: "Location and owner details for this building/property.",
   },
+  {
+    key: "application",
+    displayName: "How to apply",
+    description:
+      "Applications happen outside the portal. Add application contacts and explain the next steps for searchers.",
+  },
 ] as const;
 
 export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
@@ -271,9 +277,40 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     key: "applicationUrl",
     displayName: "Application URL",
     fieldType: "url",
-    category: "property_info",
+    category: "application",
     isRequired: false,
     sortOrder: 20,
     placeholder: "https://example.org/apply",
+  },
+  {
+    key: "applicationEmail",
+    displayName: "Application email",
+    fieldType: "email",
+    category: "application",
+    isRequired: false,
+    sortOrder: 20,
+    placeholder: "applications@example.org",
+    helpText: "Where searchers should email to apply or arrange a viewing.",
+  },
+  {
+    key: "applicationPhone",
+    displayName: "Application phone",
+    fieldType: "tel",
+    category: "application",
+    isRequired: false,
+    sortOrder: 21,
+    placeholder: "519-555-0100",
+    helpText: "Where searchers should call to apply or arrange a viewing.",
+  },
+  {
+    key: "applicationInstructions",
+    displayName: "Application instructions and next steps",
+    fieldType: "textarea",
+    category: "application",
+    isRequired: false,
+    sortOrder: 22,
+    colSpan: 2,
+    helpText:
+      "Explain how to apply, how to book a viewing, what happens after a viewing, and the expected response time.",
   },
 ];

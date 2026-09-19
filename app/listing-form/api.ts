@@ -49,6 +49,9 @@ export function mapListingFormToReplaceListingInput(
     ],
     unitNumber: normalizeOptionalString(data.unitNumber) ?? null,
     applicationUrl: normalizeOptionalString(data.applicationUrl) ?? null,
+    applicationEmail: normalizeOptionalString(data.applicationEmail) ?? null,
+    applicationPhone: normalizeOptionalString(data.applicationPhone) ?? null,
+    applicationInstructions: normalizeOptionalString(data.applicationInstructions) ?? null,
   };
 
   return replacement;
@@ -108,6 +111,19 @@ export function mapListingFormToAutosavePatchInput(
     patch.applicationUrl = applicationUrl;
   } else if (data.applicationUrl !== undefined) {
     patch.applicationUrl = null;
+  }
+
+  const applicationEmail = normalizeOptionalString(data.applicationEmail);
+  if (applicationEmail && z.email().safeParse(applicationEmail).success) {
+    patch.applicationEmail = applicationEmail;
+  } else if (data.applicationEmail !== undefined && !applicationEmail) {
+    patch.applicationEmail = null;
+  }
+  if (data.applicationPhone !== undefined) {
+    patch.applicationPhone = normalizeOptionalString(data.applicationPhone) ?? null;
+  }
+  if (data.applicationInstructions !== undefined) {
+    patch.applicationInstructions = normalizeOptionalString(data.applicationInstructions) ?? null;
   }
 
   if (data.unitNumber !== undefined) {
@@ -249,6 +265,9 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
       description: normalizeOptionalString(feature.description) ?? feature.name,
     })),
     applicationUrl: applicationUrl ?? undefined,
+    applicationEmail: normalizeOptionalString(data.applicationEmail),
+    applicationPhone: normalizeOptionalString(data.applicationPhone),
+    applicationInstructions: normalizeOptionalString(data.applicationInstructions),
     images: data.images.flatMap((image) =>
       image.id
         ? [

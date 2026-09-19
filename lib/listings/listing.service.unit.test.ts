@@ -11,9 +11,9 @@ import {
 } from "@/lib/listings/listing.repository";
 import {
   duplicateListingByIdService,
-  patchListingByIdService,
   getListingByIdService,
   getListingEditorByIdService,
+  patchListingByIdService,
 } from "@/lib/listings/listing.service";
 
 jest.mock("@/lib/auth/session", () => ({
@@ -54,6 +54,7 @@ const archivedListing: ListingRecord = {
   applicationUrl: null,
   applicationEmail: "leasing@example.com",
   applicationPhone: "519-555-0100",
+  applicationInstructions: "Email to book a viewing. We reply within two business days.",
   customFields: {},
   publishedAt: new Date("2026-01-01T00:00:00Z"),
   archivedAt: new Date("2026-02-01T00:00:00Z"),
@@ -71,8 +72,8 @@ const archivedListing: ListingRecord = {
     neighborhood: null,
     latitude: null,
     longitude: null,
-    contactName: "Leasing Office",
     contactRole: "Property manager",
+    contactName: "Leasing Office",
     contactEmail: "leasing@example.com",
     contactPhone: "519-555-0100",
   },
@@ -188,5 +189,80 @@ describe("listing contact role", () => {
       ok: true,
       value: { data: { contactRole: "Property manager" } },
     });
+  });
+});
+
+describe("application details", () => {
+  beforeEach(() => {
+    findListingRecordByIdMock.mockResolvedValue({ ...archivedListing, status: "draft" });
+    jest.mocked(findListingImagesByListingId).mockResolvedValue([]);
+    jest.mocked(findPublicBooleanFeatureDefinitions).mockResolvedValue([]);
+    jest.mocked(updateListingGraph).mockResolvedValue(undefined);
+  });
+
+  it("returns the saved application details to searchers and the editor", async () => {
+    for (const result of [
+      await getListingByIdService(LISTING_ID),
+      await getListingEditorByIdService(LISTING_ID),
+    ]) {
+      expect(result).toMatchObject({
+        ok: true,
+        value: {
+          data: {
+            applicationEmail: "leasing@example.com",
+            applicationPhone: "519-555-0100",
+            applicationInstructions: "Email to book a viewing. We reply within two business days.",
+          },
+        },
+      });
+    }
+  });
+
+  it("preserves application details when editing the general contact", async () => {
+    const result = await patchListingByIdService({
+      listingId: LISTING_ID,
+      payload: {
+        contact: { email: "office@example.org", phone: "519-555-0111" },
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(updateListingGraph).toHaveBeenCalledWith(
+      expect.objectContaining({
+        property: expect.objectContaining({
+          contactEmail: "office@example.org",
+          contactPhone: "519-555-0111",
+        }),
+        listing: expect.objectContaining({
+          applicationEmail: "leasing@example.com",
+          applicationPhone: "519-555-0100",
+          applicationInstructions: "Email to book a viewing. We reply within two business days.",
+        }),
+      }),
+    );
+  });
+
+  it("saves explicit application edits and clears without changing the general contact", async () => {
+    const result = await patchListingByIdService({
+      listingId: LISTING_ID,
+      payload: {
+        applicationEmail: "apply@example.org",
+        applicationPhone: null,
+        applicationInstructions: null,
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(updateListingGraph).toHaveBeenCalledWith(
+      expect.objectContaining({
+        property: expect.objectContaining({
+          contactEmail: "leasing@example.com",
+          contactPhone: "519-555-0100",
+        }),
+        listing: expect.objectContaining({
+          applicationEmail: "apply@example.org",
+          applicationPhone: null,
+          applicationInstructions: null,
+        }),
+      }),
+    );
   });
 });

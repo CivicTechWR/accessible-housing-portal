@@ -299,3 +299,34 @@ describe("contact role updates", () => {
     expect(patchListingSchema.safeParse({ contact: { role: 123 } }).success).toBe(false);
   });
 });
+
+describe("application details validation", () => {
+  it("accepts and normalizes application details separately from the property contact", () => {
+    const parsed = createListingSchema.parse({
+      ...validCreatePayload,
+      applicationEmail: "  Apply@Example.ORG  ",
+      applicationPhone: "  519-555-0111  ",
+      applicationInstructions: "  Call for a viewing.\nReplies within two business days.  ",
+    });
+    expect(parsed).toMatchObject({
+      applicationEmail: "apply@example.org",
+      applicationPhone: "519-555-0111",
+      applicationInstructions: "Call for a viewing.\nReplies within two business days.",
+      contact: { email: "leasing@example.org" },
+    });
+    expect(
+      patchListingSchema.parse({
+        applicationEmail: null,
+        applicationPhone: null,
+        applicationInstructions: null,
+      }),
+    ).toEqual({ applicationEmail: null, applicationPhone: null, applicationInstructions: null });
+  });
+
+  it("rejects invalid application emails at both write endpoints", () => {
+    expect(
+      createListingSchema.safeParse({ ...validCreatePayload, applicationEmail: "apply@" }).success,
+    ).toBe(false);
+    expect(patchListingSchema.safeParse({ applicationEmail: "apply@" }).success).toBe(false);
+  });
+});

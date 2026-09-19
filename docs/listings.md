@@ -108,13 +108,17 @@ Details include:
 - image URLs
 - relative time
 - grouped feature categories
-- contact information when name, email, and phone are present, including the optional contact role
-- an Apply button when `applicationUrl` is present
-- a direct-contact instruction when complete contact details exist but no online application URL is set
-- a check-back-later message when neither contact nor online application details are available
+- contact information when name, email, and phone are present, grouped beneath the optional contact role
+- a "How to apply" section with an Apply button, application email and phone links, and an explicit notice that applications happen outside the portal
+- application instructions under "What happens next", preserving line breaks for viewing arrangements and expected response times
+- a prompt to ask the lister about viewings and response time when instructions are absent
+- a direct-contact instruction when general contact details exist but no application URL, email, or phone is set
+- a check-back-later message when neither contact nor application details are available
 - `editUrl` for the owning user
 
-The Apply button opens a confirmation dialog before navigating the browser to the external application URL. When there is no online application URL, the page still shows the appropriate direct-contact or missing-details guidance instead of hiding the application section.
+The Apply button opens a confirmation dialog before navigating the browser to the external application URL. Application email, phone, and instructions display independently of general contact information.
+
+The listing form's optional "How to apply" fields persist through draft autosave and full saves, reload in the editor, and appear in the live details preview. Changing general contact information does not overwrite application contacts. Clearing an application field removes its saved value. An incomplete application email is skipped during autosave and must be corrected or cleared before publishing.
 
 ## Authoring Workflow
 

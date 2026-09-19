@@ -151,6 +151,9 @@ export const listingDetailsSchema = z.object({
   features: z.array(listingFeatureCategorySchema),
   contact: listingContactSchema.optional(),
   applicationUrl: z.httpUrl({ normalize: true }).optional(),
+  applicationEmail: trimmedEmailString("Invalid application email.").optional(),
+  applicationPhone: nonEmptyString.optional(),
+  applicationInstructions: nonEmptyString.optional(),
 });
 
 export const listingSummarySchema = z.object({
@@ -245,6 +248,9 @@ const patchListingBasePayloadSchema = z.object({
   leaseTermMonths: listingLeaseTermMonthsSchema.optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
+  applicationEmail: trimmedEmailString("Invalid application email.").nullable().optional(),
+  applicationPhone: nonEmptyString.nullable().optional(),
+  applicationInstructions: nonEmptyString.nullable().optional(),
 });
 const patchListingPayloadSchema = patchListingBasePayloadSchema.refine(
   (value) => hasAtLeastOneField(value),
@@ -264,6 +270,9 @@ const listingPayloadSchema = z.object({
   units: z.tuple([listingUnitSchema], listingUnitSchema),
   accessibilityFeatures: z.array(listingInputFeatureSchema),
   applicationUrl: z.httpUrl({ normalize: true }).optional(),
+  applicationEmail: trimmedEmailString("Invalid application email.").optional(),
+  applicationPhone: nonEmptyString.optional(),
+  applicationInstructions: nonEmptyString.optional(),
   images: z.array(listingUploadedImageInputSchema),
   contact: listingContactMutationSchema,
   status: listingStatusSchema,
@@ -284,6 +293,9 @@ export const replaceListingSchema = listingPayloadSchema
     units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
     unitNumber: z.union([nonEmptyString, z.null()]),
     applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
+    applicationEmail: trimmedEmailString("Invalid application email.").nullable().optional(),
+    applicationPhone: nonEmptyString.nullable().optional(),
+    applicationInstructions: nonEmptyString.nullable().optional(),
   });
 
 export const patchListingSchema = patchListingPayloadSchema;
@@ -313,6 +325,9 @@ export const listingEditorDataSchema = z.object({
   contactEmail: z.string(),
   contactPhone: z.string(),
   applicationUrl: z.httpUrl({ normalize: true }).optional(),
+  applicationEmail: trimmedEmailString("Invalid application email.").optional(),
+  applicationPhone: nonEmptyString.optional(),
+  applicationInstructions: nonEmptyString.optional(),
   customFeatures: z.array(listingEditorFeatureSchema),
 });
 
