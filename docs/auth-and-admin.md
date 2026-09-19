@@ -38,7 +38,11 @@ Password sign-in requires a second factor when enabled. A passkey uses the devic
 
 Passwords must contain 12 to 128 characters. Password resets revoke sessions but do not remove the user's authenticator or passkeys. Reset links and other verification identifiers use Better Auth's hashed storage. Rate limiting uses PostgreSQL so it is shared across application instances.
 
-Reset emails also have a per-account limit of three queued emails in the preceding hour. Requests above that limit receive the same neutral response without queuing another email. Password changes and resets do not clear this email budget. Administrator invitations use a separate delivery path.
+The forgot-password form submits to `POST /api/auth/request-password-reset`. Better Auth allows three requests per IP, across all email addresses, before rejecting further requests with HTTP 429 and the account-independent message "Too many requests. Please try again later." The database counter updates atomically before account lookup, reset-token creation, or email enqueueing. The budget resets 60 seconds after the last allowed request. Rejected requests do not extend that recovery period, and `X-Retry-After` reports the remaining seconds. Allowed requests return the same neutral response for known and unknown accounts.
+
+The limiter reads only the trusted proxy's `X-Real-IP` header. IPv6 addresses share a `/64` budget. Missing or invalid client IPs share one fallback budget instead of bypassing the limit. See [deployment requirements](deployment.md#railway-configuration) before adding a proxy or exposing the application origin.
+
+Reset emails also have a per-account limit of three queued emails in the preceding hour. Requests above that limit receive the same neutral response without queuing another email. Password changes and resets do not clear this email budget. Administrator invitations use a separate delivery path. Server-side administrator resets bypass the public per-IP limiter.
 
 Administrator password resets share this limit. The admin action reports when the account is throttled or the email could not be queued, and confirms success only after enqueueing commits.
 

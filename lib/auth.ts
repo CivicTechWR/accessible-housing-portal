@@ -57,7 +57,8 @@ export function createAuth(
     }),
     advanced: {
       database: { generateId: "uuid" },
-      ipAddress: { ipAddressHeaders: ["x-real-ip"] },
+      // Railway's edge sets X-Real-IP. Never fall back to client-supplied forwarding headers.
+      ipAddress: { ipAddressHeaders: ["x-real-ip"], ipv6Subnet: 64 },
       backgroundTasks,
     },
     user: {
@@ -92,7 +93,13 @@ export function createAuth(
       cookieCache: { enabled: false },
     },
     verification: { storeIdentifier: "hashed" },
-    rateLimit: { enabled: true, storage: "database" },
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      customRules: {
+        "/request-password-reset": { window: 60, max: 3 },
+      },
+    },
     databaseHooks: {
       verification: {
         create: {
