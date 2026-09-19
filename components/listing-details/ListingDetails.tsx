@@ -1,7 +1,7 @@
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { CardHeader, CardTitle, CardContent, Card } from "../ui/card";
+import { CardHeader, CardTitle, CardDescription, CardAction, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
 import {
   LISTING_BUILDING_TYPE_LABELS,
@@ -124,30 +124,41 @@ export function ListingDetails({
     ...(availableOn ? [{ label: "Available", value: formatAvailableDate(availableOn) }] : []),
     { label: "Posted", value: timeAgo },
   ];
-  const contactRows = [
-    {
-      label: "Name",
-      value: contactName?.trim(),
-    },
-    {
-      label: "Email",
-      value: contactEmail?.trim(),
-      href: contactEmail ? `mailto:${contactEmail}` : undefined,
-    },
-    {
-      label: "Phone",
-      value: contactPhone?.trim(),
-      href: contactPhone ? `tel:${contactPhone}` : undefined,
-    },
-  ].filter((row) => Boolean(row.value));
-
+  const generalEmail = contactEmail?.trim();
+  const generalPhone = contactPhone?.trim();
   const applyUrl = applicationUrl?.trim();
   const applyEmail = applicationEmail?.trim();
   const applyPhone = applicationPhone?.trim();
   const instructions = applicationInstructions?.trim();
+  const sharesEmail = Boolean(
+    applyEmail && generalEmail && applyEmail.toLowerCase() === generalEmail.toLowerCase(),
+  );
+  const sharesPhone = Boolean(
+    applyPhone &&
+    generalPhone &&
+    applyPhone.replace(/[()\s.-]/g, "") === generalPhone.replace(/[()\s.-]/g, ""),
+  );
+  const hasContactMethod = Boolean(generalEmail || generalPhone);
+  const allContactMethodsShared =
+    hasContactMethod && (!generalEmail || sharesEmail) && (!generalPhone || sharesPhone);
+  const contactRows = [
+    { label: "Email", value: generalEmail, href: `mailto:${generalEmail}`, shared: sharesEmail },
+    { label: "Phone", value: generalPhone, href: `tel:${generalPhone}`, shared: sharesPhone },
+  ].filter((row) => Boolean(row.value));
+  const applicationRows = [
+    {
+      label: "Application email",
+      value: sharesEmail ? undefined : applyEmail,
+      href: `mailto:${applyEmail}`,
+    },
+    {
+      label: "Application phone",
+      value: sharesPhone ? undefined : applyPhone,
+      href: `tel:${applyPhone}`,
+    },
+  ].filter((row) => Boolean(row.value));
+  const hasContactDetails = Boolean(contactName?.trim() || contactRole?.trim() || hasContactMethod);
   const hasApplicationMethod = Boolean(applyUrl || applyEmail || applyPhone);
-  const hasContactMethod = Boolean(contactEmail?.trim() || contactPhone?.trim());
-  const hasApplicationDetails = hasApplicationMethod || hasContactMethod || Boolean(instructions);
 
   const wrapperClasses = embedded ? "w-full" : "min-h-screen bg-muted/30 px-4 py-8 sm:px-6 lg:px-8";
   const contentClasses = embedded
@@ -230,105 +241,119 @@ export function ListingDetails({
           </CardContent>
         </Card>
 
-        {contactRows.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Info</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contactRole?.trim() ? (
-                <h3 className="mb-2 text-base font-semibold text-foreground">
-                  {contactRole.trim()}
-                </h3>
-              ) : null}
-              <dl className="space-y-1">
-                {contactRows.map((row) => (
-                  <div key={row.label} className="min-w-0">
-                    <dt className="sr-only">{row.label}</dt>
-                    <dd className="break-words text-sm leading-relaxed text-foreground">
-                      {row.href ? (
-                        <a
-                          href={row.href}
-                          className="text-primary underline-offset-4 hover:underline"
-                        >
-                          {row.value}
-                        </a>
-                      ) : (
-                        row.value
-                      )}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
-          <CardHeader>
+          <CardHeader className="gap-x-4 gap-y-2 border-b">
             <CardTitle>
-              <h2 className="text-sm font-medium">How to apply</h2>
+              <h2 className="text-base font-semibold">Contact and applications</h2>
             </CardTitle>
+            {(hasContactMethod || hasApplicationMethod || instructions) && (
+              <CardDescription className="text-sm">
+                Apply directly with the housing lister, outside this portal.
+              </CardDescription>
+            )}
+            {applyUrl && (
+              <CardAction>
+                <ListingApplyButton applicationUrl={applyUrl} />
+              </CardAction>
+            )}
           </CardHeader>
-          <CardContent className="space-y-4">
-            {hasApplicationDetails ? (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Applications happen outside the portal. The lister handles applications and
-                  viewing requests.
-                </p>
-                {hasApplicationMethod && (
-                  <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {applyUrl && (
-                      <div className="min-w-0 sm:col-span-2">
-                        <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                          Online application
-                        </dt>
-                        <dd className="mt-2">
-                          <ListingApplyButton applicationUrl={applyUrl} />
-                        </dd>
+          <CardContent className="space-y-6">
+            {(hasContactDetails || applicationRows.length > 0) && (
+              <div
+                className={
+                  hasContactDetails && applicationRows.length > 0
+                    ? "grid gap-6 sm:grid-cols-2"
+                    : "grid gap-6"
+                }
+              >
+                {hasContactDetails && (
+                  <section className="min-w-0 space-y-3">
+                    <h3 className="text-sm font-semibold">
+                      {allContactMethodsShared
+                        ? "For questions and applications"
+                        : "General enquiries"}
+                    </h3>
+                    {(contactName?.trim() || contactRole?.trim()) && (
+                      <div>
+                        {contactName?.trim() && (
+                          <p className="text-sm font-medium">{contactName.trim()}</p>
+                        )}
+                        {contactRole?.trim() && (
+                          <p className="text-sm text-muted-foreground">{contactRole.trim()}</p>
+                        )}
                       </div>
                     )}
-                    {applyEmail && (
-                      <div className="min-w-0">
-                        <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                          Application email
-                        </dt>
-                        <dd className="mt-1 break-words text-sm font-medium">
-                          <a href={`mailto:${applyEmail}`} className="underline underline-offset-4">
-                            {applyEmail}
-                          </a>
-                        </dd>
-                      </div>
+                    {contactRows.length > 0 && (
+                      <dl className="space-y-2">
+                        {contactRows.map((row) => (
+                          <div key={row.label} className="min-w-0">
+                            <dt className="sr-only">{row.label}</dt>
+                            <dd className="break-words text-sm leading-relaxed">
+                              <a
+                                href={row.href}
+                                className="text-primary underline-offset-4 hover:underline"
+                              >
+                                {row.value}
+                              </a>
+                              {row.shared && !allContactMethodsShared && (
+                                <span className="block text-xs text-muted-foreground">
+                                  Also for applications
+                                </span>
+                              )}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
                     )}
-                    {applyPhone && (
-                      <div className="min-w-0">
-                        <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                          Application phone
-                        </dt>
-                        <dd className="mt-1 break-words text-sm font-medium">
-                          <a href={`tel:${applyPhone}`} className="underline underline-offset-4">
-                            {applyPhone}
-                          </a>
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
+                  </section>
                 )}
-                {!hasApplicationMethod && hasContactMethod && (
-                  <p className="text-sm">
-                    No online application. Contact the lister using the Contact Info above to apply.
-                  </p>
+                {applicationRows.length > 0 && (
+                  <section
+                    className={
+                      hasContactDetails
+                        ? "min-w-0 space-y-3 border-t pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6"
+                        : "min-w-0 space-y-3"
+                    }
+                  >
+                    <h3 className="text-sm font-semibold">Applications</h3>
+                    <dl className="space-y-2">
+                      {applicationRows.map((row) => (
+                        <div key={row.label} className="min-w-0">
+                          <dt className="sr-only">{row.label}</dt>
+                          <dd className="break-words text-sm leading-relaxed">
+                            <a
+                              href={row.href}
+                              className="text-primary underline-offset-4 hover:underline"
+                            >
+                              {row.value}
+                            </a>
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </section>
                 )}
-                <div className="space-y-2">
-                  <h3 className="text-base font-semibold">What happens next</h3>
-                  <p className="whitespace-pre-line break-words text-sm">
-                    {instructions ||
-                      "The lister hasn't provided viewing arrangements or an expected response time. Ask them how to book a viewing and when you should expect a reply."}
-                  </p>
-                </div>
-              </>
-            ) : (
+              </div>
+            )}
+            {!hasApplicationMethod && hasContactMethod && (
+              <p className="text-sm text-muted-foreground">
+                Contact the lister to ask how to apply.
+              </p>
+            )}
+            {instructions && (
+              <figure className="space-y-3 border-t pt-4">
+                <figcaption className="space-y-1">
+                  <h3 className="text-sm font-semibold">Additional application information</h3>
+                  <p className="text-xs text-muted-foreground">From the housing lister</p>
+                </figcaption>
+                <blockquote
+                  className={`whitespace-pre-line break-words rounded-r-md border-l-2 border-primary/30 bg-muted/40 px-4 py-3 text-sm leading-relaxed${instructions.length <= 180 ? " italic" : ""}`}
+                >
+                  {instructions}
+                </blockquote>
+              </figure>
+            )}
+            {!hasContactDetails && !hasApplicationMethod && !instructions && (
               <p className="text-sm text-muted-foreground">
                 The lister hasn&apos;t provided contact or application details for this listing yet.
                 Please check back later.
