@@ -3,6 +3,7 @@ import type { Control, UseFormReturn } from "react-hook-form";
 import {
   optionalTrimmedStringToUndefined,
   requiredTrimmedString,
+  trimmedEmailString,
   trimmedAbsoluteOrRootRelativeUrlString,
 } from "@/shared/schemas/string-normalizers";
 import { LISTING_BUILDING_TYPE_VALUES, UTILITY_INCLUDED_VALUES } from "@/shared/schemas/listings";
@@ -57,6 +58,12 @@ export const listingFormSchema = z.object({
     .pipe(applicationUrlSchema.optional())
     .optional(),
 
+  applicationEmail: optionalTrimmedStringToUndefined().pipe(
+    trimmedEmailString("Invalid application email").optional(),
+  ),
+  applicationPhone: optionalTrimmedStringToUndefined(),
+  applicationInstructions: optionalTrimmedStringToUndefined(),
+
   // Selected custom features (includes display data for preview/UI rendering)
   customFeatures: z.array(listingCustomFeatureSchema).default([]),
 });
@@ -99,5 +106,8 @@ export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents" | "
   contactEmail: "",
   contactPhone: "",
   applicationUrl: undefined,
+  applicationEmail: undefined,
+  applicationPhone: undefined,
+  applicationInstructions: undefined,
   customFeatures: [],
 };

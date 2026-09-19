@@ -46,9 +46,11 @@ Listing query parameters are documented in [Listings](listings.md).
 
 Listing create/update payloads submit selected accessibility features as `accessibilityFeatures`. Each submitted feature must include the field-definition `id`; storage persists selected public boolean field definitions as boolean keys in `listings.custom_fields`.
 
-Create payloads may include `applicationUrl` as a valid HTTP(S) URL. Replacement and partial-update payloads may include `applicationUrl` as a valid HTTP(S) URL or `null` to clear the stored URL.
+Create payloads may include `applicationUrl` as a valid HTTP(S) URL, `applicationEmail` as an email address, and `applicationPhone` and `applicationInstructions` as non-empty text. These application fields are separate from the property's general `contact`. Email addresses are trimmed and lowercased; phone numbers and instructions are trimmed, preserving line breaks within instructions. Details and editor responses include the saved application fields when present.
 
-Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighborhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber` and `applicationUrl` fields. Full-form `PUT` payloads require every form-owned nullable field as a concrete value or `null`; server-managed neighborhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
+Replacement and partial-update payloads accept `null` to clear an application field. Omitted application email, phone, or instructions preserve the stored value, including on `PUT` for clients that do not send these optional fields. The listing form sends explicit values or `null` for all application fields when saving.
+
+Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighborhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber`, `applicationUrl`, `applicationEmail`, `applicationPhone`, and `applicationInstructions` fields. Full-form `PUT` payloads send every form-owned nullable field as a concrete value or `null`; server-managed neighborhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
 
 ## Image Uploads
 

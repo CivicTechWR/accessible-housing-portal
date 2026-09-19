@@ -135,7 +135,12 @@ function FieldRenderer({
           >
             <FormLabel>{label}</FormLabel>
             <FormControl>
-              <Textarea placeholder={def.placeholder} rows={4} {...field} />
+              <Textarea
+                placeholder={def.placeholder}
+                rows={4}
+                {...field}
+                value={field.value ?? ""}
+              />
             </FormControl>
             {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
             <FormMessage />
