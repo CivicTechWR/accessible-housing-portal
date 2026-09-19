@@ -28,7 +28,7 @@ export function ListingApplyButton({ applicationUrl }: { applicationUrl: string 
       <DialogOverlay open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <DialogPanel>
           <DialogHeader>
-            <DialogTitle>Leaving Affordable Housing Portal</DialogTitle>
+            <DialogTitle>Leaving HomeHub</DialogTitle>
             <DialogDescription>
               You&apos;re now leaving the site. This will take you to:
             </DialogDescription>
