@@ -89,6 +89,9 @@ export function ListingFormPreview({
           contactEmail={formData.contactEmail}
           contactPhone={formData.contactPhone}
           applicationUrl={formData.applicationUrl}
+          applicationEmail={formData.applicationEmail}
+          applicationPhone={formData.applicationPhone}
+          applicationInstructions={formData.applicationInstructions}
           images={formData.images ?? []}
           timeAgo={previewAvailability}
           features={previewFeaturesByCategory}

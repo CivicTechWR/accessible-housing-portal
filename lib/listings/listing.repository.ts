@@ -56,6 +56,7 @@ export type ListingRecord = {
   applicationUrl: string | null;
   applicationEmail: string | null;
   applicationPhone: string | null;
+  applicationInstructions: string | null;
   customFields: ListingCustomFields;
   publishedAt: Date | null;
   archivedAt: Date | null;
@@ -183,6 +184,7 @@ export async function findListingRecordById(
       applicationUrl: listings.applicationUrl,
       applicationEmail: listings.applicationEmail,
       applicationPhone: listings.applicationPhone,
+      applicationInstructions: listings.applicationInstructions,
       customFields: listings.customFields,
       publishedAt: listings.publishedAt,
       archivedAt: listings.archivedAt,
@@ -600,9 +602,9 @@ export async function createListing(input: {
         maxIncomeCents: null,
         depositInfo: input.payload.depositInfo ?? null,
         applicationUrl: input.payload.applicationUrl ?? null,
-        applicationEmail: input.payload.contact.email,
-        applicationPhone: input.payload.contact.phone,
-        applicationInstructions: null,
+        applicationEmail: input.payload.applicationEmail ?? null,
+        applicationPhone: input.payload.applicationPhone ?? null,
+        applicationInstructions: input.payload.applicationInstructions ?? null,
         customFields: input.customFields,
         publishedAt: input.publishedAt,
         archivedAt: input.archivedAt,
@@ -677,6 +679,7 @@ export async function updateListingGraph(input: {
     applicationUrl: string | null;
     applicationEmail: string | null;
     applicationPhone: string | null;
+    applicationInstructions: string | null;
     customFields: ListingCustomFields;
     publishedAt: Date | null;
     archivedAt: Date | null;
@@ -725,6 +728,7 @@ export async function updateListingGraph(input: {
         applicationUrl: input.listing.applicationUrl,
         applicationEmail: input.listing.applicationEmail,
         applicationPhone: input.listing.applicationPhone,
+        applicationInstructions: input.listing.applicationInstructions,
         customFields: input.listing.customFields,
         updatedByUserId: input.actorUserId,
         publishedAt: input.listing.publishedAt,

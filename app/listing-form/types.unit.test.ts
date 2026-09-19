@@ -34,6 +34,9 @@ describe("listingFormSchema", () => {
       contactRole: "  Property manager  ",
       applicationUrl: "  https://example.org/apply  ",
       depositInfo: "  First and last month's rent  ",
+      applicationEmail: "  Apply@Example.ORG  ",
+      applicationPhone: "  519-555-0111  ",
+      applicationInstructions: "  Email to book a viewing.\nReplies within two business days.  ",
     });
 
     expect(parsed.title).toBe("Accessible Two Bedroom");
@@ -43,6 +46,11 @@ describe("listingFormSchema", () => {
     expect(parsed.contactEmail).toBe("leasing@example.org");
     expect(parsed.applicationUrl).toBe("https://example.org/apply");
     expect(parsed.depositInfo).toBe("First and last month's rent");
+    expect(parsed.applicationEmail).toBe("apply@example.org");
+    expect(parsed.applicationPhone).toBe("519-555-0111");
+    expect(parsed.applicationInstructions).toBe(
+      "Email to book a viewing.\nReplies within two business days.",
+    );
   });
 
   it("normalizes optional blank strings to undefined", () => {
@@ -55,6 +63,9 @@ describe("listingFormSchema", () => {
       availableOn: "   ",
       applicationUrl: "   ",
       depositInfo: "   ",
+      applicationEmail: "   ",
+      applicationPhone: "   ",
+      applicationInstructions: "   ",
     });
 
     expect(parsed.description).toBeUndefined();
@@ -64,6 +75,9 @@ describe("listingFormSchema", () => {
     expect(parsed.availableOn).toBeUndefined();
     expect(parsed.applicationUrl).toBeUndefined();
     expect(parsed.depositInfo).toBeUndefined();
+    expect(parsed.applicationEmail).toBeUndefined();
+    expect(parsed.applicationPhone).toBeUndefined();
+    expect(parsed.applicationInstructions).toBeUndefined();
   });
 
   it("rejects whitespace-only required fields", () => {
