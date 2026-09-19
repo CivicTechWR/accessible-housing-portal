@@ -1,3 +1,4 @@
+import { LEASE_TERM_DESCRIPTION } from "@/shared/lease-term";
 import {
   LISTING_BUILDING_TYPE_VALUES,
   UTILITY_INCLUDED_LABELS,
@@ -162,13 +163,13 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "leaseTerm",
-    displayName: "Lease Term",
+    displayName: "Initial Lease Term in Months",
     fieldType: "number",
     category: "listing_details",
     isRequired: true,
     sortOrder: 9,
     placeholder: "E.g. 12",
-    helpText: "Enter the lease term in months.",
+    helpText: `${LEASE_TERM_DESCRIPTION} Enter the number of months.`,
   },
   {
     key: "utilitiesIncluded",
