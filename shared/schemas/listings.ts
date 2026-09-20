@@ -140,6 +140,7 @@ export const listingDetailsSchema = z.object({
   baths: z.number().min(0),
   sqft: z.number().int().min(0),
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
+  depositInfo: optionalTrimmedString(),
   accessibilityFeatures: z.array(listingFeatureSchema).optional(),
   images: z.array(listingImageSchema),
   timeAgo: nonEmptyString,
@@ -237,6 +238,7 @@ const patchListingBasePayloadSchema = z.object({
   buildingType: listingBuildingTypeSchema.optional(),
   leaseTermMonths: listingLeaseTermMonthsSchema.optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
+  depositInfo: z.union([nonEmptyString, z.null()]).optional(),
   applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
 });
 const patchListingPayloadSchema = patchListingBasePayloadSchema.refine(
@@ -265,6 +267,7 @@ const listingPayloadSchema = z.object({
   buildingType: listingBuildingTypeSchema,
   leaseTermMonths: listingLeaseTermMonthsSchema,
   utilitiesIncluded: z.array(utilityIncludedSchema),
+  depositInfo: optionalTrimmedString(),
 });
 
 export const createListingSchema = listingPayloadSchema;
@@ -276,6 +279,7 @@ export const replaceListingSchema = listingPayloadSchema
     address: listingAddressReplacementSchema,
     units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
     unitNumber: z.union([nonEmptyString, z.null()]),
+    depositInfo: z.union([nonEmptyString, z.null()]),
     applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
   });
 
@@ -291,6 +295,7 @@ export const listingEditorDataSchema = z.object({
   monthlyRentCents: z.number().min(0),
   leaseTerm: listingLeaseTermMonthsSchema.optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema),
+  depositInfo: z.string().optional(),
   images: z.array(listingEditorImageSchema),
   availableOn: z.iso.date().optional(),
   status: listingStatusSchema,

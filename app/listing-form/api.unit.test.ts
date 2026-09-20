@@ -97,6 +97,7 @@ describe("mapListingFormToCreateListingInput", () => {
       buildingType: "apartment",
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water"],
+      depositInfo: undefined,
     });
   });
 
@@ -190,6 +191,7 @@ describe("mapListingFormToCreateListingInput", () => {
       buildingType: "apartment",
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water"],
+      depositInfo: null,
     });
   });
 
@@ -218,6 +220,57 @@ describe("mapListingFormToCreateListingInput", () => {
       ),
     ).toMatchObject({
       applicationUrl: null,
+    });
+  });
+
+  it("maps deposit information on create, replace, and autosave payloads", () => {
+    const withDeposit = {
+      ...validFormData,
+      depositInfo: "First and last month's rent, refundable",
+    };
+
+    expect(mapListingFormToCreateListingInput(withDeposit)).toMatchObject({
+      depositInfo: "First and last month's rent, refundable",
+    });
+    expect(mapListingFormToReplaceListingInput(withDeposit, "published")).toMatchObject({
+      depositInfo: "First and last month's rent, refundable",
+    });
+    expect(
+      mapListingFormToAutosavePatchInput({
+        ...CREATE_FORM_DEFAULTS,
+        title: "Draft title",
+        depositInfo: "  Last month's rent  ",
+        monthlyRentCents: 0,
+      }),
+    ).toMatchObject({
+      depositInfo: "Last month's rent",
+    });
+  });
+
+  it("maps explicitly cleared deposit information on full replacements to null", () => {
+    expect(
+      mapListingFormToReplaceListingInput(
+        {
+          ...validFormData,
+          depositInfo: undefined,
+        },
+        "published",
+      ),
+    ).toMatchObject({
+      depositInfo: null,
+    });
+  });
+
+  it("clears deposit information in autosave payloads when the field is emptied", () => {
+    expect(
+      mapListingFormToAutosavePatchInput({
+        ...CREATE_FORM_DEFAULTS,
+        title: "Draft title",
+        depositInfo: "",
+        monthlyRentCents: 0,
+      }),
+    ).toMatchObject({
+      depositInfo: null,
     });
   });
 

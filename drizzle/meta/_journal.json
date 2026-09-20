@@ -78,6 +78,13 @@
       "when": 1788634045407,
       "tag": "20260905184725_better_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789599918759,
+      "tag": "20260916230400_add_listing_deposit_info",
+      "breakpoints": true
     }
   ]
 }

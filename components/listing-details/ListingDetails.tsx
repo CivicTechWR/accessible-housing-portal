@@ -36,6 +36,7 @@ export interface ListingDetailProps {
   description?: string;
   buildingType?: ListingBuildingType;
   leaseTermMonths?: number;
+  depositInfo?: string;
   /** ISO date string (YYYY-MM-DD). */
   availableOn?: string;
   unitNumber?: string;
@@ -69,6 +70,7 @@ export function ListingDetails({
   description,
   buildingType,
   leaseTermMonths,
+  depositInfo,
   availableOn,
   city,
   beds,
@@ -94,8 +96,23 @@ export function ListingDetails({
 
   const trimmedDescription = description?.trim();
 
-  const rentalDetailRows: Array<{ label: string; value: string; fullWidth?: boolean }> = [
+  const rentalDetailRows: Array<{
+    label: string;
+    value: string;
+    fullWidth?: boolean;
+    preserveWhitespace?: boolean;
+  }> = [
     { label: "Address", value: address || "Address Here", fullWidth: true },
+    ...(depositInfo?.trim()
+      ? [
+          {
+            label: "Deposit",
+            value: depositInfo.trim(),
+            fullWidth: true,
+            preserveWhitespace: true,
+          },
+        ]
+      : []),
     { label: "Rental Cost", value: rentalCost },
     ...(buildingType
       ? [{ label: "Building Type", value: LISTING_BUILDING_TYPE_LABELS[buildingType] }]
@@ -181,7 +198,13 @@ export function ListingDetails({
                   <dt className="text-xs uppercase tracking-wide text-muted-foreground">
                     {row.label}
                   </dt>
-                  <dd className="mt-1 text-sm font-medium text-foreground">{row.value}</dd>
+                  <dd
+                    className={`mt-1 text-sm font-medium text-foreground${
+                      row.preserveWhitespace ? " whitespace-pre-line" : ""
+                    }`}
+                  >
+                    {row.value}
+                  </dd>
                 </div>
               ))}
             </dl>

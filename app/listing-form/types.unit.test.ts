@@ -32,6 +32,7 @@ describe("listingFormSchema", () => {
       unitNumber: "  301  ",
       contactEmail: "  Leasing@Example.ORG  ",
       applicationUrl: "  https://example.org/apply  ",
+      depositInfo: "  First and last month's rent  ",
     });
 
     expect(parsed.title).toBe("Accessible Two Bedroom");
@@ -39,6 +40,7 @@ describe("listingFormSchema", () => {
     expect(parsed.unitNumber).toBe("301");
     expect(parsed.contactEmail).toBe("leasing@example.org");
     expect(parsed.applicationUrl).toBe("https://example.org/apply");
+    expect(parsed.depositInfo).toBe("First and last month's rent");
   });
 
   it("normalizes optional blank strings to undefined", () => {
@@ -49,6 +51,7 @@ describe("listingFormSchema", () => {
       unitNumber: "   ",
       availableOn: "   ",
       applicationUrl: "   ",
+      depositInfo: "   ",
     });
 
     expect(parsed.description).toBeUndefined();
@@ -56,6 +59,7 @@ describe("listingFormSchema", () => {
     expect(parsed.unitNumber).toBeUndefined();
     expect(parsed.availableOn).toBeUndefined();
     expect(parsed.applicationUrl).toBeUndefined();
+    expect(parsed.depositInfo).toBeUndefined();
   });
 
   it("rejects whitespace-only required fields", () => {

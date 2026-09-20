@@ -15,6 +15,7 @@ import {
   getDisplayAccessibilityFeatures,
   selectDuplicateCustomFields,
   getListingApplicationUrl,
+  getOptionalListingText,
   mergeListingCustomFields,
 } from "./store";
 
@@ -107,6 +108,7 @@ describe("buildDuplicateListingPlan", () => {
     monthlyRentCents: 185000,
     availableOn: "2026-09-01",
     leaseTermMonths: 12,
+    depositInfo: "First and last month's rent, refundable",
     utilitiesIncluded: ["heat", "water"],
     maxIncomeCents: 7200000,
     applicationUrl: "https://example.com/apply",
@@ -145,6 +147,7 @@ describe("buildDuplicateListingPlan", () => {
       bedrooms: 2,
       bathrooms: 1.5,
       monthlyRentCents: 185000,
+      depositInfo: "First and last month's rent, refundable",
       buildingType: "apartment",
       applicationUrl: "https://example.com/apply",
     });
@@ -161,6 +164,7 @@ describe("buildDuplicateListingPlan", () => {
       squareFeet: null,
       monthlyRentCents: 0,
       leaseTermMonths: null,
+      depositInfo: null,
       utilitiesIncluded: [],
       maxIncomeCents: null,
       buildingType: "apartment",
@@ -189,6 +193,7 @@ describe("buildDuplicateListingPlan", () => {
       description: "Bright corner unit.",
       bedrooms: 2,
       monthlyRentCents: 185000,
+      depositInfo: "First and last month's rent, refundable",
       buildingType: null,
       applicationUrl: null,
       applicationEmail: "",
@@ -452,5 +457,19 @@ describe("getListingApplicationUrl", () => {
     expect(getListingApplicationUrl(null)).toBeUndefined();
     expect(getListingApplicationUrl(undefined)).toBeUndefined();
     expect(getListingApplicationUrl("   ")).toBeUndefined();
+  });
+});
+
+describe("getOptionalListingText", () => {
+  it("returns trimmed text when provided", () => {
+    expect(getOptionalListingText("  First and last month's rent  ")).toBe(
+      "First and last month's rent",
+    );
+  });
+
+  it("returns undefined when empty", () => {
+    expect(getOptionalListingText(null)).toBeUndefined();
+    expect(getOptionalListingText(undefined)).toBeUndefined();
+    expect(getOptionalListingText("   ")).toBeUndefined();
   });
 });
