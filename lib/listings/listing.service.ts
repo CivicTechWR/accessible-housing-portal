@@ -633,6 +633,7 @@ async function updateListingById<TPayload extends ListingMutationInput>(
       monthlyRentCents,
       availableOn: preserveWhenUndefined(primaryUnit?.availableDate, listing.availableOn),
       leaseTermMonths: input.payload.leaseTermMonths ?? listing.leaseTermMonths,
+      heatingType: preserveWhenUndefined(input.payload.heatingType, listing.heatingType),
       utilitiesIncluded: input.payload.utilitiesIncluded ?? listing.utilitiesIncluded,
       maxIncomeCents: listing.maxIncomeCents,
       depositInfo: preserveWhenUndefined(input.payload.depositInfo, listing.depositInfo),
@@ -775,6 +776,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
     beds: listing.bedrooms,
     baths: listing.bathrooms,
     sqft: getListingSquareFeet(listing.squareFeet),
+    heatingType: listing.heatingType ?? undefined,
     utilitiesIncluded: [...listing.utilitiesIncluded],
     depositInfo: getOptionalListingText(listing.depositInfo),
     accessibilityFeatures: getDisplayAccessibilityFeatures(
@@ -834,6 +836,7 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     squareFeet: listing.squareFeet ?? undefined,
     monthlyRentCents: listing.monthlyRentCents,
     leaseTerm: listing.leaseTermMonths ?? undefined,
+    heatingType: listing.heatingType ?? undefined,
     utilitiesIncluded: [...listing.utilitiesIncluded],
     depositInfo: getOptionalListingText(listing.depositInfo),
     images: imageRows.map((image) => ({

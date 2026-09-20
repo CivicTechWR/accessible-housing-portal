@@ -48,6 +48,7 @@ export function mapListingFormToReplaceListingInput(
       },
     ],
     unitNumber: normalizeOptionalString(data.unitNumber) ?? null,
+    heatingType: data.heatingType ?? null,
     depositInfo: normalizeOptionalString(data.depositInfo) ?? null,
     applicationUrl: normalizeOptionalString(data.applicationUrl) ?? null,
     applicationEmail: normalizeOptionalString(data.applicationEmail) ?? null,
@@ -112,6 +113,10 @@ export function mapListingFormToAutosavePatchInput(
     patch.applicationUrl = applicationUrl;
   } else if (data.applicationUrl !== undefined) {
     patch.applicationUrl = null;
+  }
+
+  if (data.heatingType !== undefined) {
+    patch.heatingType = data.heatingType || null;
   }
 
   if (data.depositInfo !== undefined) {
@@ -294,6 +299,7 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
     unitNumber: normalizeOptionalString(data.unitNumber),
     buildingType: data.buildingType,
     leaseTermMonths: data.leaseTerm,
+    heatingType: data.heatingType,
     utilitiesIncluded: data.utilitiesIncluded,
   };
 }

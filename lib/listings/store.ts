@@ -187,6 +187,7 @@ export function buildDuplicateListingPlan(input: {
       monthlyRentCents: copiesUnit ? source.monthlyRentCents : 0,
       leaseTermMonths: copiesUnit ? source.leaseTermMonths : null,
       depositInfo: copiesUnit ? source.depositInfo : null,
+      heatingType: copiesUnit ? source.heatingType : null,
       utilitiesIncluded: copiesUnit ? source.utilitiesIncluded : [],
       maxIncomeCents: copiesUnit ? source.maxIncomeCents : null,
       buildingType: copiesBuilding ? source.buildingType : null,

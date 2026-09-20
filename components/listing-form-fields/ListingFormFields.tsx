@@ -12,6 +12,7 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -44,7 +45,10 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem data-field-name={def.key}>
+          <FormItem
+            className={def.colSpan === 2 ? "md:col-span-2 min-w-0" : undefined}
+            data-field-name={def.key}
+          >
             <FormLabel>{label}</FormLabel>
             <Select
               onValueChange={(value) => {
@@ -60,22 +64,33 @@ function FieldRenderer({
 
                 field.onChange(value);
               }}
-              defaultValue={field.value ?? undefined}
-              value={field.value ?? undefined}
+              value={field.value ?? ""}
             >
               <FormControl>
-                <SelectTrigger>
+                <SelectTrigger className="max-w-full min-w-0 min-h-7 whitespace-normal text-left data-[size=default]:h-auto *:data-[slot=select-value]:line-clamp-none">
                   <SelectValue placeholder={`Select ${def.displayName.toLowerCase()}`} />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent className="max-w-[calc(100vw-2rem)]">
                 {def.options?.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
+                  <SelectItem className="pr-7" key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {!def.isRequired && field.value && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-fit"
+                aria-label={`Clear ${def.displayName.toLowerCase()}`}
+                onClick={() => field.onChange("")}
+              >
+                Clear
+              </Button>
+            )}
             {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
             <FormMessage />
           </FormItem>

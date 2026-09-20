@@ -12,6 +12,7 @@ import {
   type ListingBuildingType,
   type UtilityIncluded,
 } from "@/shared/schemas/listings";
+import { HEATING_TYPE_LABELS, type HeatingType } from "@/shared/heating-type";
 import { format, parseISO } from "date-fns";
 import Link from "next/link";
 import { ListingApplyButton } from "./ListingApplyButton";
@@ -49,6 +50,7 @@ export interface ListingDetailProps {
   beds: number;
   baths: number;
   sqft: number;
+  heatingType?: HeatingType;
   utilitiesIncluded?: UtilityIncluded[];
   contactRole?: string;
   contactName?: string;
@@ -82,6 +84,7 @@ export function ListingDetails({
   beds,
   baths,
   sqft,
+  heatingType,
   utilitiesIncluded,
   contactRole,
   contactName,
@@ -131,6 +134,9 @@ export function ListingDetails({
     { label: "Bedrooms", value: String(beds) },
     { label: "Bathrooms", value: String(baths) },
     { label: "Square Feet", value: `${sqft.toLocaleString()} sqft` },
+    ...(heatingType
+      ? [{ label: "Primary heating type", value: HEATING_TYPE_LABELS[heatingType] }]
+      : []),
     {
       label: "Utilities Included",
       value:

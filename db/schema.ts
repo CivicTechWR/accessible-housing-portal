@@ -1,4 +1,5 @@
 import { sql, type SQL } from "drizzle-orm";
+import { HEATING_TYPE_VALUES } from "../shared/heating-type.ts";
 import {
   boolean,
   customType,
@@ -31,6 +32,7 @@ export const listingBuildingTypeEnum = pgEnum("listing_building_type", [
   "townhouse",
   "condo",
 ]);
+export const heatingTypeEnum = pgEnum("heating_type", HEATING_TYPE_VALUES);
 export const utilityIncludedEnum = pgEnum("utility_included", [
   "heat",
   "water",
@@ -385,6 +387,7 @@ export const listings = pgTable(
     availableOn: date("available_on"),
     leaseTermMonths: integer("lease_term_months"),
     depositInfo: text("deposit_info"),
+    heatingType: heatingTypeEnum("heating_type"),
     utilitiesIncluded: utilityIncludedEnum("utilities_included")
       .array()
       .notNull()

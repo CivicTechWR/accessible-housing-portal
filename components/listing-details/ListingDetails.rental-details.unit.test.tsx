@@ -22,6 +22,8 @@ describe("ListingDetails rental details", () => {
         {...baseProps}
         description="Bright corner unit near the LRT."
         buildingType="apartment"
+        heatingType="heat_pump"
+        utilitiesIncluded={["water"]}
         leaseTermMonths={12}
         availableOn="2026-09-01"
         depositInfo="First and last month's rent, refundable"
@@ -36,6 +38,9 @@ describe("ListingDetails rental details", () => {
     expect(screen.queryByText("First and last month's rent, refundable")).not.toBeNull();
     const labels = screen.getAllByRole("term").map((node) => node.textContent);
     expect(labels.indexOf("Deposit")).toBeLessThan(labels.indexOf("Rental Cost"));
+    expect(screen.queryByText("Electric heat pump")).not.toBeNull();
+    expect(screen.queryByText("Water")).not.toBeNull();
+    expect(labels.indexOf("Primary heating type") + 1).toBe(labels.indexOf("Utilities Included"));
     expect(screen.queryByText("Initial Lease Term")).not.toBeNull();
     expect(screen.queryByText("12-month lease")).not.toBeNull();
     expect(screen.queryByText("Available")).not.toBeNull();
@@ -47,6 +52,7 @@ describe("ListingDetails rental details", () => {
 
     expect(screen.queryByText("Description")).toBeNull();
     expect(screen.queryByText("Building Type")).toBeNull();
+    expect(screen.queryByText("Primary heating type")).toBeNull();
     expect(screen.queryByText("Initial Lease Term")).toBeNull();
     expect(screen.queryByText("Available")).toBeNull();
     expect(screen.queryByText("Deposit")).toBeNull();
