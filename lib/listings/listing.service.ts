@@ -122,7 +122,10 @@ export async function getListingsService(
   }
 
   const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
-  const selectedFeatureDefinitions = publicBooleanDefinitions.filter((definition) =>
+  const filterableDefinitions = publicBooleanDefinitions.filter(
+    (definition) => definition.isFilterable,
+  );
+  const selectedFeatureDefinitions = filterableDefinitions.filter((definition) =>
     selectedFeatures.includes(definition.key),
   );
 
@@ -138,7 +141,7 @@ export async function getListingsService(
       : listingBathroomsSpecification(bathroomFilter.value),
     listingMinRentSpecification(query.minPrice ?? null),
     listingMaxRentSpecification(maxRent),
-    listingAccessibilitySpecification(query.accessibility),
+    listingAccessibilitySpecification(query.accessibility, filterableDefinitions),
     listingSearchSpecification(search),
     listingAvailableBySpecification(query.moveInDate ?? null),
     listingFeatureDefinitionsSpecification(selectedFeatureDefinitions),

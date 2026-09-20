@@ -68,7 +68,7 @@ Add focused tests when changing:
 - custom-field ordering or display behavior
 - hooks with non-trivial state transitions
 
-Database integration tests use `node --test` with `--conditions=react-server` and `tsx`. Set `TEST_DATABASE_URL` to a disposable PostgreSQL database before running `npm run test:integration`. The tests apply the committed migrations and exercise authentication concurrency and email delivery. Without `TEST_DATABASE_URL`, the integration suite is skipped. CI supplies a dedicated PostgreSQL service and runs both test commands.
+Database integration tests use `node --test` with `--conditions=react-server` and `tsx`. Set `TEST_DATABASE_URL` to a disposable PostgreSQL database before running `npm run test:integration`. The tests apply the committed migrations and exercise authentication concurrency, email delivery, and listing feature persistence and filtering. Test files run sequentially because they share the database's migration history. Without `TEST_DATABASE_URL`, the integration suite is skipped. CI supplies a dedicated PostgreSQL service and runs both test commands.
 
 Use this integration pattern for behavior that depends on database transactions or locking. Keep pure business logic in focused unit tests.
 

@@ -95,16 +95,19 @@ export function listingMaxRentSpecification(maxRent: string | null): ListingFilt
 
 export function listingAccessibilitySpecification(
   accessibility: "true" | "false" | undefined,
+  definitions: Pick<ListingFeatureDefinition, "key">[],
 ): ListingFilterSpecification {
   if (!accessibility) {
     return undefined;
   }
 
-  const hasAccessibility = sql<boolean>`exists (
-    select 1
-    from jsonb_each(${listings.customFields}) as custom_field(key, value)
-    where value = 'true'::jsonb
-  )`;
+  const hasAccessibility =
+    or(
+      ...definitions.map(
+        (definition) =>
+          sql<boolean>`coalesce(${listings.customFields} ->> ${definition.key}, 'false') = 'true'`,
+      ),
+    ) ?? sql<boolean>`false`;
 
   return accessibility === "true" ? hasAccessibility : sql<boolean>`not (${hasAccessibility})`;
 }
