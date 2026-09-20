@@ -1,0 +1,1 @@
+ALTER TABLE "properties" RENAME COLUMN "neighborhood" TO "neighbourhood";

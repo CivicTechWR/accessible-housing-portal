@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ComponentProps } from "react";
-import { LabeledCheckbox } from "../labeled-checkbox/LabeledCheckbox";
+import { LabelledCheckbox } from "../labelled-checkbox/LabelledCheckbox";
 
 export interface FilterOption {
   id: string;
@@ -38,7 +38,7 @@ export function FeatureAccordion({ groups, getCheckboxProps }: FeatureAccordionP
           <AccordionContent>
             <div className="grid grid-cols-2 gap-4 pt-2">
               {group.options.map((option) => (
-                <LabeledCheckbox
+                <LabelledCheckbox
                   key={option.id}
                   label={option.label}
                   {...getCheckboxProps(option.id)}

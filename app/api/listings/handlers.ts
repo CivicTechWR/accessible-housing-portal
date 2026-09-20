@@ -18,7 +18,7 @@ export async function getListingsHandler(
     page: searchParams.get("page") ?? undefined,
     limit: searchParams.get("limit") ?? undefined,
     status: (searchParams.get("status") ?? undefined) as ListingQuery["status"],
-    neighborhood: searchParams.get("neighborhood") ?? undefined,
+    neighbourhood: searchParams.get("neighbourhood") ?? undefined,
     bedrooms: searchParams.get("bedrooms") ?? undefined,
     bathrooms: searchParams.get("bathrooms") ?? undefined,
     location: searchParams.get("location") ?? undefined,

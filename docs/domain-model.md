@@ -4,16 +4,16 @@ The database schema is defined in `db/schema.ts` with Drizzle. SQL migrations an
 
 ## Enums
 
-| Enum                     | Values                                                                                             | Used by                                               |
-| ------------------------ | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `user_role`              | `admin`, `partner`, `user`                                                                         | Access control and UI navigation.                     |
-| `user_status`            | `invited`, `active`, `suspended`, `deactivated`                                                    | Sign-in eligibility and account lifecycle.            |
-| `listing_status`         | `draft`, `published`, `archived`                                                                   | Listing visibility, authoring, and deletion behavior. |
-| `listing_building_type`  | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                |
-| `utility_included`       | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.            |
-| `listing_field_type`     | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.           |
-| `email_delivery_type`    | `account_invite`, `password_reset`                                                                 | Kinds of transactional email the application sends.   |
-| `email_delivery_outcome` | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.       |
+| Enum                     | Values                                                                                             | Used by                                                |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `user_role`              | `admin`, `partner`, `user`                                                                         | Access control and UI navigation.                      |
+| `user_status`            | `invited`, `active`, `suspended`, `deactivated`                                                    | Sign-in eligibility and account lifecycle.             |
+| `listing_status`         | `draft`, `published`, `archived`                                                                   | Listing visibility, authoring, and deletion behaviour. |
+| `listing_building_type`  | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                 |
+| `utility_included`       | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.             |
+| `listing_field_type`     | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.            |
+| `email_delivery_type`    | `account_invite`, `password_reset`                                                                 | Kinds of transactional email the application sends.    |
+| `email_delivery_outcome` | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.        |
 
 Only users with status `active` can sign in.
 
@@ -27,7 +27,7 @@ Important fields:
 
 - `email` has a case-insensitive unique index through `lower(email)`.
 - Better Auth stores password credentials in `accounts`; `sessions`, `verifications`, `passkeys`, and `two_factors` store its other authentication data.
-- `role` controls admin, partner, and normal user behavior.
+- `role` controls admin, partner, and normal user behaviour.
 - `status` controls sign-in eligibility.
 - `invite_accepted_at` and `last_login_at` support invite and audit workflows.
 
@@ -35,7 +35,7 @@ Important fields:
 
 Tracks administrator invitations and their email submission state.
 
-Important behavior:
+Important behaviour:
 
 - Better Auth owns the setup token. `token_hash` identifies its invitation; `sealed_url` holds an encrypted copy for the admin copy-link action.
 - New invites expire previous unaccepted invites for the same user.
@@ -51,7 +51,7 @@ pg-boss stores email jobs in its own `pgboss` schema, outside the Drizzle-manage
 
 Application-owned records of transactional email, separate from the pg-boss job rows.
 
-Important behavior:
+Important behaviour:
 
 - `email_deliveries` is one logical email — `(email_type, source_entity_id)` is unique, so "the invite email for invite X" is a single row. `source_entity_id` is deliberately not a foreign key because the referenced table varies by email type.
 - `email_delivery_attempts` is one provider submission of that email. An ordinary queue retry reuses its attempt row and therefore its `idempotency_key`; a genuine resend inserts a new attempt and gets a new attempt number, idempotency key, queue job, and provider email id.
@@ -66,7 +66,7 @@ Stores building/property-level data for listings.
 Important fields:
 
 - `owner_user_id` links a property to a partner/admin account.
-- address, neighborhood, latitude, and longitude drive listing display and map behavior.
+- address, neighbourhood, latitude, and longitude drive listing display and map behaviour.
 - contact fields feed listing details and application contact data.
 - `created_by_user_id` and `updated_by_user_id` retain audit context.
 
@@ -90,7 +90,7 @@ The `custom_fields` column has a GIN index because listing filters can query dyn
 
 Stores uploaded listing images and external image references.
 
-Important behavior:
+Important behaviour:
 
 - Uploaded files are processed to JPEG and stored in `image_data`.
 - Seeded or external images can use `image_url`.
@@ -103,7 +103,7 @@ Stores many-to-many saved listing records between users and listings. Current co
 
 ### `saved_searches`
 
-Stores named search filters as JSONB per user. Current code defines the table for future saved-search behavior.
+Stores named search filters as JSONB per user. Current code defines the table for future saved-search behaviour.
 
 ### `listing_field_definitions`
 
@@ -146,12 +146,12 @@ listings
   -> saved_listings.listing_id
 ```
 
-Deletion behavior:
+Deletion behaviour:
 
 - Deleting a user cascades invites, listing image upload ownership, saved listings, and saved searches where configured.
 - Properties and listings use restrictive ownership references because listing records should not silently disappear when an owner changes.
 - Deleting a listing cascades listing images and saved listing rows.
-- "Deleting" a listing through product behavior archives it rather than removing the row.
+- "Deleting" a listing through product behaviour archives it rather than removing the row.
 
 ## `custom_fields` JSON
 

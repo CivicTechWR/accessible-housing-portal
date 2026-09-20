@@ -335,7 +335,7 @@ export const properties = pgTable(
     province: text("province").notNull(),
     postalCode: text("postal_code").notNull(),
     country: text("country").notNull(),
-    neighborhood: text("neighborhood"),
+    neighbourhood: text("neighbourhood"),
     latitude: doublePrecision("latitude"),
     longitude: doublePrecision("longitude"),
     contactName: text("contact_name"),

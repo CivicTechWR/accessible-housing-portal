@@ -127,7 +127,7 @@ The `user_invites.email_queued_at` and `email_failed_at` columns are managed thr
 
 `instrumentation.ts` starts the in-process pg-boss worker only in the Node.js runtime and only when `EMAIL_WORKER_ENABLED=true`. Enable it on the long-lived application server. If every process leaves the variable unset, requests can still enqueue jobs but no process will submit them to the provider.
 
-The worker retries transient provider failures with bounded exponential backoff, honors `Retry-After`, and defers daily quota failures without consuming retries. Permanent failures and exhausted retry/deferral chains enter `email_send_dead_letter`; the dead-letter worker records the failure on the source invite so the admin UI can surface it.
+The worker retries transient provider failures with bounded exponential backoff, honours `Retry-After`, and defers daily quota failures without consuming retries. Permanent failures and exhausted retry/deferral chains enter `email_send_dead_letter`; the dead-letter worker records the failure on the source invite so the admin UI can surface it.
 
 Monitor server logs for `[email-queue]` errors and inspect the pg-boss queues when invites remain queued. Treat `EMAIL_JOB_SECRET` rotation as an operational migration: queued invite URLs are encrypted with a derived key, so drain or replace outstanding jobs before rotating it.
 

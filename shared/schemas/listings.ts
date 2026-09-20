@@ -44,7 +44,7 @@ export const listingQuerySchema = z.object({
   page: positiveIntegerQueryParamSchema.optional(),
   limit: positiveIntegerQueryParamWithMaxSchema(100).optional(),
   status: listingStatusSchema.optional(),
-  neighborhood: optionalTrimmedString(),
+  neighbourhood: optionalTrimmedString(),
   bedrooms: z
     .string()
     .regex(/^\d+\+?$/)
@@ -179,7 +179,7 @@ const listingAddressSchema = z.object({
   city: nonEmptyString,
   province: nonEmptyString,
   postalCode: nonEmptyString,
-  neighborhood: nonEmptyString.optional(),
+  neighbourhood: nonEmptyString.optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
 });
@@ -198,7 +198,7 @@ const nullableListingSquareFeetSchema = z.union([z.number().int().min(0), z.null
 const nullableListingAvailableDateSchema = z.union([z.iso.date(), z.null()]);
 const listingAddressMutationSchema = listingAddressSchema.extend({
   street2: nullableListingStreet2Schema.optional(),
-  neighborhood: z.union([nonEmptyString, z.null()]).optional(),
+  neighbourhood: z.union([nonEmptyString, z.null()]).optional(),
   latitude: z.union([z.number().min(-90).max(90), z.null()]).optional(),
   longitude: z.union([z.number().min(-180).max(180), z.null()]).optional(),
 });

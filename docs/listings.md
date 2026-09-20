@@ -39,7 +39,7 @@ Listing search accepts these query parameters through `listingQuerySchema`:
 | `page`          | Positive integer page number.                                                     |
 | `limit`         | Positive integer page size, capped at 100.                                        |
 | `status`        | `draft`, `published`, or `archived`. Draft/archived access is role-limited.       |
-| `neighborhood`  | Case-insensitive neighborhood match.                                              |
+| `neighbourhood` | Case-insensitive neighbourhood match.                                             |
 | `bedrooms`      | Exact count or count plus `+`, such as `2` or `2+`.                               |
 | `bathrooms`     | Exact count or count plus `+`, such as `1` or `1+`.                               |
 | `location`      | Search string, currently treated like the main search term.                       |
@@ -73,7 +73,7 @@ Services intentionally return `not_found` for some inaccessible listing reads so
 
 - status
 - owner
-- neighborhood
+- neighbourhood
 - bedroom and bathroom counts
 - min/max rent
 - accessibility
@@ -152,7 +152,7 @@ Published listing edits do not draft-autosave. The UI warns before navigating aw
 
 ## Create, Update, Archive
 
-Creation and update behavior is split across service and repository code:
+Creation and update behaviour is split across service and repository code:
 
 - `createDraftListingService` creates an empty property and draft listing.
 - `createListingService` creates a property and listing in one transaction.
@@ -170,7 +170,7 @@ Image endpoints use direct Node.js route handlers:
 - `POST /api/image-uploads`
 - `GET /api/image-uploads/:id`
 
-Upload behavior in `lib/images/image.service.ts`:
+Upload behaviour in `lib/images/image.service.ts`:
 
 - requires an active admin or partner session
 - requires edit access to the target listing
@@ -198,7 +198,7 @@ Built-in listing fields are persisted in normalized columns on `listings` or `pr
 
 Public boolean fields are available for authoring and display regardless of `is_filterable`. Turning filterability off preserves saved values in the editor, listing details, and feature displays. Search filter options and the server-side `features` and `accessibility` filters require `is_filterable = true`. Non-public definitions are excluded from public listing responses.
 
-Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, deposit information, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighborhood, and coordinates while preserving omitted server-managed neighborhood and coordinate data. New listings published without an availability date retain the available-today default.
+Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, deposit information, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighbourhood, and coordinates while preserving omitted server-managed neighbourhood and coordinate data. New listings published without an availability date retain the available-today default.
 
 If a new listing field must be searchable, sortable, joined, or constrained at scale, prefer a normalized column. If it is project-configurable feature metadata, prefer `listing_field_definitions` plus `customFields`.
 
@@ -216,4 +216,4 @@ The role is stored in `properties.contact_role`. Listing mutation payloads accep
 4. Update `lib/listings/store.ts` for persistence mapping.
 5. Update service/repository code if normalized columns or queries change.
 6. Add or update tests for schema, mapping, specifications, or UI hooks.
-7. Update this document and [API Reference](api-reference.md) if public behavior changes.
+7. Update this document and [API Reference](api-reference.md) if public behaviour changes.

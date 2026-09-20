@@ -21,7 +21,7 @@ Start with [docs/README.md](docs/README.md). The developer reference is split by
 - [Domain Model](docs/domain-model.md) for database tables, enums, relationships, and migration rules
 - [Listings](docs/listings.md) for listing search, listing details, authoring, draft autosave, image uploads, and custom fields
 - [Auth and Admin](docs/auth-and-admin.md) for Better Auth, invites, roles, access checks, and admin tools
-- [API Reference](docs/api-reference.md) for route handlers, schemas, endpoint behavior, and error responses
+- [API Reference](docs/api-reference.md) for route handlers, schemas, endpoint behaviour, and error responses
 - [Deployment and Operations](docs/deployment.md) for CI, Docker, Infisical, runtime settings, and migration expectations
 - [Testing and Quality](docs/testing-and-quality.md) for Jest, linting, formatting, hooks, and review expectations
 - [ADR 0001](docs/adr/0001-server-first-listings-data-fetching.md) for the server-first listings data decision
@@ -83,7 +83,7 @@ npm run docker:up
 
 Transactional emails, currently admin invites, are queued durably in Postgres with pg-boss instead of being sent inline. Invite creation and job enqueueing happen in the same transaction, and the worker started from `instrumentation.ts` records whether the provider accepted the request or the job permanently failed. Provider acceptance does not confirm delivery to the recipient's mail server; delivered, bounced, failed, and suppressed webhook outcomes are not currently reconciled.
 
-Set `EMAIL_WORKER_ENABLED=true` on the long-lived app server that should process jobs. Docker Compose enables it by default. See [Auth and Admin](docs/auth-and-admin.md) for submission behavior and [Deployment and Operations](docs/deployment.md) for worker, retry, dead-letter, and secret-rotation guidance.
+Set `EMAIL_WORKER_ENABLED=true` on the long-lived app server that should process jobs. Docker Compose enables it by default. See [Auth and Admin](docs/auth-and-admin.md) for submission behaviour and [Deployment and Operations](docs/deployment.md) for worker, retry, dead-letter, and secret-rotation guidance.
 
 ## Common Commands
 

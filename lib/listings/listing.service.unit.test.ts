@@ -70,7 +70,7 @@ const archivedListing: ListingRecord = {
     city: "Waterloo",
     province: "ON",
     postalCode: "N2L 3A1",
-    neighborhood: null,
+    neighbourhood: null,
     latitude: null,
     longitude: null,
     contactRole: "Property manager",

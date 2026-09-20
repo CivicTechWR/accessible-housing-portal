@@ -162,7 +162,7 @@ export function buildDuplicateListingPlan(input: {
       province: copiesBuilding ? sourceProperty.province : "",
       postalCode: copiesBuilding ? sourceProperty.postalCode : "",
       country: copiesBuilding ? sourceProperty.country : DEFAULT_PROPERTY_COUNTRY,
-      neighborhood: copiesBuilding ? sourceProperty.neighborhood : null,
+      neighbourhood: copiesBuilding ? sourceProperty.neighbourhood : null,
       latitude: copiesBuilding ? sourceProperty.latitude : null,
       longitude: copiesBuilding ? sourceProperty.longitude : null,
       contactName: copiesBuilding ? sourceProperty.contactName : "",

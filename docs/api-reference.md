@@ -9,7 +9,7 @@ API routes live under `app/api`. Most JSON routes use `next-rest-framework` plus
 - Services return `DomainResult<T>` when domain errors are expected.
 - `mapDomainErrorToHttpResponse` maps domain errors to HTTP statuses.
 - Request and response contracts live in `shared/schemas`.
-- Protected behavior must be enforced in services or route handlers, not only in `proxy.ts`.
+- Protected behaviour must be enforced in services or route handlers, not only in `proxy.ts`.
 
 Domain error mapping:
 
@@ -52,7 +52,7 @@ Create payloads may include optional `depositInfo` text. Replacement payloads re
 
 Replacement and partial-update payloads accept `null` to clear an application field. Omitted application email, phone, or instructions preserve the stored value, including on `PUT` for clients that do not send these optional fields. The listing form sends explicit values or `null` for all application fields when saving.
 
-Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighborhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber`, `depositInfo`, `applicationUrl`, `applicationEmail`, `applicationPhone`, and `applicationInstructions` fields. Full-form `PUT` payloads send every form-owned nullable field as a concrete value or `null`; server-managed neighborhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
+Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighbourhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber`, `depositInfo`, `applicationUrl`, `applicationEmail`, `applicationPhone`, and `applicationInstructions` fields. Full-form `PUT` payloads send every form-owned nullable field as a concrete value or `null`; server-managed neighbourhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
 
 ## Image Uploads
 
@@ -113,7 +113,7 @@ The public service always starts from `is_public = true`; `publicOnly` is presen
 | `DELETE` | `/api/admin/custom-listing-fields/:id`     | Admin | Delete a field definition.        | `deleteCustomListingFieldResponseSchema`                                          |
 | `PUT`    | `/api/admin/custom-listing-fields/reorder` | Admin | Reorder all fields in a category. | `reorderCustomListingFieldsSchema`, `reorderCustomListingFieldsResponseSchema`    |
 
-Create/update conflict behavior:
+Create/update conflict behaviour:
 
 - duplicate `key` returns `409`
 - missing target returns `404`

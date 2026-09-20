@@ -89,7 +89,7 @@ Run `npm run auth:admin` once to create the first administrator, then sign in wi
 
 The current `docker-compose.yml` starts a local development stack with Postgres and the Next.js dev server.
 
-Current compose behavior:
+Current compose behaviour:
 
 - starts a `postgres:16-alpine` database on host port `${POSTGRES_PORT:-5433}`
 - builds the app from `Dockerfile.dev`
