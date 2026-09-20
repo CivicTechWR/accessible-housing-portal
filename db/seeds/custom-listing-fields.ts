@@ -18,10 +18,10 @@ type SeedCustomListingField = Pick<
 >;
 
 /**
- * `description` — Shown to **tenants and applicants** browsing listings.
- *   Explains what the accessibility feature is in plain language.
+ * `description` is shown to tenants and applicants browsing listings.
+ *   Explains what the listing feature is in plain language.
  *
- * `helpText` — Shown to **property managers** filling in the listing form.
+ * `helpText` is shown to property managers filling in the listing form.
  *   Guides them on when to select the option and what qualifies.
  */
 export const customListingFieldSeed = [
@@ -701,6 +701,24 @@ export const customListingFieldSeed = [
     placeholder: null,
     isPublic: true,
     isFilterable: false,
+    isRequired: false,
+    sortOrder: 41,
+    options: null,
+  },
+
+  // Rental details
+  {
+    key: "rent_controlled",
+    label: "Rent Controlled",
+    description: "Rent increases for this unit are subject to rent control rules.",
+    fieldType: "boolean",
+    category: "RENTAL DETAILS",
+    appliesTo: "unit",
+    helpText:
+      "Select only if you have confirmed this unit is subject to rent control. Do not infer this from the rent amount.",
+    placeholder: null,
+    isPublic: true,
+    isFilterable: true,
     isRequired: false,
     sortOrder: 41,
     options: null,

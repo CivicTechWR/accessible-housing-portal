@@ -200,6 +200,10 @@ Create/update payloads send selected features through `accessibilityFeatures`, a
 
 If a new listing field must be searchable, sortable, joined, or constrained at scale, prefer a normalized column. If it is project-configurable feature metadata, prefer `listing_field_definitions` plus `customFields`.
 
+The default custom fields include `rent_controlled`, labelled "Rent Controlled" in the "Rental Details" category. It is an optional, public, filterable boolean that applies to the unit. Authors select it after confirming that the unit is subject to rent control. The field appears in listing forms and filters, and selected listings show it in their details. Existing listings are not assigned a value automatically.
+
+The rent-control migration adds the definition to existing installations without changing a definition already using the `rent_controlled` key. Local seed data includes the same default definition.
+
 ### Contact role
 
 The Property & Contact Info section accepts an optional contact role, such as "Property manager" or "Leasing coordinator". The preview and listing details show the role with the contact name. Existing listings can leave it blank.
