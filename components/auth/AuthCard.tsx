@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type AuthCardProps = {
-  title: string;
+  title: ReactNode;
   description?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
@@ -24,7 +24,9 @@ export function AuthCard({ title, description, children, footer, className }: Au
       className={cn("w-full max-w-md border border-border/80 shadow-xl shadow-black/5", className)}
     >
       <CardHeader className="border-b border-border/60">
-        <CardTitle>{title}</CardTitle>
+        <CardTitle>
+          <h1>{title}</h1>
+        </CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
       <CardContent className="space-y-4 pt-4">{children}</CardContent>
