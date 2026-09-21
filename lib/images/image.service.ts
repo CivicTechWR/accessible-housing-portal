@@ -243,7 +243,7 @@ async function processSharpCompatibleImage(
     const image = sharp(fileBuffer, {
       animated: false,
       failOn: "error",
-      limitInputPixels: false,
+      limitInputPixels: MAX_UPLOAD_PIXELS,
     });
     const metadata = await image.metadata();
 
@@ -279,7 +279,11 @@ async function processSharpCompatibleImage(
       height: info.height,
       sizeBytes: data.length,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "Input image exceeds pixel limit") {
+      return fail(413, "Image uploads must be 24 megapixels or smaller.");
+    }
+
     return fail(400, "Unable to process uploaded image.");
   }
 }
@@ -308,7 +312,7 @@ async function processJxlImage(fileBuffer: Buffer): Promise<ImageServiceResult<P
         height: decodedImage.height,
         channels: 4,
       },
-      limitInputPixels: false,
+      limitInputPixels: MAX_UPLOAD_PIXELS,
     })
       .flatten({ background: "#ffffff" })
       .resize({
