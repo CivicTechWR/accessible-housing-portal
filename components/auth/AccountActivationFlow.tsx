@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { AcceptInviteForm } from "@/components/auth/AcceptInviteForm";
 import { CommunityAgreement } from "@/components/auth/CommunityAgreement";
 
-type AccountActivationStep = "communityAgreement" | "accountSetup";
+const accountActivationSteps = {
+  communityAgreement: { number: 1, label: "Community agreement" },
+  accountSetup: { number: 2, label: "Account setup" },
+} as const;
+
+type AccountActivationStep = keyof typeof accountActivationSteps;
 
 type AccountActivationFlowProps = {
   token: string;
@@ -17,8 +22,29 @@ export function AccountActivationFlow({ token, email }: AccountActivationFlowPro
 
   switch (step) {
     case "communityAgreement":
-      return <CommunityAgreement onAccept={() => setStep("accountSetup")} />;
+      return (
+        <ActivationStep step="communityAgreement">
+          <CommunityAgreement onAccept={() => setStep("accountSetup")} />
+        </ActivationStep>
+      );
     case "accountSetup":
-      return <AcceptInviteForm token={token} email={email} />;
+      return (
+        <ActivationStep step="accountSetup">
+          <AcceptInviteForm token={token} email={email} />
+        </ActivationStep>
+      );
   }
+}
+
+function ActivationStep({ step, children }: { step: AccountActivationStep; children: ReactNode }) {
+  const { number, label } = accountActivationSteps[step];
+
+  return (
+    <div className="flex w-full flex-col items-center gap-3">
+      <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
+        Step {number} of 2: {label}
+      </p>
+      {children}
+    </div>
+  );
 }

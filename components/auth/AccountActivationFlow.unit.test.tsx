@@ -16,6 +16,7 @@ beforeEach(() => jest.clearAllMocks());
 it("moves from the community agreement to account setup in order", () => {
   render(<AccountActivationFlow token="invite-token" email="person@example.com" />);
 
+  expect(screen.getByText("Step 1 of 2: Community agreement")).toBeVisible();
   expect(screen.getByRole("heading", { name: "Community Agreement & Terms of Use" })).toBeVisible();
   expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
 
@@ -30,6 +31,8 @@ it("moves from the community agreement to account setup in order", () => {
   expect(continueButton).toBeEnabled();
   fireEvent.click(continueButton);
 
+  expect(screen.getByText("Step 2 of 2: Account setup")).toBeVisible();
+  expect(screen.queryByText("Step 1 of 2: Community agreement")).not.toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Activate your account" })).toBeVisible();
   expect(screen.getByLabelText("New password")).toBeVisible();
   expect(screen.queryByText("Community Agreement & Terms of Use")).not.toBeInTheDocument();
