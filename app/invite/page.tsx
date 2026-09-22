@@ -27,7 +27,7 @@ export default async function InvitePage({ searchParams }: InvitePageProps) {
 
   return (
     <AuthPageShell>
-      <AcceptInviteForm token={token} email={invite.user.email} />
+      <AcceptInviteForm token={token} email={invite.user.email} requiresAgreement />
     </AuthPageShell>
   );
 }

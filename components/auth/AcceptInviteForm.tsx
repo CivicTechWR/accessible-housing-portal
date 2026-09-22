@@ -8,14 +8,24 @@ import { CommunityAgreement } from "@/components/auth/CommunityAgreement";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function AcceptInviteForm({ token, email }: { token: string; email?: string }) {
+type AcceptInviteFormProps = {
+  token: string;
+  email?: string;
+  requiresAgreement?: boolean;
+};
+
+export function AcceptInviteForm({
+  token,
+  email,
+  requiresAgreement = false,
+}: AcceptInviteFormProps) {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ password?: string; confirmPassword?: string }>(
     {},
   );
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
-  const [agreementAccepted, setAgreementAccepted] = useState(!email);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const element = event.currentTarget;
@@ -59,7 +69,7 @@ export function AcceptInviteForm({ token, email }: { token: string; email?: stri
       </AuthCard>
     );
 
-  if (!agreementAccepted) {
+  if (requiresAgreement && !agreementAccepted) {
     return <CommunityAgreement onAccept={() => setAgreementAccepted(true)} />;
   }
 
