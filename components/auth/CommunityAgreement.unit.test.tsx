@@ -13,7 +13,9 @@ jest.mock("@/lib/auth-client", () => ({
 beforeEach(() => jest.clearAllMocks());
 
 it("requires invited users to accept the community agreement before account setup", () => {
-  render(<AcceptInviteForm token="invite-token" email="person@example.com" />);
+  render(
+    <AcceptInviteForm token="invite-token" email="person@example.com" requiresAgreement />,
+  );
 
   expect(screen.getByRole("heading", { name: "Community Agreement & Terms of Use" })).toBeVisible();
   expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
@@ -38,5 +40,12 @@ it("does not show the account agreement on password reset", () => {
   render(<AcceptInviteForm token="reset-token" />);
 
   expect(screen.getByRole("heading", { name: "Reset your password" })).toBeVisible();
+  expect(screen.queryByText("Community Agreement & Terms of Use")).not.toBeInTheDocument();
+});
+
+it("does not infer the agreement requirement from the email prop", () => {
+  render(<AcceptInviteForm token="reset-token" email="person@example.com" />);
+
+  expect(screen.getByRole("heading", { name: "Activate your account" })).toBeVisible();
   expect(screen.queryByText("Community Agreement & Terms of Use")).not.toBeInTheDocument();
 });
