@@ -7,10 +7,9 @@ export function useAccessibilityFeaturesQuery() {
   const result = useQuery({
     queryKey: queryKeys.accessibilityFeatures(),
     queryFn: async ({ signal }) => {
-      const response = await fetch(
-        "/api/custom-listing-fields?publicOnly=true&filterableOnly=true&type=boolean",
-        { signal },
-      );
+      const response = await fetch("/api/custom-listing-fields?publicOnly=true&type=boolean", {
+        signal,
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch accessibility features");

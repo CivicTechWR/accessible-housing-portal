@@ -355,14 +355,11 @@ export async function findPublicBooleanFeatureDefinitions() {
       description: customListingFields.description,
       category: customListingFields.category,
       sortOrder: customListingFields.sortOrder,
+      isFilterable: customListingFields.isFilterable,
     })
     .from(customListingFields)
     .where(
-      and(
-        eq(customListingFields.isPublic, true),
-        eq(customListingFields.isFilterable, true),
-        eq(customListingFields.fieldType, "boolean"),
-      ),
+      and(eq(customListingFields.isPublic, true), eq(customListingFields.fieldType, "boolean")),
     )
     .orderBy(
       asc(customListingFields.category),
