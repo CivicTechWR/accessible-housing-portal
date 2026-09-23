@@ -23,10 +23,14 @@ describe("InfoPopover", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("shows help on keyboard focus and dismisses it with Escape without moving focus", () => {
+  it("describes the trigger while closed and shows help on keyboard focus until Escape", () => {
     render(<InfoPopover label="About lease terms" description="Only the initial rental period." />);
     const trigger = screen.getByRole("button", { name: "About lease terms" });
+    const descriptionId = trigger.getAttribute("aria-describedby");
 
+    expect(descriptionId && document.getElementById(descriptionId)?.textContent).toBe(
+      "Only the initial rental period.",
+    );
     act(() => trigger.focus());
     expect(screen.getByRole("dialog").textContent).toBe("Only the initial rental period.");
     fireEvent.keyDown(trigger, { key: "Escape" });

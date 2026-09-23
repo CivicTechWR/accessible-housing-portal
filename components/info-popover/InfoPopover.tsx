@@ -45,9 +45,9 @@ export function InfoPopover({ label, description }: { label: string; description
           type="button"
           variant="ghost"
           size="icon"
-          className="size-6 shrink-0 rounded-full text-muted-foreground"
+          className="-my-1 size-6 shrink-0 rounded-full text-muted-foreground"
           aria-label={label}
-          aria-describedby={open ? descriptionId : undefined}
+          aria-describedby={descriptionId}
           onPointerEnter={(event) => {
             if (event.pointerType === "mouse") show();
           }}
@@ -55,6 +55,7 @@ export function InfoPopover({ label, description }: { label: string; description
           onFocus={show}
           onBlur={scheduleClose}
           onClick={(event) => {
+            // Skip Radix's built-in toggle so a click pins the popover instead of closing a hover-opened one.
             event.preventDefault();
             cancelClose();
             pinned.current = !pinned.current;
@@ -62,19 +63,22 @@ export function InfoPopover({ label, description }: { label: string; description
           }}
         >
           <HugeiconsIcon icon={InformationCircleIcon} className="size-4" aria-hidden />
+          {/* The popover content unmounts while closed, so screen readers read the description from here. */}
+          <span id={descriptionId} hidden>
+            {description}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent
         aria-label={label}
-        aria-describedby={descriptionId}
-        className="max-w-[calc(100vw-2rem)] text-sm normal-case tracking-normal font-normal"
+        className="max-w-[calc(100vw-2rem)] text-sm"
         collisionPadding={16}
         onPointerEnter={cancelClose}
         onPointerLeave={scheduleClose}
         onOpenAutoFocus={(event) => event.preventDefault()}
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
-        <p id={descriptionId}>{description}</p>
+        <p>{description}</p>
       </PopoverContent>
     </Popover>
   );

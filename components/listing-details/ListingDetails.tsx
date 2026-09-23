@@ -109,7 +109,7 @@ export function ListingDetails({
   const rentalDetailRows: Array<{
     label: string;
     value: string;
-    description?: string;
+    info?: { label: string; description: string };
     fullWidth?: boolean;
     preserveWhitespace?: boolean;
   }> = [
@@ -145,7 +145,10 @@ export function ListingDetails({
           {
             label: "Initial Lease Term",
             value: `${leaseTermMonths}-month lease`,
-            description: `${LEASE_TERM_DESCRIPTION} Confirm the final lease terms and renewal options with the lister.`,
+            info: {
+              label: "About initial lease terms",
+              description: `${LEASE_TERM_DESCRIPTION} Confirm the final lease terms and renewal options with the lister.`,
+            },
           },
         ]
       : []),
@@ -235,12 +238,7 @@ export function ListingDetails({
                 >
                   <dt className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
                     {row.label}
-                    {row.description && (
-                      <InfoPopover
-                        label="About initial lease terms"
-                        description={row.description}
-                      />
-                    )}
+                    {row.info && <InfoPopover {...row.info} />}
                   </dt>
                   <dd
                     className={`mt-1 text-sm font-medium text-foreground${

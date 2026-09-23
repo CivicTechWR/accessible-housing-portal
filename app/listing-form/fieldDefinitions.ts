@@ -186,7 +186,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: true,
     sortOrder: 10,
     placeholder: "E.g. 12",
-    helpText: `${LEASE_TERM_DESCRIPTION} Enter the number of months.`,
+    helpText: LEASE_TERM_DESCRIPTION,
   },
   {
     key: "utilitiesIncluded",
