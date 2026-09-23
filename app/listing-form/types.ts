@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { HEATING_TYPE_VALUES } from "@/shared/heating-type";
 import type { Control, UseFormReturn } from "react-hook-form";
 import {
   optionalTrimmedStringToUndefined,
@@ -33,6 +34,10 @@ export const listingFormSchema = z.object({
   monthlyRentCents: z.number({ message: "Rent is required" }).min(0, "Rent cannot be negative"),
   leaseTerm: z.number().int().positive(),
   depositInfo: optionalTrimmedStringToUndefined(),
+  heatingType: z
+    .union([z.enum(HEATING_TYPE_VALUES), z.literal("")])
+    .transform((value) => (value === "" ? undefined : value))
+    .optional(),
   utilitiesIncluded: z.array(z.enum(UTILITY_INCLUDED_VALUES)).default([]),
   images: z.array(listingImageSchema).default([]),
   availableOn: optionalTrimmedStringToUndefined(),
@@ -92,6 +97,7 @@ export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents" | "
   bathrooms: 0,
   squareFeet: undefined,
   depositInfo: undefined,
+  heatingType: undefined,
   utilitiesIncluded: [],
   images: [],
   availableOn: undefined,

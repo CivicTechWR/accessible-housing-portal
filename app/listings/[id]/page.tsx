@@ -38,6 +38,7 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       beds={details.beds}
       baths={details.baths}
       sqft={details.sqft}
+      heatingType={details.heatingType}
       utilitiesIncluded={details.utilitiesIncluded}
       images={details.images}
       timeAgo={details.timeAgo}

@@ -79,7 +79,7 @@ Important fields:
 - `property_id` links to `properties`.
 - `status` controls visibility.
 - common searchable fields such as bedrooms, bathrooms, rent, availability, and square footage are normalized columns.
-- `unit_number`, `building_type`, `lease_term_months`, `utilities_included`, `deposit_info`, and `application_url` are built-in listing columns.
+- `unit_number`, `building_type`, `lease_term_months`, `utilities_included`, `heating_type`, `deposit_info`, and `application_url` are built-in listing columns.
 - `monthly_rent_cents` and `max_income_cents` store money as integer cents.
 - `custom_fields` stores dynamic feature state in JSONB.
 - `published_at` and `archived_at` capture status transitions.
@@ -158,6 +158,8 @@ Deletion behaviour:
 Listing authoring stores selected admin-configured accessibility features in `listings.custom_fields`. Current authoring writes boolean keys that match `listing_field_definitions.key`; a selected feature is stored as `custom_fields[definition.key] = true`.
 
 Built-in values such as units, rent, bedrooms, bathrooms, building type, lease term, utilities, application URL, and contact data are stored in normalized listing/property columns. Use normalized columns when a field must be frequently filtered, sorted, joined, or constrained. Use `custom_fields` for project-configurable feature metadata that can vary by listing field definitions.
+
+`listings.heating_type` is a nullable enum. `null` means unanswered; `unknown` means the lister selected "Not sure". Existing listings have no assumed heating type. The allowed values and display labels live in `shared/heating-type.ts`.
 
 ## Money And Dates
 

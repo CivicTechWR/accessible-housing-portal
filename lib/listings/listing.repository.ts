@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { HeatingType } from "@/shared/heating-type";
+
 import { and, asc, desc, eq, inArray, notInArray, sql, type SQL } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -50,6 +52,7 @@ export type ListingRecord = {
   monthlyRentCents: number;
   availableOn: string | null;
   leaseTermMonths: number | null;
+  heatingType: HeatingType | null;
   utilitiesIncluded: UtilityIncluded[];
   maxIncomeCents: number | null;
   depositInfo: string | null;
@@ -178,6 +181,7 @@ export async function findListingRecordById(
       monthlyRentCents: listings.monthlyRentCents,
       availableOn: listings.availableOn,
       leaseTermMonths: listings.leaseTermMonths,
+      heatingType: listings.heatingType,
       utilitiesIncluded: listings.utilitiesIncluded,
       maxIncomeCents: listings.maxIncomeCents,
       depositInfo: listings.depositInfo,
@@ -598,6 +602,7 @@ export async function createListing(input: {
         monthlyRentCents: input.primaryUnitRentCents,
         availableOn: primaryUnit.availableDate ?? null,
         leaseTermMonths: input.payload.leaseTermMonths,
+        heatingType: input.payload.heatingType ?? null,
         utilitiesIncluded: input.payload.utilitiesIncluded,
         maxIncomeCents: null,
         depositInfo: input.payload.depositInfo ?? null,
@@ -673,6 +678,7 @@ export async function updateListingGraph(input: {
     monthlyRentCents: number;
     availableOn: string | null;
     leaseTermMonths: number | null;
+    heatingType: HeatingType | null;
     utilitiesIncluded: UtilityIncluded[];
     maxIncomeCents: number | null;
     depositInfo: string | null;
@@ -722,6 +728,7 @@ export async function updateListingGraph(input: {
         monthlyRentCents: input.listing.monthlyRentCents,
         availableOn: input.listing.availableOn,
         leaseTermMonths: input.listing.leaseTermMonths,
+        heatingType: input.listing.heatingType,
         utilitiesIncluded: input.listing.utilitiesIncluded,
         maxIncomeCents: input.listing.maxIncomeCents,
         depositInfo: input.listing.depositInfo,

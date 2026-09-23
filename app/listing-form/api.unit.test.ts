@@ -48,6 +48,7 @@ const validFormData: ListingFormData = {
       description: "Step-free building entry",
     },
   ],
+  heatingType: "heat_pump",
   utilitiesIncluded: ["heat", "water"],
 };
 
@@ -96,6 +97,7 @@ describe("mapListingFormToCreateListingInput", () => {
       unitNumber: "204",
       buildingType: "apartment",
       leaseTermMonths: 12,
+      heatingType: "heat_pump",
       utilitiesIncluded: ["heat", "water"],
       depositInfo: undefined,
     });
@@ -194,6 +196,7 @@ describe("mapListingFormToCreateListingInput", () => {
       applicationInstructions: null,
       buildingType: "apartment",
       leaseTermMonths: 12,
+      heatingType: "heat_pump",
       utilitiesIncluded: ["heat", "water"],
       depositInfo: null,
     });
@@ -579,5 +582,25 @@ describe("application details payloads", () => {
         applicationInstructions: null,
       });
     }
+  });
+});
+
+describe("heating type form mappings", () => {
+  it("keeps an unanswered field optional on create and clears it on replacement", () => {
+    const data = { ...validFormData, heatingType: undefined };
+    expect(mapListingFormToCreateListingInput(data).heatingType).toBeUndefined();
+    expect(mapListingFormToReplaceListingInput(data).heatingType).toBeNull();
+  });
+
+  it("distinguishes untouched, cleared, and explicitly unknown values during autosave", () => {
+    expect(
+      mapListingFormToAutosavePatchInput({ ...validFormData, heatingType: undefined }),
+    ).not.toHaveProperty("heatingType");
+    expect(
+      mapListingFormToAutosavePatchInput({ ...validFormData, heatingType: "" })?.heatingType,
+    ).toBeNull();
+    expect(
+      mapListingFormToAutosavePatchInput({ ...validFormData, heatingType: "unknown" })?.heatingType,
+    ).toBe("unknown");
   });
 });

@@ -46,6 +46,7 @@ const validCreatePayload = {
   buildingType: "apartment",
   leaseTermMonths: 12,
   utilitiesIncluded: ["heat"],
+  heatingType: "heat_pump",
   depositInfo: "First and last month's rent, refundable",
 };
 
@@ -222,6 +223,7 @@ describe("listing API schemas", () => {
         },
       ],
       unitNumber: null,
+      heatingType: null,
       depositInfo: null,
       applicationUrl: null,
     };
@@ -340,5 +342,22 @@ describe("application details validation", () => {
       createListingSchema.safeParse({ ...validCreatePayload, applicationEmail: "apply@" }).success,
     ).toBe(false);
     expect(patchListingSchema.safeParse({ applicationEmail: "apply@" }).success).toBe(false);
+  });
+});
+
+describe("listing heating type contracts", () => {
+  it("allows an unanswered create but requires a value or null on replacement", () => {
+    const { heatingType: _heatingType, ...withoutHeating } = validCreatePayload;
+    expect(createListingSchema.safeParse(withoutHeating).success).toBe(true);
+    expect(replaceListingSchema.safeParse(withoutHeating).success).toBe(false);
+    expect(replaceListingSchema.safeParse({ ...withoutHeating, heatingType: null }).success).toBe(
+      true,
+    );
+  });
+
+  it("accepts an explicit unknown or clear and rejects arbitrary heating values", () => {
+    expect(patchListingSchema.parse({ heatingType: "unknown" }).heatingType).toBe("unknown");
+    expect(patchListingSchema.parse({ heatingType: null }).heatingType).toBeNull();
+    expect(patchListingSchema.safeParse({ heatingType: "radiators" }).success).toBe(false);
   });
 });

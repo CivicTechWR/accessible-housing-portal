@@ -49,6 +49,7 @@ const archivedListing: ListingRecord = {
   monthlyRentCents: 145000,
   availableOn: null,
   leaseTermMonths: 12,
+  heatingType: "natural_gas",
   depositInfo: null,
   utilitiesIncluded: ["water"],
   maxIncomeCents: null,
@@ -263,6 +264,30 @@ describe("application details", () => {
           applicationPhone: null,
           applicationInstructions: null,
         }),
+      }),
+    );
+  });
+});
+
+describe("heating type updates", () => {
+  it.each([
+    { heatingType: undefined, expected: "natural_gas" },
+    { heatingType: "heat_pump" as const, expected: "heat_pump" },
+    { heatingType: null, expected: null },
+  ])("persists $expected when PATCH supplies $heatingType", async ({ heatingType, expected }) => {
+    findListingRecordByIdMock.mockResolvedValue({ ...archivedListing, status: "draft" });
+    jest.mocked(findPublicBooleanFeatureDefinitions).mockResolvedValue([]);
+    jest.mocked(updateListingGraph).mockResolvedValue(undefined);
+
+    const result = await patchListingByIdService({
+      listingId: LISTING_ID,
+      payload: { title: "Updated unit", heatingType },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(updateListingGraph).toHaveBeenCalledWith(
+      expect.objectContaining({
+        listing: expect.objectContaining({ heatingType: expected }),
       }),
     );
   });

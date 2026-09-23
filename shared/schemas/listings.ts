@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { HEATING_TYPE_VALUES } from "@/shared/heating-type";
 import {
   optionalTrimmedString,
   requiredTrimmedString,
@@ -31,6 +32,7 @@ export const UTILITY_INCLUDED_LABELS = {
   internet: "Internet",
 } satisfies Record<UtilityIncluded, string>;
 const listingBuildingTypeSchema = z.enum(LISTING_BUILDING_TYPE_VALUES);
+const heatingTypeSchema = z.enum(HEATING_TYPE_VALUES);
 const utilityIncludedSchema = z.enum(UTILITY_INCLUDED_VALUES);
 const listingLeaseTermMonthsSchema = z.number().int().positive();
 const hasAtLeastOneField = (value: Record<string, unknown>) => Object.keys(value).length > 0;
@@ -143,6 +145,7 @@ export const listingDetailsSchema = z.object({
   beds: z.number().int().min(0),
   baths: z.number().min(0),
   sqft: z.number().int().min(0),
+  heatingType: heatingTypeSchema.optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   depositInfo: optionalTrimmedString(),
   accessibilityFeatures: z.array(listingFeatureSchema).optional(),
@@ -246,6 +249,7 @@ const patchListingBasePayloadSchema = z.object({
   unitNumber: z.union([nonEmptyString, z.null()]).optional(),
   buildingType: listingBuildingTypeSchema.optional(),
   leaseTermMonths: listingLeaseTermMonthsSchema.optional(),
+  heatingType: heatingTypeSchema.nullable().optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   depositInfo: z.union([nonEmptyString, z.null()]).optional(),
   applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]).optional(),
@@ -281,6 +285,7 @@ const listingPayloadSchema = z.object({
   imageUploadSessionId: z.uuid("Invalid image upload session id.").optional(),
   buildingType: listingBuildingTypeSchema,
   leaseTermMonths: listingLeaseTermMonthsSchema,
+  heatingType: heatingTypeSchema.optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema),
   depositInfo: optionalTrimmedString(),
 });
@@ -294,6 +299,7 @@ export const replaceListingSchema = listingPayloadSchema
     address: listingAddressReplacementSchema,
     units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
     unitNumber: z.union([nonEmptyString, z.null()]),
+    heatingType: heatingTypeSchema.nullable(),
     depositInfo: z.union([nonEmptyString, z.null()]),
     applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
     applicationEmail: trimmedEmailString("Invalid application email.").nullable().optional(),
@@ -312,6 +318,7 @@ export const listingEditorDataSchema = z.object({
   squareFeet: z.number().min(0).optional(),
   monthlyRentCents: z.number().min(0),
   leaseTerm: listingLeaseTermMonthsSchema.optional(),
+  heatingType: heatingTypeSchema.optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema),
   depositInfo: z.string().optional(),
   images: z.array(listingEditorImageSchema),

@@ -188,7 +188,7 @@ The listing form includes built-in fields and admin-configured feature fields.
 Built-in listing fields are persisted in normalized columns on `listings` or `properties`, including:
 
 - title, description, status, and unit number
-- building type, bedrooms, bathrooms, square feet, rent, availability, lease term, included utilities, and deposit information
+- building type, bedrooms, bathrooms, square feet, rent, availability, lease term, primary heating type, included utilities, and deposit information
 - application URL and contact fields, including an optional free-text contact role
 - property name and address fields
 
@@ -196,7 +196,9 @@ Built-in listing fields are persisted in normalized columns on `listings` or `pr
 
 Public boolean fields are available for authoring and display regardless of `is_filterable`. Turning filterability off preserves saved values in the editor, listing details, and feature displays. Search filter options and the server-side `features` filter both require `is_filterable = true`. Non-public definitions are excluded from public listing responses.
 
-Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, deposit information, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighbourhood, and coordinates while preserving omitted server-managed neighbourhood and coordinate data. New listings published without an availability date retain the available-today default.
+Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, heating type, deposit information, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighbourhood, and coordinates while preserving omitted server-managed neighbourhood and coordinate data. New listings published without an availability date retain the available-today default.
+
+Primary heating type is optional and appears beside included utilities in the form, detail preview, and listing details. It describes the unit's main heating system independently of whether heat is included in rent. Blank values remain unspecified; "Not sure" is an explicit answer. Duplication copies heating type with unit details and clears it for building-only copies.
 
 If a new listing field must be searchable, sortable, joined, or constrained at scale, prefer a normalized column. If it is project-configurable feature metadata, prefer `listing_field_definitions` plus `customFields`.
 

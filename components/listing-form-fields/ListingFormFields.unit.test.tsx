@@ -120,3 +120,27 @@ describe("contact role editing", () => {
     expect(mapListingFormToAutosavePatchInput(form.getValues())?.contact?.role).toBeNull();
   });
 });
+
+describe("ListingFormFields heating type", () => {
+  it("clears a saved heating selection without changing the required building type", () => {
+    let form: ListingFormMethods | undefined;
+    render(
+      <TestListingForm
+        defaultValues={{
+          ...CREATE_FORM_DEFAULTS,
+          heatingType: "heat_pump",
+          buildingType: "apartment",
+        }}
+        onFormReady={(value) => (form = value)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear primary heating type" }));
+
+    expect(form?.getValues("heatingType")).toBe("");
+    expect(form?.getValues("buildingType")).toBe("apartment");
+    expect(screen.getByRole("combobox", { name: "Primary heating type" }).textContent).toBe(
+      "Select primary heating type",
+    );
+  });
+});

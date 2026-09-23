@@ -1,0 +1,2 @@
+CREATE TYPE "public"."heating_type" AS ENUM('natural_gas', 'electric_resistance', 'heat_pump', 'propane', 'heating_oil', 'other', 'unknown');--> statement-breakpoint
+ALTER TABLE "listings" ADD COLUMN "heating_type" "heating_type";

@@ -4,6 +4,7 @@ import {
   UTILITY_INCLUDED_LABELS,
   UTILITY_INCLUDED_VALUES,
 } from "@/shared/schemas/listings";
+import { HEATING_TYPE_LABELS, HEATING_TYPE_VALUES } from "@/shared/heating-type";
 import type { ListingFormInput } from "./types";
 
 export type CoreFieldType =
@@ -189,12 +190,27 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     helpText: LEASE_TERM_DESCRIPTION,
   },
   {
+    key: "heatingType",
+    displayName: "Primary heating type",
+    fieldType: "select",
+    category: "listing_details",
+    isRequired: false,
+    sortOrder: 11,
+    colSpan: 2,
+    helpText:
+      "Select the system that provides most of the unit's heat. Electric resistance includes electric baseboards and electric furnaces.",
+    options: HEATING_TYPE_VALUES.map((value) => ({
+      label: HEATING_TYPE_LABELS[value],
+      value,
+    })),
+  },
+  {
     key: "utilitiesIncluded",
     displayName: "Utilities Included",
     fieldType: "checkbox-group",
     category: "listing_details",
     isRequired: false,
-    sortOrder: 11,
+    sortOrder: 12,
     colSpan: 2,
     helpText: "Select all utilities included in the monthly rent.",
     options: UTILITY_INCLUDED_VALUES.map((value) => ({
