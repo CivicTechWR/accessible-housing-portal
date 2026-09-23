@@ -54,16 +54,12 @@ export const EMAIL_JOB_PRIORITY = {
   password_reset: 20,
 } as const satisfies Record<EmailJobType, number>;
 
-export function getEmailJobIdempotencyKey(data: EmailJobData): string {
-  return data.attempt.idempotencyKey;
-}
-
 /**
  * Derives a deterministic UUID from the attempt key so duplicate enqueues use
  * the same pg-boss job id while a resend gets a new one.
  */
 export function getEmailJobId(data: EmailJobData): string {
-  const hex = createHash("sha256").update(getEmailJobIdempotencyKey(data)).digest("hex");
+  const hex = createHash("sha256").update(data.attempt.idempotencyKey).digest("hex");
   const variant = ((Number.parseInt(hex[16] as string, 16) & 0x3) | 0x8).toString(16);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-8${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }

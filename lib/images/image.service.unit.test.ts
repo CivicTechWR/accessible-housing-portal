@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import { beforeEach, expect, it, jest } from "@jest/globals";
 import sharp from "sharp";
 
 import { createListingImageUpload } from "@/lib/listings/listing.repository";
@@ -28,7 +29,9 @@ async function uploadPng(width: number, height: number) {
   });
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it("rejects an image above 24 megapixels without storing it", async () => {
   expect(await uploadPng(6001, 4000)).toEqual({

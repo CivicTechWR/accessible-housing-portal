@@ -156,11 +156,35 @@ describe("duplicateListingByIdService", () => {
   });
 });
 
-describe("listing contact role", () => {
+describe("listing edits and reads", () => {
+  const APPLICATION_DETAILS = {
+    applicationEmail: "leasing@example.com",
+    applicationPhone: "519-555-0100",
+    applicationInstructions: "Email to book a viewing. We reply within two business days.",
+  };
+
   beforeEach(() => {
-    findListingRecordByIdMock.mockResolvedValue({ ...archivedListing, status: "published" });
+    findListingRecordByIdMock.mockResolvedValue({ ...archivedListing, status: "draft" });
     jest.mocked(findListingImagesByListingId).mockResolvedValue([]);
     jest.mocked(findPublicBooleanFeatureDefinitions).mockResolvedValue([]);
+    jest.mocked(updateListingGraph).mockResolvedValue(undefined);
+  });
+
+  async function patch(payload: Parameters<typeof patchListingByIdService>[0]["payload"]) {
+    const result = await patchListingByIdService({ listingId: LISTING_ID, payload });
+    expect(result.ok).toBe(true);
+    return jest.mocked(updateListingGraph).mock.calls[0]?.[0];
+  }
+
+  it("returns saved contact and application details in detail and editor responses", async () => {
+    expect(await getListingByIdService(LISTING_ID)).toMatchObject({
+      ok: true,
+      value: { data: { ...APPLICATION_DETAILS, contact: { role: "Property manager" } } },
+    });
+    expect(await getListingEditorByIdService(LISTING_ID)).toMatchObject({
+      ok: true,
+      value: { data: { ...APPLICATION_DETAILS, contactRole: "Property manager" } },
+    });
   });
 
   it.each([
@@ -168,127 +192,42 @@ describe("listing contact role", () => {
     [null, null],
     [undefined, "Property manager"],
   ])("updates role %s without losing omitted contact details", async (role, expected) => {
-    const result = await patchListingByIdService({
-      listingId: LISTING_ID,
-      payload: { contact: { role }, title: "Updated listing" },
+    expect(await patch({ contact: { role }, title: "Updated listing" })).toMatchObject({
+      property: { contactRole: expected, contactName: "Leasing Office" },
     });
-    expect(result.ok).toBe(true);
-    expect(updateListingGraph).toHaveBeenCalledWith(
-      expect.objectContaining({
-        property: expect.objectContaining({ contactRole: expected, contactName: "Leasing Office" }),
-      }),
-    );
-  });
-
-  it("returns the saved role to searchers and the editor", async () => {
-    const details = await getListingByIdService(LISTING_ID);
-    const editor = await getListingEditorByIdService(LISTING_ID);
-    expect(details).toMatchObject({
-      ok: true,
-      value: { data: { contact: { role: "Property manager" } } },
-    });
-    expect(editor).toMatchObject({
-      ok: true,
-      value: { data: { contactRole: "Property manager" } },
-    });
-  });
-});
-
-describe("application details", () => {
-  beforeEach(() => {
-    findListingRecordByIdMock.mockResolvedValue({ ...archivedListing, status: "draft" });
-    jest.mocked(findListingImagesByListingId).mockResolvedValue([]);
-    jest.mocked(findPublicBooleanFeatureDefinitions).mockResolvedValue([]);
-    jest.mocked(updateListingGraph).mockResolvedValue(undefined);
-  });
-
-  it("returns the saved application details to searchers and the editor", async () => {
-    for (const result of [
-      await getListingByIdService(LISTING_ID),
-      await getListingEditorByIdService(LISTING_ID),
-    ]) {
-      expect(result).toMatchObject({
-        ok: true,
-        value: {
-          data: {
-            applicationEmail: "leasing@example.com",
-            applicationPhone: "519-555-0100",
-            applicationInstructions: "Email to book a viewing. We reply within two business days.",
-          },
-        },
-      });
-    }
   });
 
   it("preserves application details when editing the general contact", async () => {
-    const result = await patchListingByIdService({
-      listingId: LISTING_ID,
-      payload: {
-        contact: { email: "office@example.org", phone: "519-555-0111" },
-      },
+    expect(
+      await patch({ contact: { email: "office@example.org", phone: "519-555-0111" } }),
+    ).toMatchObject({
+      property: { contactEmail: "office@example.org", contactPhone: "519-555-0111" },
+      listing: APPLICATION_DETAILS,
     });
-    expect(result.ok).toBe(true);
-    expect(updateListingGraph).toHaveBeenCalledWith(
-      expect.objectContaining({
-        property: expect.objectContaining({
-          contactEmail: "office@example.org",
-          contactPhone: "519-555-0111",
-        }),
-        listing: expect.objectContaining({
-          applicationEmail: "leasing@example.com",
-          applicationPhone: "519-555-0100",
-          applicationInstructions: "Email to book a viewing. We reply within two business days.",
-        }),
-      }),
-    );
   });
 
   it("saves explicit application edits and clears without changing the general contact", async () => {
-    const result = await patchListingByIdService({
-      listingId: LISTING_ID,
-      payload: {
-        applicationEmail: "apply@example.org",
-        applicationPhone: null,
-        applicationInstructions: null,
-      },
+    const edits = {
+      applicationEmail: "apply@example.org",
+      applicationPhone: null,
+      applicationInstructions: null,
+    };
+    expect(await patch(edits)).toMatchObject({
+      property: { contactEmail: "leasing@example.com", contactPhone: "519-555-0100" },
+      listing: edits,
     });
-    expect(result.ok).toBe(true);
-    expect(updateListingGraph).toHaveBeenCalledWith(
-      expect.objectContaining({
-        property: expect.objectContaining({
-          contactEmail: "leasing@example.com",
-          contactPhone: "519-555-0100",
-        }),
-        listing: expect.objectContaining({
-          applicationEmail: "apply@example.org",
-          applicationPhone: null,
-          applicationInstructions: null,
-        }),
-      }),
-    );
   });
-});
 
-describe("heating type updates", () => {
   it.each([
     { heatingType: undefined, expected: "natural_gas" },
     { heatingType: "heat_pump" as const, expected: "heat_pump" },
     { heatingType: null, expected: null },
-  ])("persists $expected when PATCH supplies $heatingType", async ({ heatingType, expected }) => {
-    findListingRecordByIdMock.mockResolvedValue({ ...archivedListing, status: "draft" });
-    jest.mocked(findPublicBooleanFeatureDefinitions).mockResolvedValue([]);
-    jest.mocked(updateListingGraph).mockResolvedValue(undefined);
-
-    const result = await patchListingByIdService({
-      listingId: LISTING_ID,
-      payload: { title: "Updated unit", heatingType },
-    });
-
-    expect(result.ok).toBe(true);
-    expect(updateListingGraph).toHaveBeenCalledWith(
-      expect.objectContaining({
-        listing: expect.objectContaining({ heatingType: expected }),
-      }),
-    );
-  });
+  ])(
+    "persists heating type $expected when PATCH supplies $heatingType",
+    async ({ heatingType, expected }) => {
+      expect(await patch({ title: "Updated unit", heatingType })).toMatchObject({
+        listing: { heatingType: expected },
+      });
+    },
+  );
 });

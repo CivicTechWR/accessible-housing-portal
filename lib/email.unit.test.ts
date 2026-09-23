@@ -19,6 +19,14 @@ const ATTEMPT: EmailDeliveryAttemptRef = {
   idempotencyKey: "account_invite/2e42f745-44e8-4ab7-a2a2-c1f42cc8e204/attempt/1",
 };
 
+const MESSAGE = {
+  to: "tenant@example.org",
+  subject: "Subject line",
+  text: "Plain text body",
+  html: "<p>HTML body</p>",
+  attempt: ATTEMPT,
+};
+
 const sendMock = jest.fn<
   (...args: unknown[]) => Promise<{
     data: { id: string } | null;
@@ -56,45 +64,25 @@ describe("sendEmail", () => {
     process.env = ORIGINAL_ENV;
   });
 
-  it("submits under the attempt's idempotency key with non-sensitive correlation tags", async () => {
-    const result = await sendEmail({
-      to: "tenant@example.org",
-      subject: "Subject line",
-      text: "Plain text body",
-      html: "<p>HTML body</p>",
-      attempt: ATTEMPT,
-    });
+  it("submits under the attempt's idempotency key and records the accepted email id", async () => {
+    const { attempt: _attempt, ...content } = MESSAGE;
+
+    const result = await sendEmail(MESSAGE);
 
     expect(ResendMock).toHaveBeenCalledWith("re_test_key");
     expect(sendMock).toHaveBeenCalledWith(
       {
+        ...content,
         from: "Home Hub <no-reply@example.org>",
-        to: "tenant@example.org",
-        subject: "Subject line",
-        text: "Plain text body",
-        html: "<p>HTML body</p>",
         tags: [
           { name: "email_type", value: "account_invite" },
           { name: "delivery_id", value: ATTEMPT.deliveryId },
           { name: "attempt_id", value: ATTEMPT.id },
         ],
       },
-      {
-        idempotencyKey: ATTEMPT.idempotencyKey,
-      },
+      { idempotencyKey: ATTEMPT.idempotencyKey },
     );
     expect(result).toEqual({ id: "email_123" });
-  });
-
-  it("persists the Resend email id on the attempt once the provider accepts the send", async () => {
-    await sendEmail({
-      to: "tenant@example.org",
-      subject: "Subject line",
-      text: "Plain text body",
-      html: "<p>HTML body</p>",
-      attempt: ATTEMPT,
-    });
-
     expect(recordSubmissionMock).toHaveBeenCalledWith({
       attemptId: ATTEMPT.id,
       providerEmailId: "email_123",
@@ -107,15 +95,7 @@ describe("sendEmail", () => {
       error: { message: "Daily quota exceeded" },
     });
 
-    await expect(
-      sendEmail({
-        to: "tenant@example.org",
-        subject: "Subject line",
-        text: "Plain text body",
-        html: "<p>HTML body</p>",
-        attempt: ATTEMPT,
-      }),
-    ).rejects.toThrow("Daily quota exceeded");
+    await expect(sendEmail(MESSAGE)).rejects.toThrow("Daily quota exceeded");
   });
 
   it("throws a structured EmailSendError with Retry-After parsed case-insensitively", async () => {
@@ -125,13 +105,7 @@ describe("sendEmail", () => {
       headers: { "Retry-After": "120" },
     });
 
-    const error = await sendEmail({
-      to: "tenant@example.org",
-      subject: "Subject line",
-      text: "Plain text body",
-      html: "<p>HTML body</p>",
-      attempt: ATTEMPT,
-    }).catch((thrown: unknown) => thrown);
+    const error = await sendEmail(MESSAGE).catch((thrown: unknown) => thrown);
 
     expect(error).toBeInstanceOf(EmailSendError);
     expect(error).toMatchObject({
@@ -148,13 +122,7 @@ describe("sendEmail", () => {
       headers: { "retry-after": new Date(Date.now() + 90_000).toUTCString() },
     });
 
-    const error = (await sendEmail({
-      to: "tenant@example.org",
-      subject: "Subject line",
-      text: "Plain text body",
-      html: "<p>HTML body</p>",
-      attempt: ATTEMPT,
-    }).catch((thrown: unknown) => thrown)) as EmailSendError;
+    const error = (await sendEmail(MESSAGE).catch((thrown: unknown) => thrown)) as EmailSendError;
 
     expect(error.retryAfterSeconds).toBeGreaterThanOrEqual(85);
     expect(error.retryAfterSeconds).toBeLessThanOrEqual(91);
@@ -164,16 +132,9 @@ describe("sendEmail", () => {
     const abortController = new AbortController();
     abortController.abort();
 
-    await expect(
-      sendEmail({
-        to: "tenant@example.org",
-        subject: "Subject line",
-        text: "Plain text body",
-        html: "<p>HTML body</p>",
-        attempt: ATTEMPT,
-        signal: abortController.signal,
-      }),
-    ).rejects.toMatchObject({ name: "AbortError" });
+    await expect(sendEmail({ ...MESSAGE, signal: abortController.signal })).rejects.toMatchObject({
+      name: "AbortError",
+    });
 
     expect(sendMock).not.toHaveBeenCalled();
   });
@@ -182,14 +143,7 @@ describe("sendEmail", () => {
     sendMock.mockReturnValue(new Promise(() => {}));
     const abortController = new AbortController();
 
-    const pendingSend = sendEmail({
-      to: "tenant@example.org",
-      subject: "Subject line",
-      text: "Plain text body",
-      html: "<p>HTML body</p>",
-      attempt: ATTEMPT,
-      signal: abortController.signal,
-    });
+    const pendingSend = sendEmail({ ...MESSAGE, signal: abortController.signal });
     abortController.abort();
 
     await expect(pendingSend).rejects.toMatchObject({ name: "AbortError" });
@@ -203,15 +157,8 @@ describe("sendEmail", () => {
       return new Promise(() => {});
     });
 
-    await expect(
-      sendEmail({
-        to: "tenant@example.org",
-        subject: "Subject line",
-        text: "Plain text body",
-        html: "<p>HTML body</p>",
-        attempt: ATTEMPT,
-        signal: abortController.signal,
-      }),
-    ).rejects.toBe(abortReason);
+    await expect(sendEmail({ ...MESSAGE, signal: abortController.signal })).rejects.toBe(
+      abortReason,
+    );
   });
 });

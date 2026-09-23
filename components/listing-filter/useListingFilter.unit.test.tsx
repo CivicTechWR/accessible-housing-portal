@@ -27,8 +27,11 @@ function createFilters(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function createSetFiltersMock() {
-  return jest.fn(async (..._args: unknown[]) => new URLSearchParams());
+function renderFilters(overrides: Record<string, unknown> = {}) {
+  const setFilters = jest.fn(async (..._args: unknown[]) => new URLSearchParams());
+  useQueryStatesMock.mockReturnValue([createFilters(overrides), setFilters]);
+  const { result } = renderHook(() => useListingFilters());
+  return { result, setFilters };
 }
 
 describe("useListingFilters", () => {
@@ -37,20 +40,14 @@ describe("useListingFilters", () => {
   });
 
   it("does not prefill the search input when no location filter is active", () => {
-    const setFilters = createSetFiltersMock();
-    useQueryStatesMock.mockReturnValue([createFilters(), setFilters]);
-
-    const { result } = renderHook(() => useListingFilters());
+    const { result } = renderFilters();
 
     expect(result.current.searchInputProps.value).toBe("");
     expect(result.current.searchInputProps.placeholder).toBe("Search city, address, or building");
   });
 
   it("keeps typed text in the input while syncing the location query param", () => {
-    const setFilters = createSetFiltersMock();
-    useQueryStatesMock.mockReturnValue([createFilters(), setFilters]);
-
-    const { result } = renderHook(() => useListingFilters());
+    const { result, setFilters } = renderFilters();
 
     act(() => {
       result.current.searchInputProps.onChange({
@@ -63,10 +60,7 @@ describe("useListingFilters", () => {
   });
 
   it("clears the location query param instead of restoring a default city", () => {
-    const setFilters = createSetFiltersMock();
-    useQueryStatesMock.mockReturnValue([createFilters({ location: "Waterloo, ON" }), setFilters]);
-
-    const { result } = renderHook(() => useListingFilters());
+    const { result, setFilters } = renderFilters({ location: "Waterloo, ON" });
 
     act(() => {
       result.current.searchInputProps.onChange({
@@ -79,10 +73,7 @@ describe("useListingFilters", () => {
   });
 
   it("clears the minimum price filter with null instead of leaving stale query state behind", async () => {
-    const setFilters = createSetFiltersMock();
-    useQueryStatesMock.mockReturnValue([createFilters({ minPrice: 1800 }), setFilters]);
-
-    const { result } = renderHook(() => useListingFilters());
+    const { result, setFilters } = renderFilters({ minPrice: 1800 });
 
     await act(async () => {
       await result.current.priceRangeProps.onMinChange(undefined);
@@ -92,10 +83,7 @@ describe("useListingFilters", () => {
   });
 
   it("keeps min and max price consistent when the new minimum exceeds the current maximum", async () => {
-    const setFilters = createSetFiltersMock();
-    useQueryStatesMock.mockReturnValue([createFilters({ maxPrice: 2000 }), setFilters]);
-
-    const { result } = renderHook(() => useListingFilters());
+    const { result, setFilters } = renderFilters({ maxPrice: 2000 });
 
     await act(async () => {
       await result.current.priceRangeProps.onMinChange(2400);

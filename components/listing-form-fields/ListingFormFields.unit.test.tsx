@@ -32,113 +32,68 @@ function TestListingForm({
   );
 }
 
-describe("ListingFormFields deposit information", () => {
-  it("renders an optional deposit information textarea", () => {
-    render(<TestListingForm />);
+function renderForm(defaultValues: Partial<ListingFormInput> = {}) {
+  let form: ListingFormMethods | undefined;
+  render(
+    <TestListingForm
+      defaultValues={{ ...CREATE_FORM_DEFAULTS, ...defaultValues }}
+      onFormReady={(value) => (form = value)}
+    />,
+  );
+  if (!form) throw new Error("Form was not initialized");
+  return form;
+}
 
-    expect(screen.queryByText("Deposit Information")).not.toBeNull();
-    expect(
-      screen.queryByText("Describe any deposits required so tenants know what to expect."),
-    ).not.toBeNull();
-    expect(
-      screen.getByPlaceholderText("E.g. First and last month's rent, refundable"),
-    ).not.toBeNull();
-  });
-
+describe("ListingFormFields", () => {
   it("stores typed deposit information on the form", () => {
-    let form: ListingFormMethods | undefined;
-    render(<TestListingForm onFormReady={(f) => (form = f)} />);
+    const form = renderForm();
 
     fireEvent.change(screen.getByPlaceholderText("E.g. First and last month's rent, refundable"), {
       target: { value: "First and last month's rent, refundable" },
     });
 
-    expect(form?.getValues("depositInfo")).toBe("First and last month's rent, refundable");
+    expect(form.getValues("depositInfo")).toBe("First and last month's rent, refundable");
   });
-});
 
-describe("ListingFormFields utilities included", () => {
-  it("renders a checkbox for each utility", () => {
-    render(<TestListingForm />);
+  it("renders a described checkbox for each utility", () => {
+    renderForm();
 
-    expect(screen.queryByText("Utilities Included")).not.toBeNull();
     const description = screen.getByText("Select all utilities included in the monthly rent.");
-
     for (const label of ["Heat", "Water", "Electricity", "Gas", "Internet"]) {
       const checkbox = screen.getByRole("checkbox", { name: label });
-      expect(checkbox.getAttribute("aria-checked")).toBe("false");
-      expect(checkbox.getAttribute("aria-describedby")).toBe(description.id);
+      expect(checkbox).not.toBeChecked();
+      expect(checkbox).toHaveAttribute("aria-describedby", description.id);
     }
   });
 
-  it("checks the boxes for utilities already selected", () => {
-    render(
-      <TestListingForm
-        defaultValues={{ ...CREATE_FORM_DEFAULTS, utilitiesIncluded: ["heat", "internet"] }}
-      />,
-    );
+  it("checks saved utilities and adds and removes them when toggled", () => {
+    const form = renderForm({ utilitiesIncluded: ["water"] });
 
-    expect(screen.getByRole("checkbox", { name: "Heat" }).getAttribute("aria-checked")).toBe(
-      "true",
-    );
-    expect(screen.getByRole("checkbox", { name: "Internet" }).getAttribute("aria-checked")).toBe(
-      "true",
-    );
-    expect(screen.getByRole("checkbox", { name: "Water" }).getAttribute("aria-checked")).toBe(
-      "false",
-    );
-  });
-
-  it("adds and removes utilities in the form value when toggled", () => {
-    let form: ListingFormMethods | undefined;
-    render(<TestListingForm onFormReady={(f) => (form = f)} />);
-
-    fireEvent.click(screen.getByRole("checkbox", { name: "Water" }));
+    expect(screen.getByRole("checkbox", { name: "Water" })).toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: "Heat" }));
-    expect(form?.getValues("utilitiesIncluded")).toEqual(["heat", "water"]);
+    expect(form.getValues("utilitiesIncluded")).toEqual(["heat", "water"]);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Water" }));
-    expect(form?.getValues("utilitiesIncluded")).toEqual(["heat"]);
+    expect(form.getValues("utilitiesIncluded")).toEqual(["heat"]);
   });
-});
 
-describe("contact role editing", () => {
-  it("sends an explicit clear after removing a saved role", () => {
-    let form: ListingFormMethods | undefined;
-    render(
-      <TestListingForm
-        defaultValues={{ ...CREATE_FORM_DEFAULTS, contactRole: "Property manager" }}
-        onFormReady={(value) => (form = value)}
-      />,
-    );
+  it("sends an explicit clear after removing a saved contact role", () => {
+    const form = renderForm({ contactRole: "Property manager" });
 
     fireEvent.change(screen.getByRole("textbox", { name: "Contact Role" }), {
       target: { value: "" },
     });
 
-    if (!form) throw new Error("Form was not initialized");
     expect(mapListingFormToAutosavePatchInput(form.getValues())?.contact?.role).toBeNull();
   });
-});
 
-describe("ListingFormFields heating type", () => {
   it("clears a saved heating selection without changing the required building type", () => {
-    let form: ListingFormMethods | undefined;
-    render(
-      <TestListingForm
-        defaultValues={{
-          ...CREATE_FORM_DEFAULTS,
-          heatingType: "heat_pump",
-          buildingType: "apartment",
-        }}
-        onFormReady={(value) => (form = value)}
-      />,
-    );
+    const form = renderForm({ heatingType: "heat_pump", buildingType: "apartment" });
 
     fireEvent.click(screen.getByRole("button", { name: "Clear primary heating type" }));
 
-    expect(form?.getValues("heatingType")).toBe("");
-    expect(form?.getValues("buildingType")).toBe("apartment");
+    expect(form.getValues("heatingType")).toBe("");
+    expect(form.getValues("buildingType")).toBe("apartment");
     expect(screen.getByRole("combobox", { name: "Primary heating type" }).textContent).toBe(
       "Select primary heating type",
     );

@@ -64,7 +64,7 @@ describe("ListingForm hydration", () => {
   it("keeps the persisted building type selected after the listing loads", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
-    await waitFor(() => expect(screen.queryByText("Building Type *")).not.toBeNull());
+    await screen.findByText("Building Type *");
 
     const buildingType = () =>
       document.querySelector('[data-field-name="buildingType"] [role="combobox"]');
@@ -82,7 +82,7 @@ describe("ListingForm hydration", () => {
   it("hydrates the remaining core fields from the editor payload", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
-    await waitFor(() => expect(screen.queryByText("Title *")).not.toBeNull());
+    await screen.findByText("Title *");
 
     const valueOf = (fieldName: string) =>
       (document.querySelector(`[data-field-name="${fieldName}"] input`) as HTMLInputElement | null)

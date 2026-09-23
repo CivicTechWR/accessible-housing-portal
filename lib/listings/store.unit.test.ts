@@ -14,10 +14,28 @@ import {
   DEFAULT_PROPERTY_COUNTRY,
   getDisplayAccessibilityFeatures,
   selectDuplicateCustomFields,
-  getListingApplicationUrl,
   getOptionalListingText,
   mergeListingCustomFields,
 } from "./store";
+
+const ELEVATOR = {
+  key: "elevator_in_building",
+  label: "Elevator in Building",
+  description: "The building has at least one elevator.",
+  category: "BUILDING AMENITIES",
+  sortOrder: 1,
+};
+const AUTOMATED_DOORS = {
+  key: "automated_building_doors",
+  label: "Automated Building Doors",
+  description: "Common-area doors open automatically.",
+  category: "BUILDING AMENITIES",
+  sortOrder: 2,
+};
+
+function selected({ key, label, description }: typeof ELEVATOR) {
+  return { id: key, name: label, description };
+}
 
 describe("buildDuplicateListingTitle", () => {
   it("prefixes titled listings and keeps untitled drafts untitled", () => {
@@ -307,15 +325,7 @@ describe("buildListingFeatureCategories", () => {
       {
         accessibilityFeatures: ["Elevator access"],
       } satisfies ListingCustomFields,
-      [
-        {
-          key: "elevator_in_building",
-          label: "Elevator in Building",
-          description: "The building has at least one elevator.",
-          category: "BUILDING AMENITIES",
-          sortOrder: 1,
-        },
-      ],
+      [ELEVATOR],
     );
 
     expect(features).toEqual([]);
@@ -324,56 +334,9 @@ describe("buildListingFeatureCategories", () => {
 
 describe("buildListingCustomFields", () => {
   it("persists selected feature ids as boolean custom fields", () => {
-    const customFields = buildListingCustomFields(
-      {
-        title: "Accessible listing",
-        name: "Cedar Court",
-        description: undefined,
-        address: {
-          street: "123 Main Street",
-          street2: undefined,
-          city: "Waterloo",
-          province: "ON",
-          postalCode: "N2L 3A1",
-        },
-        units: [
-          {
-            bedrooms: 1,
-            bathrooms: 1,
-            sqft: 600,
-            rent: 1500,
-            availableDate: "2026-05-01",
-          },
-        ],
-        accessibilityFeatures: [
-          {
-            id: "elevator_in_building",
-            name: "Elevator in Building",
-            description: "The building has at least one elevator.",
-          },
-        ],
-        applicationUrl: undefined,
-        images: [],
-        contact: {
-          name: "Leasing Office",
-          email: "leasing@example.org",
-          phone: "519-555-0100",
-        },
-        status: "draft",
-        buildingType: "apartment",
-        leaseTermMonths: 12,
-        utilitiesIncluded: [],
-      },
-      [
-        {
-          key: "elevator_in_building",
-          label: "Elevator in Building",
-          description: "The building has at least one elevator.",
-          category: "BUILDING AMENITIES",
-          sortOrder: 1,
-        },
-      ],
-    );
+    const customFields = buildListingCustomFields({ accessibilityFeatures: [selected(ELEVATOR)] }, [
+      ELEVATOR,
+    ]);
 
     expect(customFields.elevator_in_building).toBe(true);
     expect(customFields.accessibilityFeatures).toBeUndefined();
@@ -389,31 +352,8 @@ describe("mergeListingCustomFields", () => {
         elevator_in_building: true,
         unrelated_boolean: true,
       } satisfies ListingCustomFields,
-      {
-        accessibilityFeatures: [
-          {
-            id: "automated_building_doors",
-            name: "Automated Building Doors",
-            description: "Common-area doors open automatically.",
-          },
-        ],
-      },
-      [
-        {
-          key: "elevator_in_building",
-          label: "Elevator in Building",
-          description: "The building has at least one elevator.",
-          category: "BUILDING AMENITIES",
-          sortOrder: 1,
-        },
-        {
-          key: "automated_building_doors",
-          label: "Automated Building Doors",
-          description: "Common-area doors open automatically.",
-          category: "BUILDING AMENITIES",
-          sortOrder: 2,
-        },
-      ],
+      { accessibilityFeatures: [selected(AUTOMATED_DOORS)] },
+      [ELEVATOR, AUTOMATED_DOORS],
     );
 
     expect(customFields).toEqual({
@@ -432,22 +372,7 @@ describe("getDisplayAccessibilityFeatures", () => {
         automated_building_doors: true,
         elevator_in_building: true,
       } satisfies ListingCustomFields,
-      [
-        {
-          key: "automated_building_doors",
-          label: "Automated Building Doors",
-          description: "Common-area doors open automatically.",
-          category: "BUILDING AMENITIES",
-          sortOrder: 2,
-        },
-        {
-          key: "elevator_in_building",
-          label: "Elevator in Building",
-          description: "The building has at least one elevator.",
-          category: "BUILDING AMENITIES",
-          sortOrder: 1,
-        },
-      ],
+      [AUTOMATED_DOORS, ELEVATOR],
     );
 
     expect(features.map((feature) => feature.name)).toEqual([
@@ -457,28 +382,9 @@ describe("getDisplayAccessibilityFeatures", () => {
   });
 });
 
-describe("getListingApplicationUrl", () => {
-  it("returns trimmed applicationUrl when provided", () => {
-    expect(getListingApplicationUrl(" https://example.org/apply ")).toBe(
-      "https://example.org/apply",
-    );
-  });
-
-  it("returns undefined when empty", () => {
-    expect(getListingApplicationUrl(null)).toBeUndefined();
-    expect(getListingApplicationUrl(undefined)).toBeUndefined();
-    expect(getListingApplicationUrl("   ")).toBeUndefined();
-  });
-});
-
 describe("getOptionalListingText", () => {
-  it("returns trimmed text when provided", () => {
-    expect(getOptionalListingText("  First and last month's rent  ")).toBe(
-      "First and last month's rent",
-    );
-  });
-
-  it("returns undefined when empty", () => {
+  it("returns trimmed text, or undefined when empty", () => {
+    expect(getOptionalListingText(" https://example.org/apply ")).toBe("https://example.org/apply");
     expect(getOptionalListingText(null)).toBeUndefined();
     expect(getOptionalListingText(undefined)).toBeUndefined();
     expect(getOptionalListingText("   ")).toBeUndefined();

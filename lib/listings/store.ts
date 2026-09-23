@@ -28,7 +28,7 @@ export const DEFAULT_PROPERTY_COUNTRY = "Canada";
 type StoredListingFeature = NonNullable<ListingDetails["accessibilityFeatures"]>[number];
 
 export function buildListingCustomFields(
-  input: CreateListingInput,
+  input: Pick<CreateListingInput, "accessibilityFeatures">,
   definitions: ListingFeatureDefinition[],
 ): ListingCustomFields {
   const customFields: ListingCustomFields = {};
@@ -50,10 +50,6 @@ export function mergeListingCustomFields(
   }
 
   return next;
-}
-
-export function getListingApplicationUrl(applicationUrl: string | null | undefined) {
-  return applicationUrl?.trim() || undefined;
 }
 
 export function getOptionalListingText(value: string | null | undefined) {

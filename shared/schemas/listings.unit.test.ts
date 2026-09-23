@@ -6,6 +6,7 @@ import {
   patchListingSchema,
   replaceListingSchema,
 } from "@/shared/schemas/listings";
+import { expectIssueAt } from "@/test/expect-issue-at";
 
 const validCreatePayload = {
   title: "Suite 204 at Cedar Court",
@@ -52,36 +53,13 @@ const validCreatePayload = {
 
 describe("listing API schemas", () => {
   it("accepts maxRent query values with up to two decimal places", () => {
-    const result = listingQuerySchema.safeParse({
-      maxRent: "1200.50",
-    });
-
-    expect(result.success).toBe(true);
-
-    if (!result.success) {
-      throw new Error("Expected query schema parse to succeed");
+    expect(listingQuerySchema.parse({ maxRent: "1200.50" }).maxRent).toBe("1200.50");
+    for (const maxRent of ["1200.555", "not-a-number"]) {
+      expectIssueAt(listingQuerySchema.safeParse({ maxRent }), "maxRent");
     }
-
-    expect(result.data.maxRent).toBe("1200.50");
   });
 
-  it("rejects maxRent query values with invalid numeric formats", () => {
-    const invalidValues = ["1200.555", "not-a-number"];
-
-    invalidValues.forEach((maxRent) => {
-      const result = listingQuerySchema.safeParse({
-        maxRent,
-      });
-
-      expect(result.success).toBe(false);
-
-      if (!result.success) {
-        expect(result.error.issues.some((issue) => issue.path.join(".") === "maxRent")).toBe(true);
-      }
-    });
-  });
-
-  it("trims create payload strings", () => {
+  it("trims create and PATCH payload strings", () => {
     const parsed = createListingSchema.parse({
       ...validCreatePayload,
       title: "  Suite 204 at Cedar Court  ",
@@ -95,57 +73,34 @@ describe("listing API schemas", () => {
       },
     });
 
-    expect(parsed.title).toBe("Suite 204 at Cedar Court");
-    expect(parsed.name).toBe("Cedar Court");
-    expect(parsed.applicationUrl).toBe("https://example.org/apply");
-    expect(parsed.depositInfo).toBe("First and last month's rent");
-    expect(parsed.contact.role).toBe("Property manager");
-    expect(parsed.contact.email).toBe("leasing@example.org");
+    expect(parsed).toMatchObject({
+      title: "Suite 204 at Cedar Court",
+      name: "Cedar Court",
+      applicationUrl: "https://example.org/apply",
+      depositInfo: "First and last month's rent",
+      contact: { role: "Property manager", email: "leasing@example.org" },
+    });
+    expect(patchListingSchema.parse({ name: "  Updated Listing Name  " }).name).toBe(
+      "Updated Listing Name",
+    );
   });
 
   it("rejects whitespace-only required fields in create payloads", () => {
-    const result = createListingSchema.safeParse({
-      ...validCreatePayload,
-      title: "   ",
-    });
-
-    expect(result.success).toBe(false);
-
-    if (result.success) {
-      throw new Error("Expected schema parse to fail");
-    }
-
-    expect(result.error.issues.some((issue) => issue.path.join(".") === "title")).toBe(true);
+    expectIssueAt(createListingSchema.safeParse({ ...validCreatePayload, title: "   " }), "title");
   });
 
-  it("trims values in PATCH payloads", () => {
-    const parsed = patchListingSchema.parse({
-      name: "  Updated Listing Name  ",
-    });
+  it.each([
+    { payload: { address: {} }, message: "Address update must include at least one field." },
+    { payload: { contact: {} }, message: "Contact update must include at least one field." },
+    { payload: { units: [{}] }, message: "Each unit update must include at least one field." },
+  ])("rejects an effectively empty nested PATCH payload: $message", ({ payload, message }) => {
+    const result = patchListingSchema.safeParse(payload);
 
-    expect(parsed.name).toBe("Updated Listing Name");
-  });
-
-  it("rejects effectively empty nested PATCH payloads", () => {
-    const cases = [
-      { payload: { address: {} }, message: "Address update must include at least one field." },
-      { payload: { contact: {} }, message: "Contact update must include at least one field." },
-      { payload: { units: [{}] }, message: "Each unit update must include at least one field." },
-    ];
-
-    cases.forEach(({ payload, message }) => {
-      const result = patchListingSchema.safeParse(payload);
-
-      expect(result.success).toBe(false);
-
-      if (!result.success) {
-        expect(result.error.issues.map((issue) => issue.message)).toContain(message);
-      }
-    });
+    expect(result.error?.issues.map((issue) => issue.message)).toContain(message);
   });
 
   it("accepts meaningful nested PATCH payloads", () => {
-    const result = patchListingSchema.safeParse({
+    const parsed = patchListingSchema.parse({
       title: "Updated Title",
       address: { city: "Waterloo" },
       contact: { email: "Leasing@Example.com" },
@@ -159,52 +114,16 @@ describe("listing API schemas", () => {
       ],
     });
 
-    expect(result.success).toBe(true);
-
-    if (!result.success) {
-      throw new Error("Expected schema parse to succeed");
-    }
-
-    expect(result.data.contact?.email).toBe("leasing@example.com");
+    expect(parsed.contact?.email).toBe("leasing@example.com");
   });
 
   it("rejects submitted accessibility features without ids", () => {
-    const createResult = createListingSchema.safeParse({
-      ...validCreatePayload,
-      accessibilityFeatures: [
-        {
-          name: "Ramp entry",
-          description: "Step-free building entry",
-        },
-      ],
-    });
-    const patchResult = patchListingSchema.safeParse({
-      accessibilityFeatures: [
-        {
-          name: "Ramp entry",
-          description: "Step-free building entry",
-        },
-      ],
-    });
+    const accessibilityFeatures = [{ name: "Ramp entry", description: "Step-free building entry" }];
 
-    expect(createResult.success).toBe(false);
-    expect(patchResult.success).toBe(false);
-  });
-
-  it("allows clearing unit number in PATCH payloads", () => {
-    const result = patchListingSchema.safeParse({
-      unitNumber: null,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it("allows clearing deposit information in PATCH payloads", () => {
-    const result = patchListingSchema.safeParse({
-      depositInfo: null,
-    });
-
-    expect(result.success).toBe(true);
+    expect(
+      createListingSchema.safeParse({ ...validCreatePayload, accessibilityFeatures }).success,
+    ).toBe(false);
+    expect(patchListingSchema.safeParse({ accessibilityFeatures }).success).toBe(false);
   });
 
   it("accepts explicit null for nullable replacement and PATCH fields", () => {
@@ -234,6 +153,8 @@ describe("listing API schemas", () => {
         description: null,
         address: { street2: null },
         units: [{ sqft: null, availableDate: null }],
+        unitNumber: null,
+        depositInfo: null,
       }).success,
     ).toBe(true);
   });
