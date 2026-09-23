@@ -65,7 +65,7 @@ export function SiteFooter() {
               </li>
               <li>
                 <a
-                  href="https://github.com/CivicTechWR/affordable-housing-portal"
+                  href="https://github.com/CivicTechWR/accessible-housing-portal"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary-foreground transition-colors"
@@ -78,7 +78,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-primary-foreground/20 px-6 py-4 text-center text-xs text-primary-foreground/60">
-        WR Housing Bridge
+        Home Hub
       </div>
     </footer>
   );

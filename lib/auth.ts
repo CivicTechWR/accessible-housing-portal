@@ -29,7 +29,7 @@ export function createAuth(
   )
     throw new Error("BETTER_AUTH_URL must be the public HTTPS origin in production.");
   return betterAuth({
-    appName: "HomeHub",
+    appName: "Home Hub",
     baseURL,
     secret,
     trustedOrigins: [new URL(baseURL).origin],
@@ -234,10 +234,10 @@ export function createAuth(
       }),
     },
     plugins: [
-      twoFactor({ issuer: "HomeHub" }),
+      twoFactor({ issuer: "Home Hub" }),
       passkey({
         rpID: new URL(baseURL).hostname,
-        rpName: "HomeHub",
+        rpName: "Home Hub",
         origin: new URL(baseURL).origin,
         authenticatorSelection: { residentKey: "required", userVerification: "required" },
         registration: {

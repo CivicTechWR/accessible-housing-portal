@@ -1,6 +1,6 @@
 # Deployment and operations
 
-Run HomeHub on Railway as a long-lived Next.js server with PostgreSQL and the email worker enabled. Production and staging use separate databases, secrets, and public origins.
+Run Home Hub on Railway as a long-lived Next.js server with PostgreSQL and the email worker enabled. Production and staging use separate databases, secrets, and public origins.
 
 ## CI
 

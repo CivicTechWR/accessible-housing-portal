@@ -34,7 +34,7 @@ describe("sendInviteEmail", () => {
 
     expect(sendEmailMock).toHaveBeenCalledWith({
       to: "tenant@example.org",
-      subject: "You’ve been invited to the Affordable Housing Portal",
+      subject: "You’ve been invited to Home Hub",
       text: expect.stringContaining("https://housing.example.org/invite?token=abc123"),
       html: expect.stringContaining("https://housing.example.org/invite?token=abc123"),
       attempt: ATTEMPT,
