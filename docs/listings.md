@@ -112,7 +112,7 @@ Details include:
 - general contact information (name, optional contact role, email, and phone) when any of it is present
 - a "Contact and applications" card with an Apply button in its header and a notice that applications happen outside the portal
 - shared contact and application methods shown once; distinct application methods appear in a separate group
-- optional "Additional application information" attributed to the housing lister, preserving line breaks; short notes use italics
+- optional "Additional application information" attributed to the housing lister, preserving line breaks
 - a direct-contact instruction when general contact details exist but no application URL, email, or phone is set
 - a check-back-later message when neither contact nor application details are available
 - `editUrl` for the owning user

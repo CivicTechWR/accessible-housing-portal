@@ -24,9 +24,18 @@ type KeysMatching<T, V> = {
   [K in keyof T]-?: T[K] extends V ? K : never;
 }[keyof T];
 
-type ListingStringKey = Extract<KeysMatching<ListingFormInput, string | undefined>, string>;
-type ListingNumberKey = Extract<KeysMatching<ListingFormInput, number | undefined>, string>;
-type ListingStringArrayKey = Extract<KeysMatching<ListingFormInput, string[] | undefined>, string>;
+type ListingStringKey = Extract<
+  KeysMatching<ListingFormInput, string | undefined>,
+  string
+>;
+type ListingNumberKey = Extract<
+  KeysMatching<ListingFormInput, number | undefined>,
+  string
+>;
+type ListingStringArrayKey = Extract<
+  KeysMatching<ListingFormInput, string[] | undefined>,
+  string
+>;
 
 interface BaseCoreFieldDefinition {
   displayName: string;
@@ -299,7 +308,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "email",
     category: "application",
     isRequired: false,
-    sortOrder: 20,
+    sortOrder: 21,
     placeholder: "applications@example.org",
     helpText: "Where searchers should email to apply or arrange a viewing.",
   },
@@ -309,7 +318,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "tel",
     category: "application",
     isRequired: false,
-    sortOrder: 21,
+    sortOrder: 22,
     placeholder: "519-555-0100",
     helpText: "Where searchers should call to apply or arrange a viewing.",
   },
@@ -319,7 +328,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     fieldType: "textarea",
     category: "application",
     isRequired: false,
-    sortOrder: 22,
+    sortOrder: 23,
     colSpan: 2,
     helpText:
       "Share anything else applicants should know, such as required documents, viewing arrangements, or response times. This appears on the listing as a note from you.",
