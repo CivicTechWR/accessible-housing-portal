@@ -3,6 +3,8 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardDescription, CardAction, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
+import { LEASE_TERM_DESCRIPTION } from "@/shared/lease-term";
+import { InfoPopover } from "@/components/info-popover/InfoPopover";
 import {
   LISTING_BUILDING_TYPE_LABELS,
   UTILITY_INCLUDED_LABELS,
@@ -107,6 +109,7 @@ export function ListingDetails({
   const rentalDetailRows: Array<{
     label: string;
     value: string;
+    info?: { label: string; description: string };
     fullWidth?: boolean;
     preserveWhitespace?: boolean;
   }> = [
@@ -137,7 +140,18 @@ export function ListingDetails({
               .join(", ")
           : "None listed",
     },
-    ...(leaseTermMonths ? [{ label: "Lease Term", value: `${leaseTermMonths}-month lease` }] : []),
+    ...(leaseTermMonths
+      ? [
+          {
+            label: "Initial Lease Term",
+            value: `${leaseTermMonths}-month lease`,
+            info: {
+              label: "About initial lease terms",
+              description: `${LEASE_TERM_DESCRIPTION} Confirm the final lease terms and renewal options with the lister.`,
+            },
+          },
+        ]
+      : []),
     ...(availableOn ? [{ label: "Available", value: formatAvailableDate(availableOn) }] : []),
     { label: "Posted", value: timeAgo },
   ];
@@ -222,8 +236,9 @@ export function ListingDetails({
                   key={row.label}
                   className={`bg-background p-3 ${row.fullWidth ? "sm:col-span-2" : ""}`}
                 >
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                  <dt className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
                     {row.label}
+                    {row.info && <InfoPopover {...row.info} />}
                   </dt>
                   <dd
                     className={`mt-1 text-sm font-medium text-foreground${

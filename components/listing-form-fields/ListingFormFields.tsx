@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { FormSection } from "@/components/listing-form-layout/ListingFormLayout";
 import { LabeledCheckbox } from "@/components/labeled-checkbox/LabeledCheckbox";
+import { InfoPopover } from "@/components/info-popover/InfoPopover";
 
 export interface ListingFormFieldsProps {
   control: ListingFormControl;
@@ -152,13 +153,19 @@ function FieldRenderer({
 
   if (def.fieldType === "number") {
     const isRent = def.key === "monthlyRentCents";
+    const isLeaseTerm = def.key === "leaseTerm";
     return (
       <FormField
         control={control}
         name={def.key}
         render={({ field }) => (
           <FormItem data-field-name={def.key}>
-            <FormLabel>{label}</FormLabel>
+            <div className="flex items-center gap-1">
+              <FormLabel>{label}</FormLabel>
+              {isLeaseTerm && def.helpText && (
+                <InfoPopover label="About initial lease terms" description={def.helpText} />
+              )}
+            </div>
             <FormControl>
               <Input
                 type="number"
@@ -182,7 +189,11 @@ function FieldRenderer({
                     })}
               />
             </FormControl>
-            {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
+            {def.helpText && (
+              <FormDescription className={isLeaseTerm ? "sr-only" : undefined}>
+                {def.helpText}
+              </FormDescription>
+            )}
             <FormMessage />
           </FormItem>
         )}
