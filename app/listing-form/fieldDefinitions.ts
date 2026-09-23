@@ -198,7 +198,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     sortOrder: 11,
     colSpan: 2,
     helpText:
-      "Select the system that provides most of the unit's heat. If you have multiple systems, choose the main one.",
+      "Select the system that provides most of the unit's heat. Electric resistance includes electric baseboards and electric furnaces.",
     options: HEATING_TYPE_VALUES.map((value) => ({
       label: HEATING_TYPE_LABELS[value],
       value,

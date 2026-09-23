@@ -12,7 +12,7 @@ export type HeatingType = (typeof HEATING_TYPE_VALUES)[number];
 
 export const HEATING_TYPE_LABELS = {
   natural_gas: "Natural gas",
-  electric_resistance: "Electric resistance, such as baseboards or an electric furnace",
+  electric_resistance: "Electric resistance",
   heat_pump: "Electric heat pump",
   propane: "Propane",
   heating_oil: "Heating oil",
