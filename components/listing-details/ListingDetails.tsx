@@ -49,6 +49,7 @@ export interface ListingDetailProps {
   sqft: number;
   utilitiesIncluded?: UtilityIncluded[];
   contactName?: string;
+  contactRole?: string;
   contactEmail?: string;
   contactPhone?: string;
   applicationUrl?: string;
@@ -78,6 +79,7 @@ export function ListingDetails({
   sqft,
   utilitiesIncluded,
   contactName,
+  contactRole,
   contactEmail,
   contactPhone,
   applicationUrl,
@@ -248,38 +250,57 @@ export function ListingDetails({
                 Please check back later.
               </p>
             ) : (
-              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {contactRows.map((row) => (
-                  <div key={row.label} className="min-w-0 bg-background p-3">
-                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {row.label}
-                    </dt>
-                    <dd className="mt-1 break-words text-sm font-medium text-foreground">
-                      {row.href ? (
-                        <a href={row.href} className="hover:underline">
-                          {row.value}
-                        </a>
-                      ) : (
-                        row.value
-                      )}
-                    </dd>
-                  </div>
-                ))}
-                <div className="min-w-0 bg-background p-3">
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Application
-                  </dt>
-                  <dd className="mt-1">
-                    {applicationUrl ? (
-                      <ListingApplyButton applicationUrl={applicationUrl} />
-                    ) : (
-                      <p className="text-sm font-medium text-foreground">
-                        No online application — contact the lister directly to apply.
-                      </p>
-                    )}
-                  </dd>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-6 md:flex-row">
+                  {contactRows.length > 0 ? (
+                    <div className="min-w-0 flex-1">
+                      {contactRole?.trim() ? (
+                        <p className="mb-2 text-base font-semibold text-foreground">
+                          {contactRole.trim()}
+                        </p>
+                      ) : null}
+                      <dl className="space-y-1">
+                        {contactRows.map((row) => (
+                          <div key={row.label} className="min-w-0">
+                            <dt className="sr-only">{row.label}</dt>
+                            <dd className="break-words text-sm leading-relaxed text-foreground">
+                              {row.href ? (
+                                <a
+                                  href={row.href}
+                                  className="text-primary underline-offset-4 hover:underline"
+                                >
+                                  {row.value}
+                                </a>
+                              ) : (
+                                row.value
+                              )}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  ) : null}
+                  {applicationUrl ? (
+                    <div
+                      className={
+                        contactRows.length > 0
+                          ? "min-w-0 border-t pt-6 md:w-44 md:shrink-0 md:border-t-0 md:border-l md:pt-0 md:pl-6"
+                          : "min-w-0"
+                      }
+                    >
+                      <p className="text-base font-semibold text-foreground">Application</p>
+                      <div className="mt-4">
+                        <ListingApplyButton applicationUrl={applicationUrl} />
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              </dl>
+                {!applicationUrl ? (
+                  <p className="border-t pt-4 text-sm text-muted-foreground">
+                    No online application — contact the lister directly to apply.
+                  </p>
+                ) : null}
+              </div>
             )}
           </CardContent>
         </Card>

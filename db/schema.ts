@@ -339,6 +339,7 @@ export const properties = pgTable(
     latitude: doublePrecision("latitude"),
     longitude: doublePrecision("longitude"),
     contactName: text("contact_name"),
+    contactRole: text("contact_role"),
     contactEmail: text("contact_email"),
     contactPhone: text("contact_phone"),
     createdByUserId: uuid("created_by_user_id")

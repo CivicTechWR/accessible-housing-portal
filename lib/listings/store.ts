@@ -166,6 +166,7 @@ export function buildDuplicateListingPlan(input: {
       latitude: copiesBuilding ? sourceProperty.latitude : null,
       longitude: copiesBuilding ? sourceProperty.longitude : null,
       contactName: copiesBuilding ? sourceProperty.contactName : "",
+      contactRole: copiesBuilding ? sourceProperty.contactRole : null,
       contactEmail: copiesBuilding ? sourceProperty.contactEmail : "",
       contactPhone: copiesBuilding ? sourceProperty.contactPhone : "",
       createdByUserId: actorUserId,

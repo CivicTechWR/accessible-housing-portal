@@ -90,6 +90,7 @@ describe("listing API schemas", () => {
       contact: {
         ...validCreatePayload.contact,
         email: "  leasing@example.org  ",
+        role: "  Property manager  ",
       },
     });
 
@@ -97,6 +98,7 @@ describe("listing API schemas", () => {
     expect(parsed.name).toBe("Cedar Court");
     expect(parsed.applicationUrl).toBe("https://example.org/apply");
     expect(parsed.depositInfo).toBe("First and last month's rent");
+    expect(parsed.contact.role).toBe("Property manager");
     expect(parsed.contact.email).toBe("leasing@example.org");
   });
 
@@ -299,5 +301,13 @@ describe("listing API schemas", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("contact role updates", () => {
+  it("accepts an omitted role and explicit clearing, but rejects non-text roles", () => {
+    expect(createListingSchema.parse(validCreatePayload).contact.role).toBeUndefined();
+    expect(patchListingSchema.parse({ contact: { role: null } }).contact?.role).toBeNull();
+    expect(patchListingSchema.safeParse({ contact: { role: 123 } }).success).toBe(false);
   });
 });

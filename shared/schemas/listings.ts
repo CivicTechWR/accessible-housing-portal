@@ -121,8 +121,13 @@ const listingDetailsAddressSchema = z.object({
 });
 const listingContactSchema = z.object({
   name: nonEmptyString,
+  role: nonEmptyString.optional(),
   email: trimmedEmailString("Invalid contact email."),
   phone: nonEmptyString,
+});
+
+const listingContactMutationSchema = listingContactSchema.extend({
+  role: nonEmptyString.nullish(),
 });
 
 export const listingDetailsSchema = z.object({
@@ -217,9 +222,11 @@ const listingAddressPatchSchema = listingAddressMutationSchema
   .refine(hasAtLeastOneField, {
     message: "Address update must include at least one field.",
   });
-const listingContactPatchSchema = listingContactSchema.partial().refine(hasAtLeastOneField, {
-  message: "Contact update must include at least one field.",
-});
+const listingContactPatchSchema = listingContactMutationSchema
+  .partial()
+  .refine(hasAtLeastOneField, {
+    message: "Contact update must include at least one field.",
+  });
 const listingUnitPatchSchema = listingUnitMutationSchema.partial().refine(hasAtLeastOneField, {
   message: "Each unit update must include at least one field.",
 });
@@ -260,7 +267,7 @@ const listingPayloadSchema = z.object({
   accessibilityFeatures: z.array(listingInputFeatureSchema),
   applicationUrl: z.httpUrl({ normalize: true }).optional(),
   images: z.array(listingUploadedImageInputSchema),
-  contact: listingContactSchema,
+  contact: listingContactMutationSchema,
   status: listingStatusSchema,
   unitNumber: nonEmptyString.optional(),
   imageUploadSessionId: z.uuid("Invalid image upload session id.").optional(),
@@ -307,6 +314,7 @@ export const listingEditorDataSchema = z.object({
   province: z.string(),
   postalCode: z.string(),
   contactName: z.string(),
+  contactRole: z.string().optional(),
   contactEmail: z.string(),
   contactPhone: z.string(),
   applicationUrl: z.httpUrl({ normalize: true }).optional(),

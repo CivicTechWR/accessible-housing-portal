@@ -31,6 +31,7 @@ describe("listingFormSchema", () => {
       street2: "  Apt 301  ",
       unitNumber: "  301  ",
       contactEmail: "  Leasing@Example.ORG  ",
+      contactRole: "  Property manager  ",
       applicationUrl: "  https://example.org/apply  ",
       depositInfo: "  First and last month's rent  ",
     });
@@ -38,6 +39,7 @@ describe("listingFormSchema", () => {
     expect(parsed.title).toBe("Accessible Two Bedroom");
     expect(parsed.street2).toBe("Apt 301");
     expect(parsed.unitNumber).toBe("301");
+    expect(parsed.contactRole).toBe("Property manager");
     expect(parsed.contactEmail).toBe("leasing@example.org");
     expect(parsed.applicationUrl).toBe("https://example.org/apply");
     expect(parsed.depositInfo).toBe("First and last month's rent");
@@ -47,6 +49,7 @@ describe("listingFormSchema", () => {
     const parsed = listingFormSchema.parse({
       ...validFormInput,
       description: "   ",
+      contactRole: "   ",
       street2: "   ",
       unitNumber: "   ",
       availableOn: "   ",
@@ -55,6 +58,7 @@ describe("listingFormSchema", () => {
     });
 
     expect(parsed.description).toBeUndefined();
+    expect(parsed.contactRole).toBeUndefined();
     expect(parsed.street2).toBeUndefined();
     expect(parsed.unitNumber).toBeUndefined();
     expect(parsed.availableOn).toBeUndefined();

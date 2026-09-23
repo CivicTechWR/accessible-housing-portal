@@ -85,6 +85,7 @@ export function ListingFormPreview({
           sqft={formData.squareFeet || 0}
           utilitiesIncluded={formData.utilitiesIncluded}
           contactName={formData.contactName}
+          contactRole={formData.contactRole}
           contactEmail={formData.contactEmail}
           contactPhone={formData.contactPhone}
           applicationUrl={formData.applicationUrl}

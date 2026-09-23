@@ -4,9 +4,17 @@ import { getOptionalSession } from "@/lib/auth/session";
 import {
   duplicateListingGraph,
   findListingRecordById,
+  findListingImagesByListingId,
+  findPublicBooleanFeatureDefinitions,
+  updateListingGraph,
   type ListingRecord,
 } from "@/lib/listings/listing.repository";
-import { duplicateListingByIdService } from "@/lib/listings/listing.service";
+import {
+  duplicateListingByIdService,
+  patchListingByIdService,
+  getListingByIdService,
+  getListingEditorByIdService,
+} from "@/lib/listings/listing.service";
 
 jest.mock("@/lib/auth/session", () => ({
   getOptionalSession: jest.fn(),
@@ -16,6 +24,9 @@ jest.mock("@/lib/listings/listing.repository", () => ({
   duplicateListingGraph: jest.fn(),
   findFeatureDefinitionApplicabilityByKeys: jest.fn(),
   findListingRecordById: jest.fn(),
+  findListingImagesByListingId: jest.fn(),
+  findPublicBooleanFeatureDefinitions: jest.fn(),
+  updateListingGraph: jest.fn(),
 }));
 
 const ACTOR_USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -62,6 +73,7 @@ const archivedListing: ListingRecord = {
     latitude: null,
     longitude: null,
     contactName: "Leasing Office",
+    contactRole: "Property manager",
     contactEmail: "leasing@example.com",
     contactPhone: "519-555-0100",
   },
@@ -139,5 +151,43 @@ describe("duplicateListingByIdService", () => {
       },
     });
     expect(duplicateListingGraphMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("listing contact role", () => {
+  beforeEach(() => {
+    findListingRecordByIdMock.mockResolvedValue({ ...archivedListing, status: "published" });
+    jest.mocked(findListingImagesByListingId).mockResolvedValue([]);
+    jest.mocked(findPublicBooleanFeatureDefinitions).mockResolvedValue([]);
+  });
+
+  it.each([
+    ["Leasing coordinator", "Leasing coordinator"],
+    [null, null],
+    [undefined, "Property manager"],
+  ])("updates role %s without losing omitted contact details", async (role, expected) => {
+    const result = await patchListingByIdService({
+      listingId: LISTING_ID,
+      payload: { contact: { role }, title: "Updated listing" },
+    });
+    expect(result.ok).toBe(true);
+    expect(updateListingGraph).toHaveBeenCalledWith(
+      expect.objectContaining({
+        property: expect.objectContaining({ contactRole: expected, contactName: "Leasing Office" }),
+      }),
+    );
+  });
+
+  it("returns the saved role to searchers and the editor", async () => {
+    const details = await getListingByIdService(LISTING_ID);
+    const editor = await getListingEditorByIdService(LISTING_ID);
+    expect(details).toMatchObject({
+      ok: true,
+      value: { data: { contact: { role: "Property manager" } } },
+    });
+    expect(editor).toMatchObject({
+      ok: true,
+      value: { data: { contactRole: "Property manager" } },
+    });
   });
 });
