@@ -99,6 +99,13 @@
       "when": 1790177999389,
       "tag": "20260923153959_use_canadian_neighbourhood_spelling",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790183295362,
+      "tag": "20260923170815_add_rent_controlled_field",
+      "breakpoints": true
     }
   ]
 }

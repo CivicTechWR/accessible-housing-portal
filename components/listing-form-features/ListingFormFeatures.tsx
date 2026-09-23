@@ -13,7 +13,7 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
 
   if (isLoading) {
     return (
-      <FormSection isSeparated title="Accessibility Features">
+      <FormSection isSeparated title="Listing Features">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex items-start space-x-3">
             <Skeleton className="h-5 w-5 rounded shrink-0" />
@@ -29,9 +29,9 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
 
   if (isError || !featureGroups) {
     return (
-      <FormSection isSeparated title="Accessibility Features">
+      <FormSection isSeparated title="Listing Features">
         <p className="md:col-span-2 text-destructive">
-          Failed to load accessibility features. Please try again later.
+          Failed to load listing features. Please try again later.
         </p>
       </FormSection>
     );
@@ -40,8 +40,8 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
   return (
     <FormSection
       isSeparated
-      title="Accessibility Features"
-      description="Select all accessibility features that apply to this listing. These details help housing searchers find spaces that meet their distinct accessibility needs."
+      title="Listing Features"
+      description="Select the features and rental conditions that apply to this listing."
     >
       {featureGroups.map((group) => (
         <div key={group.groupId} className="md:col-span-2 space-y-4">
