@@ -1,6 +1,6 @@
 # Authentication and account management
 
-HomeHub uses Better Auth 1.7 with its Drizzle adapter, database sessions, passkey plugin, and two-factor plugin. Password hashing, reset-token consumption, WebAuthn challenges, authenticator codes, recovery codes, cookies, and session expiry belong to Better Auth. No hosted authentication service is required.
+Home Hub uses Better Auth 1.7 with its Drizzle adapter, database sessions, passkey plugin, and two-factor plugin. Password hashing, reset-token consumption, WebAuthn challenges, authenticator codes, recovery codes, cookies, and session expiry belong to Better Auth. No hosted authentication service is required.
 
 The configuration is in `lib/auth.ts`, the React client in `lib/auth-client.ts`, and the Next.js 16 route handler in `app/api/auth/[...all]/route.ts`. `nextCookies()` supports cookie changes from server actions. The proxy only redirects requests that have no session cookie. Services check the database session and current account permissions before accessing protected data.
 

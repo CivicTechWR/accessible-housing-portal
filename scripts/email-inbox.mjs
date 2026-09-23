@@ -48,7 +48,7 @@ const server = createServer(async (request, response) => {
       .join("");
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     response.end(
-      `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>HomeHub email inbox</title><style>body{font:16px system-ui;margin:3rem auto;padding:0 1rem;max-width:900px;background:#f5f5f1;color:#202821}article{background:white;padding:1.5rem;margin:1.5rem 0;border:1px solid #d6dcd5;border-radius:14px}h2{font-size:1.1rem}pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere}a{color:#285b42}</style></head><body><h1>HomeHub email inbox</h1><p>Emails captured locally. Refresh to see new messages.</p><p><a href="/">Refresh inbox</a> · <a href="${escapeHtml(appUrl)}">Open HomeHub</a></p>${content || "<p>No captured emails yet.</p>"}</body></html>`,
+      `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Home Hub email inbox</title><style>body{font:16px system-ui;margin:3rem auto;padding:0 1rem;max-width:900px;background:#f5f5f1;color:#202821}article{background:white;padding:1.5rem;margin:1.5rem 0;border:1px solid #d6dcd5;border-radius:14px}h2{font-size:1.1rem}pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere}a{color:#285b42}</style></head><body><h1>Home Hub email inbox</h1><p>Emails captured locally. Refresh to see new messages.</p><p><a href="/">Refresh inbox</a> · <a href="${escapeHtml(appUrl)}">Open Home Hub</a></p>${content || "<p>No captured emails yet.</p>"}</body></html>`,
     );
   } catch {
     response.writeHead(500).end("Unable to read captured emails.");

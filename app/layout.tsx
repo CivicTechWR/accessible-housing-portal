@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HomeHub — Connect with affordable housing",
+  title: "Home Hub — Connect with affordable housing",
   description: "Connecting social workers with affordable housing providers in Waterloo Region.",
 };
 

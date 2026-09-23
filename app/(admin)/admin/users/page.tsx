@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import type { AccountListResponse } from "@/shared/schemas/account-management";
 
 export const metadata: Metadata = {
-  title: "Manage Users | HomeHub",
+  title: "Manage Users | Home Hub",
 };
 
 export const dynamic = "force-dynamic";

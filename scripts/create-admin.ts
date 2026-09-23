@@ -27,7 +27,7 @@ async function main() {
         .insert(users)
         .values({
           email: config.BOOTSTRAP_ADMIN_EMAIL,
-          fullName: "HomeHub Admin",
+          fullName: "Home Hub Admin",
           role: "admin",
           status: "active",
           emailVerified: true,

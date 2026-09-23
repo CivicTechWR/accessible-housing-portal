@@ -7,7 +7,7 @@ import { getMyListingsService } from "@/lib/listings/listing.service";
 import { MyListingsClient } from "@/app/my-listings/MyListingsClient";
 
 export const metadata: Metadata = {
-  title: "My Listings | HomeHub",
+  title: "My Listings | Home Hub",
 };
 
 export default async function MyListingsPage() {

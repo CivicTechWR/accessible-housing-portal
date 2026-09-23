@@ -78,7 +78,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-primary-foreground/20 px-6 py-4 text-center text-xs text-primary-foreground/60">
-        HomeHub
+        Home Hub
       </div>
     </footer>
   );
