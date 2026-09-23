@@ -35,7 +35,7 @@ type SeedListing = {
     province: string;
     postalCode: string;
     country: string;
-    neighborhood: string;
+    neighbourhood: string;
     latitude: number;
     longitude: number;
   };
@@ -106,7 +106,7 @@ export const mockListingSeedListings: SeedListing[] = [
       province: "ON",
       postalCode: "N2J 2H1",
       country: "Canada",
-      neighborhood: "Uptown Waterloo",
+      neighbourhood: "Uptown Waterloo",
       latitude: 43.45055954361165,
       longitude: -80.49228395260133,
     },
@@ -178,7 +178,7 @@ export const mockListingSeedListings: SeedListing[] = [
       province: "ON",
       postalCode: "N2G 2L3",
       country: "Canada",
-      neighborhood: "Downtown Kitchener",
+      neighbourhood: "Downtown Kitchener",
       latitude: 43.451672,
       longitude: -80.473425,
     },
@@ -236,7 +236,7 @@ export const mockListingSeedListings: SeedListing[] = [
       province: "ON",
       postalCode: "N2T 2Z7",
       country: "Canada",
-      neighborhood: "Beechwood",
+      neighbourhood: "Beechwood",
       latitude: 43.449213,
       longitude: -80.569201,
     },
@@ -296,7 +296,7 @@ export const mockListingSeedListings: SeedListing[] = [
       province: "ON",
       postalCode: "N1R 4B4",
       country: "Canada",
-      neighborhood: "Galt",
+      neighbourhood: "Galt",
       latitude: 43.361621,
       longitude: -80.314427,
     },
@@ -356,7 +356,7 @@ export const mockListingSeedListings: SeedListing[] = [
       province: "ON",
       postalCode: "N2G 1V9",
       country: "Canada",
-      neighborhood: "Victoria Park",
+      neighbourhood: "Victoria Park",
       latitude: 43.446971,
       longitude: -80.491214,
     },

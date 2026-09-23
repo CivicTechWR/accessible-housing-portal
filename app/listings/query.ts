@@ -9,7 +9,7 @@ export function getListingsQueryFromSearchParams(searchParams: RawSearchParams):
     page: getFirstValue(searchParams.page),
     limit: getFirstValue(searchParams.limit),
     status: getFirstValue(searchParams.status),
-    neighborhood: getFirstValue(searchParams.neighborhood),
+    neighbourhood: getFirstValue(searchParams.neighbourhood),
     bedrooms: getFirstValue(searchParams.bedrooms),
     bathrooms: getFirstValue(searchParams.bathrooms),
     location: getFirstValue(searchParams.location),
@@ -30,7 +30,7 @@ export function createListingsQueryString(query: ListingQuery) {
   appendQueryParam(params, "page", query.page);
   appendQueryParam(params, "limit", query.limit);
   appendQueryParam(params, "status", query.status);
-  appendQueryParam(params, "neighborhood", query.neighborhood);
+  appendQueryParam(params, "neighbourhood", query.neighbourhood);
   appendQueryParam(params, "bedrooms", query.bedrooms);
   appendQueryParam(params, "bathrooms", query.bathrooms);
   appendQueryParam(params, "location", query.location);

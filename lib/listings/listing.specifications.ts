@@ -22,14 +22,14 @@ export function listingOwnerSpecification(ownerUserId: string | null): ListingFi
   return eq(properties.ownerUserId, ownerUserId);
 }
 
-export function listingNeighborhoodSpecification(
-  neighborhood: string | null,
+export function listingNeighbourhoodSpecification(
+  neighbourhood: string | null,
 ): ListingFilterSpecification {
-  if (!neighborhood) {
+  if (!neighbourhood) {
     return undefined;
   }
 
-  return ilike(properties.neighborhood, `%${neighborhood}%`);
+  return ilike(properties.neighbourhood, `%${neighbourhood}%`);
 }
 
 export function listingBedroomsSpecification(bedrooms: number | null): ListingFilterSpecification {

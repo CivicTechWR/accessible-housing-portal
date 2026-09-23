@@ -11,7 +11,7 @@ This directory is the developer reference for Home Hub. It is written for new co
 | [Domain Model](domain-model.md)                             | You need to understand Drizzle tables, status enums, relationships, custom fields, and migrations.                                 |
 | [Listings](listings.md)                                     | You are changing listing search, details, authoring, draft autosave, images, or dynamic listing fields.                            |
 | [Auth and Admin](auth-and-admin.md)                         | You are changing sign-in, invites, account management, role checks, protected routes, or admin custom fields.                      |
-| [API Reference](api-reference.md)                           | You need endpoint behavior, auth requirements, schema locations, or error handling conventions.                                    |
+| [API Reference](api-reference.md)                           | You need endpoint behaviour, auth requirements, schema locations, or error handling conventions.                                   |
 | [Deployment and Operations](deployment.md)                  | You need CI, Docker, Infisical, runtime environment, migration, or release expectations.                                           |
 | [Testing and Quality](testing-and-quality.md)               | You need to add tests, run checks, understand hooks, or prepare a PR.                                                              |
 | [ADR 0001](adr/0001-server-first-listings-data-fetching.md) | You need the rationale for server-first listing search.                                                                            |
@@ -118,7 +118,7 @@ Update these docs when you change:
 - environment variables or scripts
 - route paths, request schemas, or response schemas
 - database tables, columns, enums, relationships, or migration workflow
-- authorization rules or role behavior
-- listing search, authoring, image handling, or custom-field behavior
-- CI, Docker, deployment, or runtime secret behavior
+- authorization rules or role behaviour
+- listing search, authoring, image handling, or custom-field behaviour
+- CI, Docker, deployment, or runtime secret behaviour
 - test setup, hooks, build requirements, or deployment expectations

@@ -91,7 +91,7 @@ handlers.ts
   -> calls service
   -> maps DomainResult errors
 service.ts
-  -> owns business behavior
+  -> owns business behaviour
 ```
 
 Keep route handlers thin. Do not put Drizzle queries or business rules directly in handlers.
@@ -144,7 +144,7 @@ Auth is deliberately layered:
 - API handlers and services call `requireAdminSession`, `requireListingWriteSession`, or `getOptionalSession` as needed.
 - Policies in `lib/policies/*` make role and ownership decisions.
 
-The proxy is not the only authorization layer. Any page, server action, service, or API endpoint that exposes protected behavior must enforce its own role-specific rules.
+The proxy is not the only authorization layer. Any page, server action, service, or API endpoint that exposes protected behaviour must enforce its own role-specific rules.
 
 Current proxy-level protected route families are `/admin`, `/listings`, `/listing-form`, `/my-listings`, `/api/admin`, and `/api/listings`.
 
@@ -175,10 +175,10 @@ Use this workflow for most product changes:
 3. Update `db/schema.ts` and generate a migration if persistence changes.
 4. Add repository methods for new queries or transactions.
 5. Add service methods for business rules and authorization.
-6. Add or update route handlers if the behavior is exposed over HTTP.
+6. Add or update route handlers if the behaviour is exposed over HTTP.
 7. Add or update pages, components, hooks, or server actions.
 8. Add focused tests for pure logic, schemas, policies, specifications, and risky mappings.
-9. Update docs when behavior, setup, routes, schemas, or data model change.
+9. Update docs when behaviour, setup, routes, schemas, or data model change.
 
 ## Common Pitfalls
 

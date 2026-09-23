@@ -1,11 +1,11 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ComponentProps } from "react";
 
-export interface LabeledCheckboxProps extends ComponentProps<typeof Checkbox> {
+export interface LabelledCheckboxProps extends ComponentProps<typeof Checkbox> {
   label: string;
 }
 
-export function LabeledCheckbox({ label, id, ...checkboxProps }: LabeledCheckboxProps) {
+export function LabelledCheckbox({ label, id, ...checkboxProps }: LabelledCheckboxProps) {
   return (
     <div className="flex items-center space-x-2">
       <Checkbox id={id} {...checkboxProps} />

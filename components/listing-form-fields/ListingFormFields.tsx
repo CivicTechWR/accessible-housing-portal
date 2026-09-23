@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormSection } from "@/components/listing-form-layout/ListingFormLayout";
-import { LabeledCheckbox } from "@/components/labeled-checkbox/LabeledCheckbox";
+import { LabelledCheckbox } from "@/components/labelled-checkbox/LabelledCheckbox";
 import { InfoPopover } from "@/components/info-popover/InfoPopover";
 
 export interface ListingFormFieldsProps {
@@ -106,7 +106,7 @@ function FieldRenderer({
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {def.options.map((opt) => (
                   <FormControl key={opt.value}>
-                    <LabeledCheckbox
+                    <LabelledCheckbox
                       id={`${def.key}-${opt.value}`}
                       label={opt.label}
                       checked={selected.includes(opt.value)}

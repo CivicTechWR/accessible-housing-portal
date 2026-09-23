@@ -26,7 +26,7 @@ Jest is configured in `jest.config.js` with:
 - `@/*` mapped to the repository root
 - `server-only` mapped to `test/mocks/server-only.ts`
 
-The installed Next.js Jest guide notes that async Server Components are not a strong fit for Jest. Prefer focused tests around schemas, services, policies, specifications, hooks, and pure mapping functions. Use broader browser or end-to-end coverage when async Server Component behavior needs confidence.
+The installed Next.js Jest guide notes that async Server Components are not a strong fit for Jest. Prefer focused tests around schemas, services, policies, specifications, hooks, and pure mapping functions. Use broader browser or end-to-end coverage when async Server Component behaviour needs confidence.
 
 ## Existing Test Patterns
 
@@ -38,11 +38,11 @@ Current tests cover:
 - route policy matching
 - address utilities
 - listing form schemas and API mapping
-- listing apply-button confirmation and no-URL fallback behavior
-- listing detail utilities display behavior
+- listing apply-button confirmation and no-URL fallback behaviour
+- listing detail utilities display behaviour
 - custom listing field dashboard utilities
 - listing filter hooks/components
-- price range input behavior
+- price range input behaviour
 - transactional email provider error classification and idempotency
 - queue enqueueing, deduplication, retry configuration, and worker startup gating
 - quota/rate-limit deferral, dead-letter handling, and invite submission status mapping
@@ -65,12 +65,12 @@ Add focused tests when changing:
 - Drizzle specification builders in `lib/*/*.specifications.ts`
 - mappers between form data, API payloads, and persistence
 - money/date conversion logic
-- custom-field ordering or display behavior
+- custom-field ordering or display behaviour
 - hooks with non-trivial state transitions
 
 Database integration tests use `node --test` with `--conditions=react-server` and `tsx`. Set `TEST_DATABASE_URL` to a disposable PostgreSQL database before running `npm run test:integration`. The tests apply the committed migrations and exercise authentication concurrency, email delivery, and listing feature persistence and filtering. Test files run sequentially because they share the database's migration history. Without `TEST_DATABASE_URL`, the integration suite is skipped. CI supplies a dedicated PostgreSQL service and runs both test commands.
 
-Use this integration pattern for behavior that depends on database transactions or locking. Keep pure business logic in focused unit tests.
+Use this integration pattern for behaviour that depends on database transactions or locking. Keep pure business logic in focused unit tests.
 
 ## Hooks
 
@@ -107,7 +107,7 @@ Before opening a PR:
 2. Include testing notes in the PR description.
 3. Confirm schemas and docs are updated for changed contracts.
 4. Confirm migrations are included for schema changes.
-5. Confirm protected behavior has service-level authorization.
+5. Confirm protected behaviour has service-level authorization.
 6. Confirm new Client Components do not import server-only modules.
 7. Confirm new server SDK/database clients use lazy initialization.
 
@@ -117,5 +117,5 @@ There is no dedicated markdown linter. Treat docs like code:
 
 - keep commands copy-pastable
 - link to owning files when possible
-- update docs in the same PR as behavior changes
-- remove stale setup instructions when scripts or Docker behavior changes
+- update docs in the same PR as behaviour changes
+- remove stale setup instructions when scripts or Docker behaviour changes

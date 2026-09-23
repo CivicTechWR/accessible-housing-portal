@@ -71,7 +71,7 @@ export type ListingRecord = {
     city: string;
     province: string;
     postalCode: string;
-    neighborhood: string | null;
+    neighbourhood: string | null;
     latitude: number | null;
     longitude: number | null;
     contactName: string | null;
@@ -199,7 +199,7 @@ export async function findListingRecordById(
         city: properties.city,
         province: properties.province,
         postalCode: properties.postalCode,
-        neighborhood: properties.neighborhood,
+        neighbourhood: properties.neighbourhood,
         latitude: properties.latitude,
         longitude: properties.longitude,
         contactName: properties.contactName,
@@ -385,7 +385,7 @@ export async function createDraftListing(input: { actorUserId: string }) {
         province: "",
         postalCode: "",
         country: DEFAULT_PROPERTY_COUNTRY,
-        neighborhood: null,
+        neighbourhood: null,
         latitude: null,
         longitude: null,
         contactName: "",
@@ -563,7 +563,7 @@ export async function createListing(input: {
         province: input.payload.address.province,
         postalCode: input.payload.address.postalCode,
         country: DEFAULT_PROPERTY_COUNTRY,
-        neighborhood: input.payload.address.neighborhood ?? null,
+        neighbourhood: input.payload.address.neighbourhood ?? null,
         latitude: input.payload.address.latitude ?? null,
         longitude: input.payload.address.longitude ?? null,
         contactName: input.payload.contact.name,
@@ -653,7 +653,7 @@ export async function updateListingGraph(input: {
     city: string;
     province: string;
     postalCode: string;
-    neighborhood: string | null;
+    neighbourhood: string | null;
     latitude: number | null;
     longitude: number | null;
     contactName: string | null;
@@ -697,7 +697,7 @@ export async function updateListingGraph(input: {
         city: input.property.city,
         province: input.property.province,
         postalCode: input.property.postalCode,
-        neighborhood: input.property.neighborhood,
+        neighbourhood: input.property.neighbourhood,
         latitude: input.property.latitude,
         longitude: input.property.longitude,
         contactName: input.property.contactName,

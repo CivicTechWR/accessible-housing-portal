@@ -34,7 +34,7 @@ import {
   listingFeatureDefinitionsSpecification,
   listingMinRentSpecification,
   listingMaxRentSpecification,
-  listingNeighborhoodSpecification,
+  listingNeighbourhoodSpecification,
   listingOwnerSpecification,
   listingSearchSpecification,
   listingStatusSpecification,
@@ -132,7 +132,7 @@ export async function getListingsService(
   const where = andListingSpecifications(
     listingStatusSpecification(visibility.status),
     listingOwnerSpecification(visibility.ownerUserId),
-    listingNeighborhoodSpecification(query.neighborhood ?? null),
+    listingNeighbourhoodSpecification(query.neighbourhood ?? null),
     bedroomFilter.isAtLeast
       ? listingBedroomsAtLeastSpecification(bedroomFilter.value)
       : listingBedroomsSpecification(bedroomFilter.value),
@@ -608,9 +608,9 @@ async function updateListingById<TPayload extends ListingMutationInput>(
       city: input.payload.address?.city ?? listing.property.city,
       province: input.payload.address?.province ?? listing.property.province,
       postalCode: input.payload.address?.postalCode ?? listing.property.postalCode,
-      neighborhood: preserveWhenUndefined(
-        input.payload.address?.neighborhood,
-        listing.property.neighborhood,
+      neighbourhood: preserveWhenUndefined(
+        input.payload.address?.neighbourhood,
+        listing.property.neighbourhood,
       ),
       latitude: preserveWhenUndefined(input.payload.address?.latitude, listing.property.latitude),
       longitude: preserveWhenUndefined(
