@@ -50,6 +50,9 @@ export function mapListingFormToReplaceListingInput(
     unitNumber: normalizeOptionalString(data.unitNumber) ?? null,
     depositInfo: normalizeOptionalString(data.depositInfo) ?? null,
     applicationUrl: normalizeOptionalString(data.applicationUrl) ?? null,
+    applicationEmail: normalizeOptionalString(data.applicationEmail) ?? null,
+    applicationPhone: normalizeOptionalString(data.applicationPhone) ?? null,
+    applicationInstructions: normalizeOptionalString(data.applicationInstructions) ?? null,
   };
 
   return replacement;
@@ -113,6 +116,19 @@ export function mapListingFormToAutosavePatchInput(
 
   if (data.depositInfo !== undefined) {
     patch.depositInfo = normalizeOptionalString(data.depositInfo) ?? null;
+  }
+
+  const applicationEmail = normalizeOptionalString(data.applicationEmail);
+  if (applicationEmail && z.email().safeParse(applicationEmail).success) {
+    patch.applicationEmail = applicationEmail;
+  } else if (data.applicationEmail !== undefined && !applicationEmail) {
+    patch.applicationEmail = null;
+  }
+  if (data.applicationPhone !== undefined) {
+    patch.applicationPhone = normalizeOptionalString(data.applicationPhone) ?? null;
+  }
+  if (data.applicationInstructions !== undefined) {
+    patch.applicationInstructions = normalizeOptionalString(data.applicationInstructions) ?? null;
   }
 
   if (data.unitNumber !== undefined) {
@@ -255,6 +271,9 @@ function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput 
     })),
     applicationUrl: applicationUrl ?? undefined,
     depositInfo: normalizeOptionalString(data.depositInfo),
+    applicationEmail: normalizeOptionalString(data.applicationEmail),
+    applicationPhone: normalizeOptionalString(data.applicationPhone),
+    applicationInstructions: normalizeOptionalString(data.applicationInstructions),
     images: data.images.flatMap((image) =>
       image.id
         ? [

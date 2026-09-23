@@ -109,13 +109,17 @@ Details include:
 - relative time
 - grouped feature categories
 - optional deposit information in the rental details card
-- contact information when name, email, and phone are present, including the optional contact role
-- an Apply button when `applicationUrl` is present
-- a direct-contact instruction when complete contact details exist but no online application URL is set
-- a check-back-later message when neither contact nor online application details are available
+- general contact information (name, optional contact role, email, and phone) when any of it is present
+- a "Contact and applications" card with an Apply button in its header and a notice that applications happen outside the portal
+- shared contact and application methods shown once; distinct application methods appear in a separate group
+- optional "Additional application information" attributed to the housing lister, preserving line breaks
+- a direct-contact instruction when general contact details exist but no application URL, email, or phone is set
+- a check-back-later message when neither contact nor application details are available
 - `editUrl` for the owning user
 
-The Apply button opens a confirmation dialog before navigating the browser to the external application URL. When there is no online application URL, the page still shows the appropriate direct-contact or missing-details guidance instead of hiding the application section.
+The Apply button opens a confirmation dialog before navigating the browser to the external application URL. Application email, phone, and additional information display independently of general contact information. Email comparison ignores case, and phone comparison ignores spaces, parentheses, dots, and hyphens. A partially shared contact method is labelled "Also for applications". The additional-information section is omitted when its field is empty.
+
+The listing form's optional "How to apply" fields persist through draft autosave and full saves, reload in the editor, and appear in the live details preview. Changing general contact information does not overwrite application contacts. Clearing an application field removes its saved value. An incomplete application email is skipped during autosave and must be corrected or cleared before publishing.
 
 ## Authoring Workflow
 

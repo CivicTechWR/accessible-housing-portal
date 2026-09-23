@@ -189,6 +189,9 @@ describe("mapListingFormToCreateListingInput", () => {
       status: "published",
       unitNumber: "204",
       applicationUrl: null,
+      applicationEmail: null,
+      applicationPhone: null,
+      applicationInstructions: null,
       buildingType: "apartment",
       leaseTermMonths: 12,
       utilitiesIncluded: ["heat", "water"],
@@ -521,5 +524,60 @@ describe("contact role payloads", () => {
         .role,
     ).toBeNull();
     expect(mapListingFormToAutosavePatchInput(validFormData)?.contact).not.toHaveProperty("role");
+  });
+});
+
+describe("application details payloads", () => {
+  it("carries separate application contacts and instructions through create, replace, and autosave", () => {
+    const data = {
+      ...validFormData,
+      applicationEmail: "  apply@example.org  ",
+      applicationPhone: "  519-555-0111  ",
+      applicationInstructions: "  Email to book a viewing.\nReplies within two business days.  ",
+    };
+    for (const payload of [
+      mapListingFormToCreateListingInput(data),
+      mapListingFormToReplaceListingInput(data),
+      mapListingFormToAutosavePatchInput(data),
+    ]) {
+      expect(payload).toMatchObject({
+        applicationEmail: "apply@example.org",
+        applicationPhone: "519-555-0111",
+        applicationInstructions: "Email to book a viewing.\nReplies within two business days.",
+        contact: { email: "leasing@example.org", phone: "519-555-0100" },
+      });
+    }
+  });
+
+  it("clears blank application fields but skips an incomplete email during autosave", () => {
+    expect(
+      mapListingFormToAutosavePatchInput({
+        ...validFormData,
+        applicationEmail: "apply@",
+        applicationPhone: "",
+        applicationInstructions: " ",
+      }),
+    ).toMatchObject({ applicationPhone: null, applicationInstructions: null });
+    expect(
+      mapListingFormToAutosavePatchInput({
+        ...validFormData,
+        applicationEmail: "apply@",
+      }),
+    ).not.toHaveProperty("applicationEmail");
+    for (const payload of [
+      mapListingFormToReplaceListingInput(validFormData),
+      mapListingFormToAutosavePatchInput({
+        ...validFormData,
+        applicationEmail: "",
+        applicationPhone: "",
+        applicationInstructions: "",
+      }),
+    ]) {
+      expect(payload).toMatchObject({
+        applicationEmail: null,
+        applicationPhone: null,
+        applicationInstructions: null,
+      });
+    }
   });
 });

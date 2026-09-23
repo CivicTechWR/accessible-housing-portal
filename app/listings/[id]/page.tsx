@@ -47,6 +47,9 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       contactEmail={details.contact?.email}
       contactPhone={details.contact?.phone}
       applicationUrl={details.applicationUrl}
+      applicationEmail={details.applicationEmail}
+      applicationPhone={details.applicationPhone}
+      applicationInstructions={details.applicationInstructions}
     />
   );
 }

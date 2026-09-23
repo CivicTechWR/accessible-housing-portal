@@ -639,8 +639,18 @@ async function updateListingById<TPayload extends ListingMutationInput>(
       maxIncomeCents: listing.maxIncomeCents,
       depositInfo: preserveWhenUndefined(input.payload.depositInfo, listing.depositInfo),
       applicationUrl: nextApplicationUrlResult.nextApplicationUrl,
-      applicationEmail: input.payload.contact?.email ?? listing.applicationEmail,
-      applicationPhone: input.payload.contact?.phone ?? listing.applicationPhone,
+      applicationEmail: preserveWhenUndefined(
+        input.payload.applicationEmail,
+        listing.applicationEmail,
+      ),
+      applicationPhone: preserveWhenUndefined(
+        input.payload.applicationPhone,
+        listing.applicationPhone,
+      ),
+      applicationInstructions: preserveWhenUndefined(
+        input.payload.applicationInstructions,
+        listing.applicationInstructions,
+      ),
       customFields: nextCustomFields,
       publishedAt: statusTimestamps.publishedAt,
       archivedAt: statusTimestamps.archivedAt,
@@ -789,6 +799,9 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
           }
         : undefined,
     applicationUrl: getListingApplicationUrl(listing.applicationUrl),
+    applicationEmail: listing.applicationEmail?.trim() || undefined,
+    applicationPhone: listing.applicationPhone?.trim() || undefined,
+    applicationInstructions: listing.applicationInstructions?.trim() || undefined,
   };
 }
 
@@ -844,6 +857,9 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     contactEmail: listing.property.contactEmail ?? "",
     contactPhone: listing.property.contactPhone ?? "",
     applicationUrl: getListingApplicationUrl(listing.applicationUrl),
+    applicationEmail: listing.applicationEmail?.trim() || undefined,
+    applicationPhone: listing.applicationPhone?.trim() || undefined,
+    applicationInstructions: listing.applicationInstructions?.trim() || undefined,
     customFeatures: Array.from(customFeatures.values()),
   };
 }
