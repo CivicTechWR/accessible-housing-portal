@@ -48,7 +48,7 @@ const SCOPE_OPTIONS: Array<{
   {
     value: "all",
     label: "All fields",
-    description: "Building information, unit details, and accessibility features.",
+    description: "Building information, unit details, and listing features.",
   },
   {
     value: "building",

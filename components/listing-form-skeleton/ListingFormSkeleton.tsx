@@ -22,7 +22,7 @@ export function ListingFormSkeleton() {
               ))}
             </FormSection>
           ))}
-          <FormSection isSeparated title="Accessibility Features">
+          <FormSection isSeparated title="Listing Features">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-start space-x-3">
                 <Skeleton className="h-5 w-5 rounded shrink-0" />
