@@ -176,7 +176,7 @@ describe("listing edits and reads", () => {
     return jest.mocked(updateListingGraph).mock.calls[0]?.[0];
   }
 
-  it("returns the saved role and application details to searchers and the editor", async () => {
+  it("returns saved contact and application details in detail and editor responses", async () => {
     expect(await getListingByIdService(LISTING_ID)).toMatchObject({
       ok: true,
       value: { data: { ...APPLICATION_DETAILS, contact: { role: "Property manager" } } },
