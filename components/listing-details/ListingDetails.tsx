@@ -150,7 +150,7 @@ export function ListingDetails({
       value: contactPhone?.trim(),
       href: contactPhone ? `tel:${contactPhone}` : undefined,
     },
-  ].filter((row) => Boolean(row.value));
+  ].filter((row): row is { label: string; value: string; href?: string } => Boolean(row.value));
 
   const wrapperClasses = embedded ? "w-full" : "min-h-screen bg-muted/30 px-4 py-8 sm:px-6 lg:px-8";
   const contentClasses = embedded
@@ -255,9 +255,9 @@ export function ListingDetails({
                   {contactRows.length > 0 ? (
                     <div className="min-w-0 flex-1">
                       {contactRole?.trim() ? (
-                        <h3 className="mb-2 text-base font-semibold text-foreground">
+                        <p className="mb-2 text-base font-semibold text-foreground">
                           {contactRole.trim()}
-                        </h3>
+                        </p>
                       ) : null}
                       <dl className="space-y-1">
                         {contactRows.map((row) => (
@@ -288,7 +288,7 @@ export function ListingDetails({
                           : "min-w-0"
                       }
                     >
-                      <h3 className="text-base font-semibold text-foreground">Application</h3>
+                      <p className="text-base font-semibold text-foreground">Application</p>
                       <div className="mt-4">
                         <ListingApplyButton applicationUrl={applicationUrl} />
                       </div>
