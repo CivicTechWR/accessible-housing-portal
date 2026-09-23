@@ -1,8 +1,8 @@
 import Link from "next/link";
 
+import { AccountActivationFlow } from "@/components/auth/AccountActivationFlow";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
-import { AcceptInviteForm } from "@/components/auth/AcceptInviteForm";
 import { Button } from "@/components/ui/button";
 import { getPendingInviteByToken } from "@/lib/auth/invite-store";
 
@@ -27,7 +27,7 @@ export default async function InvitePage({ searchParams }: InvitePageProps) {
 
   return (
     <AuthPageShell>
-      <AcceptInviteForm token={token} email={invite.user.email} />
+      <AccountActivationFlow token={token} email={invite.user.email} />
     </AuthPageShell>
   );
 }

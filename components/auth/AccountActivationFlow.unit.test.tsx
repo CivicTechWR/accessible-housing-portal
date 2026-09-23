@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
+import { AccountActivationFlow } from "@/components/auth/AccountActivationFlow";
 import { AcceptInviteForm } from "@/components/auth/AcceptInviteForm";
 import { authClient } from "@/lib/auth-client";
 
@@ -12,9 +13,10 @@ jest.mock("@/lib/auth-client", () => ({
 
 beforeEach(() => jest.clearAllMocks());
 
-it("requires invited users to accept the community agreement before account setup", () => {
-  render(<AcceptInviteForm token="invite-token" email="person@example.com" />);
+it("moves from the community agreement to account setup in order", () => {
+  render(<AccountActivationFlow token="invite-token" email="person@example.com" />);
 
+  expect(screen.getByText("Step 1 of 2: Community agreement")).toBeVisible();
   expect(screen.getByRole("heading", { name: "Community Agreement & Terms of Use" })).toBeVisible();
   expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
 
@@ -29,12 +31,15 @@ it("requires invited users to accept the community agreement before account setu
   expect(continueButton).toBeEnabled();
   fireEvent.click(continueButton);
 
+  expect(screen.getByText("Step 2 of 2: Account setup")).toBeVisible();
+  expect(screen.queryByText("Step 1 of 2: Community agreement")).not.toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Activate your account" })).toBeVisible();
   expect(screen.getByLabelText("New password")).toBeVisible();
+  expect(screen.queryByText("Community Agreement & Terms of Use")).not.toBeInTheDocument();
   expect(authClient.resetPassword).not.toHaveBeenCalled();
 });
 
-it("does not show the account agreement on password reset", () => {
+it("keeps password reset independent from the account activation steps", () => {
   render(<AcceptInviteForm token="reset-token" />);
 
   expect(screen.getByRole("heading", { name: "Reset your password" })).toBeVisible();
