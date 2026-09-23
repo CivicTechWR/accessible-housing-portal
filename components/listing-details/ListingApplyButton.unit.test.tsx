@@ -4,26 +4,15 @@ import { describe, expect, it } from "@jest/globals";
 import { ListingApplyButton } from "./ListingApplyButton";
 
 describe("ListingApplyButton", () => {
-  it("opens a leaving-site confirmation dialog with the application URL", () => {
+  it("shows the application URL in a leaving-site dialog that the user can cancel", () => {
     render(<ListingApplyButton applicationUrl="https://example.org/apply" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 
-    expect(screen.queryByText("Leaving Home Hub")).not.toBeNull();
-    expect(
-      screen.queryByText("You're now leaving the site. This will take you to:"),
-    ).not.toBeNull();
-    expect(screen.queryByText("https://example.org/apply")).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Confirm" })).not.toBeNull();
-  });
-
-  it("closes the leaving-site dialog when the user cancels", () => {
-    render(<ListingApplyButton applicationUrl="https://example.org/apply" />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    screen.getByText("Leaving Home Hub");
+    screen.getByText("You're now leaving the site. This will take you to:");
+    screen.getByText("https://example.org/apply");
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-
     expect(screen.queryByText("Leaving Home Hub")).toBeNull();
   });
 

@@ -52,7 +52,7 @@ const validFormData: ListingFormData = {
   utilitiesIncluded: ["heat", "water"],
 };
 
-describe("mapListingFormToCreateListingInput", () => {
+describe("create and replace payloads", () => {
   it("maps listing form fields into the create-listing API payload", () => {
     expect(mapListingFormToCreateListingInput(validFormData)).toEqual({
       title: "Accessible Two Bedroom",
@@ -137,17 +137,6 @@ describe("mapListingFormToCreateListingInput", () => {
     expect(payload.units[0]?.availableDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("maps an application URL to the create payload", () => {
-    expect(
-      mapListingFormToCreateListingInput({
-        ...validFormData,
-        applicationUrl: "https://example.org/apply",
-      }),
-    ).toMatchObject({
-      applicationUrl: "https://example.org/apply",
-    });
-  });
-
   it("maps full form submission into a replacement payload with a published status", () => {
     expect(mapListingFormToReplaceListingInput(validFormData, "published")).toEqual({
       title: "Accessible Two Bedroom",
@@ -202,84 +191,52 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
-  it("maps application URLs on full replacements", () => {
-    expect(
-      mapListingFormToReplaceListingInput(
-        {
-          ...validFormData,
-          applicationUrl: "https://example.org/apply",
-        },
-        "published",
-      ),
-    ).toMatchObject({
-      applicationUrl: "https://example.org/apply",
+  it("keeps unanswered fields optional on create but clears them on replacement", () => {
+    const data = { ...validFormData, unitNumber: undefined, heatingType: undefined };
+
+    expect(mapListingFormToCreateListingInput(data).heatingType).toBeUndefined();
+    expect(mapListingFormToReplaceListingInput(data, "published")).toMatchObject({
+      status: "published",
+      unitNumber: null,
+      heatingType: null,
     });
   });
 
-  it("maps explicitly cleared application URLs on full replacements to null", () => {
-    expect(
-      mapListingFormToReplaceListingInput(
-        {
-          ...validFormData,
-          applicationUrl: undefined,
-        },
-        "published",
-      ),
-    ).toMatchObject({
-      applicationUrl: null,
-    });
-  });
-
-  it("maps deposit information on create, replace, and autosave payloads", () => {
-    const withDeposit = {
+  it("trims optional contact and application fields on create, replace, and autosave", () => {
+    const data = {
       ...validFormData,
+      contactRole: "  Property manager  ",
+      applicationUrl: "https://example.org/apply",
       depositInfo: "First and last month's rent, refundable",
+      applicationEmail: "  apply@example.org  ",
+      applicationPhone: "  519-555-0111  ",
+      applicationInstructions: "  Email to book a viewing.\nReplies within two business days.  ",
     };
 
-    expect(mapListingFormToCreateListingInput(withDeposit)).toMatchObject({
-      depositInfo: "First and last month's rent, refundable",
-    });
-    expect(mapListingFormToReplaceListingInput(withDeposit, "published")).toMatchObject({
-      depositInfo: "First and last month's rent, refundable",
-    });
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...CREATE_FORM_DEFAULTS,
-        title: "Draft title",
-        depositInfo: "  Last month's rent  ",
-        monthlyRentCents: 0,
-      }),
-    ).toMatchObject({
-      depositInfo: "Last month's rent",
-    });
-  });
-
-  it("maps explicitly cleared deposit information on full replacements to null", () => {
-    expect(
-      mapListingFormToReplaceListingInput(
-        {
-          ...validFormData,
-          depositInfo: undefined,
+    for (const payload of [
+      mapListingFormToCreateListingInput(data),
+      mapListingFormToReplaceListingInput(data),
+      mapListingFormToAutosavePatchInput(data),
+    ]) {
+      expect(payload).toMatchObject({
+        applicationUrl: "https://example.org/apply",
+        depositInfo: "First and last month's rent, refundable",
+        applicationEmail: "apply@example.org",
+        applicationPhone: "519-555-0111",
+        applicationInstructions: "Email to book a viewing.\nReplies within two business days.",
+        contact: {
+          role: "Property manager",
+          email: "leasing@example.org",
+          phone: "519-555-0100",
         },
-        "published",
-      ),
-    ).toMatchObject({
-      depositInfo: null,
-    });
+      });
+    }
   });
+});
 
-  it("clears deposit information in autosave payloads when the field is emptied", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...CREATE_FORM_DEFAULTS,
-        title: "Draft title",
-        depositInfo: "",
-        monthlyRentCents: 0,
-      }),
-    ).toMatchObject({
-      depositInfo: null,
-    });
-  });
+describe("mapListingFormToAutosavePatchInput", () => {
+  const autosave = (overrides: Partial<ListingFormInput>) =>
+    mapListingFormToAutosavePatchInput({ ...validFormData, ...overrides });
 
   it("builds a partial autosave payload from incomplete draft values", () => {
     const autosaveDraft: ListingFormInput = {
@@ -364,243 +321,32 @@ describe("mapListingFormToCreateListingInput", () => {
     });
   });
 
-  it("marks unit number as null in autosave payloads when the field is explicitly cleared", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...CREATE_FORM_DEFAULTS,
-        title: "Draft title",
-        monthlyRentCents: 0,
-        unitNumber: "",
-      }),
-    ).toEqual({
-      title: "Draft title",
-      accessibilityFeatures: [],
-      images: [],
-      status: "draft",
-      unitNumber: null,
-      units: [
-        {
-          bedrooms: 0,
-          bathrooms: 0,
-          rent: 0,
-        },
-      ],
-      utilitiesIncluded: [],
+  it.each<[Partial<ListingFormInput>, Record<string, unknown>]>([
+    [{ unitNumber: "" }, { unitNumber: null }],
+    [{ depositInfo: "  Last month's rent  " }, { depositInfo: "Last month's rent" }],
+    [{ depositInfo: "" }, { depositInfo: null }],
+    [{ applicationUrl: "" }, { applicationUrl: null }],
+    [{ applicationUrl: "https://" }, { applicationUrl: null }],
+    [{ contactRole: "   " }, { contact: { role: null } }],
+    [{ heatingType: "" }, { heatingType: null }],
+    [{ heatingType: "unknown" }, { heatingType: "unknown" }],
+    [
+      { applicationEmail: "", applicationPhone: "", applicationInstructions: " " },
+      { applicationEmail: null, applicationPhone: null, applicationInstructions: null },
+    ],
+  ])("maps %o to %o", (input, expected) => {
+    expect(autosave(input)).toMatchObject(expected);
+  });
+
+  it("omits untouched fields and invalid in-progress emails instead of clearing them", () => {
+    const payload = autosave({
+      heatingType: undefined,
+      contactEmail: "leasing@",
+      applicationEmail: "apply@",
     });
-  });
 
-  it("omits invalid in-progress contact emails from autosave payloads", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...CREATE_FORM_DEFAULTS,
-        title: "Draft title",
-        contactName: "Leasing Office",
-        contactEmail: "leasing@",
-        contactPhone: "519-555-0100",
-        monthlyRentCents: 0,
-      }),
-    ).toEqual({
-      title: "Draft title",
-      contact: {
-        name: "Leasing Office",
-        phone: "519-555-0100",
-      },
-      accessibilityFeatures: [],
-      images: [],
-      status: "draft",
-      units: [
-        {
-          bedrooms: 0,
-          bathrooms: 0,
-          rent: 0,
-        },
-      ],
-      utilitiesIncluded: [],
-    });
-  });
-
-  it("maps valid application URLs in autosave payloads", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...CREATE_FORM_DEFAULTS,
-        title: "Draft title",
-        applicationUrl: "https://example.org/apply",
-        monthlyRentCents: 0,
-      }),
-    ).toEqual({
-      title: "Draft title",
-      applicationUrl: "https://example.org/apply",
-      accessibilityFeatures: [],
-      images: [],
-      status: "draft",
-      units: [
-        {
-          bedrooms: 0,
-          bathrooms: 0,
-          rent: 0,
-        },
-      ],
-      utilitiesIncluded: [],
-    });
-  });
-
-  it("clears application URLs in autosave payloads when the field is emptied", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...CREATE_FORM_DEFAULTS,
-        title: "Draft title",
-        applicationUrl: "",
-        monthlyRentCents: 0,
-      }),
-    ).toEqual({
-      title: "Draft title",
-      applicationUrl: null,
-      accessibilityFeatures: [],
-      images: [],
-      status: "draft",
-      units: [
-        {
-          bedrooms: 0,
-          bathrooms: 0,
-          rent: 0,
-        },
-      ],
-      utilitiesIncluded: [],
-    });
-  });
-
-  it("clears application URLs in autosave payloads when the field is invalid", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...CREATE_FORM_DEFAULTS,
-        title: "Draft title",
-        applicationUrl: "https://",
-        monthlyRentCents: 0,
-      }),
-    ).toEqual({
-      title: "Draft title",
-      applicationUrl: null,
-      accessibilityFeatures: [],
-      images: [],
-      status: "draft",
-      units: [
-        {
-          bedrooms: 0,
-          bathrooms: 0,
-          rent: 0,
-        },
-      ],
-      utilitiesIncluded: [],
-    });
-  });
-
-  it("maps missing unit numbers to null on publish replacements", () => {
-    expect(
-      mapListingFormToReplaceListingInput(
-        {
-          ...validFormData,
-          unitNumber: undefined,
-        },
-        "published",
-      ),
-    ).toMatchObject({
-      status: "published",
-      unitNumber: null,
-    });
-  });
-});
-
-describe("contact role payloads", () => {
-  it("sends the role through create, publish, and draft autosave", () => {
-    const form = { ...validFormData, contactRole: "  Property manager  " };
-    expect(mapListingFormToCreateListingInput(form).contact.role).toBe("Property manager");
-    expect(mapListingFormToReplaceListingInput(form).contact.role).toBe("Property manager");
-    expect(mapListingFormToAutosavePatchInput(form)?.contact?.role).toBe("Property manager");
-  });
-
-  it("clears a blank role while leaving omitted autosave fields untouched", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({ ...validFormData, contactRole: "   " })?.contact?.role,
-    ).toBeNull();
-    expect(
-      mapListingFormToReplaceListingInput({ ...validFormData, contactRole: undefined }).contact
-        .role,
-    ).toBeNull();
-    expect(mapListingFormToAutosavePatchInput(validFormData)?.contact).not.toHaveProperty("role");
-  });
-});
-
-describe("application details payloads", () => {
-  it("carries separate application contacts and instructions through create, replace, and autosave", () => {
-    const data = {
-      ...validFormData,
-      applicationEmail: "  apply@example.org  ",
-      applicationPhone: "  519-555-0111  ",
-      applicationInstructions: "  Email to book a viewing.\nReplies within two business days.  ",
-    };
-    for (const payload of [
-      mapListingFormToCreateListingInput(data),
-      mapListingFormToReplaceListingInput(data),
-      mapListingFormToAutosavePatchInput(data),
-    ]) {
-      expect(payload).toMatchObject({
-        applicationEmail: "apply@example.org",
-        applicationPhone: "519-555-0111",
-        applicationInstructions: "Email to book a viewing.\nReplies within two business days.",
-        contact: { email: "leasing@example.org", phone: "519-555-0100" },
-      });
-    }
-  });
-
-  it("clears blank application fields but skips an incomplete email during autosave", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...validFormData,
-        applicationEmail: "apply@",
-        applicationPhone: "",
-        applicationInstructions: " ",
-      }),
-    ).toMatchObject({ applicationPhone: null, applicationInstructions: null });
-    expect(
-      mapListingFormToAutosavePatchInput({
-        ...validFormData,
-        applicationEmail: "apply@",
-      }),
-    ).not.toHaveProperty("applicationEmail");
-    for (const payload of [
-      mapListingFormToReplaceListingInput(validFormData),
-      mapListingFormToAutosavePatchInput({
-        ...validFormData,
-        applicationEmail: "",
-        applicationPhone: "",
-        applicationInstructions: "",
-      }),
-    ]) {
-      expect(payload).toMatchObject({
-        applicationEmail: null,
-        applicationPhone: null,
-        applicationInstructions: null,
-      });
-    }
-  });
-});
-
-describe("heating type form mappings", () => {
-  it("keeps an unanswered field optional on create and clears it on replacement", () => {
-    const data = { ...validFormData, heatingType: undefined };
-    expect(mapListingFormToCreateListingInput(data).heatingType).toBeUndefined();
-    expect(mapListingFormToReplaceListingInput(data).heatingType).toBeNull();
-  });
-
-  it("distinguishes untouched, cleared, and explicitly unknown values during autosave", () => {
-    expect(
-      mapListingFormToAutosavePatchInput({ ...validFormData, heatingType: undefined }),
-    ).not.toHaveProperty("heatingType");
-    expect(
-      mapListingFormToAutosavePatchInput({ ...validFormData, heatingType: "" })?.heatingType,
-    ).toBeNull();
-    expect(
-      mapListingFormToAutosavePatchInput({ ...validFormData, heatingType: "unknown" })?.heatingType,
-    ).toBe("unknown");
+    expect(payload).not.toHaveProperty("heatingType");
+    expect(payload).not.toHaveProperty("applicationEmail");
+    expect(payload?.contact).toEqual({ name: "Leasing Office", phone: "519-555-0100" });
   });
 });

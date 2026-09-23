@@ -44,7 +44,7 @@ describe("MapView", () => {
     render(<MapView listings={[]} />);
     fireEvent.click(screen.getByRole("button", { name: "Fail tile request" }));
 
-    expect(screen.queryByLabelText("Map")).not.toBeNull();
+    screen.getByLabelText("Map");
     expect(screen.queryByRole("status")).toBeNull();
   });
 });

@@ -3,55 +3,28 @@ import { describe, expect, it } from "@jest/globals";
 import { requiresAuthSessionForRequest } from "@/lib/auth/route-policy";
 
 describe("requiresAuthSessionForRequest", () => {
-  it("requires auth for protected page route families", () => {
-    expect(requiresAuthSessionForRequest({ pathname: "/admin", method: "GET" })).toBe(true);
-    expect(requiresAuthSessionForRequest({ pathname: "/admin/users", method: "GET" })).toBe(true);
-    expect(requiresAuthSessionForRequest({ pathname: "/listings", method: "GET" })).toBe(true);
-    expect(requiresAuthSessionForRequest({ pathname: "/listings/abc123", method: "GET" })).toBe(
-      true,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/listing-form", method: "GET" })).toBe(true);
-    expect(requiresAuthSessionForRequest({ pathname: "/listing-form/abc123", method: "GET" })).toBe(
-      true,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/my-listings", method: "GET" })).toBe(true);
-    expect(requiresAuthSessionForRequest({ pathname: "/my-listings/drafts", method: "GET" })).toBe(
-      true,
-    );
-  });
-
-  it("does not overmatch similar public paths", () => {
-    expect(requiresAuthSessionForRequest({ pathname: "/administrator", method: "GET" })).toBe(
-      false,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/listings-extra", method: "GET" })).toBe(
-      false,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/listing-formal", method: "GET" })).toBe(
-      false,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/my-listings-archive", method: "GET" })).toBe(
-      false,
-    );
-  });
-
-  it("requires auth for protected APIs and all listing API access", () => {
-    expect(requiresAuthSessionForRequest({ pathname: "/api/admin/accounts", method: "GET" })).toBe(
-      true,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/api/administer", method: "GET" })).toBe(
-      false,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/api/listings", method: "GET" })).toBe(true);
-    expect(requiresAuthSessionForRequest({ pathname: "/api/listings/abc123", method: "GET" })).toBe(
-      true,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/api/listings", method: "POST" })).toBe(true);
-    expect(requiresAuthSessionForRequest({ pathname: "/api/listings/abc123", method: "PUT" })).toBe(
-      true,
-    );
-    expect(requiresAuthSessionForRequest({ pathname: "/api/listings-extra", method: "POST" })).toBe(
-      false,
-    );
+  it.each([
+    ["/admin", "GET", true],
+    ["/admin/users", "GET", true],
+    ["/listings", "GET", true],
+    ["/listings/abc123", "GET", true],
+    ["/listing-form", "GET", true],
+    ["/listing-form/abc123", "GET", true],
+    ["/my-listings", "GET", true],
+    ["/my-listings/drafts", "GET", true],
+    ["/api/admin/accounts", "GET", true],
+    ["/api/listings", "GET", true],
+    ["/api/listings/abc123", "GET", true],
+    ["/api/listings", "POST", true],
+    ["/api/listings/abc123", "PUT", true],
+    // Similar public paths must not match a protected prefix.
+    ["/administrator", "GET", false],
+    ["/listings-extra", "GET", false],
+    ["/listing-formal", "GET", false],
+    ["/my-listings-archive", "GET", false],
+    ["/api/administer", "GET", false],
+    ["/api/listings-extra", "POST", false],
+  ])("%s %s requires a session: %s", (pathname, method, expected) => {
+    expect(requiresAuthSessionForRequest({ pathname, method })).toBe(expected);
   });
 });

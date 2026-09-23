@@ -4,6 +4,7 @@ import {
   listingFormSchema,
   type ListingFormInput,
 } from "@/app/listing-form/types";
+import { expectIssueAt } from "@/test/expect-issue-at";
 
 const validFormInput: ListingFormInput = {
   ...CREATE_FORM_DEFAULTS,
@@ -39,60 +40,45 @@ describe("listingFormSchema", () => {
       applicationInstructions: "  Email to book a viewing.\nReplies within two business days.  ",
     });
 
-    expect(parsed.title).toBe("Accessible Two Bedroom");
-    expect(parsed.street2).toBe("Apt 301");
-    expect(parsed.unitNumber).toBe("301");
-    expect(parsed.contactRole).toBe("Property manager");
-    expect(parsed.contactEmail).toBe("leasing@example.org");
-    expect(parsed.applicationUrl).toBe("https://example.org/apply");
-    expect(parsed.depositInfo).toBe("First and last month's rent");
-    expect(parsed.applicationEmail).toBe("apply@example.org");
-    expect(parsed.applicationPhone).toBe("519-555-0111");
-    expect(parsed.applicationInstructions).toBe(
-      "Email to book a viewing.\nReplies within two business days.",
-    );
+    expect(parsed).toMatchObject({
+      title: "Accessible Two Bedroom",
+      street2: "Apt 301",
+      unitNumber: "301",
+      contactRole: "Property manager",
+      contactEmail: "leasing@example.org",
+      applicationUrl: "https://example.org/apply",
+      depositInfo: "First and last month's rent",
+      applicationEmail: "apply@example.org",
+      applicationPhone: "519-555-0111",
+      applicationInstructions: "Email to book a viewing.\nReplies within two business days.",
+    });
   });
 
   it("normalizes optional blank strings to undefined", () => {
+    const optionalFields = [
+      "description",
+      "contactRole",
+      "street2",
+      "unitNumber",
+      "availableOn",
+      "applicationUrl",
+      "depositInfo",
+      "applicationEmail",
+      "applicationPhone",
+      "applicationInstructions",
+    ] as const;
     const parsed = listingFormSchema.parse({
       ...validFormInput,
-      description: "   ",
-      contactRole: "   ",
-      street2: "   ",
-      unitNumber: "   ",
-      availableOn: "   ",
-      applicationUrl: "   ",
-      depositInfo: "   ",
-      applicationEmail: "   ",
-      applicationPhone: "   ",
-      applicationInstructions: "   ",
+      ...Object.fromEntries(optionalFields.map((key) => [key, "   "])),
     });
 
-    expect(parsed.description).toBeUndefined();
-    expect(parsed.contactRole).toBeUndefined();
-    expect(parsed.street2).toBeUndefined();
-    expect(parsed.unitNumber).toBeUndefined();
-    expect(parsed.availableOn).toBeUndefined();
-    expect(parsed.applicationUrl).toBeUndefined();
-    expect(parsed.depositInfo).toBeUndefined();
-    expect(parsed.applicationEmail).toBeUndefined();
-    expect(parsed.applicationPhone).toBeUndefined();
-    expect(parsed.applicationInstructions).toBeUndefined();
+    for (const key of optionalFields) {
+      expect(parsed[key]).toBeUndefined();
+    }
   });
 
   it("rejects whitespace-only required fields", () => {
-    const result = listingFormSchema.safeParse({
-      ...validFormInput,
-      title: "   ",
-    });
-
-    expect(result.success).toBe(false);
-
-    if (result.success) {
-      throw new Error("Expected schema parse to fail");
-    }
-
-    expect(result.error.issues.some((issue) => issue.path.join(".") === "title")).toBe(true);
+    expectIssueAt(listingFormSchema.safeParse({ ...validFormInput, title: "   " }), "title");
   });
 
   it("accepts root-relative uploaded image URLs", () => {
@@ -111,21 +97,11 @@ describe("listingFormSchema", () => {
   });
 
   it("rejects application URLs that are malformed or not http(s)", () => {
-    ["not-a-url", "mailto:leasing@example.org"].forEach((applicationUrl) => {
-      const result = listingFormSchema.safeParse({
-        ...validFormInput,
-        applicationUrl,
-      });
-
-      expect(result.success).toBe(false);
-
-      if (result.success) {
-        throw new Error("Expected schema parse to fail");
-      }
-
-      expect(result.error.issues.some((issue) => issue.path.join(".") === "applicationUrl")).toBe(
-        true,
+    for (const applicationUrl of ["not-a-url", "mailto:leasing@example.org"]) {
+      expectIssueAt(
+        listingFormSchema.safeParse({ ...validFormInput, applicationUrl }),
+        "applicationUrl",
       );
-    });
+    }
   });
 });

@@ -27,8 +27,7 @@ import {
   sortVisibleFields,
 } from "./custom-listing-fields-dashboard-utils";
 
-const baseField: AdminCustomListingField = {
-  id: "00000000-0000-4000-8000-000000000001",
+const baseField: Omit<AdminCustomListingField, "id"> = {
   key: "field_one",
   label: "Field One",
   description: null,
@@ -46,11 +45,11 @@ const baseField: AdminCustomListingField = {
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
+let nextFieldNumber = 1;
+
 function field(overrides: Partial<AdminCustomListingField>): AdminCustomListingField {
-  return {
-    ...baseField,
-    ...overrides,
-  };
+  const id = `00000000-0000-4000-8000-${String(++nextFieldNumber).padStart(12, "0")}`;
+  return { ...baseField, id, ...overrides };
 }
 
 describe("custom listing field dashboard utilities", () => {
@@ -72,9 +71,9 @@ describe("custom listing field dashboard utilities", () => {
 
   it("normalizes field categories and derives sorted category stats", () => {
     const fields = normalizeFieldCategories([
-      field({ id: "00000000-0000-4000-8000-000000000002", category: " accessibility " }),
-      field({ id: "00000000-0000-4000-8000-000000000003", category: "BUILDING AMENITIES" }),
-      field({ id: "00000000-0000-4000-8000-000000000004", category: "ACCESSIBILITY" }),
+      field({ category: " accessibility " }),
+      field({ category: "BUILDING AMENITIES" }),
+      field({ category: "ACCESSIBILITY" }),
     ]);
 
     expect(fields.map((item) => item.category)).toEqual([
@@ -91,35 +90,10 @@ describe("custom listing field dashboard utilities", () => {
   it("groups and collapses display groups when all fields are unfiltered", () => {
     const groupedFields = groupFields(
       sortFields([
-        field({
-          id: "00000000-0000-4000-8000-000000000002",
-          label: "Ramp",
-          category: "ACCESSIBILITY",
-        }),
-        field({
-          id: "00000000-0000-4000-8000-000000000003",
-          label: "Laundry",
-          category: "BUILDING AMENITIES",
-          sortOrder: 1,
-        }),
-        field({
-          id: "00000000-0000-4000-8000-000000000004",
-          label: "Parking",
-          category: "BUILDING AMENITIES",
-          sortOrder: 2,
-        }),
-        field({
-          id: "00000000-0000-4000-8000-000000000005",
-          label: "Storage",
-          category: "BUILDING AMENITIES",
-          sortOrder: 3,
-        }),
-        field({
-          id: "00000000-0000-4000-8000-000000000006",
-          label: "Elevator",
-          category: "BUILDING AMENITIES",
-          sortOrder: 4,
-        }),
+        field({ label: "Ramp", category: "ACCESSIBILITY" }),
+        ...["Laundry", "Parking", "Storage", "Elevator"].map((label, index) =>
+          field({ label, category: "BUILDING AMENITIES", sortOrder: index + 1 }),
+        ),
       ]),
     );
 
@@ -138,8 +112,8 @@ describe("custom listing field dashboard utilities", () => {
 
   it("sorts visible fields by requested key and direction", () => {
     const fields = [
-      field({ id: "00000000-0000-4000-8000-000000000002", label: "Beta", sortOrder: 1 }),
-      field({ id: "00000000-0000-4000-8000-000000000003", label: "Alpha", sortOrder: 2 }),
+      field({ label: "Beta", sortOrder: 1 }),
+      field({ label: "Alpha", sortOrder: 2 }),
     ];
 
     expect(sortVisibleFields(fields, "label", "asc").map((item) => item.label)).toEqual([
@@ -162,9 +136,9 @@ describe("custom listing field dashboard utilities", () => {
 
   it("calculates drag insertion and no-op indicator states", () => {
     const fields = [
-      field({ id: "00000000-0000-4000-8000-000000000002", label: "Alpha", sortOrder: 1 }),
-      field({ id: "00000000-0000-4000-8000-000000000003", label: "Beta", sortOrder: 2 }),
-      field({ id: "00000000-0000-4000-8000-000000000004", label: "Gamma", sortOrder: 3 }),
+      field({ label: "Alpha", sortOrder: 1 }),
+      field({ label: "Beta", sortOrder: 2 }),
+      field({ label: "Gamma", sortOrder: 3 }),
     ];
     const rowRect = { top: 100, height: 40 } as DOMRect;
 

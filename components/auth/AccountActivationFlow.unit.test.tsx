@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import "@testing-library/jest-dom";
+import { beforeEach, expect, it, jest } from "@jest/globals";
 
 import { AccountActivationFlow } from "@/components/auth/AccountActivationFlow";
 import { AcceptInviteForm } from "@/components/auth/AcceptInviteForm";
@@ -11,7 +11,9 @@ jest.mock("@/lib/auth-client", () => ({
   },
 }));
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it("moves from the community agreement to account setup in order", () => {
   render(<AccountActivationFlow token="invite-token" email="person@example.com" />);

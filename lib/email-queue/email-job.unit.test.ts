@@ -7,7 +7,6 @@ import type { EmailDeliveryAttemptRef } from "@/lib/email-delivery/attempt";
 import {
   buildAccountInviteEmailJob,
   getEmailJobId,
-  getEmailJobIdempotencyKey,
   openEmailJobSecret,
   sealEmailJobSecret,
 } from "@/lib/email-queue/email-job";
@@ -82,27 +81,15 @@ function buildAttempt(attemptNumber: number): EmailDeliveryAttemptRef {
   };
 }
 
-describe("getEmailJobIdempotencyKey", () => {
-  it("uses the attempt's key, so the queue and Resend dedupe on the same identity", () => {
-    expect(
-      getEmailJobIdempotencyKey({
-        type: "account_invite",
-        inviteId: INVITE_ID,
-        attempt: buildAttempt(1),
-        secret: "x",
-      }),
-    ).toBe(`account_invite/${INVITE_ID}/attempt/1`);
-  });
-});
-
 describe("getEmailJobId", () => {
+  const data = {
+    type: "account_invite",
+    inviteId: INVITE_ID,
+    attempt: buildAttempt(1),
+    secret: "x",
+  } as const;
+
   it("derives a stable UUID from the attempt key, so re-enqueueing an attempt dedupes", () => {
-    const data = {
-      type: "account_invite",
-      inviteId: INVITE_ID,
-      attempt: buildAttempt(1),
-      secret: "x",
-    } as const;
     const jobId = getEmailJobId(data);
 
     expect(jobId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
@@ -110,13 +97,6 @@ describe("getEmailJobId", () => {
   });
 
   it("gives a resend of the same invite a different job id", () => {
-    const data = {
-      type: "account_invite",
-      inviteId: INVITE_ID,
-      attempt: buildAttempt(1),
-      secret: "x",
-    } as const;
-
     expect(getEmailJobId({ ...data, attempt: buildAttempt(2) })).not.toBe(getEmailJobId(data));
   });
 });

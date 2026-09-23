@@ -20,6 +20,7 @@ import {
 } from "@/lib/email-queue/worker";
 
 import type { Job } from "pg-boss";
+import type { ErrorResponse } from "resend";
 
 jest.mock("pg-boss", () => ({
   PgBoss: jest.fn(),
@@ -108,6 +109,11 @@ function buildInviteTarget() {
   };
 }
 
+function providerError(code: ErrorResponse["name"], retryAfterSeconds: number | null = null) {
+  const statusCode = code === "internal_server_error" ? 500 : 429;
+  return new EmailSendError(code, { code, statusCode, retryAfterSeconds });
+}
+
 beforeEach(() => {
   process.env = {
     ...ORIGINAL_ENV,
@@ -161,30 +167,25 @@ describe("processEmailJob", () => {
     expect(statement).toContain("(id = $4 OR state IN ('completed', 'failed', 'cancelled'))");
   });
 
-  it("skips sending when the invite no longer exists and still redacts the secret", async () => {
-    findInviteEmailJobTargetMock.mockResolvedValue(null);
+  it.each([
+    { target: null, reason: "invite_not_found" },
+    { target: { ...buildInviteTarget(), acceptedAt: new Date() }, reason: "invite_accepted" },
+    {
+      target: { ...buildInviteTarget(), expiresAt: new Date(Date.now() - 1) },
+      reason: "invite_expired",
+    },
+  ])("skips sending and still redacts the secret: $reason", async ({ target, reason }) => {
+    findInviteEmailJobTargetMock.mockResolvedValue(target);
     const job = buildJob();
 
     const result = await processEmailJob(boss, job);
 
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ status: "skipped", reason: "invite_not_found" });
+    expect(result).toEqual({ status: "skipped", reason });
     expect(executeSqlMock).toHaveBeenCalledWith(
       expect.stringContaining("data - 'secret'"),
       expectedRedactionParams(job),
     );
-  });
-
-  it("skips sending when the invite was already accepted", async () => {
-    findInviteEmailJobTargetMock.mockResolvedValue({
-      ...buildInviteTarget(),
-      acceptedAt: new Date(),
-    });
-
-    const result = await processEmailJob(boss, buildJob());
-
-    expect(sendInviteEmailMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ status: "skipped", reason: "invite_accepted" });
   });
 
   it("skips sending when the invite email was already submitted, even without a payload secret", async () => {
@@ -220,41 +221,17 @@ describe("processEmailJob", () => {
   });
 
   it("does not defer quota failures for an expired job pg-boss already retries", async () => {
-    sendInviteEmailMock.mockRejectedValue(
-      new EmailSendError("Too many requests", {
-        code: "rate_limit_exceeded",
-        statusCode: 429,
-        retryAfterSeconds: 7,
-      }),
-    );
+    sendInviteEmailMock.mockRejectedValue(providerError("rate_limit_exceeded", 7));
 
-    await expect(processEmailJob(boss, buildAbortedJob())).rejects.toThrow("Too many requests");
+    await expect(processEmailJob(boss, buildAbortedJob())).rejects.toThrow("rate_limit_exceeded");
 
     expect(sendAfterMock).not.toHaveBeenCalled();
     expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
-  it("skips sending when the invite expired or was superseded", async () => {
-    findInviteEmailJobTargetMock.mockResolvedValue({
-      ...buildInviteTarget(),
-      expiresAt: new Date(Date.now() - 1),
-    });
-
-    const result = await processEmailJob(boss, buildJob());
-
-    expect(sendInviteEmailMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ status: "skipped", reason: "invite_expired" });
-  });
-
   it("defers by the provider's Retry-After when rate limited", async () => {
     const job = buildJob();
-    sendInviteEmailMock.mockRejectedValue(
-      new EmailSendError("Too many requests", {
-        code: "rate_limit_exceeded",
-        statusCode: 429,
-        retryAfterSeconds: 7,
-      }),
-    );
+    sendInviteEmailMock.mockRejectedValue(providerError("rate_limit_exceeded", 7));
 
     const result = await processEmailJob(boss, job);
 
@@ -278,13 +255,7 @@ describe("processEmailJob", () => {
   });
 
   it("defers briefly when rate limited without a Retry-After header", async () => {
-    sendInviteEmailMock.mockRejectedValue(
-      new EmailSendError("Too many requests", {
-        code: "rate_limit_exceeded",
-        statusCode: 429,
-        retryAfterSeconds: null,
-      }),
-    );
+    sendInviteEmailMock.mockRejectedValue(providerError("rate_limit_exceeded"));
 
     const result = await processEmailJob(boss, buildJob());
 
@@ -293,13 +264,7 @@ describe("processEmailJob", () => {
 
   it("defers ~24 hours when the daily quota is exhausted", async () => {
     const job = buildJob();
-    sendInviteEmailMock.mockRejectedValue(
-      new EmailSendError("Daily quota exceeded", {
-        code: "daily_quota_exceeded",
-        statusCode: 429,
-        retryAfterSeconds: null,
-      }),
-    );
+    sendInviteEmailMock.mockRejectedValue(providerError("daily_quota_exceeded"));
 
     const result = await processEmailJob(boss, job);
 
@@ -315,13 +280,7 @@ describe("processEmailJob", () => {
   it("increments the deferral count across successive deferrals", async () => {
     const job = buildJob();
     job.data.deferralCount = 3;
-    sendInviteEmailMock.mockRejectedValue(
-      new EmailSendError("Too many requests", {
-        code: "rate_limit_exceeded",
-        statusCode: 429,
-        retryAfterSeconds: 7,
-      }),
-    );
+    sendInviteEmailMock.mockRejectedValue(providerError("rate_limit_exceeded", 7));
 
     const result = await processEmailJob(boss, job);
 
@@ -337,15 +296,9 @@ describe("processEmailJob", () => {
   it("fails into the retry/dead-letter cycle once the deferral chain hits the cap", async () => {
     const job = buildJob();
     job.data.deferralCount = MAX_EMAIL_JOB_DEFERRALS;
-    sendInviteEmailMock.mockRejectedValue(
-      new EmailSendError("Too many requests", {
-        code: "rate_limit_exceeded",
-        statusCode: 429,
-        retryAfterSeconds: 7,
-      }),
-    );
+    sendInviteEmailMock.mockRejectedValue(providerError("rate_limit_exceeded", 7));
 
-    await expect(processEmailJob(boss, job)).rejects.toThrow("Too many requests");
+    await expect(processEmailJob(boss, job)).rejects.toThrow("rate_limit_exceeded");
 
     expect(sendAfterMock).not.toHaveBeenCalled();
     // The secret stays in place for the retries pg-boss now owns.
@@ -353,30 +306,18 @@ describe("processEmailJob", () => {
   });
 
   it("fails into the retry/dead-letter cycle when the monthly quota is exhausted", async () => {
-    sendInviteEmailMock.mockRejectedValue(
-      new EmailSendError("Monthly quota exceeded", {
-        code: "monthly_quota_exceeded",
-        statusCode: 429,
-        retryAfterSeconds: null,
-      }),
-    );
+    sendInviteEmailMock.mockRejectedValue(providerError("monthly_quota_exceeded"));
 
-    await expect(processEmailJob(boss, buildJob())).rejects.toThrow("Monthly quota exceeded");
+    await expect(processEmailJob(boss, buildJob())).rejects.toThrow("monthly_quota_exceeded");
 
     expect(sendAfterMock).not.toHaveBeenCalled();
     expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
   it("rethrows transient provider failures so pg-boss retries with backoff", async () => {
-    sendInviteEmailMock.mockRejectedValue(
-      new EmailSendError("Internal server error", {
-        code: "internal_server_error",
-        statusCode: 500,
-        retryAfterSeconds: null,
-      }),
-    );
+    sendInviteEmailMock.mockRejectedValue(providerError("internal_server_error"));
 
-    await expect(processEmailJob(boss, buildJob())).rejects.toThrow("Internal server error");
+    await expect(processEmailJob(boss, buildJob())).rejects.toThrow("internal_server_error");
 
     expect(sendAfterMock).not.toHaveBeenCalled();
   });

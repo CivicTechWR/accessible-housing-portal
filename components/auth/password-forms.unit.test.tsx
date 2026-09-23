@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import "@testing-library/jest-dom";
+import { beforeEach, expect, it, jest } from "@jest/globals";
 import { AcceptInviteForm } from "@/components/auth/AcceptInviteForm";
 import { AccountSecurity } from "@/components/auth/AccountSecurity";
 import { authClient } from "@/lib/auth-client";
@@ -13,7 +13,9 @@ jest.mock("@/lib/auth-client", () => ({
   },
 }));
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it("associates reset validation with each field and focuses the first error", () => {
   render(<AcceptInviteForm token="reset-token" />);
