@@ -47,7 +47,6 @@ Listing search accepts these query parameters through `listingQuerySchema`:
 | `minPrice`      | Minimum rent in dollars.                                                          |
 | `maxPrice`      | Maximum rent in dollars.                                                          |
 | `maxRent`       | Legacy maximum rent alias.                                                        |
-| `accessibility` | `true` or `false`, based on enabled public, filterable boolean custom fields.     |
 | `moveInDate`    | ISO-like date string; filters listings available on or before the date.           |
 | `sort`          | `newest`, `oldest`, `price_asc`, or `price_desc`.                                 |
 | `features`      | One or more dynamic feature keys from public, filterable boolean custom fields.   |
@@ -76,7 +75,6 @@ Services intentionally return `not_found` for some inaccessible listing reads so
 - neighbourhood
 - bedroom and bathroom counts
 - min/max rent
-- accessibility
 - text search
 - available-by date
 - selected dynamic feature definitions
@@ -196,7 +194,7 @@ Built-in listing fields are persisted in normalized columns on `listings` or `pr
 
 `lib/listings/store.ts` maps selected admin-configured accessibility features into `listings.custom_fields`. Current authoring writes selected public boolean feature definitions as boolean keys where `custom_fields[definition.key]` is `true`.
 
-Public boolean fields are available for authoring and display regardless of `is_filterable`. Turning filterability off preserves saved values in the editor, listing details, and feature displays. Search filter options and the server-side `features` and `accessibility` filters require `is_filterable = true`. Non-public definitions are excluded from public listing responses.
+Public boolean fields are available for authoring and display regardless of `is_filterable`. Turning filterability off preserves saved values in the editor, listing details, and feature displays. Search filter options and the server-side `features` filter both require `is_filterable = true`. Non-public definitions are excluded from public listing responses.
 
 Create/update payloads send selected features through `accessibilityFeatures`, and each submitted feature must include the field-definition `id`. Form update/autosave payloads use explicit `null` when an author clears nullable listing data, including description, second address line, square footage, unit number, deposit information, and application URL. Full-form replacements require each of those form-owned fields as a value or `null`. The update API applies the same contract to availability date, neighbourhood, and coordinates while preserving omitted server-managed neighbourhood and coordinate data. New listings published without an availability date retain the available-today default.
 

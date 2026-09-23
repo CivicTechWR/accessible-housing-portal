@@ -66,7 +66,6 @@ export const listingQuerySchema = z.object({
     .string()
     .regex(/^\d+(\.\d{1,2})?$/)
     .optional(),
-  accessibility: z.enum(["true", "false"]).optional(),
   moveInDate: optionalTrimmedString(),
   sort: z.enum(["newest", "oldest", "price_asc", "price_desc"]).optional(),
   features: z.union([z.string(), z.array(z.string())]).optional(),

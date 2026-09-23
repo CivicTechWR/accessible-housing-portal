@@ -16,7 +16,6 @@ export function getListingsQueryFromSearchParams(searchParams: RawSearchParams):
     minPrice: getFirstValue(searchParams.minPrice),
     maxPrice: getFirstValue(searchParams.maxPrice),
     maxRent: getFirstValue(searchParams.maxRent),
-    accessibility: getFirstValue(searchParams.accessibility),
     moveInDate: getFirstValue(searchParams.moveInDate),
     sort: getFirstValue(searchParams.sort),
     features: rawFeatures,
@@ -37,7 +36,6 @@ export function createListingsQueryString(query: ListingQuery) {
   appendQueryParam(params, "minPrice", query.minPrice);
   appendQueryParam(params, "maxPrice", query.maxPrice);
   appendQueryParam(params, "maxRent", query.maxRent);
-  appendQueryParam(params, "accessibility", query.accessibility);
   appendQueryParam(params, "moveInDate", query.moveInDate);
   appendQueryParam(params, "sort", query.sort);
   appendQueryParam(params, "search", query.search);

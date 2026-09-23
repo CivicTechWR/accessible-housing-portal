@@ -220,10 +220,6 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
       }),
       [listingId],
     );
-    assert.deepEqual(await searchIds({ accessibility: "true" }), [listingId]);
-    assert.deepEqual(await searchIds({ accessibility: "false" }), [
-      withoutFilterable.value.data.id,
-    ]);
 
     await db
       .update(customListingFields)
