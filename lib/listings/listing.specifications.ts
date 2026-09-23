@@ -5,6 +5,11 @@ import type { ListingFeatureDefinition } from "@/lib/listings/listing-feature-de
 
 export type ListingFilterSpecification = SQL<unknown> | undefined;
 
+// Never NULL, so callers can safely negate it.
+function featureEnabled(key: string) {
+  return sql<boolean>`coalesce(${listings.customFields} ->> ${key}, 'false') = 'true'`;
+}
+
 export function listingStatusSpecification(status: ListingStatus): ListingFilterSpecification {
   return eq(listings.status, status);
 }
@@ -102,12 +107,7 @@ export function listingAccessibilitySpecification(
   }
 
   const hasAccessibility =
-    or(
-      ...definitions.map(
-        (definition) =>
-          sql<boolean>`coalesce(${listings.customFields} ->> ${definition.key}, 'false') = 'true'`,
-      ),
-    ) ?? sql<boolean>`false`;
+    or(...definitions.map((definition) => featureEnabled(definition.key))) ?? sql<boolean>`false`;
 
   return accessibility === "true" ? hasAccessibility : sql<boolean>`not (${hasAccessibility})`;
 }
@@ -153,12 +153,7 @@ export function listingFeatureDefinitionsSpecification(
     return undefined;
   }
 
-  const activeFeatureSpecs = definitions.map(
-    (definition) =>
-      sql<boolean>`coalesce(${listings.customFields} ->> ${definition.key}, 'false') = 'true'`,
-  );
-
-  return and(...activeFeatureSpecs);
+  return and(...definitions.map((definition) => featureEnabled(definition.key)));
 }
 
 export function andListingSpecifications(

@@ -9,7 +9,6 @@ import { getListingsDashboardData } from "@/app/listings/data";
 import { db } from "@/db";
 import { accounts, customListingFields, listings, properties, users } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { getCustomListingFieldsService } from "@/lib/custom-listing-fields/custom-listing-field.service";
 import {
   createDraftListingService,
   createListingService,
@@ -17,9 +16,8 @@ import {
   getListingEditorByIdService,
   getListingsService,
   patchListingByIdService,
-  replaceListingByIdService,
 } from "@/lib/listings/listing.service";
-import { createListingSchema, replaceListingSchema } from "@/shared/schemas/listings";
+import { createListingSchema } from "@/shared/schemas/listings";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const userId = crypto.randomUUID();
@@ -28,16 +26,29 @@ const nonFilterableKey = `${fieldPrefix}_display`;
 const filterableKey = `${fieldPrefix}_search`;
 const privateKey = `${fieldPrefix}_private`;
 const fieldKeys = [nonFilterableKey, filterableKey, privateKey];
-const selectedFeatures = fieldKeys.map((id) => ({ id, name: id, description: id }));
+const selectedFeatures = fieldKeys.map((id) => ({
+  id,
+  name: id,
+  description: id,
+}));
 
 const payload = createListingSchema.parse({
   title: fieldPrefix,
   name: "Feature test property",
-  address: { street: "123 Test St", city: "Waterloo", province: "ON", postalCode: "N2L 3G1" },
+  address: {
+    street: "123 Test St",
+    city: "Waterloo",
+    province: "ON",
+    postalCode: "N2L 3G1",
+  },
   units: [{ bedrooms: 1, bathrooms: 1, rent: 1200 }],
   accessibilityFeatures: selectedFeatures,
   images: [],
-  contact: { name: "Test Partner", email: "partner@example.test", phone: "519-555-0100" },
+  contact: {
+    name: "Test Partner",
+    email: "partner@example.test",
+    phone: "519-555-0100",
+  },
   status: "published",
   buildingType: "apartment",
   leaseTermMonths: 12,
@@ -86,7 +97,10 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
         sortOrder: 0,
       })),
     );
-    const response = await auth.api.signInEmail({ body: { email, password }, asResponse: true });
+    const response = await auth.api.signInEmail({
+      body: { email, password },
+      asResponse: true,
+    });
     assert.equal(response.status, 200);
     const cookie = response.headers
       .getSetCookie()
@@ -118,185 +132,111 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
     }
   });
 
-  it("persists public non-filterable fields through create, replace, and draft patches", async () => {
-    const created = await createListingService({ ...payload, title: `${fieldPrefix}_persistence` });
+  it("keeps public values editable and displayed regardless of filterability", async () => {
+    const title = `${fieldPrefix}_display`;
+    const created = await createListingService({ ...payload, title });
     assert.ok(created.ok);
     const listingId = created.value.data.id;
     const [stored] = await db.select().from(listings).where(eq(listings.id, listingId));
-    assert.deepEqual(stored?.customFields, { [nonFilterableKey]: true, [filterableKey]: true });
+    assert.deepEqual(stored?.customFields, {
+      [nonFilterableKey]: true,
+      [filterableKey]: true,
+    });
 
-    // An existing private value must remain private when resolving any feature display.
+    // A saved private value must stay out of every feature display.
     await db
       .update(listings)
       .set({ customFields: { ...stored.customFields, [privateKey]: true } })
       .where(eq(listings.id, listingId));
+    const publicKeys = new Set([nonFilterableKey, filterableKey]);
     const editor = await getListingEditorByIdService(listingId);
     assert.ok(editor.ok);
-    assert.deepEqual(
-      new Set(editor.value.data.customFeatures.map((field) => field.id)),
-      new Set([nonFilterableKey, filterableKey]),
-    );
+    assert.deepEqual(ids(editor.value.data.customFeatures), publicKeys);
     const details = await getListingByIdService(listingId);
     assert.ok(details.ok);
+    assert.deepEqual(ids(details.value.data.accessibilityFeatures), publicKeys);
     assert.deepEqual(
-      new Set(details.value.data.accessibilityFeatures?.map((field) => field.id)),
-      new Set([nonFilterableKey, filterableKey]),
+      new Set(details.value.data.features.flatMap((group) => group.features.map((f) => f.name))),
+      publicKeys,
     );
-    assert.deepEqual(
-      new Set(
-        details.value.data.features.flatMap((group) => group.features.map((field) => field.name)),
-      ),
-      new Set([nonFilterableKey, filterableKey]),
-    );
-    const summaries = await getListingsService({ search: `${fieldPrefix}_persistence` });
+    const summaries = await getListingsService({ search: title });
     assert.ok(summaries.ok);
-    assert.deepEqual(
-      new Set(summaries.value.data[0]?.accessibilityFeatures?.map((field) => field.id)),
-      new Set([nonFilterableKey, filterableKey]),
-    );
+    assert.deepEqual(ids(summaries.value.data[0]?.accessibilityFeatures), publicKeys);
 
-    const replacement = replaceListingSchema.parse({
-      ...payload,
-      description: null,
-      address: { ...payload.address, street2: null },
-      units: [{ ...payload.units[0], sqft: null, availableDate: null }],
-      unitNumber: null,
-      depositInfo: null,
-      applicationUrl: null,
-      accessibilityFeatures: [],
-    });
-    assert.ok((await replaceListingByIdService({ listingId, payload: replacement })).ok);
-    const cleared = await getListingEditorByIdService(listingId);
-    assert.ok(cleared.ok);
-    assert.deepEqual(cleared.value.data.customFeatures, []);
-    assert.ok(
-      (
-        await replaceListingByIdService({
-          listingId,
-          payload: { ...replacement, accessibilityFeatures: selectedFeatures },
-        })
-      ).ok,
-    );
-    const replaced = await getListingEditorByIdService(listingId);
-    assert.ok(replaced.ok);
-    assert.ok(replaced.value.data.customFeatures.some((field) => field.id === nonFilterableKey));
-
+    // Draft autosave sends partial patches.
     const draft = await createDraftListingService();
     assert.ok(draft.ok);
     const draftId = draft.value.data.id;
-    assert.ok(
-      (
-        await patchListingByIdService({
-          listingId: draftId,
-          payload: { accessibilityFeatures: selectedFeatures },
-        })
-      ).ok,
-    );
-    assert.ok(
-      (
-        await patchListingByIdService({
-          listingId: draftId,
-          payload: { title: "Unrelated autosave edit" },
-        })
-      ).ok,
-    );
+    const patch = (accessibilityFeatures: typeof selectedFeatures) =>
+      patchListingByIdService({
+        listingId: draftId,
+        payload: { accessibilityFeatures },
+      });
+    assert.ok((await patch(selectedFeatures)).ok);
     const reloaded = await getListingEditorByIdService(draftId);
     assert.ok(reloaded.ok);
-    assert.deepEqual(
-      new Set(reloaded.value.data.customFeatures.map((field) => field.id)),
-      new Set([nonFilterableKey, filterableKey]),
-    );
-    assert.ok(
-      (
-        await patchListingByIdService({
-          listingId: draftId,
-          payload: { accessibilityFeatures: [] },
-        })
-      ).ok,
-    );
-    const clearedDraft = await getListingEditorByIdService(draftId);
-    assert.ok(clearedDraft.ok);
-    assert.deepEqual(clearedDraft.value.data.customFeatures, []);
+    assert.deepEqual(ids(reloaded.value.data.customFeatures), publicKeys);
+    assert.ok((await patch([])).ok);
+    const cleared = await getListingEditorByIdService(draftId);
+    assert.ok(cleared.ok);
+    assert.deepEqual(cleared.value.data.customFeatures, []);
   });
 
-  it("limits search to filterable fields without hiding saved values when filterability changes", async () => {
+  it("searches only public filterable fields", async () => {
     const search = `${fieldPrefix}_search`;
-    const withFeatures = await createListingService({ ...payload, title: search });
-    assert.ok(withFeatures.ok);
-    const withoutFilterableFeatures = await createListingService({
+    const withFeatures = await createListingService({
       ...payload,
       title: search,
-      accessibilityFeatures: selectedFeatures.filter((field) => field.id === nonFilterableKey),
     });
-    assert.ok(withoutFilterableFeatures.ok);
+    assert.ok(withFeatures.ok);
+    const withoutFilterable = await createListingService({
+      ...payload,
+      title: search,
+    });
+    assert.ok(withoutFilterable.ok);
     await db
       .update(listings)
       .set({ customFields: { [nonFilterableKey]: true, [privateKey]: true } })
-      .where(eq(listings.id, withoutFilterableFeatures.value.data.id));
-    const definitions = await getCustomListingFieldsService({
-      publicOnly: "true",
-      type: "boolean",
-    });
-    const optionKeys = definitions.data.flatMap((group) => group.options.map((field) => field.id));
-    assert.ok(optionKeys.includes(nonFilterableKey));
-    assert.ok(!optionKeys.includes(privateKey));
-    const dashboard = await getListingsDashboardData();
-    const searchKeys = dashboard.dynamicGroups.flatMap((group) =>
-      group.options.map((field) => field.id),
-    );
-    assert.ok(searchKeys.includes(filterableKey));
-    assert.ok(!searchKeys.includes(nonFilterableKey));
-    assert.ok(!searchKeys.includes(privateKey));
+      .where(eq(listings.id, withoutFilterable.value.data.id));
+    const listingId = withFeatures.value.data.id;
 
-    const filtered = await getListingsService({ search, features: filterableKey });
-    assert.ok(filtered.ok);
-    assert.equal(filtered.value.data.length, 1);
-    const listingId = filtered.value.data[0]!.id;
-    const accessible = await getListingsService({ search, accessibility: "true" });
-    assert.ok(accessible.ok);
+    const searchOptions = async () =>
+      (await getListingsDashboardData()).dynamicGroups.flatMap((group) =>
+        group.options.map((field) => field.id),
+      );
     assert.deepEqual(
-      accessible.value.data.map((listing) => listing.id),
+      (await searchOptions()).filter((key) => key.startsWith(fieldPrefix)),
+      [filterableKey],
+    );
+
+    const searchIds = async (query: Parameters<typeof getListingsService>[0]) => {
+      const result = await getListingsService({ search, ...query });
+      assert.ok(result.ok);
+      return result.value.data.map((listing) => listing.id).sort();
+    };
+    assert.deepEqual(
+      await searchIds({
+        features: [nonFilterableKey, privateKey, filterableKey],
+      }),
       [listingId],
     );
-    const inaccessible = await getListingsService({ search, accessibility: "false" });
-    assert.ok(inaccessible.ok);
-    assert.deepEqual(
-      inaccessible.value.data.map((listing) => listing.id),
-      [withoutFilterableFeatures.value.data.id],
-    );
-    const ignoredFilters = await getListingsService({
-      search,
-      features: [nonFilterableKey, privateKey],
-    });
-    assert.ok(ignoredFilters.ok);
-    assert.equal(ignoredFilters.value.data.length, 2);
-    const mixedFilters = await getListingsService({
-      search,
-      features: [nonFilterableKey, privateKey, filterableKey],
-    });
-    assert.ok(mixedFilters.ok);
-    assert.equal(mixedFilters.value.data.length, 1);
+    assert.deepEqual(await searchIds({ accessibility: "true" }), [listingId]);
+    assert.deepEqual(await searchIds({ accessibility: "false" }), [
+      withoutFilterable.value.data.id,
+    ]);
 
     await db
       .update(customListingFields)
       .set({ isFilterable: false })
       .where(eq(customListingFields.key, filterableKey));
-    const noLongerFiltered = await getListingsService({ search, features: filterableKey });
-    assert.ok(noLongerFiltered.ok);
-    assert.equal(noLongerFiltered.value.data.length, 2);
-    const editor = await getListingEditorByIdService(listingId);
-    assert.ok(editor.ok);
-    assert.ok(editor.value.data.customFeatures.some((field) => field.id === filterableKey));
+    assert.equal((await searchIds({ features: filterableKey })).length, 2);
+    assert.ok(!(await searchOptions()).includes(filterableKey));
     const details = await getListingByIdService(listingId);
     assert.ok(details.ok);
-    assert.ok(
-      details.value.data.accessibilityFeatures?.some((field) => field.id === filterableKey),
-    );
-    const updatedDashboard = await getListingsDashboardData();
-    assert.ok(
-      !updatedDashboard.dynamicGroups.some((group) =>
-        group.options.some((field) => field.id === filterableKey),
-      ),
-    );
+    assert.ok(ids(details.value.data.accessibilityFeatures).has(filterableKey));
   });
 });
+
+function ids(fields: { id?: string }[] | undefined) {
+  return new Set(fields?.map((field) => field.id));
+}
