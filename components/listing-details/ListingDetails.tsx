@@ -1,14 +1,7 @@
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import {
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-  Card,
-} from "../ui/card";
+import { CardHeader, CardTitle, CardDescription, CardAction, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
 import {
   LISTING_BUILDING_TYPE_LABELS,
@@ -71,9 +64,7 @@ export interface ListingDetailProps {
 
 function formatAvailableDate(isoDate: string) {
   const parsed = parseISO(isoDate);
-  return Number.isNaN(parsed.getTime())
-    ? isoDate
-    : format(parsed, "MMMM d, yyyy");
+  return Number.isNaN(parsed.getTime()) ? isoDate : format(parsed, "MMMM d, yyyy");
 }
 
 export function ListingDetails({
@@ -107,13 +98,7 @@ export function ListingDetails({
   postalCode,
   embedded = false,
 }: ListingDetailProps) {
-  const address = buildAddress({
-    unitNumber,
-    street1,
-    street2,
-    city,
-    postalCode,
-  });
+  const address = buildAddress({ unitNumber, street1, street2, city, postalCode });
   const rentalCost = `$${price.toLocaleString()}`;
   const WrapperElement = embedded ? "section" : "main";
 
@@ -138,12 +123,7 @@ export function ListingDetails({
       : []),
     { label: "Rental Cost", value: rentalCost },
     ...(buildingType
-      ? [
-          {
-            label: "Building Type",
-            value: LISTING_BUILDING_TYPE_LABELS[buildingType],
-          },
-        ]
+      ? [{ label: "Building Type", value: LISTING_BUILDING_TYPE_LABELS[buildingType] }]
       : []),
     { label: "Bedrooms", value: String(beds) },
     { label: "Bathrooms", value: String(baths) },
@@ -152,19 +132,13 @@ export function ListingDetails({
       label: "Utilities Included",
       value:
         utilitiesIncluded && utilitiesIncluded.length > 0
-          ? UTILITY_INCLUDED_VALUES.filter((utility) =>
-              utilitiesIncluded.includes(utility),
-            )
+          ? UTILITY_INCLUDED_VALUES.filter((utility) => utilitiesIncluded.includes(utility))
               .map((utility) => UTILITY_INCLUDED_LABELS[utility])
               .join(", ")
           : "None listed",
     },
-    ...(leaseTermMonths
-      ? [{ label: "Lease Term", value: `${leaseTermMonths}-month lease` }]
-      : []),
-    ...(availableOn
-      ? [{ label: "Available", value: formatAvailableDate(availableOn) }]
-      : []),
+    ...(leaseTermMonths ? [{ label: "Lease Term", value: `${leaseTermMonths}-month lease` }] : []),
+    ...(availableOn ? [{ label: "Available", value: formatAvailableDate(availableOn) }] : []),
     { label: "Posted", value: timeAgo },
   ];
   const generalEmail = contactEmail?.trim();
@@ -174,34 +148,19 @@ export function ListingDetails({
   const applyPhone = applicationPhone?.trim();
   const instructions = applicationInstructions?.trim();
   const sharesEmail = Boolean(
-    applyEmail &&
-      generalEmail &&
-      applyEmail.toLowerCase() === generalEmail.toLowerCase(),
+    applyEmail && generalEmail && applyEmail.toLowerCase() === generalEmail.toLowerCase(),
   );
   const sharesPhone = Boolean(
     applyPhone &&
-      generalPhone &&
-      applyPhone.replace(/[()\s.-]/g, "") ===
-        generalPhone.replace(/[()\s.-]/g, ""),
+    generalPhone &&
+    applyPhone.replace(/[()\s.-]/g, "") === generalPhone.replace(/[()\s.-]/g, ""),
   );
   const hasContactMethod = Boolean(generalEmail || generalPhone);
   const allContactMethodsShared =
-    hasContactMethod &&
-    (!generalEmail || sharesEmail) &&
-    (!generalPhone || sharesPhone);
+    hasContactMethod && (!generalEmail || sharesEmail) && (!generalPhone || sharesPhone);
   const contactRows = [
-    {
-      label: "Email",
-      value: generalEmail,
-      href: `mailto:${generalEmail}`,
-      shared: sharesEmail,
-    },
-    {
-      label: "Phone",
-      value: generalPhone,
-      href: `tel:${generalPhone}`,
-      shared: sharesPhone,
-    },
+    { label: "Email", value: generalEmail, href: `mailto:${generalEmail}`, shared: sharesEmail },
+    { label: "Phone", value: generalPhone, href: `tel:${generalPhone}`, shared: sharesPhone },
   ].filter((row): row is typeof row & { value: string } => Boolean(row.value));
   const applicationRows = [
     {
@@ -215,14 +174,10 @@ export function ListingDetails({
       href: `tel:${applyPhone}`,
     },
   ].filter((row): row is typeof row & { value: string } => Boolean(row.value));
-  const hasContactDetails = Boolean(
-    contactName?.trim() || contactRole?.trim() || hasContactMethod,
-  );
+  const hasContactDetails = Boolean(contactName?.trim() || contactRole?.trim() || hasContactMethod);
   const hasApplicationMethod = Boolean(applyUrl || applyEmail || applyPhone);
 
-  const wrapperClasses = embedded
-    ? "w-full"
-    : "min-h-screen bg-muted/30 px-4 py-8 sm:px-6 lg:px-8";
+  const wrapperClasses = embedded ? "w-full" : "min-h-screen bg-muted/30 px-4 py-8 sm:px-6 lg:px-8";
   const contentClasses = embedded
     ? "mx-auto flex w-full max-w-5xl flex-col gap-6"
     : "mx-auto flex w-full max-w-4xl flex-col gap-6";
@@ -243,9 +198,7 @@ export function ListingDetails({
           ) : null}
         </div>
 
-        {images.length > 0 && (
-          <ListingImageCarousel images={images} altPrefix={address} />
-        )}
+        {images.length > 0 && <ListingImageCarousel images={images} altPrefix={address} />}
 
         {trimmedDescription && (
           <Card>
@@ -253,9 +206,7 @@ export function ListingDetails({
               <CardTitle>Description</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="whitespace-pre-line text-sm text-foreground">
-                {trimmedDescription}
-              </p>
+              <p className="whitespace-pre-line text-sm text-foreground">{trimmedDescription}</p>
             </CardContent>
           </Card>
         )}
@@ -269,9 +220,7 @@ export function ListingDetails({
               {rentalDetailRows.map((row) => (
                 <div
                   key={row.label}
-                  className={`bg-background p-3 ${
-                    row.fullWidth ? "sm:col-span-2" : ""
-                  }`}
+                  className={`bg-background p-3 ${row.fullWidth ? "sm:col-span-2" : ""}`}
                 >
                   <dt className="text-xs uppercase tracking-wide text-muted-foreground">
                     {row.label}
@@ -297,9 +246,7 @@ export function ListingDetails({
             {features.length === 0 && <p>No features listed</p>}
             {features.map((category) => (
               <section key={category.categoryName} className="space-y-2">
-                <h2 className="text-sm text-foreground">
-                  {category.categoryName}
-                </h2>
+                <h2 className="text-sm text-foreground">{category.categoryName}</h2>
                 <div className="flex flex-wrap gap-2">
                   {category.features.map((feature) => (
                     <Badge
@@ -320,9 +267,7 @@ export function ListingDetails({
         <Card>
           <CardHeader className="gap-x-4 gap-y-2 border-b">
             <CardTitle>
-              <h2 className="text-base font-semibold">
-                Contact and applications
-              </h2>
+              <h2 className="text-base font-semibold">Contact and applications</h2>
             </CardTitle>
             {(hasContactMethod || hasApplicationMethod || instructions) && (
               <CardDescription className="text-sm">
@@ -354,14 +299,10 @@ export function ListingDetails({
                     {(contactName?.trim() || contactRole?.trim()) && (
                       <div>
                         {contactName?.trim() && (
-                          <p className="text-sm font-medium">
-                            {contactName.trim()}
-                          </p>
+                          <p className="text-sm font-medium">{contactName.trim()}</p>
                         )}
                         {contactRole?.trim() && (
-                          <p className="text-sm text-muted-foreground">
-                            {contactRole.trim()}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{contactRole.trim()}</p>
                         )}
                       </div>
                     )}
@@ -425,12 +366,8 @@ export function ListingDetails({
             {instructions && (
               <figure className="space-y-3 border-t pt-4">
                 <figcaption className="space-y-1">
-                  <h3 className="text-sm font-semibold">
-                    Additional application information
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    From the housing lister
-                  </p>
+                  <h3 className="text-sm font-semibold">Additional application information</h3>
+                  <p className="text-xs text-muted-foreground">From the housing lister</p>
                 </figcaption>
                 <blockquote className="whitespace-pre-line break-words rounded-r-md border-l-2 border-primary/30 bg-muted/40 px-4 py-3 text-sm leading-relaxed">
                   {instructions}
@@ -439,8 +376,8 @@ export function ListingDetails({
             )}
             {!hasContactDetails && !hasApplicationMethod && !instructions && (
               <p className="text-sm text-muted-foreground">
-                The lister hasn&apos;t provided contact or application details
-                for this listing yet. Please check back later.
+                The lister hasn&apos;t provided contact or application details for this listing yet.
+                Please check back later.
               </p>
             )}
           </CardContent>
