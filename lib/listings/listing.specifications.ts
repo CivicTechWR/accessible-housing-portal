@@ -98,20 +98,6 @@ export function listingMaxRentSpecification(maxRent: string | null): ListingFilt
   return lte(listings.monthlyRentCents, maxRentInCents);
 }
 
-export function listingAccessibilitySpecification(
-  accessibility: "true" | "false" | undefined,
-  definitions: Pick<ListingFeatureDefinition, "key">[],
-): ListingFilterSpecification {
-  if (!accessibility) {
-    return undefined;
-  }
-
-  const hasAccessibility =
-    or(...definitions.map((definition) => featureEnabled(definition.key))) ?? sql<boolean>`false`;
-
-  return accessibility === "true" ? hasAccessibility : sql<boolean>`not (${hasAccessibility})`;
-}
-
 export function listingSearchSpecification(search: string | null): ListingFilterSpecification {
   if (!search) {
     return undefined;

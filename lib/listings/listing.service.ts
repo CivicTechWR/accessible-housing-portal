@@ -25,7 +25,6 @@ import {
 } from "@/lib/listings/store";
 import {
   andListingSpecifications,
-  listingAccessibilitySpecification,
   listingAvailableBySpecification,
   listingBathroomsAtLeastSpecification,
   listingBathroomsSpecification,
@@ -141,7 +140,6 @@ export async function getListingsService(
       : listingBathroomsSpecification(bathroomFilter.value),
     listingMinRentSpecification(query.minPrice ?? null),
     listingMaxRentSpecification(maxRent),
-    listingAccessibilitySpecification(query.accessibility, filterableDefinitions),
     listingSearchSpecification(search),
     listingAvailableBySpecification(query.moveInDate ?? null),
     listingFeatureDefinitionsSpecification(selectedFeatureDefinitions),

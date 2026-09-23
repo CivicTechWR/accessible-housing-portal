@@ -25,8 +25,6 @@ export async function getListingsHandler(
     minPrice: searchParams.get("minPrice") ?? undefined,
     maxPrice: searchParams.get("maxPrice") ?? undefined,
     maxRent: searchParams.get("maxRent") ?? undefined,
-    accessibility: (searchParams.get("accessibility") ??
-      undefined) as ListingQuery["accessibility"],
     moveInDate: searchParams.get("moveInDate") ?? undefined,
     sort: (searchParams.get("sort") ?? undefined) as ListingQuery["sort"],
     features:
