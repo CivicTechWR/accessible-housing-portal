@@ -5,7 +5,7 @@ import type { ListingFeatureDefinition } from "@/lib/listings/listing-feature-de
 
 export type ListingFilterSpecification = SQL<unknown> | undefined;
 
-// Never NULL, so callers can safely negate it.
+// Treat missing feature values as disabled.
 function featureEnabled(key: string) {
   return sql<boolean>`coalesce(${listings.customFields} ->> ${key}, 'false') = 'true'`;
 }
