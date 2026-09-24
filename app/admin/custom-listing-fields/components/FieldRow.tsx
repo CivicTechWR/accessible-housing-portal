@@ -175,7 +175,9 @@ export function FieldRow({
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
   const visibilityIcon = field.publicOnly ? EyeIcon : ViewOffSlashIcon;
-  const visibilityToneClass = field.publicOnly ? "text-emerald-700" : "text-muted-foreground";
+  const visibilityToneClass = field.publicOnly
+    ? "text-emerald-700 dark:text-emerald-400"
+    : "text-muted-foreground";
 
   return (
     <div
