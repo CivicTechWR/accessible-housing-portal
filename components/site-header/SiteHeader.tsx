@@ -22,10 +22,6 @@ export async function SiteHeader() {
             Home Hub
           </Link>
 
-          <div className="absolute left-0 hidden lg:block">
-            <ThemeToggle />
-          </div>
-
           <nav className="absolute right-0 hidden items-center gap-2 lg:flex">
             {isSignedIn ? (
               <>
@@ -51,9 +47,13 @@ export async function SiteHeader() {
                 {session?.user ? <HeaderAccountMenu user={session.user} /> : null}
               </>
             ) : (
-              <Link href="/sign-in" className={navPillClass}>
-                Sign in
-              </Link>
+              <>
+                {/* Signed-in users find the theme control in the account menu. */}
+                <ThemeToggle />
+                <Link href="/sign-in" className={navPillClass}>
+                  Sign in
+                </Link>
+              </>
             )}
           </nav>
 

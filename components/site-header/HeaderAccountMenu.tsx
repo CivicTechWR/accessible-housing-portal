@@ -7,6 +7,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { usePathname } from "next/navigation";
 
 import { signOutFromHeader } from "@/components/site-header/actions";
+import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,11 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
             Sign out
           </button>
         </form>
+
+        <div className="flex items-center justify-between border-t border-border px-3 pt-2 pb-1 text-sm font-medium text-foreground">
+          <span>Theme</span>
+          <ThemeToggle surface="popover" />
+        </div>
       </PopoverContent>
     </Popover>
   );

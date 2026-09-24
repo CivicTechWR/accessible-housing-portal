@@ -6,13 +6,31 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useTheme } from "next-themes";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
-const itemClass =
-  "h-7 min-w-8 rounded-full px-2 text-primary-foreground/70 hover:bg-primary-foreground/20 hover:text-primary-foreground data-[state=on]:bg-primary-foreground/25 data-[state=on]:text-primary-foreground focus-visible:border-transparent focus-visible:ring-primary-foreground/40";
+const surfaceClasses = {
+  // The blue site header and mobile menu.
+  primary: {
+    group: "bg-primary-foreground/15",
+    item: "text-primary-foreground/70 hover:bg-primary-foreground/20 hover:text-primary-foreground data-[state=on]:bg-primary-foreground/25 data-[state=on]:text-primary-foreground focus-visible:border-transparent focus-visible:ring-primary-foreground/40",
+  },
+  // Popover menus such as the account menu.
+  popover: {
+    group: "bg-muted",
+    item: "text-muted-foreground hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm dark:data-[state=on]:bg-input/50",
+  },
+};
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  /** The surface the toggle sits on, which sets its colours. */
+  surface?: keyof typeof surfaceClasses;
+};
+
+export function ThemeToggle({ surface = "primary" }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [isMounted, setIsMounted] = useState(false);
+  const { group: groupClass, item } = surfaceClasses[surface];
+  const itemClass = cn("h-7 min-w-8 rounded-full px-2", item);
 
   // next-themes only knows the stored theme on the client, so render without a
   // selection until mounted to keep server and client markup identical.
@@ -31,7 +49,7 @@ export function ThemeToggle() {
         }
       }}
       aria-label="Colour theme"
-      className="rounded-full bg-primary-foreground/15 p-0.5"
+      className={cn("rounded-full p-0.5", groupClass)}
     >
       <ToggleGroupItem
         value="light"
