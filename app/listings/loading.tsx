@@ -1,3 +1,3 @@
 export default function ListingsLoading() {
-  return <div className="h-screen bg-white" />;
+  return <div className="h-screen bg-background" />;
 }

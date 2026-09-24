@@ -161,7 +161,7 @@ export function CustomListingFieldsTable({
 
           <button
             type="button"
-            className="h-10 px-3 text-left text-sm font-medium text-foreground/80 hover:text-primary"
+            className="h-10 px-3 text-left text-sm font-medium text-foreground/80 hover:text-primary-text"
             onClick={onClearFilters}
           >
             Clear filters

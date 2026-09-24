@@ -42,7 +42,7 @@ export function FilterButton({
             onClick={onFilterClick}
             className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
               isFilterOpen
-                ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
+                ? "border-primary/30 bg-primary/10 text-primary-text hover:bg-primary/20"
                 : "border-border bg-background hover:bg-accent"
             }`}
           >

@@ -335,7 +335,7 @@ export function ListingDetails({
                             <dd className="break-words text-sm leading-relaxed">
                               <a
                                 href={row.href}
-                                className="text-primary underline-offset-4 hover:underline"
+                                className="text-primary-text underline-offset-4 hover:underline"
                               >
                                 {row.value}
                               </a>
@@ -367,7 +367,7 @@ export function ListingDetails({
                           <dd className="break-words text-sm leading-relaxed">
                             <a
                               href={row.href}
-                              className="text-primary underline-offset-4 hover:underline"
+                              className="text-primary-text underline-offset-4 hover:underline"
                             >
                               {row.value}
                             </a>

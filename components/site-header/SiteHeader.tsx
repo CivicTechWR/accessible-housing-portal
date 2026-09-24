@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { HeaderAccountMenu } from "@/components/site-header/HeaderAccountMenu";
 import { HeaderMobileMenu } from "@/components/site-header/HeaderMobileMenu";
+import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
 import { getOptionalSession } from "@/lib/auth/session";
 
 export async function SiteHeader() {
@@ -46,9 +47,13 @@ export async function SiteHeader() {
                 {session?.user ? <HeaderAccountMenu user={session.user} /> : null}
               </>
             ) : (
-              <Link href="/sign-in" className={navPillClass}>
-                Sign in
-              </Link>
+              <>
+                {/* Signed-in users find the theme control in the account menu. */}
+                <ThemeToggle />
+                <Link href="/sign-in" className={navPillClass}>
+                  Sign in
+                </Link>
+              </>
             )}
           </nav>
 

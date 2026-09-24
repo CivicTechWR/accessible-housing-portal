@@ -93,6 +93,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
@@ -116,6 +117,10 @@
   --popover-foreground: oklch(0.148 0.004 228.8);
   --primary: oklch(0.5 0.134 242.749);
   --primary-foreground: oklch(0.977 0.013 236.62);
+  /* Primary-coloured text, icons, and indicators on neutral surfaces. Use
+     text-primary-text instead of text-primary; --primary is a fill colour and
+     is too dark for text in dark mode. */
+  --primary-text: var(--primary);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
@@ -151,6 +156,7 @@
   --popover-foreground: oklch(0.987 0.002 197.1);
   --primary: oklch(0.443 0.11 240.79);
   --primary-foreground: oklch(0.977 0.013 236.62);
+  --primary-text: oklch(0.685 0.169 237.323);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.275 0.011 216.9);
@@ -174,6 +180,65 @@
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.56 0.021 213.5);
+}
+
+/* MapLibre's attribution control ships light-only styling; restyle it with theme
+   tokens when the site is in dark mode. The icons are inlined SVG data URIs, so
+   the dark variants repeat maplibre's icon with a white fill. */
+.dark .maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background-color: color-mix(in oklab, var(--card) 50%, transparent);
+}
+
+.dark .maplibregl-ctrl-attrib.maplibregl-compact {
+  background-color: var(--card);
+  color: var(--card-foreground);
+}
+
+.dark .maplibregl-ctrl-attrib a {
+  color: color-mix(in oklab, var(--card-foreground) 75%, transparent);
+}
+
+.dark .maplibregl-ctrl-attrib a:hover {
+  color: var(--card-foreground);
+}
+
+.dark .maplibregl-ctrl-attrib-button,
+.dark .maplibregl-ctrl-attrib.maplibregl-compact:after {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23fff' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
+}
+
+.dark .maplibregl-ctrl-attrib-button {
+  background-color: transparent;
+}
+
+.dark .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
+  background-color: rgb(255 255 255 / 10%);
+}
+
+/* MapLibre popups are hardcoded white as well; match the card surface. */
+.dark .maplibregl-popup-content {
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 40%);
+}
+
+.dark .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--card);
+}
+
+.dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.dark .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--card);
+}
+
+.dark .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--card);
+}
+
+.dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--card);
 }
 
 @layer base {

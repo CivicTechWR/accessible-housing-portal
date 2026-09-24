@@ -194,7 +194,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
             <p
               className={
                 submitFeedback.status === "success"
-                  ? "text-sm text-emerald-700"
+                  ? "text-sm text-emerald-700 dark:text-emerald-400"
                   : "text-sm text-destructive"
               }
               role="status"

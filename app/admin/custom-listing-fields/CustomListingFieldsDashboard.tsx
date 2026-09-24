@@ -54,7 +54,9 @@ export function CustomListingFieldsDashboard({
           <p
             className={cn(
               "mt-4 text-sm",
-              dashboard.feedback.status === "success" ? "text-emerald-700" : "text-destructive",
+              dashboard.feedback.status === "success"
+                ? "text-emerald-700 dark:text-emerald-400"
+                : "text-destructive",
             )}
             role="status"
             aria-live="polite"

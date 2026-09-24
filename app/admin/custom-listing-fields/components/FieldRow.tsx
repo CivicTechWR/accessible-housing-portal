@@ -54,7 +54,7 @@ export function CategoryTab({
       className={cn(
         "flex h-11 shrink-0 items-center gap-2 border-b-2 px-5 text-sm font-medium transition-colors",
         isActive
-          ? "border-primary text-primary"
+          ? "border-primary-text text-primary-text"
           : "border-transparent text-foreground/75 hover:text-foreground",
       )}
       onClick={onClick}
@@ -122,7 +122,7 @@ export function SortHeader({
         <HugeiconsIcon
           icon={direction === "asc" ? ArrowUp01Icon : ArrowDown01Icon}
           strokeWidth={2}
-          className="size-3 text-primary"
+          className="size-3 text-primary-text"
         />
       ) : null}
     </button>
@@ -175,7 +175,9 @@ export function FieldRow({
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
   const visibilityIcon = field.publicOnly ? EyeIcon : ViewOffSlashIcon;
-  const visibilityToneClass = field.publicOnly ? "text-emerald-700" : "text-muted-foreground";
+  const visibilityToneClass = field.publicOnly
+    ? "text-emerald-700 dark:text-emerald-400"
+    : "text-muted-foreground";
 
   return (
     <div
@@ -196,7 +198,7 @@ export function FieldRow({
           className={cn(
             "flex size-7 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors active:cursor-grabbing",
             "hover:border-border hover:bg-muted hover:text-foreground",
-            isSelected && "border-primary/30 bg-primary/10 text-primary",
+            isSelected && "border-primary/30 bg-primary/10 text-primary-text",
           )}
           aria-label={`Select or drag ${field.label} to reorder`}
           aria-pressed={isSelected}

@@ -59,8 +59,8 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow-lg hover:bg-white" />
-        <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow-lg hover:bg-white" />
+        <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow-lg hover:bg-white dark:bg-background/90 dark:hover:bg-background" />
+        <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow-lg hover:bg-white dark:bg-background/90 dark:hover:bg-background" />
       </Carousel>
     </div>
   );
