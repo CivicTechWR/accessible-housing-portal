@@ -54,6 +54,13 @@ export const emailDeliveryOutcomeEnum = pgEnum("email_delivery_outcome", [
   "failed",
   "suppressed",
 ]);
+export const resendWebhookProcessingStatusEnum = pgEnum("resend_webhook_processing_status", [
+  "pending",
+  "processed",
+  "ignored",
+  "unmatched",
+  "failed",
+]);
 export const customListingFieldTypeEnum = pgEnum("listing_field_type", [
   "boolean",
   "number",
@@ -320,6 +327,42 @@ export const emailDeliveryAttempts = pgTable(
     ),
     uniqueIndex("email_delivery_attempts_idempotency_key_unique").on(table.idempotencyKey),
     uniqueIndex("email_delivery_attempts_provider_email_id_unique").on(table.providerEmailId),
+  ],
+);
+
+/**
+ * Privacy-minimized, append-only receipt ledger for verified Resend webhooks.
+ * The raw provider payload is deliberately not retained; #347 projects these
+ * normalized fields into emailDeliveryAttempts and records processing state.
+ */
+export const resendWebhookEvents = pgTable(
+  "resend_webhook_events",
+  {
+    svixId: text("svix_id").primaryKey(),
+    eventType: text("event_type").notNull(),
+    providerEmailId: text("provider_email_id").notNull(),
+    eventCreatedAt: timestamp("event_created_at", { withTimezone: true }).notNull(),
+    webhookReceivedAt: timestamp("webhook_received_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deliveryAttemptId: uuid("delivery_attempt_id").references(() => emailDeliveryAttempts.id, {
+      onDelete: "set null",
+    }),
+    emailTypeTag: text("email_type_tag"),
+    deliveryIdTag: text("delivery_id_tag"),
+    attemptIdTag: text("attempt_id_tag"),
+    bounceType: text("bounce_type"),
+    bounceSubtype: text("bounce_subtype"),
+    outcomeDetail: text("outcome_detail"),
+    processingStatus: resendWebhookProcessingStatusEnum("processing_status")
+      .notNull()
+      .default("pending"),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("resend_webhook_events_provider_email_id_idx").on(table.providerEmailId),
+    index("resend_webhook_events_processing_status_idx").on(table.processingStatus),
+    index("resend_webhook_events_event_created_at_idx").on(table.eventCreatedAt),
   ],
 );
 

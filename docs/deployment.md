@@ -92,7 +92,7 @@ Run a long-lived Node.js process with PostgreSQL and `EMAIL_WORKER_ENABLED=true`
 | Passkey RP ID, derived from URL  | `homehub.unionsd.coop`         | `affordablehousing.ctwr.org`         |
 | Trusted origin, derived from URL | `https://homehub.unionsd.coop` | `https://affordablehousing.ctwr.org` |
 
-Use distinct `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `EMAIL_JOB_SECRET` values for each environment. Both secrets need at least 32 random characters. Set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY`, and an `EMAIL_FROM` address on a Resend-verified domain. Captured email is only for local development.
+Use distinct `DATABASE_URL`, `BETTER_AUTH_SECRET`, `EMAIL_JOB_SECRET`, and `RESEND_WEBHOOK_SECRET` values for each environment. Authentication and job secrets need at least 32 random characters; the webhook secret is supplied by Resend. Set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY`, and an `EMAIL_FROM` address on a Resend-verified domain. Captured email is only for local development.
 
 Configure each custom domain and its TLS certificate in Railway. Add only the DNS records Railway supplies for the selected service. For email, configure the sender-domain verification records supplied by Resend, including DKIM and SPF, and choose an appropriate DMARC policy. The web domain and sender domain need not be the same.
 
@@ -131,6 +131,14 @@ The worker retries transient provider failures with bounded exponential backoff,
 
 Monitor server logs for `[email-queue]` errors and inspect the pg-boss queues when invites remain queued. Treat `EMAIL_JOB_SECRET` rotation as an operational migration: queued invite URLs are encrypted with a derived key, so drain or replace outstanding jobs before rotating it.
 
+## Resend webhook
+
+Deploy the database migration and application route before registering the webhook in Resend. For each environment, configure the HTTPS endpoint as `<public origin>/api/webhooks/resend`, subscribe to `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.failed`, `email.suppressed`, and `email.complained`, then store the endpoint signing secret as `RESEND_WEBHOOK_SECRET` in that environment.
+
+Send a provider test event and confirm that it returns `200` and creates one `resend_webhook_events` row. Re-deliver the same event and confirm that it remains one row. Signature failures return `400`; storage failures return `500` so Resend can retry. Do not log or retain raw payloads.
+
+Keep operational receipt rows for 90 days. Periodically delete rows older than that using `webhook_received_at` after checking that no support investigation or required aggregate reporting depends on them. A separate webhook service is intentionally deferred until multiple production email types, meaningful notification volume, shared Resend senders, frequent delivery investigations, compliance retention, domain-wide suppression reporting, or analytics ingestion justify it.
+
 ## Build-Safe Server Code
 
 `next build` evaluates modules. Server clients that require runtime secrets should be lazily initialized. The database client already follows this pattern in `db/client.ts`.
@@ -146,8 +154,8 @@ When adding new server integrations:
 
 1. CI is green.
 2. Database migrations are reviewed and applied to the target database.
-3. Required secrets, including `EMAIL_WORKER_ENABLED=true` on the worker process, exist in the target Railway environment.
+3. Required secrets, including `EMAIL_WORKER_ENABLED=true` and `RESEND_WEBHOOK_SECRET`, exist in the target Railway environment.
 4. `BETTER_AUTH_URL` matches the public deployment URL.
 5. Invite email settings are valid and the worker starts successfully if account invites will send email.
 6. The container is started with the intended `PORT`.
-7. Smoke test sign-in, listing search, listing detail, admin access, image retrieval, and invite submission status from queued to submitted or failed.
+7. Smoke test sign-in, listing search, listing detail, admin access, image retrieval, invite submission status from queued to submitted or failed, and one signed Resend webhook event.

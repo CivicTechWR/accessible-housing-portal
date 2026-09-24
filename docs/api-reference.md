@@ -154,6 +154,14 @@ Creating an account with `sendInviteEmail: true` returns success after the email
 
 Interactive sign-in and invite acceptance use the Better Auth client in `lib/auth-client.ts`, which calls `/api/auth/[...all]`.
 
+## Resend Webhooks
+
+| Method | Path                   | Auth                          | Purpose                                      |
+| ------ | ---------------------- | ----------------------------- | -------------------------------------------- |
+| `POST` | `/api/webhooks/resend` | Resend Svix signature headers | Record verified operational delivery events. |
+
+The handler verifies the signature against the raw request body and `RESEND_WEBHOOK_SECRET`. It records `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.failed`, `email.suppressed`, and `email.complained`. Other valid Resend event types are acknowledged and ignored. Repeated `svix-id` values are idempotently acknowledged.
+
 ## Adding Or Changing An Endpoint
 
 1. Add or update schemas in `shared/schemas`.

@@ -38,6 +38,7 @@ Variables used by the app:
 | `EMAIL_TRANSPORT`                                   | `capture` locally or `resend` for real delivery.                               |
 | `EMAIL_CAPTURE_DIR`                                 | Private local directory used by the capture transport.                         |
 | `RESEND_API_KEY`, `EMAIL_FROM`                      | Required for the Resend transport. Use a verified sender domain.               |
+| `RESEND_WEBHOOK_SECRET`                             | Signing secret for Resend requests to `/api/webhooks/resend`.                  |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | Used only by `npm run auth:admin`. Remove the password afterward.              |
 
 Generate the authentication and email secrets separately with:
