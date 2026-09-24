@@ -10,6 +10,7 @@ import {
   EMAIL_DEAD_LETTER_QUEUE,
   EMAIL_QUEUE,
   enqueueEmail,
+  RESEND_WEBHOOK_RETENTION_QUEUE,
   type EmailEnqueueTransaction,
 } from "@/lib/email-queue/queue";
 
@@ -118,6 +119,7 @@ describe("enqueueEmail", () => {
 
     expect(PgBossMock).toHaveBeenCalledTimes(1);
     expect(PgBossMock).toHaveBeenCalledWith(expect.objectContaining({ supervise: false }));
+    expect(PgBossMock).toHaveBeenCalledWith(expect.objectContaining({ schedule: false }));
     expect(bossInstance.start).toHaveBeenCalledTimes(1);
     // The dead letter queue is worked too (failure recording), so it gets a
     // retry profile of its own — but no further dead-lettering.
@@ -133,6 +135,10 @@ describe("enqueueEmail", () => {
       EMAIL_QUEUE,
       expect.objectContaining({ deadLetter: EMAIL_DEAD_LETTER_QUEUE, retryBackoff: true }),
     );
+    expect(bossInstance.createQueue).toHaveBeenCalledWith(
+      RESEND_WEBHOOK_RETENTION_QUEUE,
+      expect.objectContaining({ retryBackoff: true }),
+    );
   });
 
   it("enables supervision where the worker runs", async () => {
@@ -141,5 +147,6 @@ describe("enqueueEmail", () => {
     await enqueueEmail(buildTx() as unknown as EmailEnqueueTransaction, JOB_DATA);
 
     expect(PgBossMock).toHaveBeenCalledWith(expect.objectContaining({ supervise: true }));
+    expect(PgBossMock).toHaveBeenCalledWith(expect.objectContaining({ schedule: true }));
   });
 });

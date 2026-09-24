@@ -1,0 +1,1 @@
+CREATE INDEX "resend_webhook_events_received_at_idx" ON "resend_webhook_events" USING btree ("webhook_received_at");

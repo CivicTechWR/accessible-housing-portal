@@ -15,6 +15,7 @@ import {
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
+import { pruneExpiredResendWebhookEvents } from "@/lib/email-delivery/resend-webhook-store";
 import {
   EMAIL_JOB_PRIORITY,
   getEmailJobMatch,
@@ -28,6 +29,7 @@ import {
   EMAIL_QUEUE_SCHEMA,
   getEmailQueue,
   isEmailWorkerEnabled,
+  RESEND_WEBHOOK_RETENTION_QUEUE,
 } from "@/lib/email-queue/queue";
 
 const DAY_IN_SECONDS = 24 * 60 * 60;
@@ -40,6 +42,7 @@ const DEFAULT_RATE_LIMIT_DEFER_SECONDS = 2;
  * burst; anything beyond that needs operational attention, not more waiting.
  */
 export const MAX_EMAIL_JOB_DEFERRALS = 30;
+export const RESEND_WEBHOOK_RETENTION_CRON = "17 3 * * *";
 
 /** Stored as the completed job's output: the audit trail for the send. */
 export type EmailJobResult =
@@ -89,8 +92,15 @@ export async function startEmailWorker() {
       async (jobs) => await processDeadLetteredEmailJob(boss, jobs[0] as Job<EmailJobData>),
     );
 
+    await boss.work(RESEND_WEBHOOK_RETENTION_QUEUE, { batchSize: 1 }, async () => ({
+      deleted: await pruneExpiredResendWebhookEvents(),
+    }));
+    await boss.schedule(RESEND_WEBHOOK_RETENTION_QUEUE, RESEND_WEBHOOK_RETENTION_CRON, null, {
+      tz: "UTC",
+    });
+
     console.log(
-      `[email-queue] Worker started for queues "${EMAIL_QUEUE}" and "${EMAIL_DEAD_LETTER_QUEUE}".`,
+      `[email-queue] Worker started for queues "${EMAIL_QUEUE}", "${EMAIL_DEAD_LETTER_QUEUE}", and "${RESEND_WEBHOOK_RETENTION_QUEUE}".`,
     );
   } catch (error) {
     globalForEmailWorker.__ahpEmailWorkerStarted = false;

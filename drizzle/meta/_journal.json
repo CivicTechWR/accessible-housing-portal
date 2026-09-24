@@ -120,6 +120,13 @@
       "when": 1790212101321,
       "tag": "20260924010821_add_resend_webhook_events",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790216106154,
+      "tag": "20260924021506_index_resend_webhook_retention",
+      "breakpoints": true
     }
   ]
 }

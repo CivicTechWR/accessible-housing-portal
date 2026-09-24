@@ -137,7 +137,7 @@ Deploy the database migration and application route before registering the webho
 
 Send a provider test event and confirm that it returns `200` and creates one `resend_webhook_events` row. Re-deliver the same event and confirm that it remains one row. Signature failures return `400`; storage failures return `500` so Resend can retry. Do not log or retain raw payloads.
 
-Keep operational receipt rows for 90 days. Periodically delete rows older than that using `webhook_received_at` after checking that no support investigation or required aggregate reporting depends on them. A separate webhook service is intentionally deferred until multiple production email types, meaningful notification volume, shared Resend senders, frequent delivery investigations, compliance retention, domain-wide suppression reporting, or analytics ingestion justify it.
+Operational receipt rows are retained for 90 days. The long-lived email worker schedules a daily `resend_webhook_retention` job at 03:17 UTC; it deletes rows older than the retention window using the indexed `webhook_received_at` column. Keep `EMAIL_WORKER_ENABLED=true` on at least one application process so this and email-delivery jobs run. A separate webhook service is intentionally deferred until multiple production email types, meaningful notification volume, shared Resend senders, frequent delivery investigations, compliance retention, domain-wide suppression reporting, or analytics ingestion justify it.
 
 ## Build-Safe Server Code
 

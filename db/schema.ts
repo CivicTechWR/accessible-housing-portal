@@ -363,6 +363,7 @@ export const resendWebhookEvents = pgTable(
     index("resend_webhook_events_provider_email_id_idx").on(table.providerEmailId),
     index("resend_webhook_events_processing_status_idx").on(table.processingStatus),
     index("resend_webhook_events_event_created_at_idx").on(table.eventCreatedAt),
+    index("resend_webhook_events_received_at_idx").on(table.webhookReceivedAt),
   ],
 );
 

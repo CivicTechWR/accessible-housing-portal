@@ -4,11 +4,15 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 import { db } from "@/db";
-import { recordResendWebhookEvent } from "@/lib/email-delivery/resend-webhook-store";
+import {
+  pruneExpiredResendWebhookEvents,
+  recordResendWebhookEvent,
+} from "@/lib/email-delivery/resend-webhook-store";
 
-jest.mock("@/db", () => ({ db: { insert: jest.fn() } }));
+jest.mock("@/db", () => ({ db: { delete: jest.fn(), insert: jest.fn() } }));
 
 const insert = jest.mocked(db.insert);
+const deleteRows = jest.mocked(db.delete);
 const event = {
   svixId: "msg_webhook_123",
   eventType: "email.delivered",
@@ -18,6 +22,20 @@ const event = {
 
 beforeEach(() => {
   insert.mockReset();
+  deleteRows.mockReset();
+});
+
+describe("pruneExpiredResendWebhookEvents", () => {
+  it("deletes receipts older than 90 days and reports the count", async () => {
+    const returning = jest.fn(async () => [{ svixId: "old-1" }, { svixId: "old-2" }]);
+    const where = jest.fn(() => ({ returning }));
+    deleteRows.mockReturnValue({ where } as never);
+
+    await expect(
+      pruneExpiredResendWebhookEvents(new Date("2026-09-23T12:00:00.000Z")),
+    ).resolves.toBe(2);
+    expect(deleteRows).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("recordResendWebhookEvent", () => {

@@ -64,7 +64,7 @@ Important behaviour:
 
 Stores a privacy-minimized, append-only ledger of verified operational Resend events. `svix_id` is the idempotency key, so provider retries are acknowledged without creating duplicate rows. The ledger keeps the provider email id, event timestamps, correlation tags, bounce classification, a short sanitized diagnostic, and processing state. It deliberately excludes raw payloads, recipient/sender addresses, subjects, message bodies, and links.
 
-Events begin as `pending`. Outcome reconciliation is a separate concern and may attach `delivery_attempt_id` and move the receipt to `processed`, `unmatched`, `ignored`, or `failed`. Operational webhook rows should be retained for 90 days, then deleted after any required support investigation or aggregate reporting is complete.
+Events begin as `pending`. Outcome reconciliation is a separate concern and may attach `delivery_attempt_id` and move the receipt to `processed`, `unmatched`, `ignored`, or `failed`. A daily pg-boss maintenance job deletes operational webhook rows after 90 days using the indexed receipt timestamp.
 
 ### `properties`
 
