@@ -68,7 +68,7 @@ export function verifyAndNormalizeResendWebhook(params: {
     throw new InvalidResendWebhookError();
   }
 
-  if (!SUPPORTED_EVENT_TYPES.has(event.type)) {
+  if (!event.type.startsWith("email.")) {
     return null;
   }
 
@@ -83,6 +83,7 @@ export function verifyAndNormalizeResendWebhook(params: {
   }
 
   const tags = "tags" in event.data ? event.data.tags : undefined;
+  const isOperationalEvent = SUPPORTED_EVENT_TYPES.has(event.type);
   return {
     svixId: params.headers.id,
     eventType: event.type,
@@ -93,6 +94,7 @@ export function verifyAndNormalizeResendWebhook(params: {
     attemptIdTag: tags?.attempt_id ?? null,
     bounceType: event.type === "email.bounced" ? event.data.bounce.type : null,
     bounceSubtype: event.type === "email.bounced" ? event.data.bounce.subType : null,
-    processingStatus: "pending",
+    processingStatus: isOperationalEvent ? "pending" : "ignored",
+    processedAt: isOperationalEvent ? null : new Date(),
   };
 }

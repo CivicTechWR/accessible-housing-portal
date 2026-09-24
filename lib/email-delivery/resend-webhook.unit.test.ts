@@ -34,6 +34,7 @@ describe("verifyAndNormalizeResendWebhook", () => {
       bounceType: null,
       bounceSubtype: null,
       processingStatus: "pending",
+      processedAt: null,
     });
   });
 
@@ -62,13 +63,42 @@ describe("verifyAndNormalizeResendWebhook", () => {
     expect(JSON.stringify(result)).not.toContain("mail.example.com");
   });
 
-  it("ignores valid event types that are outside the operational ledger", () => {
+  it("stores minimal metadata for a non-operational email event as ignored", () => {
+    const result = verifyAndNormalizeResendWebhook(
+      signedWebhook({
+        type: "email.opened",
+        created_at: EVENT_CREATED_AT,
+        data: emailData(),
+      }),
+    );
+
+    expect(result).toMatchObject({
+      svixId: WEBHOOK_ID,
+      eventType: "email.opened",
+      providerEmailId: "provider-email-123",
+      eventCreatedAt: new Date(EVENT_CREATED_AT),
+      processingStatus: "ignored",
+      processedAt: expect.any(Date),
+    });
+    expect(result).not.toHaveProperty("to");
+    expect(result).not.toHaveProperty("from");
+    expect(result).not.toHaveProperty("subject");
+  });
+
+  it("does not store non-email webhook events", () => {
     expect(
       verifyAndNormalizeResendWebhook(
         signedWebhook({
-          type: "email.opened",
+          type: "domain.deleted",
           created_at: EVENT_CREATED_AT,
-          data: emailData(),
+          data: {
+            id: "domain-123",
+            name: "example.com",
+            status: "not_started",
+            created_at: EVENT_CREATED_AT,
+            region: "us-east-1",
+            records: [],
+          },
         }),
       ),
     ).toBeNull();

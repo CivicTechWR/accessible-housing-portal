@@ -133,7 +133,7 @@ Monitor server logs for `[email-queue]` errors and inspect the pg-boss queues wh
 
 ## Resend webhook
 
-Deploy the database migration and application route before registering the webhook in Resend. For each environment, configure the HTTPS endpoint as `<public origin>/api/webhooks/resend`, subscribe to `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.failed`, `email.suppressed`, and `email.complained`, then store the endpoint signing secret as `RESEND_WEBHOOK_SECRET` in that environment.
+Deploy the database migration and application route before registering the webhook in Resend. For each environment, configure the HTTPS endpoint as `<public origin>/api/webhooks/resend`, subscribe to `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.failed`, `email.suppressed`, and `email.complained`, then store the endpoint signing secret as `RESEND_WEBHOOK_SECRET` in that environment. If another email event type is enabled accidentally, its minimum common metadata is stored with `processing_status = 'ignored'`; monitor for those rows as configuration drift.
 
 Send a provider test event and confirm that it returns `200` and creates one `resend_webhook_events` row. Re-deliver the same event and confirm that it remains one row. Signature failures return `400`; storage failures return `500` so Resend can retry. Do not log or retain raw payloads.
 
