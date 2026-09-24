@@ -16,8 +16,6 @@ const SUPPORTED_EVENT_TYPES = new Set([
   "email.complained",
 ]);
 
-const MAX_OUTCOME_DETAIL_LENGTH = 1_000;
-
 export type ResendWebhookHeaders = {
   id: string;
   timestamp: string;
@@ -85,8 +83,6 @@ export function verifyAndNormalizeResendWebhook(params: {
   }
 
   const tags = "tags" in event.data ? event.data.tags : undefined;
-  const detail = getOutcomeDetail(event);
-
   return {
     svixId: params.headers.id,
     eventType: event.type,
@@ -97,29 +93,6 @@ export function verifyAndNormalizeResendWebhook(params: {
     attemptIdTag: tags?.attempt_id ?? null,
     bounceType: event.type === "email.bounced" ? event.data.bounce.type : null,
     bounceSubtype: event.type === "email.bounced" ? event.data.bounce.subType : null,
-    outcomeDetail: detail ? sanitizeOutcomeDetail(detail) : null,
     processingStatus: "pending",
   };
-}
-
-function getOutcomeDetail(event: WebhookEventPayload) {
-  switch (event.type) {
-    case "email.bounced":
-      return event.data.bounce.message;
-    case "email.failed":
-      return event.data.failed.reason;
-    case "email.suppressed":
-      return `${event.data.suppressed.type}: ${event.data.suppressed.message}`;
-    default:
-      return null;
-  }
-}
-
-function sanitizeOutcomeDetail(value: string) {
-  return value
-    .replace(/https?:\/\/\S+/gi, "[redacted-url]")
-    .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, "[redacted-email]")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, MAX_OUTCOME_DETAIL_LENGTH);
 }

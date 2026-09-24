@@ -33,12 +33,11 @@ describe("verifyAndNormalizeResendWebhook", () => {
       attemptIdTag: "attempt-123",
       bounceType: null,
       bounceSubtype: null,
-      outcomeDetail: null,
       processingStatus: "pending",
     });
   });
 
-  it("keeps bounce classification while redacting addresses and URLs", () => {
+  it("keeps structured bounce classification without retaining free-form diagnostics", () => {
     const result = verifyAndNormalizeResendWebhook(
       signedWebhook({
         type: "email.bounced",
@@ -57,9 +56,10 @@ describe("verifyAndNormalizeResendWebhook", () => {
     expect(result).toMatchObject({
       bounceType: "Permanent",
       bounceSubtype: "General",
-      outcomeDetail: "Mailbox [redacted-email] rejected [redacted-url]",
     });
+    expect(result).not.toHaveProperty("outcomeDetail");
     expect(JSON.stringify(result)).not.toContain("user@example.com");
+    expect(JSON.stringify(result)).not.toContain("mail.example.com");
   });
 
   it("ignores valid event types that are outside the operational ledger", () => {

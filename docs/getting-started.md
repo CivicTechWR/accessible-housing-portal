@@ -135,6 +135,8 @@ Use `npm run dev` when you already have a database and environment configured lo
 | `npm run db:studio`        | Open Drizzle Studio.                              |
 | `npm run lockfile:check`   | Check package lockfile integrity.                 |
 
+For a verified privacy deletion request, remove correlated webhook receipts with `npm run webhooks:delete-data -- --user-id <uuid>`.
+
 ## Troubleshooting
 
 ### `DATABASE_URL is not set`

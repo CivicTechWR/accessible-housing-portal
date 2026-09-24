@@ -127,6 +127,13 @@
       "when": 1790216106154,
       "tag": "20260924021506_index_resend_webhook_retention",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790216231114,
+      "tag": "20260924021711_remove_webhook_diagnostics",
+      "breakpoints": true
     }
   ]
 }

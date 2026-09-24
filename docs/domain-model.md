@@ -62,9 +62,11 @@ Important behaviour:
 
 ### `resend_webhook_events`
 
-Stores a privacy-minimized, append-only ledger of verified operational Resend events. `svix_id` is the idempotency key, so provider retries are acknowledged without creating duplicate rows. The ledger keeps the provider email id, event timestamps, correlation tags, bounce classification, a short sanitized diagnostic, and processing state. It deliberately excludes raw payloads, recipient/sender addresses, subjects, message bodies, and links.
+Stores a privacy-minimized, append-only ledger of verified operational Resend events. `svix_id` is the idempotency key, so provider retries are acknowledged without creating duplicate rows. The ledger keeps the provider email id, event timestamps, correlation tags, structured bounce classification, and processing state. It deliberately excludes raw payloads, free-form provider diagnostics, recipient/sender addresses, subjects, message bodies, IP addresses, and links.
 
 Events begin as `pending`. Outcome reconciliation is a separate concern and may attach `delivery_attempt_id` and move the receipt to `processed`, `unmatched`, `ignored`, or `failed`. A daily pg-boss maintenance job deletes operational webhook rows after 90 days using the indexed receipt timestamp.
+
+There is no application read endpoint for the webhook ledger. Limit direct database access to authorized operators. A verified privacy deletion request is handled with `npm run webhooks:delete-data -- --user-id <uuid>` before the user record is deleted; the command removes webhook receipts correlated with that user's password-reset and account-invite deliveries.
 
 ### `properties`
 

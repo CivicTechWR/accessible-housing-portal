@@ -139,6 +139,8 @@ Send a provider test event and confirm that it returns `200` and creates one `re
 
 Operational receipt rows are retained for 90 days. The long-lived email worker schedules a daily `resend_webhook_retention` job at 03:17 UTC; it deletes rows older than the retention window using the indexed `webhook_received_at` column. Keep `EMAIL_WORKER_ENABLED=true` on at least one application process so this and email-delivery jobs run. A separate webhook service is intentionally deferred until multiple production email types, meaningful notification volume, shared Resend senders, frequent delivery investigations, compliance retention, domain-wide suppression reporting, or analytics ingestion justify it.
 
+The webhook ledger has no application read endpoint and stores no raw payload or free-form provider diagnostic. Restrict direct database access to authorized operators. For a verified privacy deletion request, run `npm run webhooks:delete-data -- --user-id <uuid>` against the correct environment before deleting the user. The command deletes receipts correlated with that user's password-reset and account-invite deliveries and reports the affected row count.
+
 ## Build-Safe Server Code
 
 `next build` evaluates modules. Server clients that require runtime secrets should be lazily initialized. The database client already follows this pattern in `db/client.ts`.

@@ -353,7 +353,6 @@ export const resendWebhookEvents = pgTable(
     attemptIdTag: text("attempt_id_tag"),
     bounceType: text("bounce_type"),
     bounceSubtype: text("bounce_subtype"),
-    outcomeDetail: text("outcome_detail"),
     processingStatus: resendWebhookProcessingStatusEnum("processing_status")
       .notNull()
       .default("pending"),
