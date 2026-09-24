@@ -155,7 +155,7 @@ export function ListingsCard({
 
               {hasMoreFeatures && (
                 <details className="group w-full">
-                  <summary className="list-none text-[10px] text-primary hover:underline font-medium px-1 cursor-pointer select-none [&::-webkit-details-marker]:hidden">
+                  <summary className="list-none text-[10px] text-primary-text hover:underline font-medium px-1 cursor-pointer select-none [&::-webkit-details-marker]:hidden">
                     <span className="group-open:hidden">{`+${extraFeatures.length} more`}</span>
                     <span className="hidden group-open:inline">Show less</span>
                   </summary>

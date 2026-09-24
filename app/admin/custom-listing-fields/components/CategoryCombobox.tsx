@@ -110,7 +110,7 @@ export function CategoryCombobox({
               role="option"
               aria-selected={false}
             >
-              <span className="font-medium text-primary">
+              <span className="font-medium text-primary-text">
                 Create new category "{customCategory}"
               </span>
               <span className="text-xs text-muted-foreground">

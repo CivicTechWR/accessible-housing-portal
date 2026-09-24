@@ -93,6 +93,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
@@ -116,6 +117,10 @@
   --popover-foreground: oklch(0.148 0.004 228.8);
   --primary: oklch(0.5 0.134 242.749);
   --primary-foreground: oklch(0.977 0.013 236.62);
+  /* Primary-coloured text, icons, and indicators on neutral surfaces. Use
+     text-primary-text instead of text-primary; --primary is a fill colour and
+     is too dark for text in dark mode. */
+  --primary-text: var(--primary);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
@@ -151,6 +156,7 @@
   --popover-foreground: oklch(0.987 0.002 197.1);
   --primary: oklch(0.443 0.11 240.79);
   --primary-foreground: oklch(0.977 0.013 236.62);
+  --primary-text: oklch(0.685 0.169 237.323);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.275 0.011 216.9);
