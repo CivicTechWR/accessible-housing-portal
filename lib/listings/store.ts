@@ -108,12 +108,8 @@ export function buildDuplicateListingTitle(title: string) {
 export function selectDuplicateCustomFields(input: {
   customFields: ListingCustomFields;
   applicabilityByKey: Map<string, CustomListingFieldApplicability>;
-  scope: ListingDuplicateScope;
+  scope: Exclude<ListingDuplicateScope, "all">;
 }): ListingCustomFields {
-  if (input.scope === "all") {
-    return { ...input.customFields };
-  }
-
   const selected: ListingCustomFields = {};
 
   for (const [key, value] of Object.entries(input.customFields)) {

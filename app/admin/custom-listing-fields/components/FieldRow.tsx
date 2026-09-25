@@ -22,6 +22,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCustomListingFieldCategoryLabel } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import { cn } from "@/lib/utils";
 import type {
   AdminCustomListingField,
@@ -31,7 +32,6 @@ import {
   TABLE_COLUMNS,
   type SortDirection,
   type SortKey,
-  formatCategoryLabel,
   getCanonicalCategoryValue,
   nullableTrim,
 } from "../custom-listing-fields-dashboard-utils";
@@ -202,7 +202,7 @@ export function FieldRow({
           )}
           aria-label={`Select or drag ${field.label} to reorder`}
           aria-pressed={isSelected}
-          title={`Drag ${field.label} to reorder within ${formatCategoryLabel(
+          title={`Drag ${field.label} to reorder within ${formatCustomListingFieldCategoryLabel(
             field.category,
           )}, or click to select`}
           disabled={isPending}
@@ -235,8 +235,8 @@ export function FieldRow({
         {field.key}
       </div>
       <EditableTextCell
-        value={formatCategoryLabel(field.category)}
-        displayValue={formatCategoryLabel(field.category)}
+        value={formatCustomListingFieldCategoryLabel(field.category)}
+        displayValue={formatCustomListingFieldCategoryLabel(field.category)}
         className="text-foreground/80"
         disabled={isPending}
         required

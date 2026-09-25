@@ -5,7 +5,7 @@ import { FilterButtonProps } from "@/components/filter-button/FilterButton";
 
 const LISTING_LOCATION_PLACEHOLDER = "Search city, address, or building";
 
-export function normalizeLocationFilter(value: string) {
+function normalizeLocationFilter(value: string) {
   const trimmedValue = value.trim();
 
   return trimmedValue.length > 0 ? trimmedValue : null;

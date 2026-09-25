@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 
+import { formatCustomListingFieldCategoryLabel } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fields";
 import {
   bulkEditDialogSchema,
@@ -9,7 +10,6 @@ import {
   toCreateFieldDialogPayload,
 } from "./custom-listing-fields-dashboard-forms";
 import {
-  formatCategoryLabel,
   getCanonicalCategoryValue,
   getCategoryStats,
   getDisplayGroups,
@@ -54,7 +54,7 @@ function field(overrides: Partial<AdminCustomListingField>): AdminCustomListingF
 
 describe("custom listing field dashboard utilities", () => {
   it("normalizes and labels categories consistently", () => {
-    expect(formatCategoryLabel("BUILDING AMENITIES & SERVICES")).toBe(
+    expect(formatCustomListingFieldCategoryLabel("BUILDING AMENITIES & SERVICES")).toBe(
       "Building Amenities & Services",
     );
     expect(getCanonicalCategoryValue("building amenities", ["BUILDING AMENITIES"])).toBe(

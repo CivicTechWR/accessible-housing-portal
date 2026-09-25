@@ -9,9 +9,7 @@ import type {
 import {
   buildDuplicateListingPlan,
   buildDuplicateListingTitle,
-  buildListingCustomFields,
   buildListingFeatureCategories,
-  DEFAULT_PROPERTY_COUNTRY,
   getDisplayAccessibilityFeatures,
   selectDuplicateCustomFields,
   getOptionalListingText,
@@ -59,12 +57,6 @@ describe("selectDuplicateCustomFields", () => {
     ["roll_in_shower", "unit"],
   ]);
 
-  it("keeps every feature when all fields are copied", () => {
-    expect(selectDuplicateCustomFields({ customFields, applicabilityByKey, scope: "all" })).toEqual(
-      customFields,
-    );
-  });
-
   it("keeps only building-level features for the building scope", () => {
     expect(
       selectDuplicateCustomFields({ customFields, applicabilityByKey, scope: "building" }),
@@ -97,7 +89,7 @@ describe("buildDuplicateListingPlan", () => {
     city: "Kitchener",
     province: "ON",
     postalCode: "N2G 1A7",
-    country: "Canada",
+    country: "United States",
     neighbourhood: "Downtown",
     latitude: 43.4516,
     longitude: -80.4925,
@@ -159,7 +151,7 @@ describe("buildDuplicateListingPlan", () => {
       name: "Riverbend Apartments",
       street1: "120 King St W",
       city: "Kitchener",
-      country: "Canada",
+      country: "United States",
       contactEmail: "dana@example.com",
       contactRole: "Property manager",
     });
@@ -232,8 +224,8 @@ describe("buildDuplicateListingPlan", () => {
   });
 
   it("falls back to the default country when the building is not copied", () => {
-    expect(planFor("unit").property.country).toBe(DEFAULT_PROPERTY_COUNTRY);
-    expect(planFor("building").property.country).toBe("Canada");
+    expect(planFor("unit").property.country).toBe("Canada");
+    expect(planFor("building").property.country).toBe("United States");
   });
 
   it("always resets the copy to an unpublished draft regardless of scope", () => {
@@ -264,10 +256,11 @@ describe("buildDuplicateListingPlan", () => {
 });
 
 describe("buildListingFeatureCategories", () => {
-  it("applies alphabetical category order and per-category sort order for custom fields", () => {
+  it("orders custom fields by category label, then sort order, then key", () => {
     const features = buildListingFeatureCategories(
       // Deliberately the reverse of the expected output so that passing through
-      // insertion order cannot be mistaken for sorting.
+      // insertion order cannot be mistaken for sorting. The unit fields share a
+      // sort order, so only the key tie-break puts Unit Alpha first.
       {
         unit_beta: true,
         unit_alpha: true,
@@ -301,7 +294,7 @@ describe("buildListingFeatureCategories", () => {
           label: "Unit Alpha",
           description: null,
           category: "UNIT INTERIOR",
-          sortOrder: 1,
+          sortOrder: 2,
         },
       ],
     );
@@ -329,17 +322,6 @@ describe("buildListingFeatureCategories", () => {
     );
 
     expect(features).toEqual([]);
-  });
-});
-
-describe("buildListingCustomFields", () => {
-  it("persists selected feature ids as boolean custom fields", () => {
-    const customFields = buildListingCustomFields({ accessibilityFeatures: [selected(ELEVATOR)] }, [
-      ELEVATOR,
-    ]);
-
-    expect(customFields.elevator_in_building).toBe(true);
-    expect(customFields.accessibilityFeatures).toBeUndefined();
   });
 });
 

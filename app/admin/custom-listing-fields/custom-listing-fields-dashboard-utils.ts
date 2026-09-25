@@ -1,3 +1,7 @@
+import {
+  compareCustomListingFieldCategories,
+  formatCustomListingFieldCategoryLabel,
+} from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import type {
   AdminCustomListingField,
   CreateCustomListingFieldInput,
@@ -80,7 +84,7 @@ export function getCategoryStats(fields: AdminCustomListingField[]) {
     } else {
       stats.set(category, {
         category,
-        label: formatCategoryLabel(category),
+        label: formatCustomListingFieldCategoryLabel(category),
         count: 1,
       });
     }
@@ -108,7 +112,7 @@ export function groupFields(fields: AdminCustomListingField[]) {
     } else {
       groups.set(category, {
         category,
-        label: formatCategoryLabel(category),
+        label: formatCustomListingFieldCategoryLabel(category),
         fields: [field],
       });
     }
@@ -142,12 +146,10 @@ export function getDisplayGroups(input: {
 }
 
 export function sortFields(fields: AdminCustomListingField[]) {
-  return [...fields].sort((a, b) => {
-    const byCategory = formatCategoryLabel(a.category).localeCompare(
-      formatCategoryLabel(b.category),
-    );
-    return byCategory || compareCategoryFields(a, b);
-  });
+  return [...fields].sort(
+    (a, b) =>
+      compareCustomListingFieldCategories(a.category, b.category) || compareCategoryFields(a, b),
+  );
 }
 
 export function sortCategoryFields(fields: AdminCustomListingField[]) {
@@ -236,7 +238,7 @@ export function sortVisibleFields(
         compare = a.key.localeCompare(b.key);
         break;
       case "category":
-        compare = formatCategoryLabel(a.category).localeCompare(formatCategoryLabel(b.category));
+        compare = compareCustomListingFieldCategories(a.category, b.category);
         break;
       case "appliesTo":
         compare = a.appliesTo.localeCompare(b.appliesTo);
@@ -275,20 +277,6 @@ export function nextSortOrder(fields: AdminCustomListingField[], category: strin
   return orders.length > 0 ? Math.max(...orders) + 1 : 1;
 }
 
-export function formatCategoryLabel(category: string) {
-  return category
-    .split(/\s*&\s*/)
-    .map((part) =>
-      part
-        .toLowerCase()
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" "),
-    )
-    .join(" & ");
-}
-
 export function getCanonicalCategoryValue(value: string, categories: string[]) {
   const normalizedValue = normalizeCategoryValue(value);
   const match = categories.find((category) => isSameCategoryOption(normalizedValue, category));
@@ -300,7 +288,7 @@ export function isSameCategoryOption(value: string, option: string) {
   const normalizedOption = normalizeCategoryValue(option);
   return (
     normalizedValue === normalizedOption ||
-    normalizedValue === normalizeCategoryValue(formatCategoryLabel(option))
+    normalizedValue === normalizeCategoryValue(formatCustomListingFieldCategoryLabel(option))
   );
 }
 

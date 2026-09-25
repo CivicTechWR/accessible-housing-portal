@@ -4,7 +4,6 @@ import { errorMessageSchema } from "@/shared/schemas/common";
 import {
   createDraftListingResponseSchema,
   listingEditorResponseSchema,
-  type CreateListingInput,
   type ListingEditorData,
   type PatchListingInput,
   type ReplaceListingInput,
@@ -17,46 +16,64 @@ const listingIdResponseSchema = z.object({
   }),
 });
 
-export function mapListingFormToCreateListingInput(data: ListingFormData): CreateListingInput {
-  return buildListingPayloadFromForm(data);
-}
-
 export function mapListingFormToReplaceListingInput(
   data: ListingFormData,
   status = data.status,
 ): ReplaceListingInput {
-  const payload = {
-    ...buildListingPayloadFromForm(data),
-    status,
-  };
-  const replacement: ReplaceListingInput = {
-    ...payload,
+  return {
+    title: data.title,
+    name: data.name,
     description: normalizeOptionalString(data.description) ?? null,
-    contact: {
-      ...payload.contact,
-      role: normalizeOptionalString(data.contactRole) ?? null,
-    },
     address: {
-      ...payload.address,
+      street: data.street1,
       street2: normalizeOptionalString(data.street2) ?? null,
+      city: data.city,
+      province: data.province,
+      postalCode: data.postalCode,
     },
     units: [
       {
-        ...payload.units[0],
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
         sqft: data.squareFeet ?? null,
-        availableDate: payload.units[0].availableDate ?? new Date().toISOString().slice(0, 10),
+        rent: Math.round(data.monthlyRentCents / 100),
+        availableDate:
+          normalizeOptionalString(data.availableOn) ?? new Date().toISOString().slice(0, 10),
       },
     ],
+    accessibilityFeatures: data.customFeatures.map((feature) => ({
+      id: feature.id,
+      name: feature.name,
+      description: normalizeOptionalString(feature.description) ?? feature.name,
+    })),
+    images: data.images.flatMap((image) =>
+      image.id
+        ? [
+            {
+              id: image.id,
+              caption: normalizeOptionalString(image.caption),
+            },
+          ]
+        : [],
+    ),
+    contact: {
+      name: data.contactName,
+      role: normalizeOptionalString(data.contactRole) ?? null,
+      email: data.contactEmail,
+      phone: data.contactPhone,
+    },
+    status,
     unitNumber: normalizeOptionalString(data.unitNumber) ?? null,
-    heatingType: data.heatingType ?? null,
-    depositInfo: normalizeOptionalString(data.depositInfo) ?? null,
     applicationUrl: normalizeOptionalString(data.applicationUrl) ?? null,
     applicationEmail: normalizeOptionalString(data.applicationEmail) ?? null,
     applicationPhone: normalizeOptionalString(data.applicationPhone) ?? null,
     applicationInstructions: normalizeOptionalString(data.applicationInstructions) ?? null,
+    buildingType: data.buildingType,
+    leaseTermMonths: data.leaseTerm,
+    heatingType: data.heatingType ?? null,
+    utilitiesIncluded: data.utilitiesIncluded,
+    depositInfo: normalizeOptionalString(data.depositInfo) ?? null,
   };
-
-  return replacement;
 }
 
 export function getPendingAutosaveNullableFieldClearIntent(
@@ -243,65 +260,6 @@ async function getApiErrorMessage(response: Response) {
   } catch {
     return "Unable to save listing. Please try again.";
   }
-}
-
-function buildListingPayloadFromForm(data: ListingFormData): CreateListingInput {
-  const applicationUrl = normalizeOptionalString(data.applicationUrl);
-
-  return {
-    title: data.title,
-    name: data.name,
-    description: normalizeOptionalString(data.description),
-    address: {
-      street: data.street1,
-      street2: normalizeOptionalString(data.street2),
-      city: data.city,
-      province: data.province,
-      postalCode: data.postalCode,
-    },
-    units: [
-      {
-        bedrooms: data.bedrooms,
-        bathrooms: data.bathrooms,
-        sqft: data.squareFeet ?? 0,
-        rent: Math.round(data.monthlyRentCents / 100),
-        availableDate:
-          normalizeOptionalString(data.availableOn) ?? new Date().toISOString().slice(0, 10),
-      },
-    ],
-    accessibilityFeatures: data.customFeatures.map((feature) => ({
-      id: feature.id,
-      name: feature.name,
-      description: normalizeOptionalString(feature.description) ?? feature.name,
-    })),
-    applicationUrl: applicationUrl ?? undefined,
-    depositInfo: normalizeOptionalString(data.depositInfo),
-    applicationEmail: normalizeOptionalString(data.applicationEmail),
-    applicationPhone: normalizeOptionalString(data.applicationPhone),
-    applicationInstructions: normalizeOptionalString(data.applicationInstructions),
-    images: data.images.flatMap((image) =>
-      image.id
-        ? [
-            {
-              id: image.id,
-              caption: normalizeOptionalString(image.caption),
-            },
-          ]
-        : [],
-    ),
-    contact: {
-      name: data.contactName,
-      role: normalizeOptionalString(data.contactRole),
-      email: data.contactEmail,
-      phone: data.contactPhone,
-    },
-    status: data.status,
-    unitNumber: normalizeOptionalString(data.unitNumber),
-    buildingType: data.buildingType,
-    leaseTermMonths: data.leaseTerm,
-    heatingType: data.heatingType,
-    utilitiesIncluded: data.utilitiesIncluded,
-  };
 }
 
 function normalizeOptionalString(value: string | undefined) {

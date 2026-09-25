@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { act, renderHook } from "@testing-library/react";
 
-import { normalizeLocationFilter, useListingFilters } from "./useListingFilter";
+import { useListingFilters } from "./useListingFilter";
 
 const useQueryStatesMock = jest.fn();
 
@@ -46,31 +46,34 @@ describe("useListingFilters", () => {
     expect(result.current.searchInputProps.placeholder).toBe("Search city, address, or building");
   });
 
-  it("keeps typed text in the input while syncing the location query param", () => {
+  it("keeps typed text in the input while syncing the trimmed location query param", () => {
     const { result, setFilters } = renderFilters();
 
     act(() => {
       result.current.searchInputProps.onChange({
-        target: { value: "Kitchener" },
+        target: { value: "  Kitchener  " },
       } as React.ChangeEvent<HTMLInputElement>);
     });
 
-    expect(result.current.searchInputProps.value).toBe("Kitchener");
+    expect(result.current.searchInputProps.value).toBe("  Kitchener  ");
     expect(setFilters).toHaveBeenCalledWith({ location: "Kitchener" });
   });
 
-  it("clears the location query param instead of restoring a default city", () => {
-    const { result, setFilters } = renderFilters({ location: "Waterloo, ON" });
+  it.each(["", "   "])(
+    "clears the location query param for %j instead of restoring a default city",
+    (value) => {
+      const { result, setFilters } = renderFilters({ location: "Waterloo, ON" });
 
-    act(() => {
-      result.current.searchInputProps.onChange({
-        target: { value: "" },
-      } as React.ChangeEvent<HTMLInputElement>);
-    });
+      act(() => {
+        result.current.searchInputProps.onChange({
+          target: { value },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
 
-    expect(result.current.searchInputProps.value).toBe("");
-    expect(setFilters).toHaveBeenCalledWith({ location: null });
-  });
+      expect(result.current.searchInputProps.value).toBe(value);
+      expect(setFilters).toHaveBeenCalledWith({ location: null });
+    },
+  );
 
   it("clears the minimum price filter with null instead of leaving stale query state behind", async () => {
     const { result, setFilters } = renderFilters({ minPrice: 1800 });
@@ -90,12 +93,5 @@ describe("useListingFilters", () => {
     });
 
     expect(setFilters).toHaveBeenCalledWith({ minPrice: 2400, maxPrice: 2400 });
-  });
-});
-
-describe("normalizeLocationFilter", () => {
-  it("trims meaningful values and clears whitespace-only input", () => {
-    expect(normalizeLocationFilter("  Cambridge  ")).toBe("Cambridge");
-    expect(normalizeLocationFilter("   ")).toBeNull();
   });
 });

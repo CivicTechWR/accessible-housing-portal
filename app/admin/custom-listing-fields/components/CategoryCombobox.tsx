@@ -3,8 +3,8 @@
 import { type KeyboardEvent, useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { formatCustomListingFieldCategoryLabel } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import {
-  formatCategoryLabel,
   getUniqueCategoryOptions,
   isSameCategoryOption,
   normalizeCategoryValue,
@@ -42,7 +42,7 @@ export function CategoryCombobox({
     }
 
     return uniqueOptions.filter((option) => {
-      const label = formatCategoryLabel(option).toLowerCase();
+      const label = formatCustomListingFieldCategoryLabel(option).toLowerCase();
       return option.toLowerCase().includes(query) || label.includes(query);
     });
   }, [query, uniqueOptions]);
@@ -92,7 +92,9 @@ export function CategoryCombobox({
               role="option"
               aria-selected={isSameCategoryOption(value, option)}
             >
-              <span className="font-medium text-foreground">{formatCategoryLabel(option)}</span>
+              <span className="font-medium text-foreground">
+                {formatCustomListingFieldCategoryLabel(option)}
+              </span>
               <span className="text-xs text-muted-foreground">Existing category</span>
             </button>
           ))}
