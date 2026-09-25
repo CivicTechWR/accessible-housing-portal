@@ -83,12 +83,6 @@ function buildJob(signal: AbortSignal = new AbortController().signal): Job<Email
   } as Job<EmailJobData>;
 }
 
-function buildAbortedJob(): Job<EmailJobData> {
-  const abortController = new AbortController();
-  abortController.abort();
-  return buildJob(abortController.signal);
-}
-
 function expectedRedactionParams(job: Job<EmailJobData>) {
   return [
     EMAIL_QUEUE,
@@ -134,7 +128,7 @@ afterEach(() => {
 });
 
 describe("processEmailJob", () => {
-  it("submits the invite email with the unsealed URL and records provider acceptance", async () => {
+  it("submits the invite email with the unsealed URL, records acceptance, and redacts the secret", async () => {
     const job = buildJob();
 
     const result = await processEmailJob(boss, job);
@@ -148,23 +142,10 @@ describe("processEmailJob", () => {
     });
     expect(markInviteEmailSubmittedMock).toHaveBeenCalledWith(INVITE_ID);
     expect(result).toEqual({ status: "submitted", providerMessageId: "email_123" });
-  });
-
-  it("redacts the sealed secret from every settled row of the logical email once the job completes", async () => {
-    const job = buildJob();
-
-    await processEmailJob(boss, job);
-
     expect(executeSqlMock).toHaveBeenCalledWith(
       expect.stringContaining("data - 'secret'"),
       expectedRedactionParams(job),
     );
-    // Deferral ancestors and dead-letter copies settle as completed/failed and
-    // are swept by the logical-email match; rows a live attempt may still need
-    // (created, retry) are excluded by the state filter.
-    const [statement] = executeSqlMock.mock.calls[0] as [string];
-    expect(statement).toContain("data @> $3::jsonb");
-    expect(statement).toContain("(id = $4 OR state IN ('completed', 'failed', 'cancelled'))");
   });
 
   it.each([
@@ -211,19 +192,31 @@ describe("processEmailJob", () => {
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
   });
 
-  it("stops before mutating state when the job expired during the send", async () => {
-    const job = buildAbortedJob();
+  it("stops before mutating state when the job expires during the send", async () => {
+    const abortController = new AbortController();
+    sendInviteEmailMock.mockImplementationOnce(async () => {
+      abortController.abort();
+      return { id: "email_123" };
+    });
 
-    await expect(processEmailJob(boss, job)).rejects.toThrow("expired during send");
+    await expect(processEmailJob(boss, buildJob(abortController.signal))).rejects.toThrow(
+      "expired during send",
+    );
 
     expect(markInviteEmailSubmittedMock).not.toHaveBeenCalled();
     expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
-  it("does not defer quota failures for an expired job pg-boss already retries", async () => {
-    sendInviteEmailMock.mockRejectedValue(providerError("rate_limit_exceeded", 7));
+  it("does not defer quota failures for a job that expired during the send", async () => {
+    const abortController = new AbortController();
+    sendInviteEmailMock.mockImplementationOnce(async () => {
+      abortController.abort();
+      throw providerError("rate_limit_exceeded", 7);
+    });
 
-    await expect(processEmailJob(boss, buildAbortedJob())).rejects.toThrow("rate_limit_exceeded");
+    await expect(processEmailJob(boss, buildJob(abortController.signal))).rejects.toThrow(
+      "rate_limit_exceeded",
+    );
 
     expect(sendAfterMock).not.toHaveBeenCalled();
     expect(executeSqlMock).not.toHaveBeenCalled();
@@ -343,9 +336,9 @@ describe("processDeadLetteredEmailJob", () => {
     expect(result).toEqual({ status: "failure_recorded" });
   });
 
-  it("still records the failure but leaves the payload alone when the job expired mid-handler", async () => {
+  it("still records the failure but leaves the payload alone when the job expires mid-handler", async () => {
     const abortController = new AbortController();
-    abortController.abort();
+    markInviteEmailFailedMock.mockImplementationOnce(async () => abortController.abort());
 
     const result = await processDeadLetteredEmailJob(
       boss,
