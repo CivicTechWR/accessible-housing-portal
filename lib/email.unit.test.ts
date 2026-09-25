@@ -89,16 +89,7 @@ describe("sendEmail", () => {
     });
   });
 
-  it("surfaces provider errors to the caller", async () => {
-    sendMock.mockResolvedValue({
-      data: null,
-      error: { message: "Daily quota exceeded" },
-    });
-
-    await expect(sendEmail(MESSAGE)).rejects.toThrow("Daily quota exceeded");
-  });
-
-  it("throws a structured EmailSendError with Retry-After parsed case-insensitively", async () => {
+  it("throws the provider error as an EmailSendError with Retry-After parsed case-insensitively", async () => {
     sendMock.mockResolvedValue({
       data: null,
       error: { message: "Too many requests", name: "rate_limit_exceeded", statusCode: 429 },
@@ -109,6 +100,7 @@ describe("sendEmail", () => {
 
     expect(error).toBeInstanceOf(EmailSendError);
     expect(error).toMatchObject({
+      message: "Too many requests",
       code: "rate_limit_exceeded",
       statusCode: 429,
       retryAfterSeconds: 120,

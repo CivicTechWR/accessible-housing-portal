@@ -26,10 +26,12 @@ const nonFilterableKey = `${fieldPrefix}_display`;
 const filterableKey = `${fieldPrefix}_search`;
 const privateKey = `${fieldPrefix}_private`;
 const fieldKeys = [nonFilterableKey, filterableKey, privateKey];
+// Labels differ from keys so a lookup by name instead of id cannot pass.
+const labelFor = (key: string) => `Label for ${key}`;
 const selectedFeatures = fieldKeys.map((id) => ({
   id,
-  name: id,
-  description: id,
+  name: labelFor(id),
+  description: labelFor(id),
 }));
 
 const payload = createListingSchema.parse({
@@ -87,7 +89,7 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
     await db.insert(customListingFields).values(
       fieldKeys.map((key) => ({
         key,
-        label: key,
+        label: labelFor(key),
         fieldType: "boolean" as const,
         category: "OTHER",
         appliesTo: "unit" as const,
@@ -157,7 +159,7 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
     assert.deepEqual(ids(details.value.data.accessibilityFeatures), publicKeys);
     assert.deepEqual(
       new Set(details.value.data.features.flatMap((group) => group.features.map((f) => f.name))),
-      publicKeys,
+      new Set([...publicKeys].map(labelFor)),
     );
     const summaries = await getListingsService({ search: title });
     assert.ok(summaries.ok);

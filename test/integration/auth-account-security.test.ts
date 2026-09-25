@@ -28,7 +28,11 @@ import { auth, createAuth } from "@/lib/auth";
 import { createInvite } from "@/lib/auth/invite-service";
 import { resetEmailContext, type ResetEmailContext } from "@/lib/auth/reset-email-context";
 import { hashOpaqueToken } from "@/lib/auth/token";
-import { openEmailJobSecret, type EmailJobData } from "@/lib/email-queue/email-job";
+import {
+  openEmailJobSecret,
+  sealEmailJobSecret,
+  type EmailJobData,
+} from "@/lib/email-queue/email-job";
 import { getEmailQueue, EMAIL_QUEUE } from "@/lib/email-queue/queue";
 import { processEmailJob } from "@/lib/email-queue/worker";
 import type { PgBoss } from "pg-boss";
@@ -513,6 +517,57 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     assert.equal((await readdir(captureDir)).length, beforeEmails.length + 1);
   });
 
+  it("redacts a finished email's secret from its settled rows but not from live or unrelated rows", async () => {
+    boss = await getEmailQueue();
+    const user = await createUser("active");
+    const resetJob = (resetId: string): EmailJobData => ({
+      type: "password_reset",
+      resetId,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      attempt: {
+        id: crypto.randomUUID(),
+        deliveryId: crypto.randomUUID(),
+        emailType: "password_reset",
+        attemptNumber: 1,
+        idempotencyKey: crypto.randomUUID(),
+      },
+      // No reset link matches this token, so the worker skips the send.
+      secret: sealEmailJobSecret("http://localhost:3000/reset-password?token=retired"),
+    });
+    const resetId = crypto.randomUUID();
+    // Rows of one logical email: the job being worked, a settled ancestor such
+    // as a deferred original, and a live replacement that still needs the secret.
+    const finishing = await boss.send(EMAIL_QUEUE, resetJob(resetId));
+    const settled = await boss.send(EMAIL_QUEUE, resetJob(resetId));
+    const live = await boss.send(EMAIL_QUEUE, resetJob(resetId));
+    const unrelated = await boss.send(EMAIL_QUEUE, resetJob(crypto.randomUUID()));
+    assert.ok(finishing && settled && live && unrelated);
+    await db.execute(sql`
+      update pgboss.job set state = 'completed' where id in (${settled}, ${unrelated})
+    `);
+    const job = await boss.getJobById<EmailJobData>(EMAIL_QUEUE, finishing);
+    assert.ok(job);
+
+    assert.deepEqual(
+      await processEmailJob(boss, { ...job, signal: new AbortController().signal }),
+      {
+        status: "skipped",
+        reason: "reset_unavailable",
+      },
+    );
+    const rows = await db.execute<{ id: string; hasSecret: boolean }>(sql`
+      select id, (data->>'secret') is not null as "hasSecret" from pgboss.job
+      where data->>'userId' = ${user.id}
+    `);
+    assert.deepEqual(Object.fromEntries(rows.map((row) => [row.id, row.hasSecret])), {
+      [finishing]: false,
+      [settled]: false,
+      [live]: true,
+      [unrelated]: true,
+    });
+  });
+
   it("limits public resets across addresses and resumes after the IP window expires", async () => {
     boss = await getEmailQueue();
     const user = await createUser("active");
@@ -783,6 +838,32 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
       where data->>'userId' = ${user.id} and data->>'type' = 'password_reset'
     `);
     assert.equal(afterAdminReset[0]?.count, 5);
+
+    // Each resend is the next attempt on the same delivery, and its job
+    // carries that attempt's idempotency key.
+    const attempts = await db
+      .select({
+        attemptNumber: emailDeliveryAttempts.attemptNumber,
+        idempotencyKey: emailDeliveryAttempts.idempotencyKey,
+      })
+      .from(emailDeliveryAttempts)
+      .where(eq(emailDeliveryAttempts.deliveryId, delivery.id))
+      .orderBy(emailDeliveryAttempts.attemptNumber);
+    assert.deepEqual(
+      attempts,
+      [1, 2, 3, 4, 5].map((attemptNumber) => ({
+        attemptNumber,
+        idempotencyKey: `password_reset/${user.id}/attempt/${attemptNumber}`,
+      })),
+    );
+    const jobKeys = await db.execute<{ key: string }>(sql`
+      select data->'attempt'->>'idempotencyKey' as key from pgboss.job
+      where data->>'userId' = ${user.id} order by key
+    `);
+    assert.deepEqual(
+      jobKeys.map((job) => job.key),
+      attempts.map((attempt) => attempt.idempotencyKey),
+    );
   });
 
   it("awaits invitation creation and returns its usable link", async () => {
