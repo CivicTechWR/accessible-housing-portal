@@ -14,32 +14,11 @@ export interface PriceRangeInputProps {
   labelClassName?: string;
 }
 
-export function parsePriceInputValue(value: string) {
-  if (value.trim().length === 0) {
-    return undefined;
-  }
-
+/** Whole, non-negative dollars; undefined when the input is empty or not a number. */
+function parsePriceInput(value: string) {
   const parsedValue = Number.parseInt(value, 10);
 
-  if (!Number.isFinite(parsedValue) || parsedValue < 0) {
-    return undefined;
-  }
-
-  return parsedValue;
-}
-
-function normalizePriceInputValue(value: string) {
-  if (value.trim().length === 0) {
-    return "";
-  }
-
-  const parsedValue = Number.parseInt(value, 10);
-
-  if (!Number.isFinite(parsedValue)) {
-    return "";
-  }
-
-  return Math.max(0, parsedValue).toString();
+  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : undefined;
 }
 
 export function PriceRangeInput({
@@ -74,10 +53,10 @@ export function PriceRangeInput({
           value={minInputValue}
           placeholder="Min"
           onChange={(e) => {
-            const nextValue = normalizePriceInputValue(e.target.value);
+            const price = parsePriceInput(e.target.value);
 
-            setMinInputValue(nextValue);
-            void onMinChange(parsePriceInputValue(nextValue));
+            setMinInputValue(price?.toString() ?? "");
+            void onMinChange(price);
           }}
         />
       </Field>
@@ -92,10 +71,10 @@ export function PriceRangeInput({
           value={maxInputValue}
           placeholder="Max"
           onChange={(e) => {
-            const nextValue = normalizePriceInputValue(e.target.value);
+            const price = parsePriceInput(e.target.value);
 
-            setMaxInputValue(nextValue);
-            void onMaxChange(parsePriceInputValue(nextValue));
+            setMaxInputValue(price?.toString() ?? "");
+            void onMaxChange(price);
           }}
         />
       </Field>

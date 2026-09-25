@@ -17,10 +17,6 @@ const listingIdResponseSchema = z.object({
   }),
 });
 
-export function mapListingFormToCreateListingInput(data: ListingFormData): CreateListingInput {
-  return buildListingPayloadFromForm(data);
-}
-
 export function mapListingFormToReplaceListingInput(
   data: ListingFormData,
   status = data.status,

@@ -8,7 +8,6 @@ import {
 import {
   getPendingAutosaveNullableFieldClearIntent,
   mapListingFormToAutosavePatchInput,
-  mapListingFormToCreateListingInput,
   mapListingFormToReplaceListingInput,
 } from "@/app/listing-form/api";
 
@@ -52,91 +51,7 @@ const validFormData: ListingFormData = {
   utilitiesIncluded: ["heat", "water"],
 };
 
-describe("create and replace payloads", () => {
-  it("maps listing form fields into the create-listing API payload", () => {
-    expect(mapListingFormToCreateListingInput(validFormData)).toEqual({
-      title: "Accessible Two Bedroom",
-      name: "Cedar Court",
-      description: undefined,
-      address: {
-        street: "123 Main Street",
-        street2: "Building A",
-        city: "Waterloo",
-        province: "ON",
-        postalCode: "N2L 3A1",
-      },
-      units: [
-        {
-          bedrooms: 2,
-          bathrooms: 1.5,
-          sqft: 920,
-          rent: 1850,
-          availableDate: "2026-05-01",
-        },
-      ],
-      accessibilityFeatures: [
-        {
-          id: "ramp_entry",
-          name: "Ramp entry",
-          description: "Step-free building entry",
-        },
-      ],
-      applicationUrl: undefined,
-      images: [
-        {
-          id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2",
-          caption: "Front exterior",
-        },
-      ],
-      contact: {
-        name: "Leasing Office",
-        email: "leasing@example.org",
-        phone: "519-555-0100",
-      },
-      status: "draft",
-      unitNumber: "204",
-      buildingType: "apartment",
-      leaseTermMonths: 12,
-      heatingType: "heat_pump",
-      utilitiesIncluded: ["heat", "water"],
-      depositInfo: undefined,
-    });
-  });
-
-  it("falls back to the feature name when a custom feature description is blank", () => {
-    expect(
-      mapListingFormToCreateListingInput({
-        ...validFormData,
-        customFeatures: [
-          {
-            category: "Accessibility",
-            id: "ramp_entry",
-            name: "Ramp entry",
-            description: "   ",
-          },
-        ],
-      }).accessibilityFeatures,
-    ).toEqual([
-      {
-        id: "ramp_entry",
-        name: "Ramp entry",
-        description: "Ramp entry",
-      },
-    ]);
-  });
-
-  it("provides backend-compatible defaults for missing square footage and availability date", () => {
-    const payload = mapListingFormToCreateListingInput({
-      ...validFormData,
-      squareFeet: undefined,
-      availableOn: undefined,
-    });
-
-    expect(payload.units).toHaveLength(1);
-    expect(payload.units[0]?.sqft).toBe(0);
-    expect(payload.units[0]?.availableDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-  });
-
+describe("replacement payloads", () => {
   it("maps full form submission into a replacement payload with a published status", () => {
     expect(mapListingFormToReplaceListingInput(validFormData, "published")).toEqual({
       title: "Accessible Two Bedroom",
@@ -191,18 +106,43 @@ describe("create and replace payloads", () => {
     });
   });
 
-  it("keeps unanswered fields optional on create but clears them on replacement", () => {
-    const data = { ...validFormData, unitNumber: undefined, heatingType: undefined };
-
-    expect(mapListingFormToCreateListingInput(data).heatingType).toBeUndefined();
-    expect(mapListingFormToReplaceListingInput(data, "published")).toMatchObject({
-      status: "published",
-      unitNumber: null,
-      heatingType: null,
-    });
+  it("falls back to the feature name when a custom feature description is blank", () => {
+    expect(
+      mapListingFormToReplaceListingInput({
+        ...validFormData,
+        customFeatures: [
+          {
+            category: "Accessibility",
+            id: "ramp_entry",
+            name: "Ramp entry",
+            description: "   ",
+          },
+        ],
+      }).accessibilityFeatures,
+    ).toEqual([
+      {
+        id: "ramp_entry",
+        name: "Ramp entry",
+        description: "Ramp entry",
+      },
+    ]);
   });
 
-  it("trims optional contact and application fields on create, replace, and autosave", () => {
+  it("clears unanswered optional fields and fills in a missing availability date", () => {
+    const payload = mapListingFormToReplaceListingInput({
+      ...validFormData,
+      unitNumber: undefined,
+      heatingType: undefined,
+      squareFeet: undefined,
+      availableOn: undefined,
+    });
+
+    expect(payload).toMatchObject({ unitNumber: null, heatingType: null });
+    expect(payload.units[0]?.sqft).toBeNull();
+    expect(payload.units[0]?.availableDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("trims optional contact and application fields on replacement and autosave", () => {
     const data = {
       ...validFormData,
       contactRole: "  Property manager  ",
@@ -214,7 +154,6 @@ describe("create and replace payloads", () => {
     };
 
     for (const payload of [
-      mapListingFormToCreateListingInput(data),
       mapListingFormToReplaceListingInput(data),
       mapListingFormToAutosavePatchInput(data),
     ]) {
