@@ -535,17 +535,23 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
       // No reset link matches this token, so the worker skips the send.
       secret: sealEmailJobSecret("http://localhost:3000/reset-password?token=retired"),
     });
+    const send = async (resetId: string, state?: "completed" | "failed" | "cancelled") => {
+      // Start an hour out so queue fetches in other tests never claim these rows.
+      const id = await boss?.send(EMAIL_QUEUE, resetJob(resetId), { startAfter: 3600 });
+      assert.ok(id);
+      if (state) await db.execute(sql`update pgboss.job set state = ${state} where id = ${id}`);
+      return id;
+    };
     const resetId = crypto.randomUUID();
-    // Rows of one logical email: the job being worked, a settled ancestor such
-    // as a deferred original, and a live replacement that still needs the secret.
-    const finishing = await boss.send(EMAIL_QUEUE, resetJob(resetId));
-    const settled = await boss.send(EMAIL_QUEUE, resetJob(resetId));
-    const live = await boss.send(EMAIL_QUEUE, resetJob(resetId));
-    const unrelated = await boss.send(EMAIL_QUEUE, resetJob(crypto.randomUUID()));
-    assert.ok(finishing && settled && live && unrelated);
-    await db.execute(sql`
-      update pgboss.job set state = 'completed' where id in (${settled}, ${unrelated})
-    `);
+    // Rows of one logical email: the job being worked, settled rows such as a
+    // deferred original (completed) or a dead-lettered source (failed), and a
+    // live replacement that still needs the secret.
+    const finishing = await send(resetId);
+    const completed = await send(resetId, "completed");
+    const failed = await send(resetId, "failed");
+    const cancelled = await send(resetId, "cancelled");
+    const live = await send(resetId);
+    const unrelated = await send(crypto.randomUUID(), "completed");
     const job = await boss.getJobById<EmailJobData>(EMAIL_QUEUE, finishing);
     assert.ok(job);
 
@@ -562,7 +568,9 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     `);
     assert.deepEqual(Object.fromEntries(rows.map((row) => [row.id, row.hasSecret])), {
       [finishing]: false,
-      [settled]: false,
+      [completed]: false,
+      [failed]: false,
+      [cancelled]: false,
       [live]: true,
       [unrelated]: true,
     });
