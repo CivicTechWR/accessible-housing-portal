@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import {
   createListingSchema,
-  listingEditorDataSchema,
+  listingEditorResponseSchema,
   listingQuerySchema,
   patchListingSchema,
   replaceListingSchema,
@@ -201,29 +201,32 @@ describe("listing API schemas", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects non-http application URLs in listing editor data", () => {
-    const result = listingEditorDataSchema.safeParse({
-      title: "",
-      buildingType: "",
-      bedrooms: 0,
-      bathrooms: 0,
-      monthlyRentCents: 0,
-      utilitiesIncluded: [],
-      images: [],
-      status: "draft",
-      name: "",
-      street1: "",
-      city: "",
-      province: "",
-      postalCode: "",
-      contactName: "",
-      contactEmail: "",
-      contactPhone: "",
-      applicationUrl: "mailto:leasing@example.org",
-      customFeatures: [],
+  it("rejects non-http application URLs in listing editor responses", () => {
+    const result = listingEditorResponseSchema.safeParse({
+      data: {
+        id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2",
+        title: "",
+        buildingType: "",
+        bedrooms: 0,
+        bathrooms: 0,
+        monthlyRentCents: 0,
+        utilitiesIncluded: [],
+        images: [],
+        status: "draft",
+        name: "",
+        street1: "",
+        city: "",
+        province: "",
+        postalCode: "",
+        contactName: "",
+        contactEmail: "",
+        contactPhone: "",
+        applicationUrl: "mailto:leasing@example.org",
+        customFeatures: [],
+      },
     });
 
-    expect(result.success).toBe(false);
+    expectIssueAt(result, "data.applicationUrl");
   });
 });
 

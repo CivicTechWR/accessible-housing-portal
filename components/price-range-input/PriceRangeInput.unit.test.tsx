@@ -9,7 +9,8 @@ describe("PriceRangeInput", () => {
     render(<PriceRangeInput onMinChange={onMinChange} onMaxChange={async () => {}} />);
     const min = screen.getByPlaceholderText("Min");
 
-    fireEvent.change(min, { target: { value: "1200" } });
+    fireEvent.change(min, { target: { value: "1200.75" } });
+    expect(min).toHaveValue(1200);
     expect(onMinChange).toHaveBeenLastCalledWith(1200);
 
     fireEvent.change(min, { target: { value: "-5" } });
