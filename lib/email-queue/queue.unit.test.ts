@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { fromDrizzle, PgBoss } from "pg-boss";
+import { PgBoss } from "pg-boss";
 
 import { recordEmailDeliveryAttemptQueueJob } from "@/lib/email-delivery/store";
 import { getEmailJobId, type EmailJobData } from "@/lib/email-queue/email-job";
@@ -24,7 +24,7 @@ jest.mock("pg-boss", () => {
 
   return {
     PgBoss: jest.fn(() => instance),
-    fromDrizzle: jest.fn((txLike: unknown) => ({ kind: "drizzle-adapter", txLike })),
+    fromDrizzle: jest.fn(() => ({ kind: "drizzle-adapter" })),
   };
 });
 
@@ -34,7 +34,6 @@ jest.mock("@/lib/email-delivery/store", () => ({
 
 const PgBossMock = jest.mocked(PgBoss);
 const recordQueueJobMock = jest.mocked(recordEmailDeliveryAttemptQueueJob);
-const fromDrizzleMock = jest.mocked(fromDrizzle);
 const bossInstance = jest.mocked(new PgBossMock("ignored"));
 
 const ORIGINAL_ENV = process.env;
@@ -54,11 +53,8 @@ const JOB_DATA: EmailJobData = {
   secret: "v1.sealed.invite.url",
 };
 
-function buildTx() {
-  return {
-    execute: jest.fn<(query: unknown) => Promise<unknown>>().mockResolvedValue(["row"]),
-  };
-}
+// enqueueEmail only hands the transaction to the mocked store and pg-boss adapter.
+const TX = {} as EmailEnqueueTransaction;
 
 function resetEmailQueueSingleton() {
   Reflect.deleteProperty(globalThis, "__ahpEmailQueue");
@@ -82,9 +78,7 @@ afterEach(() => {
 
 describe("enqueueEmail", () => {
   it("sends the job with a deterministic id, its type's priority, and the transaction adapter", async () => {
-    const tx = buildTx() as unknown as EmailEnqueueTransaction;
-
-    const jobId = await enqueueEmail(tx, JOB_DATA);
+    const jobId = await enqueueEmail(TX, JOB_DATA);
 
     expect(jobId).toBe("9d2c63b4-13f7-46a5-8a3a-6dca59a87cf2");
     expect(bossInstance.send).toHaveBeenCalledWith(EMAIL_QUEUE, JOB_DATA, {
@@ -93,28 +87,16 @@ describe("enqueueEmail", () => {
       priority: 20,
     });
     const [recordedTx, recordedQueueJob] = recordQueueJobMock.mock.calls[0] ?? [];
-    expect(recordedTx).toBe(tx);
+    expect(recordedTx).toBe(TX);
     expect(recordedQueueJob).toEqual({
       attemptId: ATTEMPT.id,
       queueJobId: getEmailJobId(JOB_DATA),
     });
   });
 
-  it("adapts drizzle's bare-array results to pg-boss's { rows } shape", async () => {
-    const tx = buildTx();
-
-    await enqueueEmail(tx as unknown as EmailEnqueueTransaction, JOB_DATA);
-
-    const txLike = fromDrizzleMock.mock.calls[0]?.[0];
-    await expect(txLike?.execute("select 1")).resolves.toEqual({ rows: ["row"] });
-    expect(tx.execute).toHaveBeenCalledWith("select 1");
-  });
-
   it("starts pg-boss once and provisions both queues without supervision when the worker is disabled", async () => {
-    const tx = buildTx() as unknown as EmailEnqueueTransaction;
-
-    await enqueueEmail(tx, JOB_DATA);
-    await enqueueEmail(tx, JOB_DATA);
+    await enqueueEmail(TX, JOB_DATA);
+    await enqueueEmail(TX, JOB_DATA);
 
     expect(PgBossMock).toHaveBeenCalledTimes(1);
     expect(PgBossMock).toHaveBeenCalledWith(expect.objectContaining({ supervise: false }));
@@ -138,7 +120,7 @@ describe("enqueueEmail", () => {
   it("enables supervision where the worker runs", async () => {
     process.env.EMAIL_WORKER_ENABLED = "true";
 
-    await enqueueEmail(buildTx() as unknown as EmailEnqueueTransaction, JOB_DATA);
+    await enqueueEmail(TX, JOB_DATA);
 
     expect(PgBossMock).toHaveBeenCalledWith(expect.objectContaining({ supervise: true }));
   });

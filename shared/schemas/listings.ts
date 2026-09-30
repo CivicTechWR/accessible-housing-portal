@@ -309,7 +309,7 @@ export const replaceListingSchema = listingPayloadSchema
 
 export const patchListingSchema = patchListingPayloadSchema;
 
-export const listingEditorDataSchema = z.object({
+const listingEditorDataSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   buildingType: z.union([listingBuildingTypeSchema, z.literal("")]),
