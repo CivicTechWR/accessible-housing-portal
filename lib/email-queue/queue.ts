@@ -9,6 +9,7 @@ import { EMAIL_JOB_PRIORITY, getEmailJobId, type EmailJobData } from "@/lib/emai
 
 export const EMAIL_QUEUE = "email_send";
 export const EMAIL_DEAD_LETTER_QUEUE = "email_send_dead_letter";
+export const RESEND_WEBHOOK_RETENTION_QUEUE = "resend_webhook_retention";
 /** pg-boss installs its job tables in this dedicated Postgres schema. */
 export const EMAIL_QUEUE_SCHEMA = "pgboss";
 
@@ -41,6 +42,13 @@ const EMAIL_DEAD_LETTER_QUEUE_OPTIONS = {
   retryBackoff: true,
   retryDelayMax: 900,
   expireInSeconds: 60,
+} as const;
+
+const RESEND_WEBHOOK_RETENTION_QUEUE_OPTIONS = {
+  retryLimit: 3,
+  retryDelay: 60,
+  retryBackoff: true,
+  expireInSeconds: 300,
 } as const;
 
 export function isEmailWorkerEnabled() {
@@ -76,13 +84,14 @@ async function createEmailQueue() {
     );
   }
 
+  const workerEnabled = isEmailWorkerEnabled();
   const boss = new PgBoss({
     connectionString: databaseUrl,
     max: 2,
     // Maintenance (retention, expiration recovery) only needs to run where
     // jobs are worked; enqueue-only processes skip it.
-    supervise: isEmailWorkerEnabled(),
-    schedule: false,
+    supervise: workerEnabled,
+    schedule: workerEnabled,
   });
 
   boss.on("error", (error) => {
@@ -92,9 +101,11 @@ async function createEmailQueue() {
   await boss.start();
   await boss.createQueue(EMAIL_DEAD_LETTER_QUEUE, EMAIL_DEAD_LETTER_QUEUE_OPTIONS);
   await boss.createQueue(EMAIL_QUEUE, EMAIL_QUEUE_OPTIONS);
+  await boss.createQueue(RESEND_WEBHOOK_RETENTION_QUEUE, RESEND_WEBHOOK_RETENTION_QUEUE_OPTIONS);
   // createQueue is a no-op for existing queues, so apply option changes too.
   await boss.updateQueue(EMAIL_QUEUE, EMAIL_QUEUE_OPTIONS);
   await boss.updateQueue(EMAIL_DEAD_LETTER_QUEUE, EMAIL_DEAD_LETTER_QUEUE_OPTIONS);
+  await boss.updateQueue(RESEND_WEBHOOK_RETENTION_QUEUE, RESEND_WEBHOOK_RETENTION_QUEUE_OPTIONS);
 
   return boss;
 }
