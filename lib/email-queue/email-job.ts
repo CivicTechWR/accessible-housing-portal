@@ -27,6 +27,8 @@ type EmailJobBase = {
 export type AccountInviteEmailJobData = EmailJobBase & {
   type: "account_invite";
   inviteId: string;
+  /** Absent on older jobs and admin invitations. Shared across this user's invitation resends. */
+  welcomeAttempt?: EmailDeliveryAttemptRef;
   /** Sealed invite URL; contains the raw one-time token, so never store it in plaintext. */
   secret: string;
 };
@@ -84,11 +86,13 @@ export function buildAccountInviteEmailJob(params: {
   inviteId: string;
   inviteUrl: string;
   attempt: EmailDeliveryAttemptRef;
+  welcomeAttempt?: EmailDeliveryAttemptRef;
 }): AccountInviteEmailJobData {
   return {
     type: "account_invite",
     inviteId: params.inviteId,
     attempt: params.attempt,
+    ...(params.welcomeAttempt ? { welcomeAttempt: params.welcomeAttempt } : {}),
     secret: sealEmailJobSecret(params.inviteUrl),
   };
 }

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { emailDeliveryAttempts, users } from "@/db/schema";
 import { sendEmail } from "@/lib/email";
@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import type { Job, PgBoss } from "pg-boss";
 
 import { sendInviteEmail } from "@/lib/auth/invite-email";
+import { sendWelcomeEmail } from "@/lib/auth/welcome-email";
 import {
   findInviteEmailJobTarget,
   markInviteEmailFailed,
@@ -143,6 +144,17 @@ async function recordEmailJobFailure(data: EmailJobData): Promise<EmailDeadLette
       return { status: "failure_recorded" };
     case "account_invite":
       await markInviteEmailFailed(data.inviteId);
+      if (data.welcomeAttempt) {
+        await db
+          .update(emailDeliveryAttempts)
+          .set({ outcome: "failed" })
+          .where(
+            and(
+              eq(emailDeliveryAttempts.id, data.welcomeAttempt.id),
+              isNull(emailDeliveryAttempts.submittedAt),
+            ),
+          );
+      }
       console.error(
         `[email-queue] Invite email for invite ${data.inviteId} permanently failed and was dead-lettered; the invite must be re-sent.`,
       );
@@ -266,10 +278,45 @@ async function sendAccountInviteEmailJob(
     throw new Error(`Email job for invite ${data.inviteId} has no sealed payload secret.`);
   }
 
+  const inviteUrl = openEmailJobSecret(data.secret);
+
+  if (data.welcomeAttempt) {
+    const [welcome] = await db
+      .select({
+        submittedAt: emailDeliveryAttempts.submittedAt,
+        outcome: emailDeliveryAttempts.outcome,
+      })
+      .from(emailDeliveryAttempts)
+      .where(eq(emailDeliveryAttempts.id, data.welcomeAttempt.id));
+
+    if (!welcome)
+      throw new Error(`Welcome email attempt ${data.welcomeAttempt.id} is unavailable.`);
+
+    if (!welcome.submittedAt && welcome.outcome !== "suppressed") {
+      if (target.role === "admin") {
+        await db
+          .update(emailDeliveryAttempts)
+          .set({ outcome: "suppressed" })
+          .where(eq(emailDeliveryAttempts.id, data.welcomeAttempt.id));
+      } else {
+        await sendWelcomeEmail({
+          email: target.email,
+          fullName: target.fullName,
+          audience: target.role === "partner" ? "provider" : "navigator",
+          platformUrl: inviteUrl,
+          attempt: data.welcomeAttempt,
+          signal,
+        });
+      }
+    }
+
+    signal.throwIfAborted();
+  }
+
   const submission = await sendInviteEmail({
     email: target.email,
     fullName: target.fullName,
-    inviteUrl: openEmailJobSecret(data.secret),
+    inviteUrl,
     attempt: data.attempt,
     signal,
   });

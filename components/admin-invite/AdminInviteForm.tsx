@@ -115,10 +115,15 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
         </Select>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="sendInviteEmail" defaultChecked disabled={pending} />
-        Send invitation email
-      </label>
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="sendInviteEmail" defaultChecked disabled={pending} />
+          Send onboarding emails
+        </label>
+        <p className="text-xs text-muted-foreground">
+          Navigators and providers receive a welcome email followed by their account invitation.
+        </p>
+      </div>
       <div className="flex items-center gap-3">
         <Button type="submit" size="lg" disabled={pending}>
           {pending ? "Creating invitation..." : "Create invitation"}

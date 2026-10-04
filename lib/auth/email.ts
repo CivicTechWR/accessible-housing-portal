@@ -6,7 +6,10 @@ import { emailDeliveries, emailDeliveryAttempts, users, userInvites } from "@/db
 import { invitationEmailContext } from "@/lib/auth/invite-context";
 import { resetEmailContext } from "@/lib/auth/reset-email-context";
 import { hashOpaqueToken } from "@/lib/auth/token";
-import { startEmailDeliveryAttempt } from "@/lib/email-delivery/store";
+import {
+  getOrStartWelcomeEmailAttempt,
+  startEmailDeliveryAttempt,
+} from "@/lib/email-delivery/store";
 import { buildAccountInviteEmailJob, sealEmailJobSecret } from "@/lib/email-queue/email-job";
 import { enqueueEmail } from "@/lib/email-queue/queue";
 
@@ -46,7 +49,15 @@ export async function queueAuthEmail({ user, token }: { user: { id: string }; to
         });
         await enqueueEmail(
           tx,
-          buildAccountInviteEmailJob({ inviteId: invite.id, inviteUrl, attempt }),
+          buildAccountInviteEmailJob({
+            inviteId: invite.id,
+            inviteUrl,
+            attempt,
+            welcomeAttempt:
+              target.role === "admin"
+                ? undefined
+                : await getOrStartWelcomeEmailAttempt(tx, target.id),
+          }),
         );
       }
       context.inviteUrl = inviteUrl;

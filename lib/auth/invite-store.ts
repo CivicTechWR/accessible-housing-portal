@@ -153,6 +153,7 @@ export async function findInviteEmailJobTarget(inviteId: string) {
     .select({
       email: userInvites.email,
       fullName: users.fullName,
+      role: users.role,
       userStatus: users.status,
       expiresAt: userInvites.expiresAt,
       acceptedAt: userInvites.acceptedAt,

@@ -43,6 +43,7 @@ export const utilityIncludedEnum = pgEnum("utility_included", [
 export const emailDeliveryTypeEnum = pgEnum("email_delivery_type", [
   "account_invite",
   "password_reset",
+  "account_welcome",
 ]);
 export const emailDeliveryOutcomeEnum = pgEnum("email_delivery_outcome", [
   "queued",
