@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { emailDeliveryAttempts, users } from "@/db/schema";
+import { emailDeliveryAttempts, users, userInvites } from "@/db/schema";
 import { sendEmail } from "@/lib/email";
 import { auth } from "@/lib/auth";
 
@@ -18,6 +18,7 @@ import {
 import { EmailSendError } from "@/lib/email";
 import {
   EMAIL_JOB_PRIORITY,
+  getEmailJobId,
   getEmailJobMatch,
   openEmailJobSecret,
   type AccountInviteEmailJobData,
@@ -145,15 +146,28 @@ async function recordEmailJobFailure(data: EmailJobData): Promise<EmailDeadLette
     case "account_invite":
       await markInviteEmailFailed(data.inviteId);
       if (data.welcomeAttempt) {
-        await db
-          .update(emailDeliveryAttempts)
-          .set({ outcome: "failed" })
-          .where(
-            and(
-              eq(emailDeliveryAttempts.id, data.welcomeAttempt.id),
-              isNull(emailDeliveryAttempts.submittedAt),
-            ),
-          );
+        const welcomeAttempt = data.welcomeAttempt;
+        await db.transaction(async (tx) => {
+          // Resends change welcome ownership under this same user lock.
+          const [user] = await tx
+            .select({ id: users.id })
+            .from(users)
+            .innerJoin(userInvites, eq(userInvites.userId, users.id))
+            .where(eq(userInvites.id, data.inviteId))
+            .for("update", { of: users });
+          if (!user) return;
+
+          await tx
+            .update(emailDeliveryAttempts)
+            .set({ outcome: "failed" })
+            .where(
+              and(
+                eq(emailDeliveryAttempts.id, welcomeAttempt.id),
+                eq(emailDeliveryAttempts.queueJobId, getEmailJobId(data)),
+                isNull(emailDeliveryAttempts.submittedAt),
+              ),
+            );
+        });
       }
       console.error(
         `[email-queue] Invite email for invite ${data.inviteId} permanently failed and was dead-lettered; the invite must be re-sent.`,
@@ -250,29 +264,10 @@ async function sendAccountInviteEmailJob(
   data: AccountInviteEmailJobData,
   signal: AbortSignal,
 ): Promise<EmailJobResult> {
-  const target = await findInviteEmailJobTarget(data.inviteId);
-
-  if (!target) {
-    return { status: "skipped", reason: "invite_not_found" };
-  }
-
-  if (target.userStatus !== "invited") {
-    return { status: "skipped", reason: "account_not_invited" };
-  }
-
-  if (target.acceptedAt) {
-    return { status: "skipped", reason: "invite_accepted" };
-  }
-
-  // Check before decrypting: a recovered send may have an already-redacted secret.
-  if (target.sentAt) {
-    return { status: "skipped", reason: "invite_already_submitted" };
-  }
-
-  // Also covers superseded invites: creating a new invite expires older ones.
-  if (target.expiresAt.getTime() <= Date.now()) {
-    return { status: "skipped", reason: "invite_expired" };
-  }
+  let target = await findInviteEmailJobTarget(data.inviteId);
+  if (!target) return { status: "skipped", reason: "invite_not_found" };
+  const unavailableReason = getUnavailableInviteReason(target);
+  if (unavailableReason) return { status: "skipped", reason: unavailableReason };
 
   if (!data.secret) {
     throw new Error(`Email job for invite ${data.inviteId} has no sealed payload secret.`);
@@ -311,6 +306,10 @@ async function sendAccountInviteEmailJob(
     }
 
     signal.throwIfAborted();
+    target = await findInviteEmailJobTarget(data.inviteId);
+    if (!target) return { status: "skipped", reason: "invite_not_found" };
+    const updatedUnavailableReason = getUnavailableInviteReason(target);
+    if (updatedUnavailableReason) return { status: "skipped", reason: updatedUnavailableReason };
   }
 
   const submission = await sendInviteEmail({
@@ -331,6 +330,19 @@ async function sendAccountInviteEmailJob(
   await markInviteEmailSubmitted(data.inviteId);
 
   return { status: "submitted", providerMessageId: submission?.id ?? null };
+}
+
+function getUnavailableInviteReason(
+  target: NonNullable<Awaited<ReturnType<typeof findInviteEmailJobTarget>>>,
+) {
+  if (target.userStatus !== "invited") return "account_not_invited";
+  if (target.acceptedAt) return "invite_accepted";
+  if (target.revokedAt) return "invite_revoked";
+  // Check before decrypting: a recovered send may have an already-redacted secret.
+  if (target.sentAt) return "invite_already_submitted";
+  // Also covers superseded invites: creating a new invite expires older ones.
+  if (target.expiresAt.getTime() <= Date.now()) return "invite_expired";
+  return null;
 }
 
 function getProviderQuotaDeferral(error: unknown) {

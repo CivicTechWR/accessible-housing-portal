@@ -2,13 +2,19 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, mock } from "node:test";
 import { eq, inArray, sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import type { Job, PgBoss } from "pg-boss";
 
 import { db } from "@/db";
-import { emailDeliveries, emailDeliveryAttempts, users, verifications } from "@/db/schema";
+import {
+  emailDeliveries,
+  emailDeliveryAttempts,
+  userInvites,
+  users,
+  verifications,
+} from "@/db/schema";
 import { createInvite } from "@/lib/auth/invite-service";
 import { sendWelcomeEmail } from "@/lib/auth/welcome-email";
 import type { AccountInviteEmailJobData } from "@/lib/email-queue/email-job";
@@ -22,10 +28,10 @@ let captureDir: string;
 let adminId: string;
 let boss: PgBoss | undefined;
 
-async function invite(email: string, role: "user" | "partner") {
+async function invite(email: string, role: "user" | "partner", fullName = "Avery") {
   const result = await createInvite({
     email,
-    fullName: "Avery",
+    fullName,
     role,
     organization: null,
     invitedByUserId: adminId,
@@ -41,6 +47,57 @@ async function invite(email: string, role: "user" | "partner") {
   const job = { ...row, signal: new AbortController().signal } as Job<AccountInviteEmailJobData>;
   assert.ok(job.data.welcomeAttempt);
   return { result, job, welcomeAttempt: job.data.welcomeAttempt };
+}
+
+type ProviderMessage = { subject: string; text: string };
+
+async function withIdempotentProvider(
+  run: (provider: {
+    accepted: Map<string, { body: string; message: ProviderMessage; id: string }>;
+    onAccepted?: (key: string) => Promise<void>;
+  }) => Promise<void>,
+) {
+  const provider = {
+    accepted: new Map<string, { body: string; message: ProviderMessage; id: string }>(),
+    onAccepted: undefined as ((key: string) => Promise<void>) | undefined,
+  };
+  const previousTransport = process.env.EMAIL_TRANSPORT;
+  process.env.EMAIL_TRANSPORT = "resend";
+  process.env.RESEND_API_KEY = "re_synthetic_integration_key";
+  process.env.EMAIL_FROM = "Home Hub <homehub@example.test>";
+  const fetchMock = mock.method(
+    globalThis,
+    "fetch",
+    async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      assert.equal(String(input), "https://api.resend.com/emails");
+      const key = new Headers(init?.headers).get("idempotency-key");
+      assert.ok(key);
+      const body = String(init?.body);
+      const existing = provider.accepted.get(key);
+      if (existing && existing.body !== body) {
+        return Response.json(
+          { name: "invalid_idempotent_request", message: "Payload changed for an existing key" },
+          { status: 409 },
+        );
+      }
+      const accepted = existing ?? {
+        body,
+        message: JSON.parse(body) as ProviderMessage,
+        id: crypto.randomUUID(),
+      };
+      provider.accepted.set(key, accepted);
+      await provider.onAccepted?.(key);
+      return Response.json({ id: accepted.id });
+    },
+  );
+  try {
+    await run(provider);
+  } finally {
+    fetchMock.mock.restore();
+    process.env.EMAIL_TRANSPORT = previousTransport;
+    delete process.env.RESEND_API_KEY;
+    delete process.env.EMAIL_FROM;
+  }
 }
 
 describe("welcome emails with PostgreSQL", { skip: !testDatabaseUrl }, () => {
@@ -164,4 +221,100 @@ describe("welcome emails with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     assert.equal(retry.welcomeAttempt.attemptNumber, 2);
     assert.equal((await processEmailJob(boss, retry.job)).status, "submitted");
   });
+
+  it("recovers a lost welcome receipt after the recipient's name and role change", async () => {
+    assert.ok(boss);
+    const queue = boss;
+    await withIdempotentProvider(async (provider) => {
+      const email = `${crypto.randomUUID()}@example.test`;
+      const first = await invite(email, "user");
+      provider.onAccepted = async () => {
+        throw new Error("Provider response lost after acceptance");
+      };
+      await assert.rejects(processEmailJob(queue, first.job));
+
+      const resend = await invite(email, "partner", "Avery Updated");
+      assert.equal(resend.welcomeAttempt.id, first.welcomeAttempt.id);
+      provider.onAccepted = undefined;
+      assert.equal((await processEmailJob(queue, resend.job)).status, "submitted");
+      assert.equal(provider.accepted.size, 2);
+      assert.match(
+        provider.accepted.get(first.welcomeAttempt.idempotencyKey)?.message.text ?? "",
+        /explore listings and connect with housing providers/,
+      );
+    });
+  });
+
+  it("does not fail a welcome owned by a newer invitation while it is being sent", async () => {
+    assert.ok(boss);
+    const queue = boss;
+    await withIdempotentProvider(async (provider) => {
+      const email = `${crypto.randomUUID()}@example.test`;
+      const first = await invite(email, "user");
+      const replacement = await invite(email, "user");
+      const started = Promise.withResolvers<void>();
+      const resume = Promise.withResolvers<void>();
+      provider.onAccepted = async (key) => {
+        if (key === replacement.welcomeAttempt.idempotencyKey) {
+          started.resolve();
+          await resume.promise;
+        }
+      };
+      const sending = processEmailJob(queue, replacement.job);
+      await started.promise;
+      try {
+        await processDeadLetteredEmailJob(queue, first.job);
+        const latest = await invite(email, "user");
+        assert.equal(latest.welcomeAttempt.id, first.welcomeAttempt.id);
+        resume.resolve();
+        assert.deepEqual(await sending, { status: "skipped", reason: "invite_expired" });
+        assert.equal((await processEmailJob(queue, latest.job)).status, "submitted");
+        assert.equal(provider.accepted.size, 2);
+      } finally {
+        resume.resolve();
+        await sending;
+      }
+    });
+  });
+
+  for (const change of ["replaced", "deactivated", "revoked"] as const) {
+    it(`skips an invitation ${change} while its welcome is being sent`, async () => {
+      assert.ok(boss);
+      const queue = boss;
+      await withIdempotentProvider(async (provider) => {
+        const email = `${crypto.randomUUID()}@example.test`;
+        const first = await invite(email, "user");
+        provider.onAccepted = async () => {
+          if (change === "replaced") {
+            await invite(email, "user");
+          } else if (change === "deactivated") {
+            await db
+              .update(users)
+              .set({ status: "deactivated" })
+              .where(eq(users.id, first.result.userId));
+          } else {
+            await db
+              .update(userInvites)
+              .set({ revokedAt: new Date() })
+              .where(eq(userInvites.id, first.result.inviteId));
+          }
+        };
+        assert.deepEqual(await processEmailJob(queue, first.job), {
+          status: "skipped",
+          reason:
+            change === "replaced"
+              ? "invite_expired"
+              : change === "revoked"
+                ? "invite_revoked"
+                : "account_not_invited",
+        });
+        assert.equal(provider.accepted.size, 1);
+        const [receipt] = await db
+          .select()
+          .from(emailDeliveryAttempts)
+          .where(eq(emailDeliveryAttempts.id, first.job.data.attempt.id));
+        assert.equal(receipt?.submittedAt, null);
+      });
+    });
+  }
 });

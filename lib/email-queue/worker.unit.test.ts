@@ -101,6 +101,7 @@ function buildInviteTarget() {
     expiresAt: new Date(Date.now() + 60_000),
     acceptedAt: null,
     sentAt: null,
+    revokedAt: null,
   };
 }
 

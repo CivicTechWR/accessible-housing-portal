@@ -120,6 +120,13 @@
       "when": 1791125568588,
       "tag": "20261004145248_account_welcome_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791127592935,
+      "tag": "20261004152632_welcome_payload",
+      "breakpoints": true
     }
   ]
 }
