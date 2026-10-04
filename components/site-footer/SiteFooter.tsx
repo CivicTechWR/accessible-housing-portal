@@ -3,6 +3,7 @@ import Link from "next/link";
 const siteMap = [
   { href: "/", label: "Home" },
   { href: "/listings", label: "Browse Listings" },
+  { href: "/community-agreement", label: "Community Agreement & Terms of Use" },
 ];
 
 export function SiteFooter() {
