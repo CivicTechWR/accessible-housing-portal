@@ -1,6 +1,6 @@
 const agreementSections = [
   {
-    title: "1. Community Expectations for Everyone",
+    title: "1. Community Expectations (For Everyone)",
     items: [
       {
         title: "Good Faith",
@@ -16,7 +16,7 @@ const agreementSections = [
       },
       {
         title: "Our Shared Goal",
-        body: "Every user agrees to focus on the common goal, helping arrange appropriate, stable housing for the community members who need it most and ensuring sustainable operations and relationships for housing providers. We are all committed to creating a fairer, more accessible community for everyone.",
+        body: "Every user agrees to focus on the common goal—helping arrange appropriate, stable housing for the community members who need it most and ensuring sustainable operations and relationships for housing providers. We are all committed to creating a fairer, more accessible community for everyone.",
       },
     ],
   },
@@ -25,7 +25,7 @@ const agreementSections = [
     items: [
       {
         title: "Our Role",
-        body: "We provide the digital space and tools to help providers and navigators connect. We are not a landlord, property manager, legal agent, or tenant advocate. Any tenancy agreements or lease arrangements are strictly between the housing provider, the support organization and the tenant.",
+        body: "We provide the digital space to help providers and navigators connect. We are not representing a housing navigator or housing provider. Any tenancy agreements or lease arrangements are strictly between the housing provider, the support organization and the tenant.",
       },
       {
         title: "Keeping Info Current",
@@ -33,7 +33,7 @@ const agreementSections = [
       },
       {
         title: "No Guarantee of Housing or Leasing",
-        body: "Registering, searching, or applying on the platform does not guarantee housing placement or a lease agreement. The platform is a matching and discovery tool, but final housing decisions rest entirely with individual housing providers, support organizations and tenants.",
+        body: "Registering, searching, or applying on the platform does not guarantee housing placement or a lease agreement. The platform is a matching and discovery tool, but final housing decisions rest entirely with individual housing providers, support organizations, and tenants.",
       },
     ],
   },
