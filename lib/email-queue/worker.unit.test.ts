@@ -96,10 +96,12 @@ function buildInviteTarget() {
   return {
     email: "tenant@example.org",
     fullName: "Tenant User",
+    role: "user" as const,
     userStatus: "invited" as const,
     expiresAt: new Date(Date.now() + 60_000),
     acceptedAt: null,
     sentAt: null,
+    revokedAt: null,
   };
 }
 

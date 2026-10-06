@@ -1,6 +1,6 @@
 import "server-only";
 
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { emailDeliveries, emailDeliveryAttempts, type EmailDeliveryType } from "@/db/schema";
@@ -10,6 +10,40 @@ import {
 } from "@/lib/email-delivery/attempt";
 
 export type EmailDeliveryTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// Hold the user row lock so invitation resends share the current welcome attempt.
+export async function getOrStartWelcomeEmailAttempt(
+  tx: EmailDeliveryTransaction,
+  userId: string,
+): Promise<EmailDeliveryAttemptRef> {
+  const [latest] = await tx
+    .select({
+      id: emailDeliveryAttempts.id,
+      deliveryId: emailDeliveries.id,
+      emailType: emailDeliveries.emailType,
+      attemptNumber: emailDeliveryAttempts.attemptNumber,
+      idempotencyKey: emailDeliveryAttempts.idempotencyKey,
+      outcome: emailDeliveryAttempts.outcome,
+      submittedAt: emailDeliveryAttempts.submittedAt,
+    })
+    .from(emailDeliveries)
+    .innerJoin(emailDeliveryAttempts, eq(emailDeliveryAttempts.deliveryId, emailDeliveries.id))
+    .where(
+      and(
+        eq(emailDeliveries.emailType, "account_welcome"),
+        eq(emailDeliveries.sourceEntityId, userId),
+      ),
+    )
+    .orderBy(desc(emailDeliveryAttempts.attemptNumber))
+    .limit(1);
+
+  if (latest && (latest.submittedAt || latest.outcome !== "failed")) {
+    const { outcome: _outcome, submittedAt: _submittedAt, ...attempt } = latest;
+    return attempt;
+  }
+
+  return startEmailDeliveryAttempt(tx, { emailType: "account_welcome", sourceEntityId: userId });
+}
 
 export async function startEmailDeliveryAttempt(
   tx: EmailDeliveryTransaction,

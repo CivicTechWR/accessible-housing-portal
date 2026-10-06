@@ -43,6 +43,7 @@ export const utilityIncludedEnum = pgEnum("utility_included", [
 export const emailDeliveryTypeEnum = pgEnum("email_delivery_type", [
   "account_invite",
   "password_reset",
+  "account_welcome",
 ]);
 export const emailDeliveryOutcomeEnum = pgEnum("email_delivery_outcome", [
   "queued",
@@ -305,6 +306,8 @@ export const emailDeliveryAttempts = pgTable(
       .references(() => emailDeliveries.id, { onDelete: "cascade" }),
     attemptNumber: integer("attempt_number").notNull(),
     idempotencyKey: text("idempotency_key").notNull(),
+    // Encrypted welcome message, kept stable while its idempotency key is reused.
+    sealedPayload: text("sealed_payload"),
     queueJobId: uuid("queue_job_id"),
     providerEmailId: text("provider_email_id"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
