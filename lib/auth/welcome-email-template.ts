@@ -2,33 +2,62 @@ export type WelcomeEmailAudience = "navigator" | "provider";
 
 const feedbackUrl =
   "https://docs.google.com/forms/d/e/1FAIpQLSdmgdBsahBMIuU6AQngwArIKwCn_yJHZ299YtyT2FtT_FahCQ/viewform?usp=sharing";
+const bookingUrl = "https://calendar.app.google/Yc5KABhWMtDBFg5p7";
 
+// The partner names sit between `aboutLead` and `aboutRest` so the HTML version can link them.
 const welcomeContent = {
   navigator: {
-    subject: "Welcome to Home Hub, housing navigation for your clients",
-    introduction:
-      "Welcome to Home Hub! Thank you for joining us as an early user. Home Hub connects community members and housing navigators with affordable, supportive, and accessible housing listings in one place.",
+    subject: "Welcome to Home Hub — Simplifying housing navigation for your clients",
+    introduction: "Welcome to Home Hub! We're thrilled to have you join us as an early user.",
+    aboutLead: "Home Hub was co-created through a partnership between",
+    aboutRest:
+      " to address a critical challenge in our community—making it easier to find and access affordable and accessible housing. Instead of navigating dozens of separate waitlists, Home Hub provides a centralized digital space connecting community members and housing navigators directly with non-market housing listings.",
     expectations: [
-      "Relevant listings: Access non-profit, co-operative, and municipal housing options in one place.",
-      "Accessibility and pricing details: View physical accessibility features, unit costs, and eligibility criteria up front.",
-      "Direct connections: Contact housing providers on behalf of the community members you support.",
+      {
+        title: "Tailored Relevant Listings",
+        body: "Access non-profit, co-operative, and municipal housing options in one place.",
+      },
+      {
+        title: "Clear Accessibility & Pricing Details",
+        body: "Easily view physical accessibility features, unit costs, and eligibility criteria up front.",
+      },
+      {
+        title: "Direct Connections",
+        body: "Streamline outreach to housing providers on behalf of the community members you support.",
+      },
     ],
     accountAccess: "explore listings and connect with housing providers",
+    pilotHeading: "Help Us Build This Together",
     pilot:
-      "Home Hub is in its pilot phase. We are refining the platform based on real-world use. Your experience as a case worker or social worker helps us understand what works and what needs to change. Please share bugs, ideas, or feedback with us.",
+      "Please keep in mind that Home Hub is currently in its pilot phase. As a prototype, we are actively refining features based on real-world use. Your frontline experience as a case worker or social worker is invaluable to us—if you spot bugs, have ideas, or want to share feedback, please let us know!",
+    signOff: "Warmly,",
   },
   provider: {
-    subject: "Welcome to Home Hub, connecting your properties with the community",
+    subject: "Welcome to Home Hub — Connecting your properties with the community",
     introduction:
-      "Thank you for joining Home Hub! The platform helps community housing providers, non-profits, co-operatives, and municipal partners share available units and connect directly with housing navigators, case workers, and social support organizations.",
+      "Thank you for joining Home Hub! We are excited to partner with your organization to streamline affordable and accessible housing matching across our region.",
+    aboutLead: "Home Hub is a regional platform built through a collaboration between",
+    aboutRest:
+      ". It was designed specifically for community housing providers, non-profits, co-operatives, and municipal partners to showcase available units and connect directly with housing navigators, case workers and social support organizations.",
     expectations: [
-      "Centralized visibility: Share available units with housing navigators and case workers.",
-      "Clear listing details: Describe your property's affordability terms, unit features, and accessibility accommodations.",
-      "Direct communication: Interested users can contact your team using the contact details you share on the platform.",
+      {
+        title: "Centralized Visibility",
+        body: "Reach established and trusted housing navigators and case workers without relying on fragmented listing channels or word-of-mouth.",
+      },
+      {
+        title: "Transparent Attributes",
+        body: "Highlight your property's specific affordability terms, unit features, and accessibility accommodations.",
+      },
+      {
+        title: "Direct Communication",
+        body: "Allow interested parties to reach out to your team directly based on your shared contact preferences.",
+      },
     ],
     accountAccess: "explore the platform and create listings",
+    pilotHeading: "A Note on Our Pilot Phase",
     pilot:
-      "Home Hub is a live pilot. We are testing and improving the platform, and welcome your feedback as you create listings and use the site. Please tell us how we can make it more useful for your team.",
+      "Because Home Hub is a live pilot, we are continuously testing and making improvements. We view our housing providers as true co-builders of this tool. As you create listings and interact with the platform, we warmly welcome your feedback on how we can make the tool more efficient for your team.",
+    signOff: "In community,",
   },
 };
 
@@ -45,41 +74,44 @@ export function buildWelcomeEmail(params: {
   const signInUrl = new URL("/sign-in", platformUrl.origin).toString();
   const agreementUrl = new URL("/community-agreement", platformUrl.origin).toString();
   const content = welcomeContent[params.audience];
-  const partnership =
-    "Home Hub was built through a partnership between Union Co-Operative and CivicTech WR to help people find affordable, supportive, and accessible housing in our community.";
-  const nextSteps = `You will receive a separate system email inviting you to create an account in Home Hub. Once you have activated your account, you can ${content.accountAccess}. We would also like to book a 30-minute call with you or your teammates to answer questions about using the site.`;
+  const invitationNotice =
+    "You will receive a system-generated email inviting you to create an account in Home Hub.";
+  const nextSteps = `Once created, you will be able to ${content.accountAccess}. As an additional support, you may book a 30 min call with us to answer any questions you may have.`;
 
   return {
     subject: content.subject,
     text: [
       `Hi ${params.fullName},`,
       content.introduction,
-      partnership,
-      "What you can expect",
-      content.expectations.map((item) => `- ${item}`).join("\n"),
-      "What comes next",
-      nextSteps,
-      "Help us build this together",
+      "What is Home Hub?",
+      `${content.aboutLead} Union Co-Operative and CivicTech${content.aboutRest}`,
+      "What You Can Expect",
+      content.expectations.map((item) => `- ${item.title}: ${item.body}`).join("\n"),
+      "What Comes Next",
+      `${invitationNotice} ${nextSteps}`,
+      `Book a call: ${bookingUrl}`,
+      content.pilotHeading,
       content.pilot,
-      `Share feedback: ${feedbackUrl}`,
+      `Fill out our feedback form: ${feedbackUrl}`,
       `Community Agreement & Terms of Use: ${agreementUrl}`,
-      `After activating your account, sign in here: ${signInUrl}`,
-      "The Home Hub Team",
+      `Ready to get started? After activating your account, log in here: ${signInUrl}`,
+      `${content.signOff}\nThe Home Hub Team`,
     ].join("\n\n"),
     html: `<div style="max-width:640px;font-family:Arial,sans-serif;font-size:16px;line-height:1.6;color:#222">
 <p>Hi ${escapeHtml(params.fullName)},</p>
 <p>${escapeHtml(content.introduction)}</p>
-<p>Home Hub was built through a partnership between <a href="https://www.unionsd.coop/">Union Co-Operative</a> and <a href="https://civictechwr.org/">CivicTech WR</a> to help people find affordable, supportive, and accessible housing in our community.</p>
-<h2>What you can expect</h2>
-<ul>${content.expectations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-<h2>What comes next</h2>
-<p>${escapeHtml(nextSteps)}</p>
-<h2>Help us build this together</h2>
+<h2>What is Home Hub?</h2>
+<p>${escapeHtml(content.aboutLead)} <a href="https://www.unionsd.coop/">Union Co-Operative</a> and <a href="https://civictechwr.org/">CivicTech</a>${escapeHtml(content.aboutRest)}</p>
+<h2>What You Can Expect</h2>
+<ul>${content.expectations.map((item) => `<li><strong>${escapeHtml(item.title)}:</strong> ${escapeHtml(item.body)}</li>`).join("")}</ul>
+<h2>What Comes Next</h2>
+<p><strong>${escapeHtml(invitationNotice)}</strong> ${escapeHtml(nextSteps)} <a href="${escapeHtml(bookingUrl)}">Click here to book a call if you would like.</a></p>
+<h2>${escapeHtml(content.pilotHeading)}</h2>
 <p>${escapeHtml(content.pilot)}</p>
-<p><a href="${escapeHtml(feedbackUrl)}">Share feedback</a></p>
+<p><a href="${escapeHtml(feedbackUrl)}"><strong>Click here to fill out our feedback form.</strong></a></p>
 <p><a href="${escapeHtml(agreementUrl)}">Community Agreement &amp; Terms of Use</a></p>
-<p>After activating your account, <a href="${escapeHtml(signInUrl)}">sign in to Home Hub</a>.</p>
-<p>The Home Hub Team</p>
+<p>Ready to get started? After activating your account, <a href="${escapeHtml(signInUrl)}">log in to Home Hub</a>.</p>
+<p>${escapeHtml(content.signOff)}<br>The Home Hub Team</p>
 </div>`,
   };
 }
