@@ -23,7 +23,7 @@ const faqs: { question: string; answer: ReactNode }[] = [
       <>
         Home Hub is a collaboration between{" "}
         <a href="https://www.unionsd.coop/" className={linkClass}>
-          Union Community Housing
+          Union Co-operative
         </a>{" "}
         and{" "}
         <a href="https://civictechwr.org/" className={linkClass}>

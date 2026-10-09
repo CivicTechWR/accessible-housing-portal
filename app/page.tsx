@@ -8,7 +8,7 @@ import { HomeInfoSection } from "@/components/home/HomeInfoSection";
 import { getOptionalSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
-  title: "Home Hub | Affordable & Accessible Housing Listings in Waterloo Region",
+  title: "Affordable, Accessible Rentals in Waterloo Region | Home Hub",
   description:
     "Home Hub connects affordable and accessible housing seekers with trusted providers in Waterloo Region. Social workers and housing providers can request access.",
 };
