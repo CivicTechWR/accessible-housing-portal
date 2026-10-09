@@ -1,55 +1,35 @@
 import Image from "next/image";
 
-const heroImage = "/home-image-placeholder.svg";
+import { Button } from "@/components/ui/button";
 
 export function HomeHeroSection() {
   return (
     <section
-      aria-labelledby="home-hero-title"
-      className="relative isolate flex min-h-[calc(100vh-56px)] items-end overflow-hidden bg-muted"
+      aria-labelledby="home-title"
+      className="relative isolate flex min-h-[65vh] items-end overflow-hidden bg-muted"
     >
-      <div className="absolute inset-0">
-        <Image
-          src={heroImage}
-          alt=""
-          fill
-          preload
-          sizes="100vw"
-          className="object-cover object-center brightness-90 saturate-75"
-        />
-        <div className="absolute inset-0 bg-linear-to-t from-background/95 via-background/75 to-background/30" />
-      </div>
+      {/* Placeholder until the final photo from #405. */}
+      <Image
+        src="/home-image-placeholder.svg"
+        alt=""
+        fill
+        preload
+        sizes="100vw"
+        className="-z-10 object-cover dark:brightness-75"
+      />
+      {/* Darkens only the lower part of the image, behind the text. */}
+      <div className="absolute inset-0 -z-10 bg-linear-to-t from-black/75 via-black/30 to-transparent" />
 
-      <div className="relative z-10 w-full px-6 pb-10 pt-24 sm:px-10 sm:pb-14 lg:px-16">
-        <p className="max-w-2xl text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
-          Home Hub · Waterloo Region
+      <div className="mx-auto w-full max-w-5xl px-6 pt-32 pb-12 text-white">
+        <h1 id="home-title" className="max-w-3xl text-4xl sm:text-5xl">
+          Affordable, accessible rentals in Waterloo Region
+        </h1>
+        <p className="mt-4 max-w-2xl text-lg text-white/85">
+          Connecting affordable, accessible housing seekers with the providers who serve them.
         </p>
-        <div className="max-w-2xl pt-3 text-foreground">
-          <h1
-            id="home-hero-title"
-            className="mt-2 text-4xl font-semibold tracking-tight sm:text-6xl"
-          >
-            Find accessible housing with less friction
-          </h1>
-          <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Connecting affordable, accessible housing seekers with the providers who serve them.
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="#contact"
-              className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary/80"
-            >
-              Request access
-            </a>
-            <a
-              href="#about"
-              className="rounded-full border border-border bg-background/60 px-5 py-2.5 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5 hover:bg-background/80"
-            >
-              About Home Hub
-            </a>
-          </div>
-        </div>
+        <Button asChild size="lg" className="mt-6 h-10 px-4 text-sm">
+          <a href="#join">Request access</a>
+        </Button>
       </div>
     </section>
   );

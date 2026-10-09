@@ -23,9 +23,11 @@ export default async function Home() {
   return (
     <main>
       <HomeHeroSection />
-      <HomeInfoSection />
-      <HomeFAQSection />
-      <HomeContactSection />
+      <div className="mx-auto max-w-5xl space-y-12 px-6 py-12 sm:py-16">
+        <HomeInfoSection />
+        <HomeContactSection />
+        <HomeFAQSection />
+      </div>
     </main>
   );
 }
