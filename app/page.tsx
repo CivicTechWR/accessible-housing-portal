@@ -1,20 +1,15 @@
-import { redirect } from "next/navigation";
+import { HomeContactSection } from "@/components/home/HomeContactSection";
+import { HomeHeroSection } from "@/components/home/HomeHeroSection";
+import { HomeInfoSection } from "@/components/home/HomeInfoSection";
+import { HomeFAQSection } from "@/components/home/HomeFAQSection";
 
-type UserType = "searcher" | "provider";
-
-const userType: UserType = "searcher";
-
-export default function Home() {
-  if (userType === "searcher") {
-    redirect("/listings");
-  }
-
+export default function App() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center space-y-2">
-        <h1>WIP</h1>
-        <p className="text-sm text-muted-foreground">Housing provider view coming soon.</p>
-      </div>
+    <main>
+      <HomeHeroSection />
+      <HomeInfoSection />
+      <HomeFAQSection />
+      <HomeContactSection />
     </main>
   );
 }
