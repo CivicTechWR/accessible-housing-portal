@@ -1,0 +1,1 @@
+ALTER TABLE "resend_webhook_events" DROP COLUMN "outcome_detail";

@@ -4,16 +4,17 @@ The database schema is defined in `db/schema.ts` with Drizzle. SQL migrations an
 
 ## Enums
 
-| Enum                     | Values                                                                                             | Used by                                                |
-| ------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `user_role`              | `admin`, `partner`, `user`                                                                         | Access control and UI navigation.                      |
-| `user_status`            | `invited`, `active`, `suspended`, `deactivated`                                                    | Sign-in eligibility and account lifecycle.             |
-| `listing_status`         | `draft`, `published`, `archived`                                                                   | Listing visibility, authoring, and deletion behaviour. |
-| `listing_building_type`  | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                 |
-| `utility_included`       | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.             |
-| `listing_field_type`     | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.            |
-| `email_delivery_type`    | `account_invite`, `password_reset`                                                                 | Kinds of transactional email the application sends.    |
-| `email_delivery_outcome` | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.        |
+| Enum                               | Values                                                                                             | Used by                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `user_role`                        | `admin`, `partner`, `user`                                                                         | Access control and UI navigation.                      |
+| `user_status`                      | `invited`, `active`, `suspended`, `deactivated`                                                    | Sign-in eligibility and account lifecycle.             |
+| `listing_status`                   | `draft`, `published`, `archived`                                                                   | Listing visibility, authoring, and deletion behaviour. |
+| `listing_building_type`            | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                 |
+| `utility_included`                 | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.             |
+| `listing_field_type`               | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.            |
+| `email_delivery_type`              | `account_invite`, `password_reset`                                                                 | Kinds of transactional email the application sends.    |
+| `email_delivery_outcome`           | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.        |
+| `resend_webhook_processing_status` | `pending`, `processed`, `ignored`, `unmatched`, `failed`                                           | State of a verified Resend webhook receipt.            |
 
 Only users with status `active` can sign in.
 
@@ -58,6 +59,14 @@ Important behaviour:
 - `provider_email_id` holds Resend's email id and is the correlation key for later delivery outcomes.
 - `outcome` uses the vocabulary Resend reports identically through webhook event names (`email.<outcome>`) and `resend.emails.get(id).last_event`, so an outcome is stored the same way however it was learned.
 - `outcome_detail` is a short sanitized provider diagnostic only. Invite URLs, reset tokens, recipient addresses, and rendered message bodies are never stored here.
+
+### `resend_webhook_events`
+
+Stores a privacy-minimized, append-only ledger of verified operational Resend events. `svix_id` is the idempotency key, so provider retries are acknowledged without creating duplicate rows. The ledger keeps the provider email id, event timestamps, correlation tags, structured bounce classification, and processing state. It deliberately excludes raw payloads, free-form provider diagnostics, recipient/sender addresses, subjects, message bodies, IP addresses, and links.
+
+Supported operational events begin as `pending`. Other valid email event types are stored with only the common minimum fields and correlation tags and immediately marked `ignored`, so accidental subscription changes remain observable without retaining engagement data. Non-email Resend events are not stored. Outcome reconciliation is a separate concern and may attach `delivery_attempt_id` and move a pending receipt to `processed`, `unmatched`, `ignored`, or `failed`. A daily pg-boss maintenance job deletes webhook rows after 90 days using the indexed receipt timestamp.
+
+There is no application read endpoint for the webhook ledger. Limit direct database access to authorized operators. A verified privacy deletion request is handled with `npm run webhooks:delete-data -- --user-id <uuid>` before the user record is deleted; the command removes webhook receipts correlated with that user's password-reset and account-invite deliveries.
 
 ### `properties`
 
