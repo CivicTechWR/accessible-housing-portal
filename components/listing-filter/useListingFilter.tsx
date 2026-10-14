@@ -20,7 +20,6 @@ export function useListingFilters() {
     setLocationInputValue(filters.location ?? "");
   }, [filters.location]);
 
-  // --- 1. Static Props (Variables) ---
   const sortOptionProps = useMemo(
     () => ({
       sortOptions: [
@@ -129,8 +128,6 @@ export function useListingFilters() {
     [filters.moveInDate, setFilters],
   );
 
-  // --- 2. Dynamic Getters (Functions) ---
-
   const getFeatureCheckboxProps = useCallback(
     (id: string) => {
       const currentFeatures = filters.features || [];
@@ -154,8 +151,6 @@ export function useListingFilters() {
     [filters.features, setFilters],
   );
 
-  // --- 3. Derived State ---
-
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.bedrooms) count++;
@@ -174,8 +169,6 @@ export function useListingFilters() {
     filters.features,
   ]);
 
-  // --- 4. Getters ---
-
   const getFilterButtonProps = useCallback(
     (isFilterOpen: boolean, onFilterClick: () => void): FilterButtonProps => ({
       activeFilterCount,
@@ -184,8 +177,6 @@ export function useListingFilters() {
     }),
     [activeFilterCount],
   );
-
-  // --- 5. Actions ---
 
   const clearFilters = useCallback(async () => {
     await setFilters({

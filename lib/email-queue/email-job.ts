@@ -6,12 +6,7 @@ import type { EmailDeliveryAttemptRef } from "@/lib/email-delivery/attempt";
 
 type EmailJobBase = {
   attempt: EmailDeliveryAttemptRef;
-  /**
-   * Times this logical email has been re-enqueued by a quota/rate-limit
-   * deferral. The worker caps the chain (MAX_EMAIL_JOB_DEFERRALS) so a
-   * provider stuck returning quota errors eventually dead-letters instead of
-   * deferring forever.
-   */
+  /** Quota/rate-limit re-enqueues so far, capped by MAX_EMAIL_JOB_DEFERRALS. */
   deferralCount?: number;
 };
 

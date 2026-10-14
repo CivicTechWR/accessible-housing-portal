@@ -36,7 +36,6 @@ export function ListingFilterSearchBar({
 }: ListingFilterSearchBarProps) {
   return (
     <FieldGroup className="w-full gap-3 space-y-0 sm:flex-row sm:items-end sm:gap-4 lg:gap-6">
-      {/* Search: Grows to fill available space up to a point */}
       <div className="w-full sm:max-w-sm sm:flex-1">
         <div className="relative">
           <HugeiconsIcon
@@ -47,7 +46,6 @@ export function ListingFilterSearchBar({
         </div>
       </div>
 
-      {/* Price Range: Constrained so it doesn't take 1/3 of the page */}
       <div className="w-full sm:max-w-[280px] sm:shrink-0">
         <PriceRangeInput
           {...priceRangeProps}
@@ -56,7 +54,6 @@ export function ListingFilterSearchBar({
         />
       </div>
 
-      {/* Property Filters: Compact toggles */}
       <div className="hidden lg:flex items-center gap-6 shrink-0">
         <ToggleField
           {...bedroomToggleProps}

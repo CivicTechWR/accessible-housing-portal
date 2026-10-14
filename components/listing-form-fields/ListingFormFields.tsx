@@ -52,12 +52,8 @@ function FieldRenderer({
             <FormLabel>{label}</FormLabel>
             <Select
               onValueChange={(value) => {
-                // Radix renders a hidden native <select> so the value participates in
-                // form submission, and re-dispatches its change event when the option
-                // list registers. On the edit form that echo lands after the listing
-                // loads and carries the pre-hydration empty value, which would wipe the
-                // selection. No option is empty, so an empty payload is only ever that
-                // echo.
+                // Radix's hidden native <select> echoes its pre-hydration empty value
+                // after the edit form loads. No option is empty, so ignore that echo.
                 if (value === "") {
                   return;
                 }
