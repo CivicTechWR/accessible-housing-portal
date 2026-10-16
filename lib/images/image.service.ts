@@ -111,7 +111,7 @@ export async function uploadListingImageService(input: {
       },
     )
   ) {
-    return fail(403, "Forbidden");
+    return fail(404, "Listing not found.");
   }
 
   const fileBuffer = Buffer.from(await input.file.arrayBuffer());
@@ -172,7 +172,7 @@ export async function getListingImageByIdService(input: {
     !input.actor.userId ||
     (input.actor.role !== "admin" && input.actor.userId !== image.uploadedByUserId)
   ) {
-    return fail(401, "Unauthorized");
+    return fail(404, "Image not found.");
   }
 
   if (image.imageUrl && !image.imageData) {

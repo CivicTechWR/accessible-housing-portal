@@ -3,8 +3,12 @@
 import { beforeEach, expect, it, jest } from "@jest/globals";
 import sharp from "sharp";
 
-import { createListingImageUpload } from "@/lib/listings/listing.repository";
-import { uploadListingImageService } from "./image.service";
+import {
+  createListingImageUpload,
+  findListingImageById,
+  findListingRecordById,
+} from "@/lib/listings/listing.repository";
+import { getListingImageByIdService, uploadListingImageService } from "./image.service";
 
 jest.mock("@/lib/listings/listing.repository", () => ({
   findListingRecordById: jest.fn(async () => ({
@@ -12,6 +16,7 @@ jest.mock("@/lib/listings/listing.repository", () => ({
     property: { ownerUserId: "owner" },
   })),
   createListingImageUpload: jest.fn(async () => ({ id: "upload" })),
+  findListingImageById: jest.fn(),
 }));
 
 async function uploadPng(width: number, height: number) {
@@ -31,6 +36,49 @@ async function uploadPng(width: number, height: number) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+});
+
+it("hides foreign listing existence during uploads", async () => {
+  const input = {
+    actorUserId: "other-partner",
+    actorRole: "partner" as const,
+    listingId: "22222222-2222-4222-8222-222222222222",
+    file: new File(["unused"], "photo.png", { type: "image/png" }),
+  };
+  const foreignResult = await uploadListingImageService(input);
+  jest.mocked(findListingRecordById).mockResolvedValueOnce(null);
+
+  expect(foreignResult).toEqual({
+    ok: false,
+    error: { status: 404, message: "Listing not found." },
+  });
+  expect(await uploadListingImageService(input)).toEqual(foreignResult);
+  expect(createListingImageUpload).not.toHaveBeenCalled();
+});
+
+it("hides orphaned image existence from other partners", async () => {
+  jest
+    .mocked(findListingImageById)
+    .mockResolvedValueOnce({
+      id: "image",
+      listingId: null,
+      uploadedByUserId: "owner",
+      imageUrl: null,
+      imageData: Buffer.from("image"),
+      contentType: "image/jpeg",
+      sizeBytes: 5,
+      listingStatus: null,
+      listingOwnerUserId: null,
+    })
+    .mockResolvedValueOnce(null);
+
+  const input = { imageId: "image", actor: { userId: "other-partner", role: "partner" as const } };
+  const foreignResult = await getListingImageByIdService(input);
+  expect(foreignResult).toEqual({
+    ok: false,
+    error: { status: 404, message: "Image not found." },
+  });
+  expect(await getListingImageByIdService(input)).toEqual(foreignResult);
 });
 
 it("rejects an image above 24 megapixels without storing it", async () => {
