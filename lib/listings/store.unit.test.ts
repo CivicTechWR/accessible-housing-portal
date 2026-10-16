@@ -44,6 +44,18 @@ describe("buildDuplicateListingTitle", () => {
   });
 });
 
+it("renders existing feature keys that match Object.prototype names", () => {
+  expect(
+    getDisplayAccessibilityFeatures({ constructor: true, ["__proto__"]: true }, [
+      { ...ELEVATOR, key: "constructor", label: "Constructor" },
+      { ...AUTOMATED_DOORS, key: "__proto__", label: "Prototype" },
+    ]),
+  ).toMatchObject([
+    { id: "constructor", name: "Constructor" },
+    { id: "__proto__", name: "Prototype" },
+  ]);
+});
+
 describe("selectDuplicateCustomFields", () => {
   const customFields: ListingCustomFields = {
     elevator_in_building: true,

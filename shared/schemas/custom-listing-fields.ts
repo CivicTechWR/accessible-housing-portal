@@ -13,6 +13,9 @@ export const customListingFieldTypeSchema = z.enum([
 export const customListingFieldApplicabilitySchema = z.enum(["building", "unit"]);
 
 const nonEmptyString = requiredTrimmedString();
+export const customListingFieldKeySchema = nonEmptyString
+  .regex(/^[a-z0-9_-]+$/, "Use lowercase letters, numbers, underscores, or hyphens.")
+  .refine((key) => !Object.hasOwn(Object.prototype, key), "This field key is reserved.");
 const customListingFieldIdSchema = z.uuid("Invalid custom listing field id.");
 export const customListingFieldSelectableOptionSchema = z.object({
   label: nonEmptyString,
@@ -82,7 +85,7 @@ export const customListingFieldParamsSchema = z.object({
 });
 
 const customListingFieldMutationSchema = z.object({
-  key: nonEmptyString,
+  key: customListingFieldKeySchema,
   label: nonEmptyString,
   description: z.string().trim().nullable().optional(),
   type: customListingFieldTypeSchema,
