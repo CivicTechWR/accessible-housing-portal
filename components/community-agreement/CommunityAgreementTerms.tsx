@@ -79,8 +79,8 @@ export function CommunityAgreementTerms() {
     <div className="space-y-6 text-sm leading-6">
       <p>
         Welcome! We are excited to have you here. Home Hub is a platform built to connect community
-        members with affordable, supportive, and accessible housing. By registering, you agree to
-        join our community network with the following shared expectations and guidelines in mind.
+        members with affordable, supportive, and accessible housing. By using Home Hub, you join our
+        community network with the following shared expectations and guidelines in mind.
       </p>
 
       {agreementSections.map((section) => (
@@ -97,7 +97,7 @@ export function CommunityAgreementTerms() {
       ))}
 
       <p className="font-medium text-foreground">
-        By continuing to register, you accept these community guidelines and terms of use.
+        By using Home Hub, you accept these community guidelines and terms of use.
       </p>
     </div>
   );
