@@ -140,8 +140,9 @@ export function createAuth(
           }
         }
         if (ctx.path !== "/reset-password") return;
-        const token = ctx.body?.token ?? ctx.query?.token;
-        if (typeof token !== "string") return;
+        const token = ctx.body?.token || ctx.query?.token;
+        if (typeof token !== "string" || token.length === 0)
+          throw new APIError("BAD_REQUEST", { message: "This link is unavailable." });
         const verification = await ctx.context.internalAdapter.findVerificationValue(
           `reset-password:${token}`,
         );
@@ -193,8 +194,8 @@ export function createAuth(
           returned.status !== true
         )
           return;
-        const token = ctx.body?.token ?? ctx.query?.token;
-        if (typeof token !== "string") return;
+        const token = ctx.body?.token || ctx.query?.token;
+        if (typeof token !== "string" || token.length === 0) return;
         const [target] = await database
           .select({ userId: userInvites.userId })
           .from(userInvites)

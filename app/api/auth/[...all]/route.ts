@@ -50,7 +50,8 @@ async function handleResetPassword(request: Request, url: URL) {
   const bodyToken =
     typeof body === "object" && body !== null && "token" in body ? body.token : null;
   const token = bodyToken || url.searchParams.get("token");
-  if (typeof token !== "string") return handlers.POST(request);
+  if (typeof token !== "string" || token.length === 0)
+    return Response.json({ message: "This link is unavailable." }, { status: 400 });
   const context = await auth.$context;
   const verification = await context.internalAdapter.findVerificationValue(
     `reset-password:${token}`,
