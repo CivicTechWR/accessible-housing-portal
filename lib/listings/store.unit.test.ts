@@ -86,6 +86,17 @@ describe("selectDuplicateCustomFields", () => {
       legacy_unmapped_feature: true,
     });
   });
+
+  it("preserves legacy __proto__ values in serialized scoped duplicates", () => {
+    const legacyFields = { ["__proto__"]: true };
+    const duplicated = selectDuplicateCustomFields({
+      customFields: legacyFields,
+      applicabilityByKey: new Map([["__proto__", "building"]]),
+      scope: "building",
+    });
+
+    expect(JSON.parse(JSON.stringify(duplicated))).toEqual(legacyFields);
+  });
 });
 
 describe("buildDuplicateListingPlan", () => {
@@ -338,6 +349,18 @@ describe("buildListingFeatureCategories", () => {
 });
 
 describe("mergeListingCustomFields", () => {
+  it("preserves a selected legacy __proto__ feature when the listing is saved", () => {
+    const legacyFields = { ["__proto__"]: true };
+    const definition = { ...ELEVATOR, key: "__proto__" };
+    const merged = mergeListingCustomFields(
+      legacyFields,
+      { accessibilityFeatures: [selected(definition)] },
+      [definition],
+    );
+
+    expect(JSON.parse(JSON.stringify(merged))).toEqual(legacyFields);
+  });
+
   it("preserves unmanaged custom fields while replacing selected feature ids", () => {
     const customFields = mergeListingCustomFields(
       {
