@@ -11,7 +11,7 @@ import {
 } from "@/lib/listings/listing.repository";
 import { canEditListing, canReadListing } from "@/lib/policies/listing-policy";
 
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 const MAX_UPLOAD_PIXELS = 24_000_000;
 const MAX_OUTPUT_DIMENSION = 1600;
 const JPEG_QUALITY = 80;
