@@ -1,4 +1,4 @@
-const contactEmail = "info@example.ca";
+const contactEmail = "hello@unioncommunityhousing.org";
 
 export function HomeContactSection() {
   return (
