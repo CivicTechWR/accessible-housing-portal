@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ToggleIconButtonProps extends React.ComponentPropsWithoutRef<typeof Button> {
-  // We pass the icon component itself, not an element, so we can inject classes into it
   icon: React.ReactElement;
   isActive: boolean;
 }

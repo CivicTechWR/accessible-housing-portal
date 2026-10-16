@@ -8,7 +8,6 @@ import { ComponentProps } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
-// --- Interfaces ---
 export interface ListingFiltersProps {
   dynamicGroups: DynamicFilterGroup[];
   bedroomToggleProps: ToggleFieldProps;
@@ -19,8 +18,6 @@ export interface ListingFiltersProps {
   clearFilters: () => Promise<void>;
   className?: string;
 }
-
-// --- Component ---
 
 export function ListingFilters({
   bedroomToggleProps,

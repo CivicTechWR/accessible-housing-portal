@@ -123,13 +123,11 @@ export function selectDuplicateCustomFields(input: {
   return selected;
 }
 
-// propertyId is assigned after the copied property is inserted.
 export type DuplicateListingPlan = {
   property: NewProperty;
   listing: Omit<NewListing, "propertyId">;
 };
 
-// Keep duplication policy pure so it can be tested without a database.
 export function buildDuplicateListingPlan(input: {
   source: Listing;
   sourceProperty: Property;

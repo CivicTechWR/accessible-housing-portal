@@ -9,7 +9,6 @@ import {
 
 const sortOptions = ["newest", "oldest", "price_asc", "price_desc"];
 
-// 1. Define the raw parsers as a standalone object
 export const listingSearchParamsParsers = {
   location: parseAsString,
   minPrice: parseAsInteger,
@@ -21,5 +20,4 @@ export const listingSearchParamsParsers = {
   features: parseAsArrayOf(parseAsString).withDefault([]),
 };
 
-// 2. Pass the parsers into the server cache
 export const listingSearchParamsCache = createSearchParamsCache(listingSearchParamsParsers);

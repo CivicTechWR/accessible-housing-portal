@@ -44,7 +44,6 @@ export const listingFormSchema = z.object({
   status: z.enum(["draft", "published", "archived"]).default("draft"),
   unitNumber: optionalTrimmedStringToUndefined(),
 
-  // Property Info
   name: requiredTrimmedString("Property name is required"),
   street1: requiredTrimmedString("Street address is required"),
   street2: optionalTrimmedStringToUndefined(),
@@ -70,7 +69,6 @@ export const listingFormSchema = z.object({
   applicationPhone: optionalTrimmedStringToUndefined(),
   applicationInstructions: optionalTrimmedStringToUndefined(),
 
-  // Selected custom features (includes display data for preview/UI rendering)
   customFeatures: z.array(listingCustomFeatureSchema).default([]),
 });
 

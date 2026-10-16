@@ -367,12 +367,9 @@ function getProviderQuotaDeferral(error: unknown) {
 }
 
 /**
- * One logical email can span several job rows: each quota deferral completes
- * its row with the payload intact (see processEmailJob) and enqueues a fresh
- * replacement, and dead-lettering copies the payload while leaving the failed
- * source row behind. Redact every settled row for the logical email, not just
- * the finishing job's; the state filter keeps queued and retrying rows —
- * which still need the secret — untouched.
+ * Deferred originals and dead-lettered source rows keep the payload, so redact
+ * every settled row for the logical email along with the finishing job. Queued
+ * and retrying rows still need the secret, so the state filter skips them.
  */
 async function redactEmailJobSecret(boss: EmailWorkerBoss, job: Job<EmailJobData>) {
   if (!("secret" in job.data)) {
