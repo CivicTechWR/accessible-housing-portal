@@ -81,6 +81,42 @@ it("hides orphaned image existence from other partners", async () => {
   expect(await getListingImageByIdService(input)).toEqual(foreignResult);
 });
 
+it("disables image caching and rechecks public access after archival", async () => {
+  const image = {
+    id: "image",
+    listingId: "22222222-2222-4222-8222-222222222222",
+    uploadedByUserId: "owner",
+    imageUrl: null,
+    imageData: Buffer.from("image"),
+    contentType: "image/jpeg",
+    sizeBytes: 5,
+    listingStatus: "published" as const,
+    listingOwnerUserId: "owner",
+  };
+  const publicRequest = { imageId: image.id, actor: { userId: null, role: null } };
+  jest.mocked(findListingImageById).mockResolvedValueOnce(image);
+
+  expect(await getListingImageByIdService(publicRequest)).toMatchObject({
+    ok: true,
+    value: { kind: "binary", cacheControl: "private, no-store", data: image.imageData },
+  });
+
+  jest.mocked(findListingImageById).mockResolvedValue({ ...image, listingStatus: "archived" });
+  expect(await getListingImageByIdService(publicRequest)).toEqual({
+    ok: false,
+    error: { status: 404, message: "Image not found." },
+  });
+  expect(
+    await getListingImageByIdService({
+      imageId: image.id,
+      actor: { userId: "owner", role: "partner" },
+    }),
+  ).toMatchObject({
+    ok: true,
+    value: { kind: "binary", cacheControl: "private, no-store" },
+  });
+});
+
 it("rejects an image above 24 megapixels without storing it", async () => {
   expect(await uploadPng(6001, 4000)).toEqual({
     ok: false,
