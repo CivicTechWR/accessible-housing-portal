@@ -18,6 +18,10 @@ export function getSafeCallbackPath(
       return FALLBACK_REDIRECT_PATH;
     }
 
+    if (!parsed.pathname.startsWith("/") || parsed.pathname.startsWith("//")) {
+      return FALLBACK_REDIRECT_PATH;
+    }
+
     if (
       DISALLOWED_CALLBACK_PREFIXES.some(
         (prefix) => parsed.pathname === prefix || parsed.pathname.startsWith(`${prefix}/`),

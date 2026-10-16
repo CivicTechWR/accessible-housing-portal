@@ -242,6 +242,51 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     assert.equal(await context.internalAdapter.findVerificationValue(identifier), null);
   });
 
+  it("checks the query token when an empty body token accompanies a superseded invite", async () => {
+    const user = await createUser("invited");
+    const retiredToken = await createResetToken(user.id);
+    const liveToken = await createResetToken(user.id);
+    await db.insert(userInvites).values([
+      {
+        userId: user.id,
+        email: user.email,
+        tokenHash: hashOpaqueToken(retiredToken),
+        expiresAt: new Date(Date.now() - 60_000),
+      },
+      {
+        userId: user.id,
+        email: user.email,
+        tokenHash: hashOpaqueToken(liveToken),
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    ]);
+    const [credentialBefore] = await db.select().from(accounts).where(eq(accounts.userId, user.id));
+    const response = await POST(
+      request(
+        `reset-password?token=${retiredToken}`,
+        { token: "", newPassword: "Replacement-integration-password-416!" },
+        "192.0.2.230",
+      ),
+    );
+    assert.equal(response.status, 400);
+    const [credentialAfter] = await db.select().from(accounts).where(eq(accounts.userId, user.id));
+    assert.equal(credentialAfter?.password, credentialBefore?.password);
+    const context = await auth.$context;
+    assert.ok(await context.internalAdapter.findVerificationValue(`reset-password:${liveToken}`));
+
+    const acceptance = await POST(
+      request(
+        `reset-password?token=${liveToken}`,
+        { token: "", newPassword: password },
+        "192.0.2.231",
+      ),
+    );
+    assert.equal(acceptance.status, 200);
+    const [accepted] = await db.select().from(users).where(eq(users.id, user.id));
+    assert.equal(accepted?.status, "active");
+    assert.ok(accepted.inviteAcceptedAt);
+  });
+
   it("rejects an invited status update waiting behind invitation acceptance", async () => {
     const user = await createUser("invited");
     const token = crypto.randomUUID();

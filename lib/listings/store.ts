@@ -110,17 +110,11 @@ export function selectDuplicateCustomFields(input: {
   applicabilityByKey: Map<string, CustomListingFieldApplicability>;
   scope: Exclude<ListingDuplicateScope, "all">;
 }): ListingCustomFields {
-  const selected: ListingCustomFields = {};
-
-  for (const [key, value] of Object.entries(input.customFields)) {
-    const applicability = input.applicabilityByKey.get(key) ?? "unit";
-
-    if (applicability === input.scope) {
-      selected[key] = value;
-    }
-  }
-
-  return selected;
+  return Object.fromEntries(
+    Object.entries(input.customFields).filter(
+      ([key]) => (input.applicabilityByKey.get(key) ?? "unit") === input.scope,
+    ),
+  );
 }
 
 export type DuplicateListingPlan = {
@@ -225,7 +219,13 @@ function applyAccessibilityFeatureState(
 
   for (const feature of features) {
     if (feature.id && allowedKeys.has(feature.id)) {
-      customFields[feature.id] = true;
+      // Legacy keys such as __proto__ must remain data properties when saved.
+      Object.defineProperty(customFields, feature.id, {
+        value: true,
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
     }
   }
 }

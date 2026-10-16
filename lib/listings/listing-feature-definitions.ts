@@ -6,12 +6,12 @@ export type ListingFeatureDefinition = {
   sortOrder: number;
 };
 
-const LEGACY_FEATURE_ALIASES_BY_KEY: Record<string, string[]> = {
-  automated_building_doors: ["Automatic door opener", "Automatic door openers"],
-  elevator_in_building: ["Elevator access", "Elevator"],
-  lowered_kitchen_counters: ["Lowered counters"],
-  main_entrance_is_barrier_free: ["Barrier-free entry", "Ramp entry", "Step-free entry"],
-};
+const LEGACY_FEATURE_ALIASES_BY_KEY = new Map<string, string[]>([
+  ["automated_building_doors", ["Automatic door opener", "Automatic door openers"]],
+  ["elevator_in_building", ["Elevator access", "Elevator"]],
+  ["lowered_kitchen_counters", ["Lowered counters"]],
+  ["main_entrance_is_barrier_free", ["Barrier-free entry", "Ramp entry", "Step-free entry"]],
+]);
 
 export function normalizeListingFeatureToken(value: string) {
   return value
@@ -26,7 +26,7 @@ export function normalizeListingFeatureToken(value: string) {
 export function getListingFeatureSearchTerms(
   definition: Pick<ListingFeatureDefinition, "key" | "label">,
 ) {
-  return [definition.label, ...(LEGACY_FEATURE_ALIASES_BY_KEY[definition.key] ?? [])];
+  return [definition.label, ...(LEGACY_FEATURE_ALIASES_BY_KEY.get(definition.key) ?? [])];
 }
 
 export function buildListingFeatureDefinitionLookup(definitions: ListingFeatureDefinition[]) {
