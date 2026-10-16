@@ -37,20 +37,6 @@ export function SiteFooter() {
               ))}
             </ul>
           </div>
-          {/* <div className="space-y-3">
-          <h3 className="text-sm uppercase tracking-wider">Resources</h3>
-          <ul className="space-y-2 text-sm text-primary-foreground/80">
-            <li>
-              <span className="opacity-60">Mock Link</span>
-            </li>
-            <li>
-              <span className="opacity-60">Mock Link</span>
-            </li>
-            <li>
-              <span className="opacity-60">Mock Link</span>
-            </li>
-          </ul>
-        </div> */}
           <div className="space-y-3">
             <h3 className="text-sm uppercase tracking-wider">Civic Tech WR</h3>
             <ul className="space-y-2 text-sm text-primary-foreground/80">

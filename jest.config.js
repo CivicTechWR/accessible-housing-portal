@@ -11,7 +11,6 @@ module.exports = {
     ...tsJestTransformCfg,
   },
   moduleNameMapper: {
-    // This maps the "@" alias to the project root for Jest
     "^@/(.*)$": "<rootDir>/$1",
     "^server-only$": "<rootDir>/test/mocks/server-only.ts",
   },

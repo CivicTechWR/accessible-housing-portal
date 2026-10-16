@@ -241,9 +241,7 @@ describe("processEmailJob", () => {
       deferredForSeconds: 7,
       replacementJobId: "b3398ac1-43cf-4e54-92ee-9f7e2a4e7f6a",
     });
-    // The deferred original keeps its sealed secret: a crash-recovered retry
-    // must still be able to send or defer. The chain-wide redaction sweeps
-    // this row once the replacement reaches a terminal outcome.
+    // A crash-recovered retry of the deferred original still needs the secret.
     expect(executeSqlMock).not.toHaveBeenCalled();
   });
 
