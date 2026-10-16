@@ -157,7 +157,7 @@ A `failed` status means the job permanently exhausted provider submission attemp
 
 ### Image uploads fail
 
-Uploads are validated in `lib/images/image.service.ts`. Supported extensions are `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, and `.jxl`; processed output is stored as JPEG. Uploads must be at most 25 MB and 24 megapixels.
+Uploads are validated in `lib/images/image.service.ts`. Supported extensions are `.jpg`, `.jpeg`, `.png`, `.webp`, and `.avif`; processed output is stored as JPEG. Uploads must be at most 25 MB and 24 megapixels.
 
 ### Build-time database errors
 

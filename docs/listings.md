@@ -172,7 +172,7 @@ Upload behaviour in `lib/images/image.service.ts`:
 
 - requires an active admin or partner session
 - requires edit access to the target listing
-- accepts `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, and `.jxl`
+- accepts `.jpg`, `.jpeg`, `.png`, `.webp`, and `.avif`
 - rejects files over 25 MB
 - bounds the full multipart request to 26 MiB before parsing, including requests without `Content-Length`
 - rejects images over 24 megapixels

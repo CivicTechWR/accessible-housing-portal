@@ -25,8 +25,7 @@ const uploadImageResponseSchema = z.object({
   }),
 });
 
-const acceptedImageTypes =
-  ".jpg,.jpeg,.png,.webp,.avif,.jxl,image/jpeg,image/png,image/webp,image/avif,image/jxl";
+const acceptedImageTypes = ".jpg,.jpeg,.png,.webp,.avif,image/jpeg,image/png,image/webp,image/avif";
 
 export interface ListingFormImagesProps {
   control: ListingFormControl;
