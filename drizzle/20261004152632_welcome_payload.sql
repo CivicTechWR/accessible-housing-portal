@@ -1,0 +1,1 @@
+ALTER TABLE "email_delivery_attempts" ADD COLUMN "sealed_payload" text;

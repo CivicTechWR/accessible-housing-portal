@@ -1,0 +1,1 @@
+ALTER TYPE "public"."email_delivery_type" ADD VALUE 'account_welcome';

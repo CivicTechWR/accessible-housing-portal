@@ -121,6 +121,13 @@ export async function enqueueEmail(
     queueJobId: jobId,
   });
 
+  if (data.type === "account_invite" && data.welcomeAttempt) {
+    await recordEmailDeliveryAttemptQueueJob(tx, {
+      attemptId: data.welcomeAttempt.id,
+      queueJobId: jobId,
+    });
+  }
+
   return await boss.send(EMAIL_QUEUE, data, {
     db: fromDrizzle(
       {
