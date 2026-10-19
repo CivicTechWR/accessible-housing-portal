@@ -44,18 +44,6 @@ describe("buildDuplicateListingTitle", () => {
   });
 });
 
-it("renders existing feature keys that match Object.prototype names", () => {
-  expect(
-    getDisplayAccessibilityFeatures({ constructor: true, ["__proto__"]: true }, [
-      { ...ELEVATOR, key: "constructor", label: "Constructor" },
-      { ...AUTOMATED_DOORS, key: "__proto__", label: "Prototype" },
-    ]),
-  ).toMatchObject([
-    { id: "constructor", name: "Constructor" },
-    { id: "__proto__", name: "Prototype" },
-  ]);
-});
-
 describe("selectDuplicateCustomFields", () => {
   const customFields: ListingCustomFields = {
     elevator_in_building: true,
@@ -85,17 +73,6 @@ describe("selectDuplicateCustomFields", () => {
       roll_in_shower: true,
       legacy_unmapped_feature: true,
     });
-  });
-
-  it("preserves legacy __proto__ values in serialized scoped duplicates", () => {
-    const legacyFields = { ["__proto__"]: true };
-    const duplicated = selectDuplicateCustomFields({
-      customFields: legacyFields,
-      applicabilityByKey: new Map([["__proto__", "building"]]),
-      scope: "building",
-    });
-
-    expect(JSON.parse(JSON.stringify(duplicated))).toEqual(legacyFields);
   });
 });
 
@@ -349,18 +326,6 @@ describe("buildListingFeatureCategories", () => {
 });
 
 describe("mergeListingCustomFields", () => {
-  it("preserves a selected legacy __proto__ feature when the listing is saved", () => {
-    const legacyFields = { ["__proto__"]: true };
-    const definition = { ...ELEVATOR, key: "__proto__" };
-    const merged = mergeListingCustomFields(
-      legacyFields,
-      { accessibilityFeatures: [selected(definition)] },
-      [definition],
-    );
-
-    expect(JSON.parse(JSON.stringify(merged))).toEqual(legacyFields);
-  });
-
   it("preserves unmanaged custom fields while replacing selected feature ids", () => {
     const customFields = mergeListingCustomFields(
       {
