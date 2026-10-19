@@ -172,14 +172,15 @@ Upload behaviour in `lib/images/image.service.ts`:
 
 - requires an active admin or partner session
 - requires edit access to the target listing
-- accepts `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, and `.jxl`
+- accepts `.jpg`, `.jpeg`, `.png`, `.webp`, and `.avif`
 - rejects files over 25 MB
+- bounds the full multipart request to 26 MiB before parsing, including requests without `Content-Length`
 - rejects images over 24 megapixels
 - normalizes output to JPEG
 - resizes within 1600 x 1600 without enlargement
 - stores processed bytes in `listing_images.image_data`
 
-Public published images use long immutable cache headers. Draft/private images use short private caching.
+Published images use `public, max-age=86400`, so browsers and CDNs may keep showing an image for up to a day after its listing is archived. Draft and private images use `private, max-age=60`, which keeps them out of shared caches.
 
 ## Built-In And Custom Field Storage
 

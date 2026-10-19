@@ -15,7 +15,7 @@ export function canRetainOwnAdminAccess(input: {
   nextRole: UserRole;
   nextStatus: UserStatus;
 }) {
-  if (input.actorUserId !== input.targetUserId) {
+  if (input.actorUserId.toLowerCase() !== input.targetUserId.toLowerCase()) {
     return true;
   }
 
@@ -23,5 +23,5 @@ export function canRetainOwnAdminAccess(input: {
 }
 
 export function canDeactivateAccount(input: { actorUserId: string; targetUserId: string }) {
-  return input.actorUserId !== input.targetUserId;
+  return input.actorUserId.toLowerCase() !== input.targetUserId.toLowerCase();
 }

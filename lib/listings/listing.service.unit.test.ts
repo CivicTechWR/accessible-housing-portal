@@ -10,6 +10,7 @@ import {
   type ListingRecord,
 } from "@/lib/listings/listing.repository";
 import {
+  archiveListingByIdService,
   duplicateListingByIdService,
   getListingByIdService,
   getListingEditorByIdService,
@@ -148,12 +149,31 @@ describe("duplicateListingByIdService", () => {
     expect(result).toEqual({
       ok: false,
       error: {
-        code: "forbidden",
-        message: "Forbidden",
+        code: "not_found",
+        message: "Listing not found",
       },
     });
     expect(duplicateListingGraphMock).not.toHaveBeenCalled();
   });
+});
+
+it.each([
+  { name: "editor", run: () => getListingEditorByIdService(LISTING_ID) },
+  {
+    name: "update",
+    run: () => patchListingByIdService({ listingId: LISTING_ID, payload: { title: "Updated" } }),
+  },
+  { name: "archive", run: () => archiveListingByIdService(LISTING_ID) },
+])("hides foreign listing existence in $name", async ({ run }) => {
+  mockPartnerSession(OTHER_USER_ID);
+  findListingRecordByIdMock.mockResolvedValueOnce(archivedListing).mockResolvedValueOnce(null);
+
+  const foreignResult = await run();
+  expect(foreignResult).toEqual({
+    ok: false,
+    error: { code: "not_found", message: "Listing not found" },
+  });
+  expect(await run()).toEqual(foreignResult);
 });
 
 describe("listing edits and reads", () => {

@@ -307,7 +307,7 @@ export async function getListingEditorByIdService(
       actorResult.value.actor,
     )
   ) {
-    return fail("forbidden", "Forbidden");
+    return fail("not_found", "Listing not found");
   }
 
   const data = await buildListingEditorData(listing);
@@ -366,7 +366,7 @@ export async function duplicateListingByIdService(
       actorResult.value.actor,
     )
   ) {
-    return fail("forbidden", "Forbidden");
+    return fail("not_found", "Listing not found");
   }
 
   if (listing.status === "archived") {
@@ -571,7 +571,7 @@ async function updateListingById<TPayload extends ListingMutationInput>(
       actorResult.value.actor,
     )
   ) {
-    return fail("forbidden", "Forbidden");
+    return fail("not_found", "Listing not found");
   }
 
   const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
@@ -690,7 +690,7 @@ export async function archiveListingByIdService(
       actorResult.value.actor,
     )
   ) {
-    return fail("forbidden", "Forbidden");
+    return fail("not_found", "Listing not found");
   }
 
   await archiveListing({

@@ -11,15 +11,15 @@ import {
 } from "@/lib/listings/listing.repository";
 import { canEditListing, canReadListing } from "@/lib/policies/listing-policy";
 
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 const MAX_UPLOAD_PIXELS = 24_000_000;
 const MAX_OUTPUT_DIMENSION = 1600;
 const JPEG_QUALITY = 80;
 
 const listingIdSchema = z.uuid("Invalid listing id.");
 
-const sharpSupportedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
-const supportedExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif", ".jxl"]);
+const supportedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+const supportedExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
 
 type ProcessedImage = {
   contentType: "image/jpeg";
@@ -111,11 +111,11 @@ export async function uploadListingImageService(input: {
       },
     )
   ) {
-    return fail(403, "Forbidden");
+    return fail(404, "Listing not found.");
   }
 
   const fileBuffer = Buffer.from(await input.file.arrayBuffer());
-  const processedImageResult = await processUploadedImage(input.file, fileBuffer);
+  const processedImageResult = await processSharpCompatibleImage(fileBuffer);
 
   if (!processedImageResult.ok) {
     return processedImageResult;
@@ -172,7 +172,7 @@ export async function getListingImageByIdService(input: {
     !input.actor.userId ||
     (input.actor.role !== "admin" && input.actor.userId !== image.uploadedByUserId)
   ) {
-    return fail(401, "Unauthorized");
+    return fail(404, "Image not found.");
   }
 
   if (image.imageUrl && !image.imageData) {
@@ -191,10 +191,9 @@ export async function getListingImageByIdService(input: {
     data: image.imageData,
     contentType: image.contentType,
     sizeBytes: image.sizeBytes,
+    // Shared caches may keep a published image for a day after its listing is archived.
     cacheControl:
-      image.listingStatus === "published"
-        ? "public, max-age=31536000, immutable"
-        : "private, max-age=60",
+      image.listingStatus === "published" ? "public, max-age=86400" : "private, max-age=60",
   });
 }
 
@@ -208,11 +207,10 @@ function validateUploadedFile(file: File): ImageServiceResult<true> {
     normalizedFileName.endsWith(extension),
   );
 
-  const isSupportedMimeType =
-    sharpSupportedMimeTypes.has(file.type) || file.type === "image/jxl" || file.type === "";
+  const isSupportedMimeType = supportedMimeTypes.has(file.type) || file.type === "";
 
   if (!matchingExtension || !isSupportedMimeType) {
-    return fail(415, "Only jpg, png, webp, avif, and jxl images are supported.");
+    return fail(415, "Only jpg, png, webp, and avif images are supported.");
   }
 
   return succeed(true);
@@ -224,16 +222,6 @@ function parseListingId(rawListingId: string): ImageServiceResult<string> {
   return parsedListingId.success
     ? succeed(parsedListingId.data)
     : fail(400, parsedListingId.error.issues[0]?.message ?? "Invalid listing id.");
-}
-
-async function processUploadedImage(
-  file: File,
-  fileBuffer: Buffer,
-): Promise<ImageServiceResult<ProcessedImage>> {
-  const normalizedFileName = file.name.toLowerCase();
-  const isJxl = file.type === "image/jxl" || normalizedFileName.endsWith(".jxl");
-
-  return isJxl ? processJxlImage(fileBuffer) : processSharpCompatibleImage(fileBuffer);
 }
 
 async function processSharpCompatibleImage(
@@ -285,57 +273,6 @@ async function processSharpCompatibleImage(
     }
 
     return fail(400, "Unable to process uploaded image.");
-  }
-}
-
-async function processJxlImage(fileBuffer: Buffer): Promise<ImageServiceResult<ProcessedImage>> {
-  try {
-    const { decode } = await import("@jsquash/jxl");
-    const decodedImage = await decode(Uint8Array.from(fileBuffer).buffer);
-    const dimensionValidationResult = validateImageDimensions(
-      decodedImage.width,
-      decodedImage.height,
-    );
-
-    if (!dimensionValidationResult.ok) {
-      return dimensionValidationResult;
-    }
-
-    const rawImage = Buffer.from(
-      decodedImage.data.buffer,
-      decodedImage.data.byteOffset,
-      decodedImage.data.byteLength,
-    );
-    const { data, info } = await sharp(rawImage, {
-      raw: {
-        width: decodedImage.width,
-        height: decodedImage.height,
-        channels: 4,
-      },
-      limitInputPixels: MAX_UPLOAD_PIXELS,
-    })
-      .flatten({ background: "#ffffff" })
-      .resize({
-        width: MAX_OUTPUT_DIMENSION,
-        height: MAX_OUTPUT_DIMENSION,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .jpeg({
-        quality: JPEG_QUALITY,
-        mozjpeg: true,
-      })
-      .toBuffer({ resolveWithObject: true });
-
-    return succeed({
-      contentType: "image/jpeg",
-      data,
-      width: info.width,
-      height: info.height,
-      sizeBytes: data.length,
-    });
-  } catch {
-    return fail(415, "JPEG XL uploads are not supported by this server build.");
   }
 }
 

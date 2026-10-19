@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { customListingFieldKeySchema } from "@/shared/schemas/custom-listing-fields";
 
 import type {
   BulkEditPayload,
@@ -7,14 +8,8 @@ import type {
 } from "./custom-listing-fields-dashboard-utils";
 import { getCanonicalCategoryValue, nullableTrim } from "./custom-listing-fields-dashboard-utils";
 
-const customFieldKeySchema = z
-  .string()
-  .trim()
-  .min(1, "Key is required.")
-  .regex(/^[a-z0-9_-]+$/, "Use lowercase letters, numbers, underscores, or hyphens.");
-
 export const createFieldDialogSchema = z.object({
-  key: customFieldKeySchema,
+  key: customListingFieldKeySchema,
   label: z.string().trim().min(1, "Label is required."),
   description: z.string(),
   category: z.string().trim().min(1, "Category is required."),
