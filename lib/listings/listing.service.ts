@@ -535,15 +535,14 @@ async function updateListingById<TPayload extends ListingMutationInput>(
     input.payload,
     publicBooleanDefinitions,
   );
-  const primaryUnit = input.payload.units?.[0];
+  const unit = input.payload.unit;
   const nextStatus = input.payload.status ?? listing.status;
 
   const statusTimestamps = resolveListingStatusTimestamps(nextStatus, {
     publishedAt: listing.publishedAt,
     archivedAt: listing.archivedAt,
   });
-  const nextPrimaryUnitRentCents = dollarsToCents(primaryUnit?.rent ?? undefined);
-  const monthlyRentCents = nextPrimaryUnitRentCents ?? listing.monthlyRentCents;
+  const monthlyRentCents = dollarsToCents(unit?.rent) ?? listing.monthlyRentCents;
 
   await updateListingGraph({
     actorUserId: actorResult.value.actor.userId,
@@ -577,11 +576,11 @@ async function updateListingById<TPayload extends ListingMutationInput>(
       unitNumber:
         input.payload.unitNumber === undefined ? listing.unitNumber : input.payload.unitNumber,
       buildingType: input.payload.buildingType ?? listing.buildingType,
-      bedrooms: primaryUnit?.bedrooms ?? listing.bedrooms,
-      bathrooms: primaryUnit?.bathrooms ?? listing.bathrooms,
-      squareFeet: preserveWhenUndefined(primaryUnit?.sqft, listing.squareFeet),
+      bedrooms: unit?.bedrooms ?? listing.bedrooms,
+      bathrooms: unit?.bathrooms ?? listing.bathrooms,
+      squareFeet: preserveWhenUndefined(unit?.sqft, listing.squareFeet),
       monthlyRentCents,
-      availableOn: preserveWhenUndefined(primaryUnit?.availableDate, listing.availableOn),
+      availableOn: preserveWhenUndefined(unit?.availableDate, listing.availableOn),
       leaseTermMonths: input.payload.leaseTermMonths ?? listing.leaseTermMonths,
       heatingType: preserveWhenUndefined(input.payload.heatingType, listing.heatingType),
       utilitiesIncluded: input.payload.utilitiesIncluded ?? listing.utilitiesIncluded,

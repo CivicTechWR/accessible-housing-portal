@@ -43,7 +43,7 @@ Error responses use:
 
 Listing query parameters are documented in [Listings](listings.md).
 
-Listing replacement and partial-update payloads submit selected accessibility features as `accessibilityFeatures`. Each submitted feature must include the field-definition `id`; storage persists selected public boolean field definitions as boolean keys in `listings.custom_fields`.
+Listing update payloads describe one unit through `unit` and submit selected accessibility features as `accessibilityFeatureIds`, a list of field-definition keys. Storage persists selected public boolean field definitions as boolean keys in `listings.custom_fields`.
 
 Replacement and partial-update payloads accept `applicationUrl` as a valid HTTP(S) URL, `applicationEmail` as an email address, and `applicationPhone` and `applicationInstructions` as non-empty text. These application fields are separate from the property's general `contact`. Email addresses are trimmed and lowercased; phone numbers and instructions are trimmed, preserving line breaks within instructions. Details and editor responses include the saved application fields when present.
 
@@ -53,7 +53,7 @@ Replacement payloads require `depositInfo` as trimmed text or `null`. Partial-up
 
 Replacement and partial-update payloads accept `null` to clear an application field. Omitted application email, phone, or instructions preserve the stored value, including on `PUT` for clients that do not send these optional fields. The listing form sends explicit values or `null` for all application fields when saving.
 
-Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighbourhood`, `address.latitude`, `address.longitude`, `units[].sqft`, and `units[].availableDate`, as well as the existing nullable `unitNumber`, `heatingType`, `depositInfo`, `applicationUrl`, `applicationEmail`, `applicationPhone`, and `applicationInstructions` fields. Full-form `PUT` payloads send every form-owned nullable field as a concrete value or `null`; server-managed neighbourhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
+Nullable update fields use a three-state contract: omission from `PATCH` preserves the stored value, a concrete value replaces it, and explicit `null` clears it. This applies to `description`, `address.street2`, `address.neighbourhood`, `address.latitude`, `address.longitude`, `unit.sqft`, and `unit.availableDate`, as well as the existing nullable `unitNumber`, `heatingType`, `depositInfo`, `applicationUrl`, `applicationEmail`, `applicationPhone`, and `applicationInstructions` fields. Full-form `PUT` payloads send every form-owned nullable field as a concrete value or `null`; server-managed neighbourhood and coordinate fields may be omitted and are preserved. Publishing without an availability date retains the existing available-today default.
 
 ## Image Uploads
 

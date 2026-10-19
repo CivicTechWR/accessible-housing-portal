@@ -31,10 +31,6 @@ const AUTOMATED_DOORS = {
   sortOrder: 2,
 };
 
-function selected({ key, label, description }: typeof ELEVATOR) {
-  return { id: key, name: label, description };
-}
-
 describe("buildDuplicateListingTitle", () => {
   it("prefixes titled listings and keeps untitled drafts untitled", () => {
     expect(buildDuplicateListingTitle("Sunny 2BR near uptown")).toBe(
@@ -321,7 +317,7 @@ describe("mergeListingCustomFields", () => {
         elevator_in_building: true,
         unrelated_boolean: true,
       } satisfies ListingCustomFields,
-      { accessibilityFeatures: [selected(AUTOMATED_DOORS)] },
+      { accessibilityFeatureIds: [AUTOMATED_DOORS.key] },
       [ELEVATOR, AUTOMATED_DOORS],
     );
 

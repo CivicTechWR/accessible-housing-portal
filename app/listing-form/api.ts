@@ -31,21 +31,15 @@ export function mapListingFormToReplaceListingInput(
       province: data.province,
       postalCode: data.postalCode,
     },
-    units: [
-      {
-        bedrooms: data.bedrooms,
-        bathrooms: data.bathrooms,
-        sqft: data.squareFeet ?? null,
-        rent: Math.round(data.monthlyRentCents / 100),
-        availableDate:
-          normalizeOptionalString(data.availableOn) ?? new Date().toISOString().slice(0, 10),
-      },
-    ],
-    accessibilityFeatures: data.customFeatures.map((feature) => ({
-      id: feature.id,
-      name: feature.name,
-      description: normalizeOptionalString(feature.description) ?? feature.name,
-    })),
+    unit: {
+      bedrooms: data.bedrooms,
+      bathrooms: data.bathrooms,
+      sqft: data.squareFeet ?? null,
+      rent: Math.round(data.monthlyRentCents / 100),
+      availableDate:
+        normalizeOptionalString(data.availableOn) ?? new Date().toISOString().slice(0, 10),
+    },
+    accessibilityFeatureIds: data.customFeatures.map((feature) => feature.id),
     images: data.images.map((image) => ({
       id: image.id,
       caption: normalizeOptionalString(image.caption),
@@ -82,7 +76,7 @@ export function getPendingAutosaveNullableFieldClearIntent(
       normalizeOptionalString(data.street2) === undefined &&
       hasConcreteValue(lastAutosavedPayload?.address?.street2),
     squareFeet:
-      !Number.isFinite(data.squareFeet) && hasConcreteValue(lastAutosavedPayload?.units?.[0]?.sqft),
+      !Number.isFinite(data.squareFeet) && hasConcreteValue(lastAutosavedPayload?.unit?.sqft),
   };
 }
 
@@ -94,7 +88,7 @@ export function mapListingFormToAutosavePatchInput(
   const patch: PatchListingInput = {};
   const address: NonNullable<PatchListingInput["address"]> = {};
   const contact: NonNullable<PatchListingInput["contact"]> = {};
-  const unit: NonNullable<PatchListingInput["units"]>[number] = {};
+  const unit: NonNullable<PatchListingInput["unit"]> = {};
 
   assignTrimmedString(patch, "title", data.title);
   assignTrimmedString(patch, "name", data.name);
@@ -190,15 +184,11 @@ export function mapListingFormToAutosavePatchInput(
   }
 
   if (Object.keys(unit).length > 0) {
-    patch.units = [unit];
+    patch.unit = unit;
   }
 
   patch.utilitiesIncluded = data.utilitiesIncluded ?? [];
-  patch.accessibilityFeatures = (data.customFeatures ?? []).map((feature) => ({
-    id: feature.id,
-    name: feature.name,
-    description: normalizeOptionalString(feature.description) ?? feature.name,
-  }));
+  patch.accessibilityFeatureIds = (data.customFeatures ?? []).map((feature) => feature.id);
   patch.images = (data.images ?? []).map((image) => ({
     id: image.id,
     caption: normalizeOptionalString(image.caption),

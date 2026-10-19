@@ -30,8 +30,8 @@ export function mergeListingCustomFields(
 ): ListingCustomFields {
   const next = { ...existing };
 
-  if (input.accessibilityFeatures !== undefined) {
-    applyAccessibilityFeatureState(next, input.accessibilityFeatures, definitions);
+  if (input.accessibilityFeatureIds !== undefined) {
+    applyAccessibilityFeatureState(next, input.accessibilityFeatureIds, definitions);
   }
 
   return next;
@@ -193,7 +193,7 @@ export function getListingSquareFeet(squareFeet: number | null) {
 
 function applyAccessibilityFeatureState(
   customFields: ListingCustomFields,
-  features: ListingMutationInput["accessibilityFeatures"],
+  featureIds: string[],
   definitions: ListingFeatureDefinition[],
 ) {
   const allowedKeys = new Set(definitions.map((definition) => definition.key));
@@ -202,13 +202,9 @@ function applyAccessibilityFeatureState(
     delete customFields[definition.key];
   }
 
-  if (!features) {
-    return;
-  }
-
-  for (const feature of features) {
-    if (feature.id && allowedKeys.has(feature.id)) {
-      customFields[feature.id] = true;
+  for (const featureId of featureIds) {
+    if (allowedKeys.has(featureId)) {
+      customFields[featureId] = true;
     }
   }
 }

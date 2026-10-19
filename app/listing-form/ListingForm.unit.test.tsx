@@ -114,7 +114,7 @@ describe("ListingForm hydration", () => {
       let response: unknown;
       if (init?.method === "PATCH") {
         const patch = patchListingSchema.parse(JSON.parse(String(init.body)));
-        selected = patch.accessibilityFeatures?.some((item) => item.id === feature.id) ?? selected;
+        selected = patch.accessibilityFeatureIds?.includes(feature.id) ?? selected;
         savedSelections.push(selected);
         response = { data: { id: LISTING_ID } };
       } else if (url.includes("/editor")) {

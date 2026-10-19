@@ -28,11 +28,6 @@ const privateKey = `${fieldPrefix}_private`;
 const fieldKeys = [nonFilterableKey, filterableKey, privateKey];
 // Labels differ from keys so a lookup by name instead of id cannot pass.
 const labelFor = (key: string) => `Label for ${key}`;
-const selectedFeatures = fieldKeys.map((id) => ({
-  id,
-  name: labelFor(id),
-  description: labelFor(id),
-}));
 
 const payload = replaceListingSchema.parse({
   title: fieldPrefix,
@@ -45,8 +40,8 @@ const payload = replaceListingSchema.parse({
     province: "ON",
     postalCode: "N2L 3G1",
   },
-  units: [{ bedrooms: 1, bathrooms: 1, sqft: null, rent: 1200, availableDate: null }],
-  accessibilityFeatures: selectedFeatures,
+  unit: { bedrooms: 1, bathrooms: 1, sqft: null, rent: 1200, availableDate: null },
+  accessibilityFeatureIds: fieldKeys,
   images: [],
   contact: {
     name: "Test Partner",
@@ -182,12 +177,12 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
     const draft = await createDraftListingService();
     assert.ok(draft.ok);
     const draftId = draft.value.data.id;
-    const patch = (accessibilityFeatures: typeof selectedFeatures) =>
+    const patch = (accessibilityFeatureIds: string[]) =>
       patchListingByIdService({
         listingId: draftId,
-        payload: { accessibilityFeatures },
+        payload: { accessibilityFeatureIds },
       });
-    assert.ok((await patch(selectedFeatures)).ok);
+    assert.ok((await patch(fieldKeys)).ok);
     const reloaded = await getListingEditorByIdService(draftId);
     assert.ok(reloaded.ok);
     assert.deepEqual(ids(reloaded.value.data.customFeatures), publicKeys);
