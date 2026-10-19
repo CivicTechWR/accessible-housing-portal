@@ -180,7 +180,7 @@ Upload behaviour in `lib/images/image.service.ts`:
 - resizes within 1600 x 1600 without enlargement
 - stores processed bytes in `listing_images.image_data`
 
-Image responses use `private, no-store` so each request checks the current listing access. Local image optimization is disabled because the Next.js optimizer can retain image bytes after a listing becomes private. Uploaded images render directly, while the configured remote image sources can still use optimization.
+Published images use `public, max-age=86400`, so browsers and CDNs may keep showing an image for up to a day after its listing is archived. Draft and private images use `private, max-age=60`, which keeps them out of shared caches.
 
 ## Built-In And Custom Field Storage
 

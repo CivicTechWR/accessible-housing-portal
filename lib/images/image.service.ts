@@ -191,7 +191,9 @@ export async function getListingImageByIdService(input: {
     data: image.imageData,
     contentType: image.contentType,
     sizeBytes: image.sizeBytes,
-    cacheControl: "private, no-store",
+    // Shared caches may keep a published image for a day after its listing is archived.
+    cacheControl:
+      image.listingStatus === "published" ? "public, max-age=86400" : "private, max-age=60",
   });
 }
 

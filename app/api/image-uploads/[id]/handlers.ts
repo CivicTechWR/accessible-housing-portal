@@ -34,9 +34,7 @@ export async function getImageUploadByIdHandler(_request: Request, context: Rout
   }
 
   if (result.value.kind === "redirect") {
-    return NextResponse.redirect(result.value.url, {
-      headers: { "cache-control": "private, no-store" },
-    });
+    return NextResponse.redirect(result.value.url);
   }
 
   return new Response(new Uint8Array(result.value.data), {

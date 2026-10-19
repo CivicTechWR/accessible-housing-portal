@@ -81,7 +81,7 @@ it("hides orphaned image existence from other partners", async () => {
   expect(await getListingImageByIdService(input)).toEqual(foreignResult);
 });
 
-it("disables image caching and rechecks public access after archival", async () => {
+it("shares published images with caches and keeps archived images private", async () => {
   const image = {
     id: "image",
     listingId: "22222222-2222-4222-8222-222222222222",
@@ -98,7 +98,7 @@ it("disables image caching and rechecks public access after archival", async () 
 
   expect(await getListingImageByIdService(publicRequest)).toMatchObject({
     ok: true,
-    value: { kind: "binary", cacheControl: "private, no-store", data: image.imageData },
+    value: { kind: "binary", cacheControl: "public, max-age=86400", data: image.imageData },
   });
 
   jest.mocked(findListingImageById).mockResolvedValue({ ...image, listingStatus: "archived" });
@@ -113,7 +113,7 @@ it("disables image caching and rechecks public access after archival", async () 
     }),
   ).toMatchObject({
     ok: true,
-    value: { kind: "binary", cacheControl: "private, no-store" },
+    value: { kind: "binary", cacheControl: "private, max-age=60" },
   });
 });
 

@@ -9,8 +9,6 @@ const nextConfig: NextConfig = {
   // being bundled, so the email queue worker and enqueuers share one runtime.
   serverExternalPackages: ["pg-boss"],
   images: {
-    // Uploaded images require fresh authorization and must bypass the optimizer cache.
-    localPatterns: [],
     remotePatterns: [
       {
         protocol: "https",
