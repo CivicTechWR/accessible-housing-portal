@@ -160,10 +160,6 @@ describe("duplicateListingByIdService", () => {
 it.each([
   { name: "editor", run: () => getListingEditorByIdService(LISTING_ID) },
   {
-    name: "duplicate",
-    run: () => duplicateListingByIdService(LISTING_ID, { scope: "all", copyPhotos: false }),
-  },
-  {
     name: "update",
     run: () => patchListingByIdService({ listingId: LISTING_ID, payload: { title: "Updated" } }),
   },

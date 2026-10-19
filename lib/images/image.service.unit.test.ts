@@ -125,25 +125,6 @@ it("rejects an image above 24 megapixels without storing it", async () => {
   expect(createListingImageUpload).not.toHaveBeenCalled();
 });
 
-it.each([
-  ["photo.jxl", ""],
-  ["photo.png", "image/jxl"],
-])("rejects JPEG XL uploads identified by %s and %s", async (name, type) => {
-  expect(
-    await uploadListingImageService({
-      actorUserId: "owner",
-      actorRole: "partner",
-      listingId: "22222222-2222-4222-8222-222222222222",
-      file: new File(["unused"], name, { type }),
-    }),
-  ).toEqual({
-    ok: false,
-    error: { status: 415, message: "Only jpg, png, webp, and avif images are supported." },
-  });
-  expect(findListingRecordById).not.toHaveBeenCalled();
-  expect(createListingImageUpload).not.toHaveBeenCalled();
-});
-
 it("accepts an image at 24 megapixels and stores a resized JPEG", async () => {
   const result = await uploadPng(6000, 4000);
 

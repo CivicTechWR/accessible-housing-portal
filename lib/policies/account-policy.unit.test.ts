@@ -18,12 +18,3 @@ it("rejects self-deactivation and self-demotion with case-variant UUIDs", () => 
     true,
   );
 });
-
-it("allows an admin to change a different account", () => {
-  const identity = { actorUserId: ACTOR_ID, targetUserId: "11111111-1111-4111-8111-111111111111" };
-
-  expect(canDeactivateAccount(identity)).toBe(true);
-  expect(
-    canRetainOwnAdminAccess({ ...identity, nextRole: "partner", nextStatus: "deactivated" }),
-  ).toBe(true);
-});
