@@ -1,15 +1,10 @@
 import { route, routeOperation } from "next-rest-framework";
 
 import { errorMessageSchema } from "@/shared/schemas/common";
-import {
-  createListingResponseSchema,
-  createListingSchema,
-  listingListResponseSchema,
-  listingQuerySchema,
-} from "@/shared/schemas/listings";
-import { createListingHandler, getListingsHandler } from "./handlers";
+import { listingListResponseSchema, listingQuerySchema } from "@/shared/schemas/listings";
+import { getListingsHandler } from "./handlers";
 
-export const { GET, POST } = route({
+export const { GET } = route({
   getListings: routeOperation({ method: "GET" })
     .input({ query: listingQuerySchema })
     .outputs([
@@ -17,14 +12,4 @@ export const { GET, POST } = route({
       { status: 401, contentType: "application/json", body: errorMessageSchema },
     ])
     .handler(getListingsHandler),
-
-  createListing: routeOperation({ method: "POST" })
-    .input({ contentType: "application/json", body: createListingSchema })
-    .outputs([
-      { status: 201, contentType: "application/json", body: createListingResponseSchema },
-      { status: 401, contentType: "application/json", body: errorMessageSchema },
-      { status: 403, contentType: "application/json", body: errorMessageSchema },
-      { status: 400, contentType: "application/json", body: errorMessageSchema },
-    ])
-    .handler(createListingHandler),
 });

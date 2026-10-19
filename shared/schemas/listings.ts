@@ -64,14 +64,9 @@ export const listingQuerySchema = z.object({
     .string()
     .regex(/^\d+(\.\d{1,2})?$/)
     .optional(),
-  maxRent: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/)
-    .optional(),
   moveInDate: optionalTrimmedString(),
   sort: z.enum(["newest", "oldest", "price_asc", "price_desc"]).optional(),
   features: z.union([z.string(), z.array(z.string())]).optional(),
-  search: optionalTrimmedString(),
 });
 
 export const listingFeatureSchema = z.object({
@@ -267,45 +262,27 @@ const listingIdDataSchema = z.object({
   id: listingIdParamSchema,
 });
 
-const listingPayloadSchema = z.object({
+export const replaceListingSchema = z.object({
   title: nonEmptyString,
   name: nonEmptyString,
-  description: optionalTrimmedString(),
-  address: listingAddressSchema,
-  units: z.tuple([listingUnitSchema], listingUnitSchema),
+  description: nullableListingDescriptionSchema,
+  address: listingAddressReplacementSchema,
+  units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
   accessibilityFeatures: z.array(listingInputFeatureSchema),
-  applicationUrl: z.httpUrl({ normalize: true }).optional(),
-  applicationEmail: trimmedEmailString("Invalid application email.").optional(),
-  applicationPhone: nonEmptyString.optional(),
-  applicationInstructions: nonEmptyString.optional(),
+  applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
+  applicationEmail: trimmedEmailString("Invalid application email.").nullable().optional(),
+  applicationPhone: nonEmptyString.nullable().optional(),
+  applicationInstructions: nonEmptyString.nullable().optional(),
   images: z.array(listingUploadedImageInputSchema),
   contact: listingContactMutationSchema,
   status: listingStatusSchema,
-  unitNumber: nonEmptyString.optional(),
-  imageUploadSessionId: z.uuid("Invalid image upload session id.").optional(),
+  unitNumber: z.union([nonEmptyString, z.null()]),
   buildingType: listingBuildingTypeSchema,
   leaseTermMonths: listingLeaseTermMonthsSchema,
-  heatingType: heatingTypeSchema.optional(),
+  heatingType: heatingTypeSchema.nullable(),
   utilitiesIncluded: z.array(utilityIncludedSchema),
-  depositInfo: optionalTrimmedString(),
+  depositInfo: z.union([nonEmptyString, z.null()]),
 });
-
-export const createListingSchema = listingPayloadSchema;
-
-export const replaceListingSchema = listingPayloadSchema
-  .omit({ imageUploadSessionId: true })
-  .extend({
-    description: nullableListingDescriptionSchema,
-    address: listingAddressReplacementSchema,
-    units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
-    unitNumber: z.union([nonEmptyString, z.null()]),
-    heatingType: heatingTypeSchema.nullable(),
-    depositInfo: z.union([nonEmptyString, z.null()]),
-    applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
-    applicationEmail: trimmedEmailString("Invalid application email.").nullable().optional(),
-    applicationPhone: nonEmptyString.nullable().optional(),
-    applicationInstructions: nonEmptyString.nullable().optional(),
-  });
 
 export const patchListingSchema = patchListingPayloadSchema;
 
@@ -357,13 +334,6 @@ export const listingEditorResponseSchema = z.object({
   }),
 });
 
-export const createListingResponseSchema = z.object({
-  message: z.string(),
-  data: listingPayloadSchema.extend({
-    id: listingIdParamSchema,
-  }),
-});
-
 export const createDraftListingResponseSchema = z.object({
   message: z.string(),
   data: listingIdDataSchema,
@@ -403,11 +373,9 @@ export type ListingListResponse = z.infer<typeof listingListResponseSchema>;
 export type ListingByIdResponse = z.infer<typeof listingByIdResponseSchema>;
 export type ListingEditorData = z.infer<typeof listingEditorDataSchema>;
 export type ListingEditorResponse = z.infer<typeof listingEditorResponseSchema>;
-export type CreateListingInput = z.infer<typeof createListingSchema>;
 export type ReplaceListingInput = z.infer<typeof replaceListingSchema>;
 export type PatchListingInput = z.infer<typeof patchListingSchema>;
 export type ListingMutationInput = ReplaceListingInput | PatchListingInput;
-export type CreateListingResponse = z.infer<typeof createListingResponseSchema>;
 export type CreateDraftListingResponse = z.infer<typeof createDraftListingResponseSchema>;
 export type DuplicateListingInput = z.infer<typeof duplicateListingSchema>;
 export type DuplicateListingResponse = z.infer<typeof duplicateListingResponseSchema>;

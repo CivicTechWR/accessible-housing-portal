@@ -49,7 +49,7 @@ describe("selectDuplicateCustomFields", () => {
     elevator_in_building: true,
     main_entrance_is_barrier_free: true,
     roll_in_shower: true,
-    legacy_unmapped_feature: true,
+    deleted_field_key: true,
   };
   const applicabilityByKey = new Map<string, CustomListingFieldApplicability>([
     ["elevator_in_building", "building"],
@@ -71,7 +71,7 @@ describe("selectDuplicateCustomFields", () => {
       selectDuplicateCustomFields({ customFields, applicabilityByKey, scope: "unit" }),
     ).toEqual({
       roll_in_shower: true,
-      legacy_unmapped_feature: true,
+      deleted_field_key: true,
     });
   });
 });
@@ -312,25 +312,12 @@ describe("buildListingFeatureCategories", () => {
       "Unit Beta",
     ]);
   });
-
-  it("ignores legacy accessibility arrays when building public feature categories", () => {
-    const features = buildListingFeatureCategories(
-      {
-        accessibilityFeatures: ["Elevator access"],
-      } satisfies ListingCustomFields,
-      [ELEVATOR],
-    );
-
-    expect(features).toEqual([]);
-  });
 });
 
 describe("mergeListingCustomFields", () => {
   it("preserves unmanaged custom fields while replacing selected feature ids", () => {
     const customFields = mergeListingCustomFields(
       {
-        accessibilityFeatures: ["Elevator access"],
-        amenities: ["Laundry"],
         elevator_in_building: true,
         unrelated_boolean: true,
       } satisfies ListingCustomFields,
@@ -339,8 +326,6 @@ describe("mergeListingCustomFields", () => {
     );
 
     expect(customFields).toEqual({
-      accessibilityFeatures: ["Elevator access"],
-      amenities: ["Laundry"],
       unrelated_boolean: true,
       automated_building_doors: true,
     });

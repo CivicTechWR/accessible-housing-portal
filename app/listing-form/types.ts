@@ -10,7 +10,7 @@ import {
 import { LISTING_BUILDING_TYPE_VALUES, UTILITY_INCLUDED_VALUES } from "@/shared/schemas/listings";
 
 export const listingImageSchema = z.object({
-  id: z.uuid("Invalid uploaded image id").optional(),
+  id: z.uuid("Invalid uploaded image id"),
   url: trimmedAbsoluteOrRootRelativeUrlString("Image URL is invalid"),
   caption: z.string().trim(),
 });

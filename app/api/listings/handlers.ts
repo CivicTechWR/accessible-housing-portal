@@ -1,13 +1,8 @@
 import { TypedNextResponse, type TypedNextRequest } from "next-rest-framework";
 
 import { mapDomainErrorToHttpResponse } from "@/lib/http/map-domain-error";
-import { createListingService, getListingsService } from "@/lib/listings/listing.service";
-import type {
-  CreateListingInput,
-  CreateListingResponse,
-  ListingListResponse,
-  ListingQuery,
-} from "@/shared/schemas/listings";
+import { getListingsService } from "@/lib/listings/listing.service";
+import type { ListingListResponse, ListingQuery } from "@/shared/schemas/listings";
 
 export async function getListingsHandler(
   request: TypedNextRequest<"GET", string, unknown, ListingQuery>,
@@ -24,7 +19,6 @@ export async function getListingsHandler(
     location: searchParams.get("location") ?? undefined,
     minPrice: searchParams.get("minPrice") ?? undefined,
     maxPrice: searchParams.get("maxPrice") ?? undefined,
-    maxRent: searchParams.get("maxRent") ?? undefined,
     moveInDate: searchParams.get("moveInDate") ?? undefined,
     sort: (searchParams.get("sort") ?? undefined) as ListingQuery["sort"],
     features:
@@ -33,7 +27,6 @@ export async function getListingsHandler(
         : rawFeatures[0]?.includes(",")
           ? rawFeatures[0].split(",").filter(Boolean)
           : (rawFeatures[0] ?? undefined),
-    search: searchParams.get("search") ?? undefined,
   };
   const result = await getListingsService(query);
 
@@ -42,19 +35,4 @@ export async function getListingsHandler(
   }
 
   return TypedNextResponse.json<ListingListResponse, 200, "application/json">(result.value);
-}
-
-export async function createListingHandler(
-  request: TypedNextRequest<"POST", "application/json", CreateListingInput>,
-) {
-  const body = await request.json();
-  const result = await createListingService(body);
-
-  if (!result.ok) {
-    return mapDomainErrorToHttpResponse(result.error);
-  }
-
-  return TypedNextResponse.json<CreateListingResponse, 201, "application/json">(result.value, {
-    status: 201,
-  });
 }

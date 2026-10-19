@@ -11,13 +11,13 @@ import { accounts, customListingFields, listings, properties, users } from "@/db
 import { auth } from "@/lib/auth";
 import {
   createDraftListingService,
-  createListingService,
   getListingByIdService,
   getListingEditorByIdService,
   getListingsService,
   patchListingByIdService,
+  replaceListingByIdService,
 } from "@/lib/listings/listing.service";
-import { createListingSchema } from "@/shared/schemas/listings";
+import { replaceListingSchema } from "@/shared/schemas/listings";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const userId = crypto.randomUUID();
@@ -34,16 +34,18 @@ const selectedFeatures = fieldKeys.map((id) => ({
   description: labelFor(id),
 }));
 
-const payload = createListingSchema.parse({
+const payload = replaceListingSchema.parse({
   title: fieldPrefix,
   name: "Feature test property",
+  description: null,
   address: {
     street: "123 Test St",
+    street2: null,
     city: "Waterloo",
     province: "ON",
     postalCode: "N2L 3G1",
   },
-  units: [{ bedrooms: 1, bathrooms: 1, rent: 1200 }],
+  units: [{ bedrooms: 1, bathrooms: 1, sqft: null, rent: 1200, availableDate: null }],
   accessibilityFeatures: selectedFeatures,
   images: [],
   contact: {
@@ -52,10 +54,23 @@ const payload = createListingSchema.parse({
     phone: "519-555-0100",
   },
   status: "published",
+  unitNumber: null,
   buildingType: "apartment",
   leaseTermMonths: 12,
+  heatingType: null,
   utilitiesIncluded: [],
+  depositInfo: null,
+  applicationUrl: null,
 });
+
+// Mirrors the listing form: create a draft, then save the full listing over it.
+async function createPublishedListing(title: string) {
+  const draft = await createDraftListingService();
+  assert.ok(draft.ok);
+  const listingId = draft.value.data.id;
+  assert.ok((await replaceListingByIdService({ listingId, payload: { ...payload, title } })).ok);
+  return listingId;
+}
 
 describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl }, () => {
   before(async () => {
@@ -136,9 +151,7 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
 
   it("keeps public values editable and displayed regardless of filterability", async () => {
     const title = `${fieldPrefix}_display`;
-    const created = await createListingService({ ...payload, title });
-    assert.ok(created.ok);
-    const listingId = created.value.data.id;
+    const listingId = await createPublishedListing(title);
     const [stored] = await db.select().from(listings).where(eq(listings.id, listingId));
     assert.deepEqual(stored?.customFields, {
       [nonFilterableKey]: true,
@@ -161,7 +174,7 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
       new Set(details.value.data.features.flatMap((group) => group.features.map((f) => f.name))),
       new Set([...publicKeys].map(labelFor)),
     );
-    const summaries = await getListingsService({ search: title });
+    const summaries = await getListingsService({ location: title });
     assert.ok(summaries.ok);
     assert.deepEqual(ids(summaries.value.data[0]?.accessibilityFeatures), publicKeys);
 
@@ -186,21 +199,12 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
 
   it("searches only public filterable fields", async () => {
     const search = `${fieldPrefix}_search`;
-    const withFeatures = await createListingService({
-      ...payload,
-      title: search,
-    });
-    assert.ok(withFeatures.ok);
-    const withoutFilterable = await createListingService({
-      ...payload,
-      title: search,
-    });
-    assert.ok(withoutFilterable.ok);
+    const listingId = await createPublishedListing(search);
+    const withoutFilterableId = await createPublishedListing(search);
     await db
       .update(listings)
       .set({ customFields: { [nonFilterableKey]: true, [privateKey]: true } })
-      .where(eq(listings.id, withoutFilterable.value.data.id));
-    const listingId = withFeatures.value.data.id;
+      .where(eq(listings.id, withoutFilterableId));
 
     const searchOptions = async () =>
       (await getListingsDashboardData()).dynamicGroups.flatMap((group) =>
@@ -212,7 +216,7 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
     );
 
     const searchIds = async (query: Parameters<typeof getListingsService>[0]) => {
-      const result = await getListingsService({ search, ...query });
+      const result = await getListingsService({ location: search, ...query });
       assert.ok(result.ok);
       return result.value.data.map((listing) => listing.id).sort();
     };
