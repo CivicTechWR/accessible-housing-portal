@@ -222,8 +222,6 @@ export function ListingDetails({
           ) : null}
         </div>
 
-        {walkScore}
-
         {images.length > 0 && <ListingImageCarousel images={images} altPrefix={address} />}
 
         {trimmedDescription && (
@@ -290,6 +288,8 @@ export function ListingDetails({
             ))}
           </CardContent>
         </Card>
+
+        {walkScore}
 
         <Card>
           <CardHeader className="gap-x-4 gap-y-2 border-b">
