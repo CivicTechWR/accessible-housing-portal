@@ -64,22 +64,14 @@ describe("replacement payloads", () => {
         province: "ON",
         postalCode: "N2L 3A1",
       },
-      units: [
-        {
-          bedrooms: 2,
-          bathrooms: 1.5,
-          sqft: 920,
-          rent: 1850,
-          availableDate: "2026-05-01",
-        },
-      ],
-      accessibilityFeatures: [
-        {
-          id: "ramp_entry",
-          name: "Ramp entry",
-          description: "Step-free building entry",
-        },
-      ],
+      unit: {
+        bedrooms: 2,
+        bathrooms: 1.5,
+        sqft: 920,
+        rent: 1850,
+        availableDate: "2026-05-01",
+      },
+      accessibilityFeatureIds: ["ramp_entry"],
       images: [
         {
           id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2",
@@ -106,28 +98,6 @@ describe("replacement payloads", () => {
     });
   });
 
-  it("falls back to the feature name when a custom feature description is blank", () => {
-    expect(
-      mapListingFormToReplaceListingInput({
-        ...validFormData,
-        customFeatures: [
-          {
-            category: "Accessibility",
-            id: "ramp_entry",
-            name: "Ramp entry",
-            description: "   ",
-          },
-        ],
-      }).accessibilityFeatures,
-    ).toEqual([
-      {
-        id: "ramp_entry",
-        name: "Ramp entry",
-        description: "Ramp entry",
-      },
-    ]);
-  });
-
   it("clears unanswered optional fields and fills in a missing availability date", () => {
     const payload = mapListingFormToReplaceListingInput({
       ...validFormData,
@@ -138,8 +108,8 @@ describe("replacement payloads", () => {
     });
 
     expect(payload).toMatchObject({ unitNumber: null, heatingType: null });
-    expect(payload.units[0]?.sqft).toBeNull();
-    expect(payload.units[0]?.availableDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(payload.unit.sqft).toBeNull();
+    expect(payload.unit.availableDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it("trims optional contact and application fields on replacement and autosave", () => {
@@ -195,14 +165,12 @@ describe("mapListingFormToAutosavePatchInput", () => {
 
     expect(mapListingFormToAutosavePatchInput(autosaveDraft)).toEqual({
       title: "Draft title",
-      units: [
-        {
-          bedrooms: 0,
-          bathrooms: 1,
-          rent: 0,
-        },
-      ],
-      accessibilityFeatures: [],
+      unit: {
+        bedrooms: 0,
+        bathrooms: 1,
+        rent: 0,
+      },
+      accessibilityFeatureIds: [],
       images: [
         {
           id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2",
@@ -252,7 +220,7 @@ describe("mapListingFormToAutosavePatchInput", () => {
 
     expect(clearedPayload?.description).toBeNull();
     expect(clearedPayload?.address?.street2).toBeNull();
-    expect(clearedPayload?.units?.[0]?.sqft).toBeNull();
+    expect(clearedPayload?.unit?.sqft).toBeNull();
     expect(getPendingAutosaveNullableFieldClearIntent(clearedDraft, clearedPayload)).toEqual({
       description: false,
       street2: false,

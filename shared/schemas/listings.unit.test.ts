@@ -18,22 +18,14 @@ const validReplacePayload = {
     province: "ON",
     postalCode: "N2L 3A1",
   },
-  units: [
-    {
-      bedrooms: 2,
-      bathrooms: 1,
-      sqft: 900,
-      rent: 1850,
-      availableDate: "2026-05-01",
-    },
-  ],
-  accessibilityFeatures: [
-    {
-      id: "ramp_entry",
-      name: "Ramp entry",
-      description: "Step-free building entry",
-    },
-  ],
+  unit: {
+    bedrooms: 2,
+    bathrooms: 1,
+    sqft: 900,
+    rent: 1850,
+    availableDate: "2026-05-01",
+  },
+  accessibilityFeatureIds: ["ramp_entry"],
   applicationUrl: "https://example.org/apply",
   images: [{ id: "6ee785fa-7f75-414f-b6e7-c65fb22083b2", caption: "Front exterior" }],
   contact: {
@@ -94,7 +86,7 @@ describe("listing API schemas", () => {
   it.each([
     { payload: { address: {} }, message: "Address update must include at least one field." },
     { payload: { contact: {} }, message: "Contact update must include at least one field." },
-    { payload: { units: [{}] }, message: "Each unit update must include at least one field." },
+    { payload: { unit: {} }, message: "Unit update must include at least one field." },
   ])("rejects an effectively empty nested PATCH payload: $message", ({ payload, message }) => {
     const result = patchListingSchema.safeParse(payload);
 
@@ -106,26 +98,11 @@ describe("listing API schemas", () => {
       title: "Updated Title",
       address: { city: "Waterloo" },
       contact: { email: "Leasing@Example.com" },
-      units: [{ rent: 1800 }],
-      accessibilityFeatures: [
-        {
-          id: "elevator_in_building",
-          name: "Elevator in Building",
-          description: "The building has at least one elevator.",
-        },
-      ],
+      unit: { rent: 1800 },
+      accessibilityFeatureIds: ["elevator_in_building"],
     });
 
     expect(parsed.contact?.email).toBe("leasing@example.com");
-  });
-
-  it("rejects submitted accessibility features without ids", () => {
-    const accessibilityFeatures = [{ name: "Ramp entry", description: "Step-free building entry" }];
-
-    expect(
-      replaceListingSchema.safeParse({ ...validReplacePayload, accessibilityFeatures }).success,
-    ).toBe(false);
-    expect(patchListingSchema.safeParse({ accessibilityFeatures }).success).toBe(false);
   });
 
   it("accepts explicit null for nullable replacement and PATCH fields", () => {
@@ -136,13 +113,11 @@ describe("listing API schemas", () => {
         ...validReplacePayload.address,
         street2: null,
       },
-      units: [
-        {
-          ...validReplacePayload.units[0],
-          sqft: null,
-          availableDate: null,
-        },
-      ],
+      unit: {
+        ...validReplacePayload.unit,
+        sqft: null,
+        availableDate: null,
+      },
       unitNumber: null,
       heatingType: null,
       depositInfo: null,
@@ -154,7 +129,7 @@ describe("listing API schemas", () => {
       patchListingSchema.safeParse({
         description: null,
         address: { street2: null },
-        units: [{ sqft: null, availableDate: null }],
+        unit: { sqft: null, availableDate: null },
         unitNumber: null,
         depositInfo: null,
       }).success,
@@ -165,7 +140,7 @@ describe("listing API schemas", () => {
     const { description: _description, ...withoutDescription } = validReplacePayload;
     const withoutSquareFeet = {
       ...validReplacePayload,
-      units: validReplacePayload.units.map(({ sqft: _sqft, ...unit }) => unit),
+      unit: { ...validReplacePayload.unit, sqft: undefined },
     };
 
     expect(patchListingSchema.safeParse({ status: "published" }).success).toBe(true);

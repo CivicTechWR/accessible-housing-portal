@@ -74,9 +74,6 @@ export const listingFeatureSchema = z.object({
   name: nonEmptyString,
   description: nonEmptyString,
 });
-const listingInputFeatureSchema = listingFeatureSchema.extend({
-  id: nonEmptyString,
-});
 
 const listingEditorFeatureSchema = z.object({
   category: z.string(),
@@ -228,7 +225,7 @@ const listingContactPatchSchema = listingContactMutationSchema
     message: "Contact update must include at least one field.",
   });
 const listingUnitPatchSchema = listingUnitMutationSchema.partial().refine(hasAtLeastOneField, {
-  message: "Each unit update must include at least one field.",
+  message: "Unit update must include at least one field.",
 });
 
 const patchListingBasePayloadSchema = z.object({
@@ -236,8 +233,8 @@ const patchListingBasePayloadSchema = z.object({
   name: nonEmptyString.optional(),
   description: nullableListingDescriptionSchema.optional(),
   address: listingAddressPatchSchema.optional(),
-  units: z.array(listingUnitPatchSchema).min(1, "At least one unit is required.").optional(),
-  accessibilityFeatures: z.array(listingInputFeatureSchema).optional(),
+  unit: listingUnitPatchSchema.optional(),
+  accessibilityFeatureIds: z.array(nonEmptyString).optional(),
   images: z.array(listingUploadedImageInputSchema).optional(),
   contact: listingContactPatchSchema.optional(),
   status: listingStatusSchema.optional(),
@@ -267,8 +264,8 @@ export const replaceListingSchema = z.object({
   name: nonEmptyString,
   description: nullableListingDescriptionSchema,
   address: listingAddressReplacementSchema,
-  units: z.tuple([listingUnitReplacementSchema], listingUnitReplacementSchema),
-  accessibilityFeatures: z.array(listingInputFeatureSchema),
+  unit: listingUnitReplacementSchema,
+  accessibilityFeatureIds: z.array(nonEmptyString),
   applicationUrl: z.union([z.httpUrl({ normalize: true }), z.null()]),
   applicationEmail: trimmedEmailString("Invalid application email.").nullable().optional(),
   applicationPhone: nonEmptyString.nullable().optional(),
