@@ -94,7 +94,7 @@ Important behaviour:
 
 - Uploaded files are processed to JPEG and stored in `image_data`.
 - Seeded or external images can use `image_url`.
-- Images may be attached to a listing or temporarily associated with the uploading user before publish.
+- Every image belongs to a listing. Uploads require an existing listing, so the form creates a draft first.
 - `sort_order` controls display order.
 
 ### `saved_listings`

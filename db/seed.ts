@@ -1,15 +1,8 @@
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import {
-  customListingFields,
-  listingImages,
-  listings,
-  lower,
-  properties,
-  users,
-} from "./schema.ts";
+import { customListingFields, listingImages, listings, properties, users } from "./schema.ts";
 import { customListingFieldSeed } from "./seeds/custom-listing-fields.ts";
 import { mockListingSeedListings, mockListingSeedUsers } from "./seeds/mock-listings.ts";
 
@@ -56,37 +49,22 @@ async function main() {
     }
 
     for (const user of mockListingSeedUsers) {
-      const normalizedEmail = user.email.trim().toLowerCase();
+      const values = {
+        id: user.id,
+        email: user.email.trim().toLowerCase(),
+        fullName: user.fullName,
+        organization: user.organization,
+        role: user.role,
+        status: user.status,
+      };
 
-      const [existingUser] = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(lower(users.email), normalizedEmail))
-        .limit(1);
-
-      if (existingUser) {
-        await db
-          .update(users)
-          .set({
-            id: user.id,
-            email: normalizedEmail,
-            fullName: user.fullName,
-            organization: user.organization,
-            role: user.role,
-            status: user.status,
-            updatedAt: new Date(),
-          })
-          .where(eq(users.id, existingUser.id));
-      } else {
-        await db.insert(users).values({
-          id: user.id,
-          email: normalizedEmail,
-          fullName: user.fullName,
-          organization: user.organization,
-          role: user.role,
-          status: user.status,
+      await db
+        .insert(users)
+        .values(values)
+        .onConflictDoUpdate({
+          target: users.id,
+          set: { ...values, updatedAt: new Date() },
         });
-      }
     }
 
     for (const seedListing of mockListingSeedListings) {

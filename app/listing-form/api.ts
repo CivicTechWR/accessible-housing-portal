@@ -46,16 +46,10 @@ export function mapListingFormToReplaceListingInput(
       name: feature.name,
       description: normalizeOptionalString(feature.description) ?? feature.name,
     })),
-    images: data.images.flatMap((image) =>
-      image.id
-        ? [
-            {
-              id: image.id,
-              caption: normalizeOptionalString(image.caption),
-            },
-          ]
-        : [],
-    ),
+    images: data.images.map((image) => ({
+      id: image.id,
+      caption: normalizeOptionalString(image.caption),
+    })),
     contact: {
       name: data.contactName,
       role: normalizeOptionalString(data.contactRole) ?? null,
@@ -205,16 +199,10 @@ export function mapListingFormToAutosavePatchInput(
     name: feature.name,
     description: normalizeOptionalString(feature.description) ?? feature.name,
   }));
-  patch.images = (data.images ?? []).flatMap((image) =>
-    image.id
-      ? [
-          {
-            id: image.id,
-            caption: normalizeOptionalString(image.caption),
-          },
-        ]
-      : [],
-  );
+  patch.images = (data.images ?? []).map((image) => ({
+    id: image.id,
+    caption: normalizeOptionalString(image.caption),
+  }));
   patch.status = status;
 
   return Object.keys(patch).length > 0 ? patch : null;
@@ -229,7 +217,7 @@ export async function parseCreateDraftListingResponse(response: Response): Promi
   return payload.data;
 }
 
-export async function parseCreateListingResponse(response: Response): Promise<{ id: string }> {
+export async function parseListingIdResponse(response: Response): Promise<{ id: string }> {
   if (!response.ok) {
     throw new Error(await getApiErrorMessage(response));
   }

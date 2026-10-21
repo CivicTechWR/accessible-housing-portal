@@ -426,8 +426,9 @@ export const listingImages = pgTable(
   "listing_images",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    listingId: uuid("listing_id").references(() => listings.id, { onDelete: "cascade" }),
-    uploadSessionId: uuid("upload_session_id"),
+    listingId: uuid("listing_id")
+      .notNull()
+      .references(() => listings.id, { onDelete: "cascade" }),
     uploadedByUserId: uuid("uploaded_by_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -444,7 +445,6 @@ export const listingImages = pgTable(
   },
   (table) => [
     index("listing_images_listing_id_idx").on(table.listingId),
-    index("listing_images_upload_session_id_idx").on(table.uploadSessionId),
     index("listing_images_uploaded_by_user_id_idx").on(table.uploadedByUserId),
   ],
 );

@@ -4,11 +4,9 @@ import { asc, desc, type SQL } from "drizzle-orm";
 
 import { listings, type ListingCustomFields } from "@/db/schema";
 import type { getOptionalSession } from "@/lib/auth/session";
-import { buildListingFeatureDefinitionLookup } from "@/lib/listings/listing-feature-definitions";
 import {
   buildDuplicateListingTitle,
   buildListingFeatureCategories,
-  buildListingCustomFields,
   centsToDollars,
   dollarsToCents,
   formatListingAddress,
@@ -40,7 +38,6 @@ import {
 import {
   archiveListing,
   createDraftListing,
-  createListing,
   duplicateListingGraph,
   findFeatureDefinitionApplicabilityByKeys,
   findListingImagesByListingIds,
@@ -62,8 +59,6 @@ import {
 } from "@/lib/policies/listing-policy";
 import { getOptionalSession as getAuthSession } from "@/lib/auth/session";
 import type {
-  CreateListingInput,
-  CreateListingResponse,
   CreateDraftListingResponse,
   ArchiveListingResponse,
   DuplicateListingInput,
@@ -101,8 +96,6 @@ export async function getListingsService(
   const page = query.page ? Number(query.page) : 1;
   const limit = query.limit ? Number(query.limit) : 20;
   const visibility = getListingListVisibility(actor, query.status ?? null);
-  const search = query.search ?? query.location ?? null;
-  const maxRent = query.maxRent ?? query.maxPrice ?? null;
   const selectedFeatures = normalizeQueryFeatures(query.features);
   const bedroomFilter = parseCountFilter(query.bedrooms);
   const bathroomFilter = parseCountFilter(query.bathrooms);
@@ -138,8 +131,8 @@ export async function getListingsService(
       ? listingBathroomsAtLeastSpecification(bathroomFilter.value)
       : listingBathroomsSpecification(bathroomFilter.value),
     listingMinRentSpecification(query.minPrice ?? null),
-    listingMaxRentSpecification(maxRent),
-    listingSearchSpecification(search),
+    listingMaxRentSpecification(query.maxPrice ?? null),
+    listingSearchSpecification(query.location ?? null),
     listingAvailableBySpecification(query.moveInDate ?? null),
     listingFeatureDefinitionsSpecification(selectedFeatureDefinitions),
   );
@@ -153,7 +146,7 @@ export async function getListingsService(
 
   const imageByListingId = new Map<string, string>();
   for (const image of imageRows) {
-    if (image.listingId && !imageByListingId.has(image.listingId)) {
+    if (!imageByListingId.has(image.listingId)) {
       imageByListingId.set(image.listingId, getListingImageUrl(image.id, image.imageUrl));
     }
   }
@@ -445,10 +438,6 @@ export async function getMyListingsService(): Promise<
   const imageCountByListingId = new Map<string, number>();
 
   for (const image of imageRows) {
-    if (!image.listingId) {
-      continue;
-    }
-
     if (!imageByListingId.has(image.listingId)) {
       imageByListingId.set(image.listingId, getListingImageUrl(image.id, image.imageUrl));
     }
@@ -478,40 +467,6 @@ export async function getMyListingsService(): Promise<
       editUrl: `/listing-form/${row.id}`,
       viewUrl: `/listings/${row.id}`,
     })),
-  });
-}
-
-export async function createListingService(
-  payload: CreateListingInput,
-): Promise<DomainResult<CreateListingResponse>> {
-  const actorResult = await requireListingWriteActor();
-
-  if (!actorResult.ok) {
-    return actorResult;
-  }
-
-  const primaryUnit = payload.units[0];
-  const primaryUnitRentCents = Math.round(primaryUnit.rent * 100);
-
-  const statusTimestamps = resolveListingStatusTimestamps(payload.status);
-  const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
-  const customFields = buildListingCustomFields(payload, publicBooleanDefinitions);
-
-  const createdListing = await createListing({
-    actorUserId: actorResult.value.actor.userId,
-    payload,
-    primaryUnitRentCents,
-    customFields,
-    publishedAt: statusTimestamps.publishedAt,
-    archivedAt: statusTimestamps.archivedAt,
-  });
-
-  return succeed({
-    message: "Listing created",
-    data: {
-      id: createdListing.id,
-      ...payload,
-    },
   });
 }
 
@@ -582,10 +537,6 @@ async function updateListingById<TPayload extends ListingMutationInput>(
   );
   const primaryUnit = input.payload.units?.[0];
   const nextStatus = input.payload.status ?? listing.status;
-  const nextApplicationUrlResult = resolveNextApplicationUrl({
-    payload: input.payload,
-    listingApplicationUrl: listing.applicationUrl,
-  });
 
   const statusTimestamps = resolveListingStatusTimestamps(nextStatus, {
     publishedAt: listing.publishedAt,
@@ -636,7 +587,7 @@ async function updateListingById<TPayload extends ListingMutationInput>(
       utilitiesIncluded: input.payload.utilitiesIncluded ?? listing.utilitiesIncluded,
       maxIncomeCents: listing.maxIncomeCents,
       depositInfo: preserveWhenUndefined(input.payload.depositInfo, listing.depositInfo),
-      applicationUrl: nextApplicationUrlResult.nextApplicationUrl,
+      applicationUrl: preserveWhenUndefined(input.payload.applicationUrl, listing.applicationUrl),
       applicationEmail: preserveWhenUndefined(
         input.payload.applicationEmail,
         listing.applicationEmail,
@@ -808,11 +759,13 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
   const imageRows = await findListingImagesByListingId(listing.id);
   const enabledDefinitionKeys = getEnabledBooleanCustomFieldKeys(listing.customFields);
   const publicBooleanDefinitions = await findPublicBooleanFeatureDefinitions();
-  const featureDefinitionLookup = buildListingFeatureDefinitionLookup(publicBooleanDefinitions);
+  const definitionsByKey = new Map(
+    publicBooleanDefinitions.map((definition) => [definition.key, definition]),
+  );
   const customFeatures = new Map<string, ListingEditorData["customFeatures"][number]>();
 
   for (const key of enabledDefinitionKeys) {
-    const definition = featureDefinitionLookup.byKey.get(key);
+    const definition = definitionsByKey.get(key);
 
     if (!definition) {
       continue;
@@ -862,16 +815,6 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     applicationInstructions: listing.applicationInstructions?.trim() || undefined,
     customFeatures: Array.from(customFeatures.values()),
   };
-}
-
-function resolveNextApplicationUrl(input: {
-  payload: ListingMutationInput;
-  listingApplicationUrl: string | null;
-}) {
-  if (input.payload.applicationUrl !== undefined) {
-    return { ok: true as const, nextApplicationUrl: input.payload.applicationUrl };
-  }
-  return { ok: true as const, nextApplicationUrl: input.listingApplicationUrl };
 }
 
 function preserveWhenUndefined<T>(nextValue: T | undefined, currentValue: T): T {

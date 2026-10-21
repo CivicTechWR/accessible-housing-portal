@@ -17,7 +17,6 @@ import {
 } from "@/db/schema";
 import { buildDuplicateListingPlan, DEFAULT_PROPERTY_COUNTRY } from "@/lib/listings/store";
 import type {
-  CreateListingInput,
   ListingDuplicateScope,
   ListingIdParam,
   ListingMutationInput,
@@ -274,7 +273,6 @@ export async function createListingImageUpload(input: {
     .insert(listingImages)
     .values({
       listingId: input.listingId,
-      uploadSessionId: null,
       uploadedByUserId: input.uploadedByUserId,
       imageUrl: null,
       imageData: input.imageData,
@@ -302,7 +300,6 @@ export async function findListingImageById(imageId: string) {
     .select({
       id: listingImages.id,
       listingId: listingImages.listingId,
-      uploadedByUserId: listingImages.uploadedByUserId,
       imageUrl: listingImages.imageUrl,
       imageData: listingImages.imageData,
       contentType: listingImages.contentType,
@@ -311,8 +308,8 @@ export async function findListingImageById(imageId: string) {
       listingOwnerUserId: properties.ownerUserId,
     })
     .from(listingImages)
-    .leftJoin(listings, eq(listingImages.listingId, listings.id))
-    .leftJoin(properties, eq(listings.propertyId, properties.id))
+    .innerJoin(listings, eq(listingImages.listingId, listings.id))
+    .innerJoin(properties, eq(listings.propertyId, properties.id))
     .where(eq(listingImages.id, imageId))
     .limit(1);
 
@@ -500,7 +497,7 @@ export async function duplicateListingGraph(input: {
     }
 
     if (input.copyPhotos) {
-      // Keep bytea in Postgres; id/created_at use defaults and upload_session_id is cleared.
+      // Keep bytea in Postgres; id/created_at use defaults.
       await tx.execute(sql`
         insert into listing_images (
           listing_id, uploaded_by_user_id, image_url, image_data, content_type,
@@ -545,106 +542,6 @@ export async function findOwnerListings(ownerUserId: string): Promise<OwnerListi
         customFields: row.customFields as ListingCustomFields,
       })),
     );
-}
-
-export async function createListing(input: {
-  actorUserId: string;
-  payload: CreateListingInput;
-  primaryUnitRentCents: number;
-  customFields: ListingCustomFields;
-  publishedAt: Date | null;
-  archivedAt: Date | null;
-}) {
-  return db.transaction(async (tx) => {
-    const [property] = await tx
-      .insert(properties)
-      .values({
-        ownerUserId: input.actorUserId,
-        name: input.payload.name,
-        street1: input.payload.address.street,
-        street2: input.payload.address.street2 ?? null,
-        city: input.payload.address.city,
-        province: input.payload.address.province,
-        postalCode: input.payload.address.postalCode,
-        country: DEFAULT_PROPERTY_COUNTRY,
-        neighbourhood: input.payload.address.neighbourhood ?? null,
-        latitude: input.payload.address.latitude ?? null,
-        longitude: input.payload.address.longitude ?? null,
-        contactName: input.payload.contact.name,
-        contactRole: input.payload.contact.role ?? null,
-        contactEmail: input.payload.contact.email,
-        contactPhone: input.payload.contact.phone,
-        createdByUserId: input.actorUserId,
-        updatedByUserId: input.actorUserId,
-      })
-      .returning({ id: properties.id });
-
-    if (!property) {
-      throw new Error("Failed to create property.");
-    }
-
-    const primaryUnit = input.payload.units[0];
-
-    const [listing] = await tx
-      .insert(listings)
-      .values({
-        propertyId: property.id,
-        createdByUserId: input.actorUserId,
-        updatedByUserId: input.actorUserId,
-        title: input.payload.title,
-        description: input.payload.description ?? null,
-        status: input.payload.status,
-        unitNumber: input.payload.unitNumber ?? null,
-        buildingType: input.payload.buildingType,
-        bedrooms: primaryUnit.bedrooms,
-        bathrooms: primaryUnit.bathrooms,
-        squareFeet: primaryUnit.sqft ?? null,
-        monthlyRentCents: input.primaryUnitRentCents,
-        availableOn: primaryUnit.availableDate ?? null,
-        leaseTermMonths: input.payload.leaseTermMonths,
-        heatingType: input.payload.heatingType ?? null,
-        utilitiesIncluded: input.payload.utilitiesIncluded,
-        maxIncomeCents: null,
-        depositInfo: input.payload.depositInfo ?? null,
-        applicationUrl: input.payload.applicationUrl ?? null,
-        applicationEmail: input.payload.applicationEmail ?? null,
-        applicationPhone: input.payload.applicationPhone ?? null,
-        applicationInstructions: input.payload.applicationInstructions ?? null,
-        customFields: input.customFields,
-        publishedAt: input.publishedAt,
-        archivedAt: input.archivedAt,
-      })
-      .returning({ id: listings.id });
-
-    if (!listing) {
-      throw new Error("Failed to create listing.");
-    }
-
-    if (input.payload.images.length > 0) {
-      for (const [index, image] of input.payload.images.entries()) {
-        const [updatedImage] = await tx
-          .update(listingImages)
-          .set({
-            listingId: listing.id,
-            altText: image.caption ?? `${input.payload.title} image ${index + 1}`,
-            sortOrder: index,
-          })
-          .where(
-            and(
-              eq(listingImages.id, image.id),
-              eq(listingImages.uploadedByUserId, input.actorUserId),
-            ),
-          )
-          .returning({ id: listingImages.id });
-
-        if (!updatedImage) {
-          throw new Error("Failed to update listing image.");
-        }
-      }
-    }
-
-    return listing;
-  });
 }
 
 export async function updateListingGraph(input: {
@@ -745,21 +642,6 @@ export async function updateListingGraph(input: {
 
     if (input.images !== undefined) {
       if (input.images.length > 0) {
-        await tx
-          .update(listingImages)
-          .set({
-            listingId: input.listingId,
-          })
-          .where(
-            and(
-              inArray(
-                listingImages.id,
-                input.images.map((image) => image.id),
-              ),
-              eq(listingImages.uploadedByUserId, input.actorUserId),
-            ),
-          );
-
         await Promise.all(
           input.images.map((image, index) =>
             tx

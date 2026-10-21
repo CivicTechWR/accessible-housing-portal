@@ -42,11 +42,9 @@ Listing search accepts these query parameters through `listingQuerySchema`:
 | `neighbourhood` | Case-insensitive neighbourhood match.                                             |
 | `bedrooms`      | Exact count or count plus `+`, such as `2` or `2+`.                               |
 | `bathrooms`     | Exact count or count plus `+`, such as `1` or `1+`.                               |
-| `location`      | Search string, currently treated like the main search term.                       |
-| `search`        | Search string across listing title, description, property name, street, and city. |
+| `location`      | Search string across listing title, description, property name, street, and city. |
 | `minPrice`      | Minimum rent in dollars.                                                          |
 | `maxPrice`      | Maximum rent in dollars.                                                          |
-| `maxRent`       | Legacy maximum rent alias.                                                        |
 | `moveInDate`    | ISO-like date string; filters listings available on or before the date.           |
 | `sort`          | `newest`, `oldest`, `price_asc`, or `price_desc`.                                 |
 | `features`      | One or more dynamic feature keys from public, filterable boolean custom fields.   |
@@ -153,7 +151,6 @@ Published listing edits do not draft-autosave. The UI warns before navigating aw
 Creation and update behaviour is split across service and repository code:
 
 - `createDraftListingService` creates an empty property and draft listing.
-- `createListingService` creates a property and listing in one transaction.
 - `replaceListingByIdService` handles submitted full-form `PUT` replacements.
 - `patchListingByIdService` handles autosave and status-only `PATCH` updates while preserving omitted values.
 - Both update services share edit-access checks, dynamic feature merging in `customFields`, property/listing updates, and image synchronization.

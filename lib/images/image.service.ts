@@ -156,21 +156,14 @@ export async function getListingImageByIdService(input: {
     return fail(404, "Image not found.");
   }
 
-  if (image.listingId && image.listingStatus && image.listingOwnerUserId) {
-    if (
-      !canReadListing(
-        {
-          ownerUserId: image.listingOwnerUserId,
-          status: image.listingStatus,
-        },
-        input.actor,
-      )
-    ) {
-      return fail(404, "Image not found.");
-    }
-  } else if (
-    !input.actor.userId ||
-    (input.actor.role !== "admin" && input.actor.userId !== image.uploadedByUserId)
+  if (
+    !canReadListing(
+      {
+        ownerUserId: image.listingOwnerUserId,
+        status: image.listingStatus,
+      },
+      input.actor,
+    )
   ) {
     return fail(404, "Image not found.");
   }

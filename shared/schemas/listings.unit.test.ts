@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
 import {
-  createListingSchema,
   listingEditorResponseSchema,
   listingQuerySchema,
   patchListingSchema,
@@ -8,7 +7,7 @@ import {
 } from "@/shared/schemas/listings";
 import { expectIssueAt } from "@/test/expect-issue-at";
 
-const validCreatePayload = {
+const validReplacePayload = {
   title: "Suite 204 at Cedar Court",
   name: "Cedar Court",
   description: "Affordable and accessible units in Waterloo.",
@@ -52,22 +51,22 @@ const validCreatePayload = {
 };
 
 describe("listing API schemas", () => {
-  it("accepts maxRent query values with up to two decimal places", () => {
-    expect(listingQuerySchema.parse({ maxRent: "1200.50" }).maxRent).toBe("1200.50");
-    for (const maxRent of ["1200.555", "not-a-number"]) {
-      expectIssueAt(listingQuerySchema.safeParse({ maxRent }), "maxRent");
+  it("accepts maxPrice query values with up to two decimal places", () => {
+    expect(listingQuerySchema.parse({ maxPrice: "1200.50" }).maxPrice).toBe("1200.50");
+    for (const maxPrice of ["1200.555", "not-a-number"]) {
+      expectIssueAt(listingQuerySchema.safeParse({ maxPrice }), "maxPrice");
     }
   });
 
-  it("trims create and PATCH payload strings", () => {
-    const parsed = createListingSchema.parse({
-      ...validCreatePayload,
+  it("trims replacement and PATCH payload strings", () => {
+    const parsed = replaceListingSchema.parse({
+      ...validReplacePayload,
       title: "  Suite 204 at Cedar Court  ",
       name: "  Cedar Court  ",
       applicationUrl: "  https://example.org/apply  ",
       depositInfo: "  First and last month's rent  ",
       contact: {
-        ...validCreatePayload.contact,
+        ...validReplacePayload.contact,
         email: "  leasing@example.org  ",
         role: "  Property manager  ",
       },
@@ -85,8 +84,11 @@ describe("listing API schemas", () => {
     );
   });
 
-  it("rejects whitespace-only required fields in create payloads", () => {
-    expectIssueAt(createListingSchema.safeParse({ ...validCreatePayload, title: "   " }), "title");
+  it("rejects whitespace-only required fields in replacement payloads", () => {
+    expectIssueAt(
+      replaceListingSchema.safeParse({ ...validReplacePayload, title: "   " }),
+      "title",
+    );
   });
 
   it.each([
@@ -121,22 +123,22 @@ describe("listing API schemas", () => {
     const accessibilityFeatures = [{ name: "Ramp entry", description: "Step-free building entry" }];
 
     expect(
-      createListingSchema.safeParse({ ...validCreatePayload, accessibilityFeatures }).success,
+      replaceListingSchema.safeParse({ ...validReplacePayload, accessibilityFeatures }).success,
     ).toBe(false);
     expect(patchListingSchema.safeParse({ accessibilityFeatures }).success).toBe(false);
   });
 
   it("accepts explicit null for nullable replacement and PATCH fields", () => {
     const nullableFields = {
-      ...validCreatePayload,
+      ...validReplacePayload,
       description: null,
       address: {
-        ...validCreatePayload.address,
+        ...validReplacePayload.address,
         street2: null,
       },
       units: [
         {
-          ...validCreatePayload.units[0],
+          ...validReplacePayload.units[0],
           sqft: null,
           availableDate: null,
         },
@@ -160,41 +162,23 @@ describe("listing API schemas", () => {
   });
 
   it("keeps replacement and PATCH payload completeness distinct", () => {
-    const { description: _description, ...withoutDescription } = validCreatePayload;
+    const { description: _description, ...withoutDescription } = validReplacePayload;
     const withoutSquareFeet = {
-      ...validCreatePayload,
-      units: validCreatePayload.units.map(({ sqft: _sqft, ...unit }) => unit),
+      ...validReplacePayload,
+      units: validReplacePayload.units.map(({ sqft: _sqft, ...unit }) => unit),
     };
 
     expect(patchListingSchema.safeParse({ status: "published" }).success).toBe(true);
     expect(patchListingSchema.safeParse({}).success).toBe(false);
-    expect(replaceListingSchema.safeParse(validCreatePayload).success).toBe(true);
+    expect(replaceListingSchema.safeParse(validReplacePayload).success).toBe(true);
     expect(replaceListingSchema.safeParse(withoutDescription).success).toBe(false);
     expect(replaceListingSchema.safeParse(withoutSquareFeet).success).toBe(false);
     expect(replaceListingSchema.safeParse({ status: "published" }).success).toBe(false);
   });
 
-  it("allows optional create fields to be omitted when the form leaves them blank", () => {
-    const result = createListingSchema.safeParse({
-      ...validCreatePayload,
-      description: undefined,
-      unitNumber: undefined,
-      images: [],
-      units: [
-        {
-          bedrooms: 2,
-          bathrooms: 1,
-          rent: 1850,
-        },
-      ],
-    });
-
-    expect(result.success).toBe(true);
-  });
-
   it("rejects non-http application URLs", () => {
-    const result = createListingSchema.safeParse({
-      ...validCreatePayload,
+    const result = replaceListingSchema.safeParse({
+      ...validReplacePayload,
       applicationUrl: "mailto:leasing@example.org",
     });
 
@@ -232,7 +216,7 @@ describe("listing API schemas", () => {
 
 describe("contact role updates", () => {
   it("accepts an omitted role and explicit clearing, but rejects non-text roles", () => {
-    expect(createListingSchema.parse(validCreatePayload).contact.role).toBeUndefined();
+    expect(replaceListingSchema.parse(validReplacePayload).contact.role).toBeUndefined();
     expect(patchListingSchema.parse({ contact: { role: null } }).contact?.role).toBeNull();
     expect(patchListingSchema.safeParse({ contact: { role: 123 } }).success).toBe(false);
   });
@@ -240,8 +224,8 @@ describe("contact role updates", () => {
 
 describe("application details validation", () => {
   it("accepts and normalizes application details separately from the property contact", () => {
-    const parsed = createListingSchema.parse({
-      ...validCreatePayload,
+    const parsed = replaceListingSchema.parse({
+      ...validReplacePayload,
       applicationEmail: "  Apply@Example.ORG  ",
       applicationPhone: "  519-555-0111  ",
       applicationInstructions: "  Call for a viewing.\nReplies within two business days.  ",
@@ -263,16 +247,16 @@ describe("application details validation", () => {
 
   it("rejects invalid application emails at both write endpoints", () => {
     expect(
-      createListingSchema.safeParse({ ...validCreatePayload, applicationEmail: "apply@" }).success,
+      replaceListingSchema.safeParse({ ...validReplacePayload, applicationEmail: "apply@" })
+        .success,
     ).toBe(false);
     expect(patchListingSchema.safeParse({ applicationEmail: "apply@" }).success).toBe(false);
   });
 });
 
 describe("listing heating type contracts", () => {
-  it("allows an unanswered create but requires a value or null on replacement", () => {
-    const { heatingType: _heatingType, ...withoutHeating } = validCreatePayload;
-    expect(createListingSchema.safeParse(withoutHeating).success).toBe(true);
+  it("requires a heating value or null on replacement", () => {
+    const { heatingType: _heatingType, ...withoutHeating } = validReplacePayload;
     expect(replaceListingSchema.safeParse(withoutHeating).success).toBe(false);
     expect(replaceListingSchema.safeParse({ ...withoutHeating, heatingType: null }).success).toBe(
       true,

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/app/query-keys";
 import type { PatchListingInput, ReplaceListingInput } from "@/shared/schemas/listings";
-import { parseCreateListingResponse } from "./api";
+import { parseListingIdResponse } from "./api";
 
 interface ReplaceListingVariables {
   listingId: string;
@@ -25,7 +25,7 @@ export function useEditListingQuery() {
         body: JSON.stringify(payload),
       });
 
-      return await parseCreateListingResponse(response);
+      return await parseListingIdResponse(response);
     },
     onSuccess: (_data, variables) => {
       invalidateListingQueries(queryClient, variables.listingId);
@@ -41,7 +41,7 @@ export function useEditListingQuery() {
         body: JSON.stringify(payload),
       });
 
-      return await parseCreateListingResponse(response);
+      return await parseListingIdResponse(response);
     },
     onSuccess: (_data, variables) => {
       invalidateListingQueries(queryClient, variables.listingId);

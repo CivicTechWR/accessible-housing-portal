@@ -12,12 +12,8 @@ import type {
   Property,
 } from "@/db/schema";
 import { sortCustomListingFieldsForDisplay } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
-import {
-  buildListingFeatureDefinitionLookup,
-  type ListingFeatureDefinition,
-} from "@/lib/listings/listing-feature-definitions";
+import type { ListingFeatureDefinition } from "@/lib/listings/listing-feature-definitions";
 import type {
-  CreateListingInput,
   ListingDetails,
   ListingDuplicateScope,
   ListingMutationInput,
@@ -26,17 +22,6 @@ import type {
 export const DEFAULT_PROPERTY_COUNTRY = "Canada";
 
 type StoredListingFeature = NonNullable<ListingDetails["accessibilityFeatures"]>[number];
-
-export function buildListingCustomFields(
-  input: Pick<CreateListingInput, "accessibilityFeatures">,
-  definitions: ListingFeatureDefinition[],
-): ListingCustomFields {
-  const customFields: ListingCustomFields = {};
-
-  applyAccessibilityFeatureState(customFields, input.accessibilityFeatures, definitions);
-
-  return customFields;
-}
 
 export function mergeListingCustomFields(
   existing: ListingCustomFields,
@@ -208,9 +193,7 @@ export function getListingSquareFeet(squareFeet: number | null) {
 
 function applyAccessibilityFeatureState(
   customFields: ListingCustomFields,
-  features:
-    | CreateListingInput["accessibilityFeatures"]
-    | ListingMutationInput["accessibilityFeatures"],
+  features: ListingMutationInput["accessibilityFeatures"],
   definitions: ListingFeatureDefinition[],
 ) {
   const allowedKeys = new Set(definitions.map((definition) => definition.key));
@@ -234,11 +217,11 @@ function getResolvedListingFeatureDefinitions(
   customFields: ListingCustomFields,
   definitions: ListingFeatureDefinition[],
 ) {
-  const lookup = buildListingFeatureDefinitionLookup(definitions);
+  const definitionsByKey = new Map(definitions.map((definition) => [definition.key, definition]));
   const resolvedDefinitions = new Map<string, ListingFeatureDefinition>();
 
   for (const key of getEnabledBooleanCustomFieldKeys(customFields)) {
-    const definition = lookup.byKey.get(key);
+    const definition = definitionsByKey.get(key);
 
     if (definition) {
       resolvedDefinitions.set(definition.key, definition);
