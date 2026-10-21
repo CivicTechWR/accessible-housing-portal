@@ -43,13 +43,13 @@ Error responses use:
 
 Listing query parameters are documented in [Listings](listings.md).
 
-Listing create/update payloads submit selected accessibility features as `accessibilityFeatures`. Each submitted feature must include the field-definition `id`; storage persists selected public boolean field definitions as boolean keys in `listings.custom_fields`.
+Listing replacement and partial-update payloads submit selected accessibility features as `accessibilityFeatures`. Each submitted feature must include the field-definition `id`; storage persists selected public boolean field definitions as boolean keys in `listings.custom_fields`.
 
-Create payloads may include `applicationUrl` as a valid HTTP(S) URL, `applicationEmail` as an email address, and `applicationPhone` and `applicationInstructions` as non-empty text. These application fields are separate from the property's general `contact`. Email addresses are trimmed and lowercased; phone numbers and instructions are trimmed, preserving line breaks within instructions. Details and editor responses include the saved application fields when present.
+Replacement and partial-update payloads accept `applicationUrl` as a valid HTTP(S) URL, `applicationEmail` as an email address, and `applicationPhone` and `applicationInstructions` as non-empty text. These application fields are separate from the property's general `contact`. Email addresses are trimmed and lowercased; phone numbers and instructions are trimmed, preserving line breaks within instructions. Details and editor responses include the saved application fields when present.
 
-Create payloads may include optional `heatingType`: `natural_gas`, `electric_resistance`, `heat_pump`, `propane`, `heating_oil`, `other`, or `unknown`. PUT requires a value or `null`. PATCH omission preserves the stored value; `null` clears it. `unknown` records an explicit "Not sure" answer. Detail and editor responses omit the field when unanswered.
+The `heatingType` values are `natural_gas`, `electric_resistance`, `heat_pump`, `propane`, `heating_oil`, `other`, or `unknown`. PUT requires a value or `null`. PATCH omission preserves the stored value; `null` clears it. `unknown` records an explicit "Not sure" answer. Detail and editor responses omit the field when unanswered.
 
-Create payloads may include optional `depositInfo` text. Replacement payloads require `depositInfo` as trimmed text or `null`. Partial-update payloads may include `depositInfo` as trimmed text or `null` to clear the stored value.
+Replacement payloads require `depositInfo` as trimmed text or `null`. Partial-update payloads may include `depositInfo` as trimmed text or `null` to clear the stored value.
 
 Replacement and partial-update payloads accept `null` to clear an application field. Omitted application email, phone, or instructions preserve the stored value, including on `PUT` for clients that do not send these optional fields. The listing form sends explicit values or `null` for all application fields when saving.
 

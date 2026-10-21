@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { accounts, lower, users } from "../db/schema.ts";
+import { mockListingSeedUsers } from "../db/seeds/mock-listings.ts";
 
 async function main() {
   const databaseURL = process.env.DATABASE_URL;
@@ -62,7 +63,13 @@ async function main() {
         const values = { ...seed, emailVerified: true, inviteAcceptedAt: new Date() };
         const [user] = existing
           ? await tx.update(users).set(values).where(eq(users.id, existing.id)).returning()
-          : await tx.insert(users).values(values).returning();
+          : await tx
+              .insert(users)
+              .values({
+                ...values,
+                id: mockListingSeedUsers.find((user) => user.email === seed.email)?.id,
+              })
+              .returning();
         if (!user) throw new Error("Unable to seed review account.");
         await tx
           .insert(accounts)

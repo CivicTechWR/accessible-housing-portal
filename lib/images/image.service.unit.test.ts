@@ -56,19 +56,18 @@ it("hides foreign listing existence during uploads", async () => {
   expect(createListingImageUpload).not.toHaveBeenCalled();
 });
 
-it("hides orphaned image existence from other partners", async () => {
+it("hides foreign draft image existence from other partners", async () => {
   jest
     .mocked(findListingImageById)
     .mockResolvedValueOnce({
       id: "image",
-      listingId: null,
-      uploadedByUserId: "owner",
+      listingId: "22222222-2222-4222-8222-222222222222",
       imageUrl: null,
       imageData: Buffer.from("image"),
       contentType: "image/jpeg",
       sizeBytes: 5,
-      listingStatus: null,
-      listingOwnerUserId: null,
+      listingStatus: "draft",
+      listingOwnerUserId: "owner",
     })
     .mockResolvedValueOnce(null);
 
@@ -85,7 +84,6 @@ it("shares published images with caches and keeps archived images private", asyn
   const image = {
     id: "image",
     listingId: "22222222-2222-4222-8222-222222222222",
-    uploadedByUserId: "owner",
     imageUrl: null,
     imageData: Buffer.from("image"),
     contentType: "image/jpeg",
