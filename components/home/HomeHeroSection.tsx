@@ -8,9 +8,8 @@ export function HomeHeroSection() {
       aria-labelledby="home-title"
       className="relative isolate flex min-h-[65vh] items-end overflow-hidden bg-muted"
     >
-      {/* Placeholder until the final photo from #405. */}
       <Image
-        src="/home-image-placeholder.svg"
+        src="/home-hub-hero-apartments.webp"
         alt=""
         fill
         preload
