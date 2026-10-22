@@ -4,7 +4,7 @@ This guide covers local setup, environment variables, database setup, scripts, a
 
 ## Prerequisites
 
-- Node.js `22.12.0` or newer. The project currently builds its production image from `node:22.14.0-slim`.
+- Node.js `26` or newer. The project currently builds its production image from `node:26.12.1-slim`.
 - npm. Use the committed `package-lock.json` with `npm ci`.
 - Postgres. Local development expects a reachable database through `DATABASE_URL`.
 - Optional: Infisical for deployed/prod-like secrets.

@@ -23,13 +23,13 @@ Jobs:
 | Tests                 | `npm ci`, `npm run test`                                                                     |
 | Build                 | `npm ci`, `npm run build`                                                                    |
 
-CI uses Node 22 with npm cache enabled.
+CI uses Node 26 with npm cache enabled.
 
 ## Dockerfile
 
 `Dockerfile` is production-oriented:
 
-1. Starts from `node:22.14.0-slim`.
+1. Starts from `node:26.12.1-slim`.
 2. Runs `npm ci`.
 3. Copies the repository.
 4. Runs `npm run build`.
@@ -74,7 +74,7 @@ npm run docker:down:volumes
 
 `Dockerfile.dev` is a development image:
 
-- starts from `node:22.14.0-slim`
+- starts from `node:26.12.1-slim`
 - runs `npm ci`
 - copies the repo
 - exposes port 3000

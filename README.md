@@ -30,7 +30,7 @@ Start with [docs/README.md](docs/README.md). The developer reference is split by
 
 Prerequisites:
 
-- Node.js 22.12 or newer
+- Node.js 26 or newer
 - npm with the committed `package-lock.json`
 - a reachable Postgres database
 
