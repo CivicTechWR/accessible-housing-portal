@@ -61,7 +61,7 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       applicationPhone={details.applicationPhone}
       applicationInstructions={details.applicationInstructions}
       walkScore={
-        <Suspense fallback={null}>
+        <Suspense fallback={<WalkScore score={null} />}>
           <ListingWalkScore listingId={id} />
         </Suspense>
       }
