@@ -86,11 +86,11 @@ The Docker Compose `app` service builds from `Dockerfile.dev` and overrides its 
 
 Run a long-lived Node.js process with PostgreSQL and `EMAIL_WORKER_ENABLED=true`. Set the build command to `npm run build` and start command to `npm run start -- --hostname 0.0.0.0 --port $PORT`. Apply `npm run db:migrate` as an explicit release step against the intended database. Do not seed mock listings in production.
 
-| Setting                          | Production                     | Staging                              |
-| -------------------------------- | ------------------------------ | ------------------------------------ |
-| `BETTER_AUTH_URL`                | `https://homehub.unionsd.coop` | `https://affordablehousing.ctwr.org` |
-| Passkey RP ID, derived from URL  | `homehub.unionsd.coop`         | `affordablehousing.ctwr.org`         |
-| Trusted origin, derived from URL | `https://homehub.unionsd.coop` | `https://affordablehousing.ctwr.org` |
+| Setting                          | Production                                  | Staging                              |
+| -------------------------------- | ------------------------------------------- | ------------------------------------ |
+| `BETTER_AUTH_URL`                | `https://homehub.unioncommunityhousing.org` | `https://affordablehousing.ctwr.org` |
+| Passkey RP ID, derived from URL  | `homehub.unioncommunityhousing.org`         | `affordablehousing.ctwr.org`         |
+| Trusted origin, derived from URL | `https://homehub.unioncommunityhousing.org` | `https://affordablehousing.ctwr.org` |
 
 Use distinct `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `EMAIL_JOB_SECRET` values for each environment. Both secrets need at least 32 random characters. Set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY`, and an `EMAIL_FROM` address on a Resend-verified domain. Captured email is only for local development.
 
