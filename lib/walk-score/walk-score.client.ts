@@ -47,7 +47,7 @@ export type WalkScoreData = {
   bike?: ScoreDetails;
 };
 
-export type WalkScoreResult = WalkScoreData | { unavailable: true } | null;
+export type WalkScoreResult = WalkScoreData | null;
 
 export type WalkScoreInput = {
   address: string;
@@ -122,7 +122,7 @@ function mapWalkScoreResponse(response: WalkScoreApiResponse): WalkScoreResult {
       };
     case 2:
     case 30:
-      return { unavailable: true };
+      return null;
     case 40:
     case 41:
     case 42:

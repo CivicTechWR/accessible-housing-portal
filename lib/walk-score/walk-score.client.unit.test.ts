@@ -122,10 +122,10 @@ describe("getWalkScore", () => {
     });
   });
 
-  it.each([2, 30])("returns unavailable for API status %s", async (status) => {
+  it.each([2, 30])("returns null without warning for API status %s", async (status) => {
     fetchMock.mockResolvedValue(mockFetchResponse(200, { status }));
 
-    await expect(getWalkScore(INPUT)).resolves.toEqual({ unavailable: true });
+    await expect(getWalkScore(INPUT)).resolves.toBeNull();
 
     expect(warnSpy).not.toHaveBeenCalled();
   });

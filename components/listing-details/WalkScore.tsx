@@ -10,17 +10,14 @@ const WALK_SCORE_HOME_URL = "https://www.walkscore.com/";
 
 export function WalkScore({ score }: WalkScoreProps) {
   if (!score) {
-    return null;
-  }
-
-  if ("unavailable" in score) {
     return (
       <section className="rounded-lg border bg-card p-4" aria-label="Walk Score rating">
+        <h2 className="text-sm font-semibold">Walk Score® rating</h2>
         <Link
           href={WALK_SCORE_HOME_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium text-primary-text underline-offset-4 hover:underline"
+          className="mt-1 inline-block font-medium text-primary-text underline-offset-4 hover:underline"
         >
           Get Score
         </Link>
@@ -31,7 +28,7 @@ export function WalkScore({ score }: WalkScoreProps) {
   return (
     <section className="rounded-lg border bg-card p-4" aria-label="Location scores">
       <Link
-        href={score.walk.ws_link}
+        href={score.walk.help_link}
         target="_blank"
         rel="noopener noreferrer"
         className="block space-y-3"
@@ -58,14 +55,6 @@ export function WalkScore({ score }: WalkScoreProps) {
             </p>
           </div>
         )}
-      </Link>
-      <Link
-        href={score.walk.help_link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 inline-block text-xs text-muted-foreground underline-offset-4 hover:underline"
-      >
-        How Walk Score works
       </Link>
     </section>
   );

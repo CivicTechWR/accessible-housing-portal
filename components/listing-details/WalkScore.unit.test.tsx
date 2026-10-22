@@ -27,32 +27,25 @@ describe("WalkScore", () => {
     screen.getByText("68 · Bikeable");
 
     const scoreLink = screen.getByRole("link", { name: /Walk Score® rating/ });
-    expect(scoreLink).toHaveAttribute("href", score.walk.ws_link);
+    expect(scoreLink).toHaveAttribute("href", score.walk.help_link);
     expect(scoreLink).toHaveAttribute("target", "_blank");
     expect(scoreLink).toHaveAttribute("rel", "noopener noreferrer");
 
-    const helpLink = screen.getByRole("link", { name: "How Walk Score works" });
-    expect(helpLink).toHaveAttribute("href", score.walk.help_link);
-    expect(helpLink).toHaveAttribute("target", "_blank");
-    expect(helpLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.queryByRole("link", { name: "How Walk Score works" })).toBeNull();
+    expect(screen.getAllByRole("link")).toHaveLength(1);
 
     const scoreSection = screen.getByRole("region", { name: "Location scores" });
     expect(within(scoreSection).getAllByText(/®/)).toHaveLength(3);
   });
 
-  it("shows Get Score for an unavailable location", () => {
-    render(<WalkScore score={{ unavailable: true }} />);
+  it("shows Get Score when the score is null", () => {
+    render(<WalkScore score={null} />);
 
+    screen.getByRole("heading", { name: "Walk Score® rating" });
     const link = screen.getByRole("link", { name: "Get Score" });
     expect(link).toHaveAttribute("href", "https://www.walkscore.com/");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
-  });
-
-  it("renders nothing when the lookup has no score", () => {
-    const { container } = render(<WalkScore score={null} />);
-
-    expect(container).toBeEmptyDOMElement();
   });
 
   it("shows the walk score when transit and bike scores are not returned", () => {
