@@ -8,13 +8,16 @@ export function HomeHeroSection() {
       aria-labelledby="home-title"
       className="relative isolate flex min-h-[65vh] items-end overflow-hidden bg-muted"
     >
-      {/* Placeholder until the final photo from #405. */}
+      {/* object-cover stretches this 3069x1722 photo to the hero's 65vh min height, making it
+          116vh wide. On viewports narrower than that (phones, portrait tablets) it overflows the
+          screen, so 100vw alone would fetch a copy too small and blurry. Update if the photo's
+          aspect ratio changes. */}
       <Image
-        src="/home-image-placeholder.svg"
+        src="/home-hero.webp"
         alt=""
         fill
         preload
-        sizes="100vw"
+        sizes="(max-aspect-ratio: 116/100) 116vh, 100vw"
         className="-z-10 object-cover dark:brightness-75"
       />
       {/* Keeps at least 55% black behind every line of text however it wraps, so white text
