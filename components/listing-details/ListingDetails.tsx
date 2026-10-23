@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -64,6 +66,7 @@ export interface ListingDetailProps {
   timeAgo: string;
   features: ListingFeatureCategory[];
   embedded?: boolean;
+  walkScore?: ReactNode;
 }
 
 function formatAvailableDate(isoDate: string) {
@@ -102,6 +105,7 @@ export function ListingDetails({
   street2,
   postalCode,
   embedded = false,
+  walkScore,
 }: ListingDetailProps) {
   const address = buildAddress({ unitNumber, street1, street2, city, postalCode });
   const rentalCost = `$${price.toLocaleString()}`;
@@ -284,6 +288,8 @@ export function ListingDetails({
             ))}
           </CardContent>
         </Card>
+
+        {walkScore}
 
         <Card>
           <CardHeader className="gap-x-4 gap-y-2 border-b">
