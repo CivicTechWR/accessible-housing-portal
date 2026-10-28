@@ -38,6 +38,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-re_replace_me}
       EMAIL_FROM: ${EMAIL_FROM:-Home Hub <no-reply@example.com>}
       EMAIL_WORKER_ENABLED: ${EMAIL_WORKER_ENABLED:-true}
+      WALKSCORE_API_KEY: ${WALKSCORE_API_KEY:-}
     ports:
       - "3000:3000"
     volumes:

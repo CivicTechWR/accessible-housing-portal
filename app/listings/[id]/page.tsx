@@ -1,11 +1,20 @@
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 
 import { getListingByIdService } from "@/lib/listings/listing.service";
+import { getListingWalkScoreService } from "@/lib/listings/walk-score.service";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
+import { WalkScore } from "@/components/listing-details/WalkScore";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
+
+async function ListingWalkScore({ listingId }: { listingId: string }) {
+  const score = await getListingWalkScoreService(listingId);
+
+  return <WalkScore score={score} />;
+}
 
 export default async function ListingDetailsPage({ params }: Readonly<PageProps>) {
   const { id } = await params;
@@ -51,6 +60,11 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       applicationEmail={details.applicationEmail}
       applicationPhone={details.applicationPhone}
       applicationInstructions={details.applicationInstructions}
+      walkScore={
+        <Suspense fallback={<WalkScore score={null} />}>
+          <ListingWalkScore listingId={id} />
+        </Suspense>
+      }
     />
   );
 }
