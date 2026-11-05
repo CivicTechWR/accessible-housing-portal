@@ -1,7 +1,5 @@
 import Image from "next/image";
 
-import { Button } from "@/components/ui/button";
-
 export function HomeHeroSection() {
   return (
     <section
@@ -28,11 +26,8 @@ export function HomeHeroSection() {
             Affordable, accessible rentals in Waterloo Region
           </h1>
           <p className="mt-4 max-w-2xl text-lg">
-            Connecting affordable, accessible housing seekers with the providers who serve them.
+            Connecting affordable, accessible housing navigators with values-aligned providers.
           </p>
-          <Button asChild size="lg" className="mt-6 h-10 px-4 text-sm">
-            <a href="#join">Request access</a>
-          </Button>
         </div>
       </div>
     </section>
