@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { HomeAboutSection } from "@/components/home/HomeAboutSection";
 import { HomeContactSection } from "@/components/home/HomeContactSection";
+import { HomeFAQSection } from "@/components/home/HomeFAQSection";
 import { HomeHeroSection } from "@/components/home/HomeHeroSection";
 import { HomeInfoSection } from "@/components/home/HomeInfoSection";
 import { HomeScopeSection } from "@/components/home/HomeScopeSection";
@@ -29,6 +30,7 @@ export default async function Home() {
         <HomeInfoSection />
         <HomeScopeSection />
         <HomeContactSection />
+        <HomeFAQSection />
       </div>
     </main>
   );
