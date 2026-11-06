@@ -76,7 +76,6 @@ async function createUser(status: "active" | "invited") {
     userId: id,
     accountId: id,
     providerId: "credential",
-    issuer: "local:credential",
     password: await hashPassword(password),
   });
   return { id, email };
@@ -919,18 +918,18 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     );
   });
 
-  it("awaits invitation creation and returns its usable link", async () => {
+  it("activates a new invitation and signs in with its newly created credential", async () => {
     boss = await getEmailQueue();
     const admin = await createUser("active");
-    const invited = await createUser("invited");
     const result = await createInvite({
-      email: invited.email,
+      email: `${crypto.randomUUID()}@example.test`,
       fullName: "Invited user",
       role: "user",
       organization: null,
       invitedByUserId: admin.id,
       sendInviteEmail: false,
     });
+    userIds.push(result.userId);
     const token = new URL(result.inviteUrl).searchParams.get("token");
     assert.ok(token);
     assert.ok(result.inviteId);
@@ -946,5 +945,16 @@ describe("account security with PostgreSQL", { skip: !testDatabaseUrl }, () => {
       ).status,
       200,
     );
+    const signIn = await POST(
+      request(
+        "sign-in/email",
+        { email: result.email, password: "Invitation-password-416" },
+        "192.0.2.229",
+      ),
+    );
+    assert.equal(signIn.status, 200);
+    const session = await signIn.json();
+    assert.equal(session.user.id, result.userId);
+    assert.equal(session.user.status, "active");
   });
 });

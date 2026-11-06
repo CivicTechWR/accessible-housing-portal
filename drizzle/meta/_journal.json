@@ -134,6 +134,13 @@
       "when": 1792426916001,
       "tag": "20261019162155_drop_listing_image_upload_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793987386137,
+      "tag": "20261106174946_align_better_auth_accounts",
+      "breakpoints": true
     }
   ]
 }
