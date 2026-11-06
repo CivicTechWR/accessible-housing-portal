@@ -77,11 +77,10 @@ async function main() {
             userId: user.id,
             accountId: user.id,
             providerId: "credential",
-            issuer: "local:credential",
             password: hashedPassword,
           })
           .onConflictDoUpdate({
-            target: [accounts.issuer, accounts.accountId],
+            target: [accounts.providerId, accounts.accountId],
             set: { password: hashedPassword },
           });
       });

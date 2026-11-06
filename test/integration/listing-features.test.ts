@@ -93,7 +93,6 @@ describe("listing feature visibility with PostgreSQL", { skip: !testDatabaseUrl 
       userId,
       accountId: userId,
       providerId: "credential",
-      issuer: "local:credential",
       password: await hashPassword(password),
     });
     await db.insert(customListingFields).values(
