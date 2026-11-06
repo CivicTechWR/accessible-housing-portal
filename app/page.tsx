@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { HomeAboutSection } from "@/components/home/HomeAboutSection";
 import { HomeContactSection } from "@/components/home/HomeContactSection";
-import { HomeFAQSection } from "@/components/home/HomeFAQSection";
 import { HomeHeroSection } from "@/components/home/HomeHeroSection";
 import { HomeInfoSection } from "@/components/home/HomeInfoSection";
+import { HomeScopeSection } from "@/components/home/HomeScopeSection";
 import { getOptionalSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
-  title: "Affordable, Accessible Rentals in Waterloo Region | Home Hub",
+  title: "Home Hub | Affordable & Accessible Housing Rental Listings in Waterloo Region",
   description:
-    "Home Hub connects affordable and accessible housing seekers with trusted providers in Waterloo Region. Social workers and housing providers can request access.",
+    "Home Hub is a platform connecting affordable and accessible housing navigators with values-aligned providers in Waterloo Region.",
 };
 
 export default async function Home() {
@@ -24,9 +25,10 @@ export default async function Home() {
     <main>
       <HomeHeroSection />
       <div className="mx-auto max-w-5xl space-y-12 px-6 py-12 sm:py-16">
+        <HomeAboutSection />
         <HomeInfoSection />
+        <HomeScopeSection />
         <HomeContactSection />
-        <HomeFAQSection />
       </div>
     </main>
   );

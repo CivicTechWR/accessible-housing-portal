@@ -2,11 +2,11 @@ const contactEmail = "hello@unioncommunityhousing.org";
 
 export function HomeContactSection() {
   return (
-    <section id="join" aria-labelledby="join-title" className="border-t pt-12">
-      <h2 id="join-title">Request access</h2>
+    <section aria-labelledby="join-title" className="border-t pt-12">
+      <h2 id="join-title">Getting access</h2>
       <p className="mt-3 max-w-2xl text-muted-foreground">
-        Home Hub is invitation-only while we onboard our first users and providers. Email us to say
-        whether you provide housing or help clients find it, and we&apos;ll get you set up.
+        Home Hub is invitation-only while we onboard our first cohort of navigators and providers.
+        Please reach out if you have interest in being included.
       </p>
       <a
         href={`mailto:${contactEmail}`}
