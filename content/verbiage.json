@@ -2,8 +2,6 @@
   "adminInvite": {
     "pageTitle": "Admin Invites | Home Hub",
     "pageDescription": "Invite housing searchers and housing listers by email.",
-    "previewPageTitle": "Admin Invite Mock Preview | Home Hub",
-    "previewPageDescription": "Preview the account invite flow.",
     "heading": "Admin invites",
     "subheading": "Invite housing searchers and housing listers by email.",
     "formTitle": "Send invitation",
