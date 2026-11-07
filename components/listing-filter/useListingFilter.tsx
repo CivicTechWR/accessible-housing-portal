@@ -158,7 +158,7 @@ export function useListingFilters() {
     if (filters.minPrice) count++;
     if (filters.maxPrice) count++;
     if (filters.moveInDate) count++;
-    if (filters.features && filters.features.length > 0) count++;
+    count += filters.features.length;
     return count;
   }, [
     filters.bedrooms,
@@ -166,7 +166,7 @@ export function useListingFilters() {
     filters.minPrice,
     filters.maxPrice,
     filters.moveInDate,
-    filters.features,
+    filters.features.length,
   ]);
 
   const getFilterButtonProps = useCallback(
