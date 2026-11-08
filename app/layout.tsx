@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import { SiteHeader } from "@/components/site-header/SiteHeader";
 import { SiteFooter } from "@/components/site-footer/SiteFooter";
 import { QueryProvider } from "./query-provider";
@@ -21,11 +22,14 @@ export const metadata: Metadata = {
   description: "Connecting social workers with affordable housing providers in Waterloo Region.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // next-themes renders an inline script, which the CSP set in proxy.ts only allows with this nonce.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="en"
@@ -38,6 +42,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          nonce={nonce}
         >
           <QueryProvider>
             <SiteHeader />
