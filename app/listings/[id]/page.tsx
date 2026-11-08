@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 
-import { buildAddress } from "@/lib/address";
+import { formatWalkScoreAddress } from "@/lib/walk-score/address";
 import { getListingByIdService } from "@/lib/listings/listing.service";
 import { getListingWalkScoreService } from "@/lib/listings/walk-score.service";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
@@ -29,9 +29,7 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
   }
 
   const details = result.value.data;
-  const walkScoreAddress = [buildAddress(details.address), details.address.province, "Canada"]
-    .filter(Boolean)
-    .join(", ");
+  const walkScoreAddress = formatWalkScoreAddress(details.address);
 
   return (
     <ListingDetails

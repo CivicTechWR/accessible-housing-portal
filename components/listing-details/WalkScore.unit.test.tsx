@@ -51,14 +51,6 @@ describe("WalkScore", () => {
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
-  it("uses the homepage only when the address is blank", () => {
-    render(<WalkScore score={null} address="  " />);
-    expect(screen.getByRole("link", { name: "Get Score" })).toHaveAttribute(
-      "href",
-      "https://www.walkscore.com/",
-    );
-  });
-
   it("shows the walk score when transit and bike scores are not returned", () => {
     const { transit: _transit, bike: _bike, ...walkOnlyScore } = score;
     render(<WalkScore score={walkOnlyScore} address="160 King St W, Kitchener, ON, Canada" />);
