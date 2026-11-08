@@ -4,17 +4,16 @@ import type { WalkScoreResult } from "@/lib/walk-score/walk-score.client";
 
 type WalkScoreProps = {
   score: WalkScoreResult;
+  address: string;
 };
 
-const WALK_SCORE_HOME_URL = "https://www.walkscore.com/";
-
-export function WalkScore({ score }: WalkScoreProps) {
+export function WalkScore({ score, address }: WalkScoreProps) {
   if (!score) {
     return (
       <section className="rounded-lg border bg-card p-4" aria-label="Walk Score rating">
         <h2 className="text-sm font-semibold">Walk Score® rating</h2>
         <Link
-          href={WALK_SCORE_HOME_URL}
+          href={`https://www.walkscore.com/score/${encodeURIComponent(address)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-1 inline-block font-medium text-primary-text underline-offset-4 hover:underline"
