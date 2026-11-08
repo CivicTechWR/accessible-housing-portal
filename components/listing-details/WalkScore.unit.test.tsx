@@ -17,7 +17,7 @@ const score = {
 
 describe("WalkScore", () => {
   it("shows all scores with the first-mention trademark marks and correct links", () => {
-    render(<WalkScore score={score} />);
+    render(<WalkScore score={score} address="160 King St W, Kitchener, ON, Canada" />);
 
     screen.getByRole("heading", { name: "Walk Score® rating" });
     screen.getByText("72 · Very Walkable");
@@ -38,19 +38,30 @@ describe("WalkScore", () => {
     expect(within(scoreSection).getAllByText(/®/)).toHaveLength(3);
   });
 
-  it("shows Get Score when the score is null", () => {
-    render(<WalkScore score={null} />);
+  it("links Get Score to the listing address when no score is available", () => {
+    render(<WalkScore score={null} address="160 King St W, Kitchener, ON, Canada" />);
 
     screen.getByRole("heading", { name: "Walk Score® rating" });
     const link = screen.getByRole("link", { name: "Get Score" });
-    expect(link).toHaveAttribute("href", "https://www.walkscore.com/");
+    expect(link).toHaveAttribute(
+      "href",
+      "https://www.walkscore.com/score/160%20King%20St%20W%2C%20Kitchener%2C%20ON%2C%20Canada",
+    );
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
+  it("uses the homepage only when the address is blank", () => {
+    render(<WalkScore score={null} address="  " />);
+    expect(screen.getByRole("link", { name: "Get Score" })).toHaveAttribute(
+      "href",
+      "https://www.walkscore.com/",
+    );
+  });
+
   it("shows the walk score when transit and bike scores are not returned", () => {
     const { transit: _transit, bike: _bike, ...walkOnlyScore } = score;
-    render(<WalkScore score={walkOnlyScore} />);
+    render(<WalkScore score={walkOnlyScore} address="160 King St W, Kitchener, ON, Canada" />);
 
     screen.getByText("72 · Very Walkable");
     expect(screen.queryByRole("heading", { name: "Transit Score®" })).toBeNull();
