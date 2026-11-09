@@ -94,4 +94,22 @@ describe("useListingFilters", () => {
 
     expect(setFilters).toHaveBeenCalledWith({ minPrice: 2400, maxPrice: 2400 });
   });
+
+  it("counts each selected feature as a separate active filter", () => {
+    const { result } = renderFilters({ features: ["wheelchair-ramp", "custom-field-uuid"] });
+
+    expect(result.current.activeFilterCount).toBe(2);
+  });
+
+  it("adds feature selections to the count alongside other active filters", () => {
+    const { result } = renderFilters({ bedrooms: "2", features: ["custom-field-uuid"] });
+
+    expect(result.current.activeFilterCount).toBe(2);
+  });
+
+  it("does not count features when none are selected", () => {
+    const { result } = renderFilters({ features: [] });
+
+    expect(result.current.activeFilterCount).toBe(0);
+  });
 });
