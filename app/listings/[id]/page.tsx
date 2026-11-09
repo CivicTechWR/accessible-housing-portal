@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 
+import { formatWalkScoreAddress } from "@/lib/walk-score/address";
 import { getListingByIdService } from "@/lib/listings/listing.service";
 import { getListingWalkScoreService } from "@/lib/listings/walk-score.service";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
@@ -10,10 +11,10 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-async function ListingWalkScore({ listingId }: { listingId: string }) {
+async function ListingWalkScore({ listingId, address }: { listingId: string; address: string }) {
   const score = await getListingWalkScoreService(listingId);
 
-  return <WalkScore score={score} />;
+  return <WalkScore score={score} address={address} />;
 }
 
 export default async function ListingDetailsPage({ params }: Readonly<PageProps>) {
@@ -28,6 +29,7 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
   }
 
   const details = result.value.data;
+  const walkScoreAddress = formatWalkScoreAddress(details.address);
 
   return (
     <ListingDetails
@@ -61,8 +63,8 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       applicationPhone={details.applicationPhone}
       applicationInstructions={details.applicationInstructions}
       walkScore={
-        <Suspense fallback={<WalkScore score={null} />}>
-          <ListingWalkScore listingId={id} />
+        <Suspense fallback={<WalkScore score={null} address={walkScoreAddress} />}>
+          <ListingWalkScore listingId={id} address={walkScoreAddress} />
         </Suspense>
       }
     />

@@ -105,7 +105,7 @@ describe("getListingWalkScoreService", () => {
 
     expect(findListingRecordByIdMock).toHaveBeenCalledWith(LISTING_ID);
     expect(getWalkScoreMock).toHaveBeenCalledWith({
-      address: "204 - 123 Main Street, Waterloo N2L 3A1, ON",
+      address: "204 - 123 Main Street, Waterloo, ON N2L 3A1, Canada",
       latitude: 43.4643,
       longitude: -80.5204,
     });

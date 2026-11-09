@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getOptionalSession } from "@/lib/auth/session";
-import { buildAddress } from "@/lib/address";
+import { formatWalkScoreAddress } from "@/lib/walk-score/address";
 import { findListingRecordById } from "@/lib/listings/listing.repository";
 import { canReadListing } from "@/lib/policies/listing-policy";
 import { getWalkScore, type WalkScoreResult } from "@/lib/walk-score/walk-score.client";
@@ -45,18 +45,10 @@ export async function getListingWalkScoreService(
       return null;
     }
 
-    const address = [
-      buildAddress({
-        unitNumber: listing.unitNumber,
-        street1: listing.property.street1,
-        street2: listing.property.street2,
-        city: listing.property.city,
-        postalCode: listing.property.postalCode,
-      }),
-      listing.property.province,
-    ]
-      .filter(Boolean)
-      .join(", ");
+    const address = formatWalkScoreAddress({
+      ...listing.property,
+      unitNumber: listing.unitNumber,
+    });
 
     return await getWalkScore({ address, latitude, longitude });
   } catch {
