@@ -15,7 +15,7 @@ export function HomeInfoSection() {
         <p className="mt-3 text-muted-foreground">
           Accessible and affordable units do the most good when they go to tenants who need their
           features. Home Hub puts your listings in front of housing navigators and case workers from
-          trusted social agencies ensuring you fill units efficiently and with supported tenants.
+          trusted social agencies, ensuring you fill units efficiently and with supported tenants.
         </p>
       </div>
     </section>
