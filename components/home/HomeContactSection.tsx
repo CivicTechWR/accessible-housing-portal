@@ -6,7 +6,7 @@ export function HomeContactSection() {
       <h2 id="join-title">Getting access</h2>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         Home Hub is invitation-only while we onboard our first cohort of navigators and providers.
-        Please reach out if you have interest in being included.
+        Please reach out if you would like to learn more about Home Hub.
       </p>
       <a
         href={`mailto:${contactEmail}`}

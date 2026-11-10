@@ -21,8 +21,7 @@ export function HomeAboutSection() {
       <ul className="mt-2 list-disc space-y-1 pl-5">
         <li>Streamline the search for affordable and accessible housing units.</li>
         <li>
-          Effectively fill accessible and affordable units with tenants who most benefit from their
-          features.
+          Rent accessible and affordable units to tenants who most benefit from their features.
         </li>
       </ul>
     </section>
