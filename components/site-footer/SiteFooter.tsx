@@ -66,19 +66,21 @@ export function SiteFooter() {
           </div>
         </div>
       </div>
-      <div className="border-t border-primary-foreground/20 px-6 py-4 text-center text-xs text-primary-foreground/60">
-        <p>Home Hub</p>
-        <p className="mt-1">
-          Listing location scores:{" "}
-          <a
-            href={WALK_SCORE_ATTRIBUTION_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-4 hover:text-primary-foreground transition-colors"
-          >
-            Walk Score® by Redfin
-          </a>
-        </p>
+      <div className="border-t border-primary-foreground/20 px-6 py-4 text-xs text-primary-foreground/60">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 sm:flex-row sm:justify-between">
+          <p>Home Hub</p>
+          <p className="text-[11px]">
+            Location scores:{" "}
+            <a
+              href={WALK_SCORE_ATTRIBUTION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4 hover:text-primary-foreground transition-colors"
+            >
+              Walk Score® by Redfin
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );
