@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { WALK_SCORE_ATTRIBUTION_URL } from "@/components/listing-details/WalkScore";
+
 const siteMap = [
   { href: "/", label: "Home" },
   { href: "/listings", label: "Browse Listings" },
@@ -65,7 +67,18 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-primary-foreground/20 px-6 py-4 text-center text-xs text-primary-foreground/60">
-        Home Hub
+        <p>Home Hub</p>
+        <p className="mt-1">
+          Listing location scores:{" "}
+          <a
+            href={WALK_SCORE_ATTRIBUTION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4 hover:text-primary-foreground transition-colors"
+          >
+            Walk Score® by Redfin
+          </a>
+        </p>
       </div>
     </footer>
   );
