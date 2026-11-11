@@ -11,6 +11,7 @@ import {
 } from "@/app/listing-form/types";
 import { mapListingFormToAutosavePatchInput } from "@/app/listing-form/api";
 import { Form } from "@/components/ui/form";
+import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
 import { ListingFormFields } from "./ListingFormFields";
 
 function TestListingForm({
@@ -53,6 +54,16 @@ describe("ListingFormFields", () => {
     });
 
     expect(form.getValues("depositInfo")).toBe("First and last month's rent, refundable");
+  });
+
+  it("explains the initial lease term with the shared definition", () => {
+    renderForm();
+    const { label, description } = HOUSING_DEFINITIONS.leaseTerm;
+
+    expect(screen.getByRole("button", { name: label })).toHaveAccessibleDescription(description);
+    expect(
+      screen.getByRole("spinbutton", { name: /Initial Lease Term/ }),
+    ).toHaveAccessibleDescription(description);
   });
 
   it("renders a described checkbox for each utility", () => {

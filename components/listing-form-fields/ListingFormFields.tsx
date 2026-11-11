@@ -25,6 +25,7 @@ import {
 import { FormSection } from "@/components/listing-form-layout/ListingFormLayout";
 import { LabelledCheckbox } from "@/components/labelled-checkbox/LabelledCheckbox";
 import { InfoPopover } from "@/components/info-popover/InfoPopover";
+import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
 
 export interface ListingFormFieldsProps {
   control: ListingFormControl;
@@ -174,7 +175,10 @@ function FieldRenderer({
             <div className="flex items-center gap-1">
               <FormLabel>{label}</FormLabel>
               {isLeaseTerm && def.helpText && (
-                <InfoPopover label="About initial lease terms" description={def.helpText} />
+                <InfoPopover
+                  label={HOUSING_DEFINITIONS.leaseTerm.label}
+                  description={def.helpText}
+                />
               )}
             </div>
             <FormControl>

@@ -1,4 +1,4 @@
-import { LEASE_TERM_DESCRIPTION } from "@/shared/lease-term";
+import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
 import {
   LISTING_BUILDING_TYPE_VALUES,
   UTILITY_INCLUDED_LABELS,
@@ -187,7 +187,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: true,
     sortOrder: 10,
     placeholder: "E.g. 12",
-    helpText: LEASE_TERM_DESCRIPTION,
+    helpText: HOUSING_DEFINITIONS.leaseTerm.description,
   },
   {
     key: "heatingType",

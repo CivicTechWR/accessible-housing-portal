@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "@jest/globals";
 
+import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
 import { ListingDetails } from "./ListingDetails";
 
 const baseProps = {
@@ -71,6 +72,15 @@ describe("ListingDetails rental details", () => {
     const labels = screen.getAllByRole("term").map((node) => node.textContent);
     expect(labels.indexOf("Deposit")).toBeLessThan(labels.indexOf("Rental Cost"));
     expect(labels.indexOf("Primary heating type") + 1).toBe(labels.indexOf("Utilities Included"));
+  });
+
+  it("explains the initial lease term with the shared definition and a note for searchers", () => {
+    render(<ListingDetails {...baseProps} leaseTermMonths={12} />);
+    const { label, description, searcherNote } = HOUSING_DEFINITIONS.leaseTerm;
+
+    expect(screen.getByRole("button", { name: label })).toHaveAccessibleDescription(
+      `${description} ${searcherNote}`,
+    );
   });
 
   it("omits the optional rows and a whitespace-only description", () => {

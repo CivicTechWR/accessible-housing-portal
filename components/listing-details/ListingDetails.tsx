@@ -5,7 +5,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardDescription, CardAction, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
-import { LEASE_TERM_DESCRIPTION } from "@/shared/lease-term";
+import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
 import { InfoPopover } from "@/components/info-popover/InfoPopover";
 import {
   LISTING_BUILDING_TYPE_LABELS,
@@ -156,8 +156,8 @@ export function ListingDetails({
             label: "Initial Lease Term",
             value: `${leaseTermMonths}-month lease`,
             info: {
-              label: "About initial lease terms",
-              description: `${LEASE_TERM_DESCRIPTION} Confirm the final lease terms and renewal options with the lister.`,
+              label: HOUSING_DEFINITIONS.leaseTerm.label,
+              description: `${HOUSING_DEFINITIONS.leaseTerm.description} ${HOUSING_DEFINITIONS.leaseTerm.searcherNote}`,
             },
           },
         ]

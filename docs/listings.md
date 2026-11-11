@@ -198,6 +198,8 @@ Update payloads send selected features through `accessibilityFeatureIds`, a list
 
 Primary heating type is optional and appears beside included utilities in the form, detail preview, and listing details. It describes the unit's main heating system independently of whether heat is included in rent. Blank values remain unspecified; "Not sure" is an explicit answer. Duplication copies heating type with unit details and clears it for building-only copies.
 
+The initial lease term has an info button in the form, detail preview, and listing details. Its explanation lives in `shared/housing-definitions.ts`, a typed collection of plain-language housing definitions. Edit the wording there so listers and searchers see the same copy, and add a term there when its explanation is needed in more than one place. Listing details adds the definition's searcher note after the shared description.
+
 If a new listing field must be searchable, sortable, joined, or constrained at scale, prefer a normalized column. If it is project-configurable feature metadata, prefer `listing_field_definitions` plus `customFields`.
 
 The default custom fields include `rent_controlled`, labelled "Rent Controlled" in the "Rental Details" category. It is an optional, public, filterable boolean that applies to the unit. Authors select it after confirming that the unit is subject to rent control. The field appears in listing forms and filters, and selected listings show it in their details. Existing listings are not assigned a value automatically.
