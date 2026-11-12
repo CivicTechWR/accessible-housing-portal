@@ -28,6 +28,8 @@ for (const role of ROLES) {
           }
         });
         await page.waitForLoadState("networkidle");
+        // Client queries can start after networkidle while the page hydrates.
+        await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0, { timeout: 30_000 });
         await page.evaluate(() => document.fonts.ready);
 
         await page.screenshot({
