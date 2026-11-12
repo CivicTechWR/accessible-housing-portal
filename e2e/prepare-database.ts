@@ -1,9 +1,10 @@
 // Creates, migrates, and seeds the local review database used by Playwright.
-// Runs before the Playwright web server starts (see playwright.config.ts).
+// Runs before the Playwright web server starts (see playwright.config.ts), with the react-server
+// condition so app modules that import "server-only" can be reused here.
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import postgres from "postgres";
 
+import { hashOpaqueToken } from "../lib/auth/token.ts";
 import {
   E2E_DATABASE_URL,
   E2E_INVITE_TOKEN,
@@ -29,8 +30,9 @@ async function ensureDatabaseExists() {
   }
 }
 
-function run(command: string, args: string[]) {
-  execFileSync(command, args, {
+// Existing project scripts read DATABASE_URL; values set here take precedence over .env.local.
+function runScript(script: string) {
+  execFileSync("npm", ["run", "--silent", script], {
     stdio: "inherit",
     env: {
       ...process.env,
@@ -43,12 +45,13 @@ function run(command: string, args: string[]) {
 async function seedPendingInvite() {
   const sql = postgres(E2E_DATABASE_URL, { max: 1 });
   try {
-    const tokenHash = createHash("sha256").update(E2E_INVITE_TOKEN).digest("hex");
+    const tokenHash = hashOpaqueToken(E2E_INVITE_TOKEN);
     await sql.begin(async (tx) => {
       const [user] = await tx`
         insert into users (email, full_name, role, status)
         values (${E2E_INVITED_EMAIL}, 'Invited Partner', 'partner', 'invited')
-        on conflict (lower(email)) do update set status = 'invited', updated_at = now()
+        on conflict (lower(email)) do update
+          set role = 'partner', status = 'invited', invite_accepted_at = null, updated_at = now()
         returning id
       `;
       if (!user) throw new Error("Unable to seed the invited user.");
@@ -65,9 +68,9 @@ async function seedPendingInvite() {
 
 async function main() {
   await ensureDatabaseExists();
-  run("node_modules/.bin/drizzle-kit", ["migrate"]);
-  run(process.execPath, ["--experimental-strip-types", "db/seed.ts"]);
-  run(process.execPath, ["--import", "tsx", "scripts/seed-auth-review.ts"]);
+  runScript("db:migrate");
+  runScript("db:seed");
+  runScript("db:seed:auth-review");
   await seedPendingInvite();
   console.log("[e2e] Review database ready.");
 }

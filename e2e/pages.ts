@@ -9,6 +9,8 @@ export type PageEntry = {
   path: string;
   /** The account the page is captured as. Protected pages need the role that can open them. */
   role: Role;
+  /** Text the page must show, for pages whose error state would otherwise also pass. */
+  expectText?: string;
   /** Captured at desktop size only. Admin screens aren't designed for mobile. */
   desktopOnly?: boolean;
 };
@@ -20,7 +22,12 @@ export const PAGES: PageEntry[] = [
   { name: "forgot-password", path: "/forgot-password", role: "anonymous" },
   { name: "reset-password", path: "/reset-password?token=playwright", role: "anonymous" },
   { name: "reset-password-invalid", path: "/reset-password", role: "anonymous" },
-  { name: "invite", path: `/invite?token=${E2E_INVITE_TOKEN}`, role: "anonymous" },
+  {
+    name: "invite",
+    path: `/invite?token=${E2E_INVITE_TOKEN}`,
+    role: "anonymous",
+    expectText: "Step 1 of 2: Community agreement",
+  },
   { name: "invite-invalid", path: "/invite", role: "anonymous" },
   { name: "community-agreement", path: "/community-agreement", role: "anonymous" },
 

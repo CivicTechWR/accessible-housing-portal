@@ -19,6 +19,7 @@ for (const role of ROLES) {
         expect(response?.status(), "page should load without an error status").toBeLessThan(400);
         // A protected page redirects to /sign-in when the session is missing; fail instead of capturing that.
         expect(new URL(page.url()).pathname).toBe(new URL(entry.path, page.url()).pathname);
+        if (entry.expectText) await expect(page.getByText(entry.expectText)).toBeVisible();
 
         // Full-page screenshots don't scroll, so load lazy images up front.
         await page.evaluate(() => {

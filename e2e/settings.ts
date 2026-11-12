@@ -1,7 +1,7 @@
 // Shared settings for the Playwright server, database preparation, and specs.
 // Everything here targets a disposable local database, never the normal dev database.
 
-export const E2E_PORT = Number(process.env.E2E_PORT ?? 3100);
+export const E2E_PORT = Number(process.env.E2E_PORT || 3100);
 export const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
 
 // scripts/seed-auth-review.ts only accepts a local database named homehub_auth_review.

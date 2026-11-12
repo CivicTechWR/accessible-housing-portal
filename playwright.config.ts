@@ -6,6 +6,8 @@ export default defineConfig({
   testDir: "./e2e",
   outputDir: "./e2e/test-results",
   fullyParallel: true,
+  // `next dev` compiles each route on its first request, which can be slow on a cold CI runner.
+  timeout: 120_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"], ["html", { outputFolder: "e2e/report", open: "never" }]],
@@ -31,10 +33,12 @@ export default defineConfig({
   ],
   webServer: {
     // Prepares the isolated review database, then serves the app from .next-review
-    // so it can run beside a normal `npm run dev` on port 3000.
-    command: `node --import tsx e2e/prepare-database.ts && npm run dev -- --port ${E2E_PORT}`,
+    // so it can run beside a normal `npm run dev` on port 3000. This is `next dev` because
+    // lib/auth.ts requires an HTTPS BETTER_AUTH_URL in production.
+    command: `node --conditions=react-server --import tsx e2e/prepare-database.ts && npm run dev -- --port ${E2E_PORT}`,
     url: E2E_BASE_URL,
-    reuseExistingServer: !process.env.CI,
+    // Never reuse a running server: the database must be reset before every run.
+    reuseExistingServer: false,
     timeout: 180_000,
     stdout: "pipe",
     env: {
