@@ -59,6 +59,5 @@ next-env.d.ts
 
 # Playwright output
 /e2e/.auth/
-/e2e/screenshots/
 /e2e/test-results/
 /e2e/report/

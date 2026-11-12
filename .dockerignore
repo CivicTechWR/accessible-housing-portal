@@ -8,3 +8,7 @@ npm-debug.log*
 
 .review
 .next-review
+
+# Playwright tests and screenshots are not part of the app.
+e2e
+playwright.config.ts
