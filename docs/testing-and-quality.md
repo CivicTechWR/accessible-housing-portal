@@ -9,6 +9,8 @@ This project uses Jest for unit tests, the Node.js test runner for PostgreSQL in
 | `npm test`                 | Run all Jest tests.                                           |
 | `npm run test:unit`        | Run tests matching `.unit.test.`.                             |
 | `npm run test:integration` | Run `test/integration/*.test.ts` against `TEST_DATABASE_URL`. |
+| `npm run test:e2e`         | Run all Playwright tests in `e2e/`.                           |
+| `npm run screenshots`      | Capture a full-page screenshot of every page with Playwright. |
 | `npm run typecheck`        | Run `tsc --noEmit`.                                           |
 | `npm run lint`             | Run oxlint.                                                   |
 | `npm run lint:fix`         | Apply oxlint fixes.                                           |
@@ -27,6 +29,21 @@ Jest is configured in `jest.config.js` with:
 - `server-only` mapped to `test/mocks/server-only.ts`
 
 The installed Next.js Jest guide notes that async Server Components are not a strong fit for Jest. Prefer focused tests around schemas, services, policies, specifications, hooks, and pure mapping functions. Use broader browser or end-to-end coverage when async Server Component behaviour needs confidence.
+
+## Playwright Screenshots
+
+`npm run screenshots` captures every page at desktop (1440×900) and mobile (Pixel 7) sizes. One-time setup:
+
+```bash
+npx playwright install chromium
+docker compose up -d db
+```
+
+Playwright starts its own server on port 3100 (`E2E_PORT`) and builds into `.next-review`, so it can run beside `npm run dev`. Before the server starts, `e2e/prepare-database.ts` creates, migrates, and seeds a separate `homehub_auth_review` database on the Compose Postgres (`127.0.0.1:5433`). It also seeds review accounts with a test-only password and a pending invite. Set `E2E_DATABASE_URL` to use a different local Postgres. It must stay a local database named `homehub_auth_review`.
+
+`e2e/auth.setup.ts` signs in once each as a searcher, a partner, and an admin through the sign-in form. Each page in `e2e/pages.ts` is captured as the role that can open it. The test fails if a protected page redirects to sign-in. Screenshots are written to `e2e/screenshots/<desktop|mobile>/<page>.png` and attached to the HTML report (`npx playwright show-report e2e/report`). Both are git-ignored.
+
+When you add a page under `app/`, add it to `e2e/pages.ts`.
 
 ## Existing Test Patterns
 
