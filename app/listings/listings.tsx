@@ -9,7 +9,7 @@ import {
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
@@ -54,6 +54,7 @@ export default function ListingsDashboard({
   dynamicGroups,
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.MAP_LIST);
   const [siteHeaderHeight, setSiteHeaderHeight] = useState("6rem");
@@ -111,9 +112,10 @@ export default function ListingsDashboard({
     moveInDate,
     sort,
   } = useListingFilters();
-  const filterButtonProps = getFilterButtonProps(isFilterOpen, () =>
-    setIsFilterOpen(!isFilterOpen),
-  );
+  const filterButtonProps = {
+    ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
+    mobileButtonRef: mobileFilterButtonRef,
+  };
   const query = useMemo<ListingQuery>(
     () => ({
       limit: "50",
@@ -178,6 +180,11 @@ export default function ListingsDashboard({
                   <SheetContent
                     side="bottom"
                     aria-describedby={undefined}
+                    // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
+                    onCloseAutoFocus={(event) => {
+                      event.preventDefault();
+                      mobileFilterButtonRef.current?.focus();
+                    }}
                     className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
                   >
                     {/* ListingFilters renders its own visible "Filters" heading. */}
