@@ -8,8 +8,7 @@ import {
   ListingFilterSearchBar,
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
-import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
@@ -63,35 +62,7 @@ export default function ListingsDashboard({
   // brings it back.
   const effectiveDisplayMode =
     displayMode === DisplayMode.MAP_LIST && !isSplitViewAvailable ? DisplayMode.LIST : displayMode;
-  const [siteHeaderHeight, setSiteHeaderHeight] = useState("6rem");
   const isSplitView = displayMode === DisplayMode.MAP_LIST;
-  const shellStyle = {
-    "--site-header-height": siteHeaderHeight,
-  } as CSSProperties;
-
-  useEffect(() => {
-    const siteHeader = document.querySelector<HTMLElement>("[data-site-header='true']");
-
-    if (!siteHeader) {
-      return;
-    }
-
-    const syncSiteHeaderHeight = () => {
-      setSiteHeaderHeight(`${siteHeader.getBoundingClientRect().height}px`);
-    };
-
-    syncSiteHeaderHeight();
-    window.addEventListener("resize", syncSiteHeaderHeight);
-
-    const resizeObserver =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(syncSiteHeaderHeight);
-    resizeObserver?.observe(siteHeader);
-
-    return () => {
-      window.removeEventListener("resize", syncSiteHeaderHeight);
-      resizeObserver?.disconnect();
-    };
-  }, []);
 
   const {
     sortOptionProps,
@@ -143,10 +114,9 @@ export default function ListingsDashboard({
       ];
 
   return (
-    <div
-      className="flex h-[calc(100dvh-var(--site-header-height))] min-h-0 flex-col overflow-hidden"
-      style={shellStyle}
-    >
+    // data-fullscreen opts into the root layout's full-screen mode, which sizes this page to fill
+    // the screen below the site header (see app/layout.tsx).
+    <div data-fullscreen className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <header className="shrink-0 border-b bg-background px-4 py-3 sm:flex sm:h-16 sm:items-center sm:gap-4 sm:py-0 lg:gap-6">
         <ListingFilterSearchBar
           searchInputProps={searchInputProps}
