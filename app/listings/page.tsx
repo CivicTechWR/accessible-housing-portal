@@ -43,6 +43,8 @@ export default async function ListingsPage({
 
   return (
     <NuqsAdapter>
+      {/* Hide the site footer on mobile so the search results get the full screen (#494). */}
+      <div data-hide-site-footer-mobile hidden />
       <Suspense fallback={<ListingsSkeleton />}>
         <ListingsDashboard
           initialData={initialData}
