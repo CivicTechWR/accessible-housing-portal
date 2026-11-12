@@ -15,6 +15,7 @@ import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared
 import dynamic from "next/dynamic";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 const LazyListingFilters = dynamic<ListingFiltersProps>(
   () =>
@@ -183,17 +184,29 @@ export default function ListingsDashboard({
             sortOptionProps={sortOptionProps}
             filterButtonProps={filterButtonProps}
             mobileFilters={
-              isFilterOpen && isMobileViewport ? (
-                <LazyListingFilters
-                  bathroomToggleProps={bathroomToggleProps}
-                  bedroomToggleProps={bedroomToggleProps}
-                  priceRangeProps={priceRangeProps}
-                  getFeatureCheckboxProps={getFeatureCheckboxProps}
-                  datePickerProps={datePickerProps}
-                  clearFilters={clearFilters}
-                  dynamicGroups={dynamicGroups}
-                  className="max-w-none rounded-none border-x-0 border-t-0"
-                />
+              isMobileViewport ? (
+                <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                  <SheetContent
+                    side="bottom"
+                    aria-describedby={undefined}
+                    className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
+                  >
+                    {/* ListingFilters renders its own visible "Filters" heading. */}
+                    <SheetTitle className="sr-only">Filters</SheetTitle>
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                      <LazyListingFilters
+                        bathroomToggleProps={bathroomToggleProps}
+                        bedroomToggleProps={bedroomToggleProps}
+                        priceRangeProps={priceRangeProps}
+                        getFeatureCheckboxProps={getFeatureCheckboxProps}
+                        datePickerProps={datePickerProps}
+                        clearFilters={clearFilters}
+                        dynamicGroups={dynamicGroups}
+                        className="max-w-none border-0"
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
               ) : null
             }
             isLoading={isLoading}
