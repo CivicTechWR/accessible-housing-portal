@@ -3,7 +3,7 @@
  */
 import { createHmac, randomBytes } from "node:crypto";
 
-import { describe, expect, it } from "@jest/globals";
+import { afterEach, describe, expect, it, jest } from "@jest/globals";
 
 import {
   InvalidResendWebhookError,
@@ -12,6 +12,10 @@ import {
 
 const EVENT_CREATED_AT = "2026-09-23T14:30:00.000Z";
 const WEBHOOK_ID = "msg_webhook_123";
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 describe("verifyAndNormalizeResendWebhook", () => {
   it("verifies and normalizes an operational email event", () => {
@@ -33,8 +37,8 @@ describe("verifyAndNormalizeResendWebhook", () => {
       attemptIdTag: "attempt-123",
       bounceType: null,
       bounceSubtype: null,
-      processingStatus: "pending",
-      processedAt: null,
+      failureReason: null,
+      suppressionType: null,
     });
   });
 
@@ -63,29 +67,66 @@ describe("verifyAndNormalizeResendWebhook", () => {
     expect(JSON.stringify(result)).not.toContain("mail.example.com");
   });
 
-  it("stores minimal metadata for a non-operational email event as ignored", () => {
+  it.each([
+    [
+      "email.failed",
+      { failed: { reason: "reached_daily_quota" } },
+      { failureReason: "reached_daily_quota" },
+    ],
+    [
+      "email.suppressed",
+      {
+        suppressed: { type: "OnAccountSuppressionList", message: "user@example.com is suppressed" },
+      },
+      { suppressionType: "OnAccountSuppressionList" },
+    ],
+    [
+      "email.failed",
+      { failed: { reason: "Could not deliver to user@example.com" } },
+      { failureReason: null },
+    ],
+  ] as const)("keeps %s codes only when they are short codes", (type, detail, expected) => {
     const result = verifyAndNormalizeResendWebhook(
-      signedWebhook({
-        type: "email.opened",
-        created_at: EVENT_CREATED_AT,
-        data: emailData(),
-      }),
+      signedWebhook({ type, created_at: EVENT_CREATED_AT, data: { ...emailData(), ...detail } }),
     );
 
-    expect(result).toMatchObject({
-      svixId: WEBHOOK_ID,
-      eventType: "email.opened",
-      providerEmailId: "provider-email-123",
-      eventCreatedAt: new Date(EVENT_CREATED_AT),
-      processingStatus: "ignored",
-      processedAt: expect.any(Date),
-    });
-    expect(result).not.toHaveProperty("to");
-    expect(result).not.toHaveProperty("from");
-    expect(result).not.toHaveProperty("subject");
+    expect(result).toMatchObject(expected);
+    expect(JSON.stringify(result)).not.toContain("user@example.com");
+  });
+
+  it.each(["email.opened", "email.clicked", "email.received", "email.sent"])(
+    "acknowledges %s without storing it",
+    (type) => {
+      jest.spyOn(console, "info").mockImplementation(() => undefined);
+
+      expect(
+        verifyAndNormalizeResendWebhook(
+          signedWebhook({ type, created_at: EVENT_CREATED_AT, data: emailData() }),
+        ),
+      ).toBeNull();
+    },
+  );
+
+  it.each([
+    ["no type", { created_at: EVENT_CREATED_AT, data: emailData() }],
+    ["null data", { type: "email.delivered", created_at: EVENT_CREATED_AT, data: null }],
+    ["no email id", { type: "email.delivered", created_at: EVENT_CREATED_AT, data: {} }],
+    ["null created_at", { type: "email.delivered", created_at: null, data: emailData() }],
+    [
+      "a bounce without details",
+      { type: "email.bounced", created_at: EVENT_CREATED_AT, data: emailData() },
+    ],
+  ])("rejects a signed payload with %s", (_case, event) => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    expect(() => verifyAndNormalizeResendWebhook(signedWebhook(event))).toThrow(
+      InvalidResendWebhookError,
+    );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("provider-email-123");
   });
 
   it("does not store non-email webhook events", () => {
+    jest.spyOn(console, "info").mockImplementation(() => undefined);
     expect(
       verifyAndNormalizeResendWebhook(
         signedWebhook({

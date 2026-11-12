@@ -159,7 +159,7 @@ Interactive sign-in and invite acceptance use the Better Auth client in `lib/aut
 | ------ | ---------------------- | ----------------------------- | -------------------------------------------- |
 | `POST` | `/api/webhooks/resend` | Resend Svix signature headers | Record verified operational delivery events. |
 
-The handler verifies the signature against the raw request body and `RESEND_WEBHOOK_SECRET`. It records `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.failed`, `email.suppressed`, and `email.complained` for outcome processing. Other valid email event types receive a minimal ledger row marked `ignored`, making subscription drift observable without retaining engagement details; non-email events are acknowledged without storage. Repeated `svix-id` values are idempotently acknowledged.
+The handler verifies the signature against the raw request body and `RESEND_WEBHOOK_SECRET`. It records `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.failed`, `email.suppressed`, and `email.complained` for outcome processing. Every other verified event, including opens, clicks, and non-email events, is acknowledged with `200` and not stored; the handler logs only its type so a subscription change is noticed. A signed payload that is missing required fields returns `400`. Repeated `svix-id` values are idempotently acknowledged.
 
 ## Adding Or Changing An Endpoint
 

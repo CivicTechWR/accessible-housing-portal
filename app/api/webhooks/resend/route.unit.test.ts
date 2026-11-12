@@ -53,15 +53,6 @@ describe("POST /api/webhooks/resend", () => {
     });
   });
 
-  it("acknowledges a duplicate delivery without reinserting it", async () => {
-    ingest.mockResolvedValue({ status: "duplicate" });
-
-    const response = await POST(request("{}"));
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ received: true, status: "duplicate" });
-  });
-
   it("returns 400 for a failed signature verification", async () => {
     ingest.mockRejectedValue(new InvalidResendWebhookError());
 

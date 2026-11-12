@@ -58,7 +58,6 @@ export const emailDeliveryOutcomeEnum = pgEnum("email_delivery_outcome", [
 export const resendWebhookProcessingStatusEnum = pgEnum("resend_webhook_processing_status", [
   "pending",
   "processed",
-  "ignored",
   "unmatched",
   "failed",
 ]);
@@ -355,6 +354,9 @@ export const resendWebhookEvents = pgTable(
     attemptIdTag: text("attempt_id_tag"),
     bounceType: text("bounce_type"),
     bounceSubtype: text("bounce_subtype"),
+    /** Short provider codes only, such as `reached_daily_quota`; never free-form messages. */
+    failureReason: text("failure_reason"),
+    suppressionType: text("suppression_type"),
     processingStatus: resendWebhookProcessingStatusEnum("processing_status")
       .notNull()
       .default("pending"),
@@ -362,8 +364,6 @@ export const resendWebhookEvents = pgTable(
   },
   (table) => [
     index("resend_webhook_events_provider_email_id_idx").on(table.providerEmailId),
-    index("resend_webhook_events_processing_status_idx").on(table.processingStatus),
-    index("resend_webhook_events_event_created_at_idx").on(table.eventCreatedAt),
     index("resend_webhook_events_received_at_idx").on(table.webhookReceivedAt),
   ],
 );
