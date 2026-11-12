@@ -17,11 +17,10 @@ const BLANK_MAP_STYLE = JSON.stringify({
   layers: [{ id: "background", type: "background", paint: { "background-color": "#eef1f4" } }],
 });
 
-// Other outside images (such as the Civic Tech WR footer logo) render as nothing rather than a gray box.
+// The Civic Tech WR footer logo renders as nothing rather than a gray box.
+// Every other outside image is a listing photo and gets the placeholder.
 const TRANSPARENT_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>`;
-
-// Keep in sync with the listing photo hosts in next.config.ts and proxy.ts.
-const LISTING_PHOTO_HOSTS = new Set(["images.pexels.com", "picsum.photos"]);
+const DECORATIVE_IMAGE_HOSTS = new Set(["civictechwr.org"]);
 
 function isLocal(url: URL) {
   return url.hostname === "localhost" || url.hostname === "127.0.0.1";
@@ -31,7 +30,7 @@ function fulfillPlaceholderImage(route: Route) {
   return route.fulfill({ contentType: "image/svg+xml", body: PLACEHOLDER_IMAGE });
 }
 
-export async function mockExternalRequests(context: BrowserContext) {
+async function mockExternalRequests(context: BrowserContext) {
   await context.route(
     (url) => !isLocal(url),
     (route) => {
@@ -40,11 +39,11 @@ export async function mockExternalRequests(context: BrowserContext) {
       if (url.hostname === "tiles.openfreemap.org" && url.pathname.startsWith("/styles/")) {
         return route.fulfill({ contentType: "application/json", body: BLANK_MAP_STYLE });
       }
-      if (LISTING_PHOTO_HOSTS.has(url.hostname)) return fulfillPlaceholderImage(route);
-      if (request.resourceType() === "image") {
+      if (request.resourceType() !== "image") return route.abort("blockedbyclient");
+      if (DECORATIVE_IMAGE_HOSTS.has(url.hostname)) {
         return route.fulfill({ contentType: "image/svg+xml", body: TRANSPARENT_IMAGE });
       }
-      return route.abort("blockedbyclient");
+      return fulfillPlaceholderImage(route);
     },
   );
 

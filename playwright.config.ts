@@ -19,13 +19,11 @@ export default defineConfig({
     { name: "setup", testMatch: /auth\.setup\.ts/ },
     {
       name: "desktop",
-      testMatch: /\.spec\.ts/,
       dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {
       name: "mobile",
-      testMatch: /\.spec\.ts/,
       grepInvert: /@desktop-only/,
       dependencies: ["setup"],
       use: { ...devices["Pixel 7"] },
@@ -34,11 +32,10 @@ export default defineConfig({
   webServer: {
     // Prepares the isolated review database, then serves the app from .next-review
     // so it can run beside a normal `npm run dev` on port 3000. This is `next dev` because
-    // lib/auth.ts requires an HTTPS BETTER_AUTH_URL in production.
+    // lib/auth.ts requires an HTTPS BETTER_AUTH_URL in production. Playwright never reuses a
+    // running server by default, so the database is reset before every run.
     command: `node --conditions=react-server --import tsx e2e/prepare-database.ts && npm run dev -- --port ${E2E_PORT}`,
     url: E2E_BASE_URL,
-    // Never reuse a running server: the database must be reset before every run.
-    reuseExistingServer: false,
     timeout: 180_000,
     stdout: "pipe",
     env: {

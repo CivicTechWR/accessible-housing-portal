@@ -1,8 +1,8 @@
 import { expect, test } from "./fixtures.ts";
 import { PAGES } from "./pages.ts";
-import { E2E_ACCOUNTS, storageStatePath, type Role, type SignedInRole } from "./settings.ts";
+import { SIGNED_IN_ROLES, storageStatePath, type Role } from "./settings.ts";
 
-const ROLES: Role[] = ["anonymous", ...(Object.keys(E2E_ACCOUNTS) as SignedInRole[])];
+const ROLES: Role[] = ["anonymous", ...SIGNED_IN_ROLES];
 
 // Hides the Next.js dev-mode indicator so it doesn't appear in screenshots.
 const SCREENSHOT_STYLE = "nextjs-portal { display: none !important; }";
@@ -30,13 +30,12 @@ for (const role of ROLES) {
         await page.waitForLoadState("networkidle");
         await page.evaluate(() => document.fonts.ready);
 
-        const screenshot = await page.screenshot({
+        await page.screenshot({
           path: `e2e/screenshots/${testInfo.project.name}/${entry.name}.png`,
           fullPage: true,
           animations: "disabled",
           style: SCREENSHOT_STYLE,
         });
-        await testInfo.attach(entry.name, { body: screenshot, contentType: "image/png" });
       });
     }
   });

@@ -102,15 +102,14 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          # scripts/seed-auth-review.ts only seeds a local database with this name.
-          POSTGRES_DB: homehub_auth_review
+        # Matches the default E2E_DATABASE_URL in e2e/settings.ts, which creates its own database.
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
+          --health-interval 1s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -118,10 +117,8 @@ jobs:
           node-version: 26
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps --only-shell chromium
       - run: npm run screenshots
-        env:
-          E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/homehub_auth_review
       - uses: actions/upload-artifact@v4
         if: always()
         with:

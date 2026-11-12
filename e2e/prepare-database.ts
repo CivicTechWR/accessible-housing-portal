@@ -2,8 +2,11 @@
 // Runs before the Playwright web server starts (see playwright.config.ts), with the react-server
 // condition so app modules that import "server-only" can be reused here.
 import { execFileSync } from "node:child_process";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { lower, userInvites, users } from "../db/schema.ts";
 import { hashOpaqueToken } from "../lib/auth/token.ts";
 import {
   E2E_DATABASE_URL,
@@ -33,7 +36,7 @@ async function ensureDatabaseExists() {
   try {
     const [existing] = await sql`select 1 from pg_database where datname = ${databaseName}`;
     if (!existing) {
-      await sql.unsafe(`create database "${databaseName.replaceAll('"', '""')}"`);
+      await sql`create database ${sql(databaseName)}`;
       console.log(`[e2e] Created database ${databaseName}.`);
     }
   } finally {
@@ -55,22 +58,36 @@ function runScript(script: string) {
 
 async function seedPendingInvite() {
   const sql = postgres(E2E_DATABASE_URL, { max: 1 });
+  const db = drizzle(sql);
   try {
-    const tokenHash = hashOpaqueToken(E2E_INVITE_TOKEN);
-    await sql.begin(async (tx) => {
-      const [user] = await tx`
-        insert into users (email, full_name, role, status)
-        values (${E2E_INVITED_EMAIL}, 'Invited Partner', 'partner', 'invited')
-        on conflict (lower(email)) do update
-          set role = 'partner', status = 'invited', invite_accepted_at = null, updated_at = now()
-        returning id
-      `;
+    // Same select-then-upsert pattern as scripts/seed-auth-review.ts.
+    await db.transaction(async (tx) => {
+      const values = {
+        email: E2E_INVITED_EMAIL,
+        fullName: "Invited Partner",
+        role: "partner",
+        status: "invited",
+        inviteAcceptedAt: null,
+      } as const;
+      const [existing] = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(lower(users.email), E2E_INVITED_EMAIL));
+      const [user] = existing
+        ? await tx
+            .update(users)
+            .set(values)
+            .where(eq(users.id, existing.id))
+            .returning({ id: users.id })
+        : await tx.insert(users).values(values).returning({ id: users.id });
       if (!user) throw new Error("Unable to seed the invited user.");
-      await tx`delete from user_invites where user_id = ${user.id}`;
-      await tx`
-        insert into user_invites (user_id, email, token_hash, expires_at)
-        values (${user.id}, ${E2E_INVITED_EMAIL}, ${tokenHash}, now() + interval '30 days')
-      `;
+      await tx.delete(userInvites).where(eq(userInvites.userId, user.id));
+      await tx.insert(userInvites).values({
+        userId: user.id,
+        email: E2E_INVITED_EMAIL,
+        tokenHash: hashOpaqueToken(E2E_INVITE_TOKEN),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      });
     });
   } finally {
     await sql.end();
