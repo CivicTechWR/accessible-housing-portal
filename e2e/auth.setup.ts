@@ -1,5 +1,4 @@
-import { expect, test as setup } from "@playwright/test";
-
+import { expect, test as setup } from "./fixtures.ts";
 import {
   E2E_ACCOUNTS,
   E2E_REVIEW_PASSWORD,

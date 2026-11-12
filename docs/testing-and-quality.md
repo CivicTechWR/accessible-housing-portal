@@ -43,6 +43,10 @@ Playwright starts its own server on port 3100 (`E2E_PORT`) and builds into `.nex
 
 `e2e/auth.setup.ts` signs in once each as a searcher, a partner, and an admin through the sign-in form. Each page in `e2e/pages.ts` is captured as the role that can open it. The test fails if a protected page redirects to sign-in. Screenshots are written to `e2e/screenshots/<desktop|mobile>/<page>.png` and attached to the HTML report (`npx playwright show-report e2e/report`). Both are git-ignored.
 
+`e2e/fixtures.ts` replaces every browser request that leaves the app, so screenshots are stable and need no network. Listing photos and other outside images get a local placeholder, the OpenFreeMap style gets a blank background (listing markers still render), and all other outside requests are blocked. Page data still comes from the seeded database.
+
+CI runs the suite in the `Playwright Screenshots` job against a `homehub_auth_review` Postgres service. The screenshots and HTML report are uploaded as the `playwright-screenshots` artifact on each run.
+
 When you add a page under `app/`, add it to `e2e/pages.ts`.
 
 ## Existing Test Patterns

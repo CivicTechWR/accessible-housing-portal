@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-
+import { expect, test } from "./fixtures.ts";
 import { PAGES } from "./pages.ts";
 import { storageStatePath, type Role } from "./settings.ts";
 
