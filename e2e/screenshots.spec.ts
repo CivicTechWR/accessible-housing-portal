@@ -12,7 +12,9 @@ for (const role of ROLES) {
     if (role !== "anonymous") test.use({ storageState: storageStatePath(role) });
 
     for (const entry of PAGES.filter((page) => page.role === role)) {
-      test(`${entry.name} (${entry.path})`, async ({ page }, testInfo) => {
+      // The mobile project skips @desktop-only tests (see playwright.config.ts).
+      const details = entry.desktopOnly ? { tag: "@desktop-only" } : {};
+      test(`${entry.name} (${entry.path})`, details, async ({ page }, testInfo) => {
         const response = await page.goto(entry.path);
         expect(response?.status(), "page should load without an error status").toBeLessThan(400);
         // A protected page redirects to /sign-in when the session is missing; fail instead of capturing that.

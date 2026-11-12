@@ -24,6 +24,7 @@ export default defineConfig({
     {
       name: "mobile",
       testMatch: /\.spec\.ts/,
+      grepInvert: /@desktop-only/,
       dependencies: ["setup"],
       use: { ...devices["Pixel 7"] },
     },

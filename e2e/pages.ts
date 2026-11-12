@@ -9,6 +9,8 @@ export type PageEntry = {
   path: string;
   /** The account the page is captured as. Protected pages need the role that can open them. */
   role: Role;
+  /** Captured at desktop size only. Admin screens aren't designed for mobile. */
+  desktopOnly?: boolean;
 };
 
 // Every route under app/ with a page.tsx. Add new pages here so they get a screenshot.
@@ -30,7 +32,12 @@ export const PAGES: PageEntry[] = [
   { name: "listing-form-new", path: "/listing-form", role: "partner" },
   { name: "listing-form-edit", path: `/listing-form/${SEEDED_LISTING_ID}`, role: "partner" },
 
-  { name: "admin-users", path: "/admin/users", role: "admin" },
-  { name: "admin-invite", path: "/admin/invite", role: "admin" },
-  { name: "admin-custom-listing-fields", path: "/admin/custom-listing-fields", role: "admin" },
+  { name: "admin-users", path: "/admin/users", role: "admin", desktopOnly: true },
+  { name: "admin-invite", path: "/admin/invite", role: "admin", desktopOnly: true },
+  {
+    name: "admin-custom-listing-fields",
+    path: "/admin/custom-listing-fields",
+    role: "admin",
+    desktopOnly: true,
+  },
 ];

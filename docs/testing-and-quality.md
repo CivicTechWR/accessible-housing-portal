@@ -47,7 +47,7 @@ Playwright starts its own server on port 3100 (`E2E_PORT`) and builds into `.nex
 
 CI runs the suite in the `Playwright Screenshots` job against a `homehub_auth_review` Postgres service. The screenshots and HTML report are uploaded as the `playwright-screenshots` artifact on each run.
 
-When you add a page under `app/`, add it to `e2e/pages.ts`.
+When you add a page under `app/`, add it to `e2e/pages.ts`. Admin screens aren't designed for mobile, so they set `desktopOnly: true` and are captured at desktop size only.
 
 ## Existing Test Patterns
 
