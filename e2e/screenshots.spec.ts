@@ -1,8 +1,8 @@
 import { expect, test } from "./fixtures.ts";
 import { PAGES } from "./pages.ts";
-import { storageStatePath, type Role } from "./settings.ts";
+import { E2E_ACCOUNTS, storageStatePath, type Role, type SignedInRole } from "./settings.ts";
 
-const ROLES: Role[] = ["anonymous", "searcher", "partner", "admin"];
+const ROLES: Role[] = ["anonymous", ...(Object.keys(E2E_ACCOUNTS) as SignedInRole[])];
 
 // Hides the Next.js dev-mode indicator so it doesn't appear in screenshots.
 const SCREENSHOT_STYLE = "nextjs-portal { display: none !important; }";

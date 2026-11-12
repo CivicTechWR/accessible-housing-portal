@@ -15,6 +15,17 @@ import {
 const databaseUrl = new URL(E2E_DATABASE_URL);
 const databaseName = databaseUrl.pathname.slice(1);
 
+// Migrations and seeds below write to this database, so refuse anything but the local review
+// database before touching it (scripts/seed-auth-review.ts applies the same rule, but runs last).
+function assertLocalReviewDatabase() {
+  if (
+    !["localhost", "127.0.0.1"].includes(databaseUrl.hostname) ||
+    databaseName !== "homehub_auth_review"
+  ) {
+    throw new Error("E2E_DATABASE_URL must point to a local homehub_auth_review database.");
+  }
+}
+
 async function ensureDatabaseExists() {
   const maintenanceUrl = new URL(E2E_DATABASE_URL);
   maintenanceUrl.pathname = "/postgres";
@@ -67,6 +78,7 @@ async function seedPendingInvite() {
 }
 
 async function main() {
+  assertLocalReviewDatabase();
   await ensureDatabaseExists();
   runScript("db:migrate");
   runScript("db:seed");
