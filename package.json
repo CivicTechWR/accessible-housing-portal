@@ -28,6 +28,7 @@
     "test": "jest",
     "test:unit": "jest --testPathPatterns=\\.unit\\.test\\.",
     "test:integration": "node --conditions=react-server --import tsx --test --test-concurrency=1 test/integration/*.test.ts",
+    "screenshots": "playwright test e2e/screenshots.spec.ts",
     "lockfile:check": "node scripts/check-lockfile-integrity.js",
     "auth:admin": "node --env-file-if-exists=.env.local --import tsx scripts/create-admin.ts",
     "db:seed:auth-review": "node --import tsx scripts/seed-auth-review.ts"
@@ -70,6 +71,7 @@
     "zod": "4.6.6"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "4.2.2",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",

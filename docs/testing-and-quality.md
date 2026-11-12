@@ -9,6 +9,7 @@ This project uses Jest for unit tests, the Node.js test runner for PostgreSQL in
 | `npm test`                 | Run all Jest tests.                                           |
 | `npm run test:unit`        | Run tests matching `.unit.test.`.                             |
 | `npm run test:integration` | Run `test/integration/*.test.ts` against `TEST_DATABASE_URL`. |
+| `npm run screenshots`      | Capture a full-page screenshot of every page with Playwright. |
 | `npm run typecheck`        | Run `tsc --noEmit`.                                           |
 | `npm run lint`             | Run oxlint.                                                   |
 | `npm run lint:fix`         | Apply oxlint fixes.                                           |
@@ -27,6 +28,25 @@ Jest is configured in `jest.config.js` with:
 - `server-only` mapped to `test/mocks/server-only.ts`
 
 The installed Next.js Jest guide notes that async Server Components are not a strong fit for Jest. Prefer focused tests around schemas, services, policies, specifications, hooks, and pure mapping functions. Use broader browser or end-to-end coverage when async Server Component behaviour needs confidence.
+
+## Playwright Screenshots
+
+`npm run screenshots` captures every page at desktop (1440×900) and mobile (Pixel 7) sizes. One-time setup:
+
+```bash
+npx playwright install chromium
+docker compose up -d db
+```
+
+Playwright starts its own `next dev` server on port 3100 (`E2E_PORT`) with `.next-review` as its build directory, so it can run beside `npm run dev`. It never reuses a server already on that port, so stop any leftover one first. Before the server starts, `e2e/prepare-database.ts` creates, migrates, and seeds a separate `homehub_auth_review` database on the Compose Postgres (`127.0.0.1:5433`). It also seeds review accounts with a test-only password and a pending invite. Set `E2E_DATABASE_URL` to use a different local Postgres. It must stay a local database named `homehub_auth_review`.
+
+`e2e/auth.setup.ts` signs in once each as a searcher, a partner (the owner of the seeded listing), and an admin through the auth API. Each page in `e2e/pages.ts` is captured as the role that can open it. The test fails if a protected page redirects to sign-in. Screenshots are written to `e2e/screenshots/<desktop|mobile>/<page>.png`; the HTML report (`npx playwright show-report e2e/report`) keeps traces of failed tests. The screenshots are committed so reviewers can see every page; re-run `npm run screenshots` and commit the changed images when a page's appearance changes. The report is git-ignored, and `.dockerignore` keeps `e2e/` out of the production image.
+
+`e2e/fixtures.ts` replaces every browser request that leaves the app, so screenshots are stable and need no network. Listing photos and other outside images get a local placeholder, the OpenFreeMap style gets a blank background (listing markers still render), and all other outside requests are blocked. Page data still comes from the seeded database.
+
+CI runs the suite in the `Playwright Screenshots` job against a `homehub_auth_review` Postgres service. The screenshots and HTML report are uploaded as the `playwright-screenshots` artifact on each run.
+
+When you add a page under `app/`, add it to `e2e/pages.ts`. Admin screens aren't designed for mobile, so they set `desktopOnly: true` and are captured at desktop size only.
 
 ## Existing Test Patterns
 

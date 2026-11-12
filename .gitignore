@@ -56,3 +56,8 @@ next-env.d.ts
 # Isolated local review data and builds
 /.review/
 /.next-review/
+
+# Playwright output
+/e2e/.auth/
+/e2e/test-results/
+/e2e/report/
