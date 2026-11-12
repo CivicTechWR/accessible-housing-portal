@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface ToggleIconButtonProps extends React.ComponentPropsWithoutRef<typeof Button> {
+interface ToggleIconButtonProps extends React.ComponentProps<typeof Button> {
   icon: React.ReactElement;
   isActive: boolean;
 }

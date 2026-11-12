@@ -8,7 +8,7 @@ import {
   ListingFilterSearchBar,
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
@@ -54,6 +54,7 @@ export default function ListingsDashboard({
   dynamicGroups,
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   // Split view only fits at `lg` (1024px) and up, so phones and tablets get List and Map only.
   // This is `false` until hydration, so nothing that affects first paint may depend on it.
@@ -84,9 +85,10 @@ export default function ListingsDashboard({
     moveInDate,
     sort,
   } = useListingFilters();
-  const filterButtonProps = getFilterButtonProps(isFilterOpen, () =>
-    setIsFilterOpen(!isFilterOpen),
-  );
+  const filterButtonProps = {
+    ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
+    mobileButtonRef: mobileFilterButtonRef,
+  };
   const query = useMemo<ListingQuery>(
     () => ({
       limit: "50",
@@ -150,6 +152,11 @@ export default function ListingsDashboard({
                   <SheetContent
                     side="bottom"
                     aria-describedby={undefined}
+                    // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
+                    onCloseAutoFocus={(event) => {
+                      event.preventDefault();
+                      mobileFilterButtonRef.current?.focus();
+                    }}
                     className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
                   >
                     {/* ListingFilters renders its own visible "Filters" heading. */}
