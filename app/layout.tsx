@@ -46,8 +46,10 @@ export default async function RootLayout({
         >
           <QueryProvider>
             <SiteHeader />
-            <div className="flex-1">{children}</div>
-            <SiteFooter />
+            <div className="peer/main flex-1">{children}</div>
+            {/* Pages can render a [data-hide-site-footer-mobile] element to hide the footer below md.
+                Pure CSS, so the footer never flashes in before hydration. */}
+            <SiteFooter className="max-md:peer-has-[[data-hide-site-footer-mobile]]/main:hidden" />
           </QueryProvider>
         </ThemeProvider>
       </body>

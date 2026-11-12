@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const siteMap = [
   { href: "/", label: "Home" },
@@ -6,9 +7,9 @@ const siteMap = [
   { href: "/community-agreement", label: "Community Agreement & Terms of Use" },
 ];
 
-export function SiteFooter() {
+export function SiteFooter({ className }: { className?: string }) {
   return (
-    <footer className="bg-primary text-primary-foreground">
+    <footer className={cn("bg-primary text-primary-foreground", className)}>
       <div className="mx-auto flex max-w-7xl justify-center px-6 py-10">
         <div className="grid w-full max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-3">
