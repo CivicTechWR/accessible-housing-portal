@@ -48,6 +48,7 @@ export default defineConfig({
       EMAIL_TRANSPORT: "capture",
       EMAIL_CAPTURE_DIR: ".review/emails",
       EMAIL_WORKER_ENABLED: "false",
+      WALKSCORE_API_KEY: "",
     },
   },
 });
