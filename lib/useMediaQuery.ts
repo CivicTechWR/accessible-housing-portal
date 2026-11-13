@@ -1,10 +1,9 @@
-"use client";
-
 import { useCallback, useSyncExternalStore } from "react";
 
 /**
  * Tailwind's default breakpoints (`--breakpoint-*` in tailwindcss/theme.css).
- * Keep these in sync if the project's `@theme` ever overrides them.
+ * useMediaQuery.unit.test.ts fails if these drift from Tailwind or from an
+ * override in app/globals.css.
  */
 export const BREAKPOINTS = {
   sm: "40rem",
@@ -24,6 +23,18 @@ export function atLeastBreakpoint(breakpoint: Breakpoint) {
   return `(width >= ${BREAKPOINTS[breakpoint]})`;
 }
 
+// One MediaQueryList per query, shared by every subscriber and snapshot read.
+const mediaQueryLists = new Map<string, MediaQueryList>();
+
+function getMediaQueryList(query: string) {
+  let mediaQueryList = mediaQueryLists.get(query);
+  if (!mediaQueryList) {
+    mediaQueryList = window.matchMedia(query);
+    mediaQueryLists.set(query, mediaQueryList);
+  }
+  return mediaQueryList;
+}
+
 const getServerSnapshot = () => false;
 
 /**
@@ -36,13 +47,13 @@ const getServerSnapshot = () => false;
 export function useMediaQuery(query: string): boolean {
   const subscribe = useCallback(
     (onChange: () => void) => {
-      const mediaQueryList = window.matchMedia(query);
+      const mediaQueryList = getMediaQueryList(query);
       mediaQueryList.addEventListener("change", onChange);
       return () => mediaQueryList.removeEventListener("change", onChange);
     },
     [query],
   );
-  const getSnapshot = useCallback(() => window.matchMedia(query).matches, [query]);
+  const getSnapshot = useCallback(() => getMediaQueryList(query).matches, [query]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
