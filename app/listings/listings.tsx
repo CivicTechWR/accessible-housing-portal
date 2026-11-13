@@ -15,6 +15,7 @@ import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared
 import dynamic from "next/dynamic";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { belowBreakpoint, useMediaQuery } from "@/lib/useMediaQuery";
 
 const LazyListingFilters = dynamic<ListingFiltersProps>(
   () =>
@@ -52,7 +53,7 @@ export default function ListingsDashboard({
   dynamicGroups,
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.MAP_LIST);
   const [siteHeaderHeight, setSiteHeaderHeight] = useState("6rem");
   const isSplitView = displayMode === DisplayMode.MAP_LIST;
@@ -81,18 +82,6 @@ export default function ListingsDashboard({
     return () => {
       window.removeEventListener("resize", syncSiteHeaderHeight);
       resizeObserver?.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    const mobileMediaQuery = window.matchMedia("(max-width: 639px)");
-    const syncMobileViewport = () => setIsMobileViewport(mobileMediaQuery.matches);
-
-    syncMobileViewport();
-    mobileMediaQuery.addEventListener("change", syncMobileViewport);
-
-    return () => {
-      mobileMediaQuery.removeEventListener("change", syncMobileViewport);
     };
   }, []);
 
