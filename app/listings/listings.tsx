@@ -145,6 +145,8 @@ export default function ListingsDashboard({
   );
   const { data, error, isLoading } = useListingsQuery(query, initialData, initialQueryString);
   const listings = data.data;
+  // The page shows one page of results; the button reports every match.
+  const matchCount = data.pagination.total;
   const displayModes = isMobileViewport
     ? [
         { value: DisplayMode.LIST, label: "List" },
@@ -231,8 +233,11 @@ export default function ListingsDashboard({
                         Clear
                       </Button>
                       <SheetClose asChild>
-                        <Button className="h-11 flex-1 text-sm">
-                          Show {listings.length} listing{listings.length !== 1 ? "s" : ""}
+                        <Button className="h-11 flex-1 text-sm" aria-busy={isLoading}>
+                          {/* Dimmed while a filter change is still loading, so a stale count reads as pending. */}
+                          <span className={isLoading ? "opacity-60" : undefined}>
+                            Show {matchCount} listing{matchCount !== 1 ? "s" : ""}
+                          </span>
                         </Button>
                       </SheetClose>
                     </SheetFooter>
