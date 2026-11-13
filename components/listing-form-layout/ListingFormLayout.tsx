@@ -3,6 +3,7 @@
 import { ReactNode, useId, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export interface FormSectionProps {
   title: string;
@@ -111,33 +112,32 @@ function PaneSwitcher({
 }) {
   return (
     <div className="sticky top-0 z-20 border-b border-foreground/10 bg-background px-4 py-2 md:px-6 lg:hidden">
-      <div
-        role="group"
+      <ToggleGroup
+        type="single"
+        spacing={1}
+        value={activePane}
+        onValueChange={(value) => {
+          // Pressing the selected option again clears the value; keep the current pane.
+          if (value) onChange(value as Pane);
+        }}
         aria-label="Listing editor view"
-        className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
+        className="grid w-full grid-cols-2 rounded-lg bg-muted p-1"
       >
-        {PANES.map(({ value, label }) => {
-          const isActive = activePane === value;
-          return (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={isActive}
-              aria-controls={paneIds[value]}
-              onClick={() => onChange(value)}
-              className={cn(
-                "min-h-11 rounded-md border-2 px-3 text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                // The selected option gets a border and bold text, not just a color change.
-                isActive
-                  ? "border-foreground bg-background font-semibold text-foreground shadow-sm"
-                  : "border-transparent font-medium text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+        {PANES.map(({ value, label }) => (
+          <ToggleGroupItem
+            key={value}
+            value={value}
+            aria-controls={paneIds[value]}
+            className={cn(
+              "h-11 w-full border-2 border-transparent px-3 text-sm font-medium text-muted-foreground hover:bg-transparent hover:text-foreground",
+              // The selected option gets a border and bold text, not just a color change.
+              "data-[state=on]:border-foreground data-[state=on]:bg-background data-[state=on]:font-semibold data-[state=on]:text-foreground data-[state=on]:shadow-sm",
+            )}
+          >
+            {label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
     </div>
   );
 }

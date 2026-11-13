@@ -17,11 +17,8 @@ describe("ListingFormLayout pane switcher", () => {
   it("shows the form pane by default", () => {
     renderLayout();
 
-    expect(screen.getByRole("button", { name: "Form" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Preview" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    expect(screen.getByRole("radio", { name: "Form" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Preview" })).toHaveAttribute("aria-checked", "false");
     expect(screen.getByRole("region", { name: "Form" })).not.toHaveClass("hidden");
     expect(screen.getByRole("region", { name: "Preview", hidden: true })).toHaveClass(
       "hidden",
@@ -34,12 +31,12 @@ describe("ListingFormLayout pane switcher", () => {
     const titleInput = screen.getByLabelText("Title");
     fireEvent.change(titleInput, { target: { value: "Unsaved title" } });
 
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
-    expect(screen.getByRole("button", { name: "Preview" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("radio", { name: "Preview" }));
+    expect(screen.getByRole("radio", { name: "Preview" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("region", { name: "Preview" })).not.toHaveClass("hidden");
     expect(screen.getByRole("region", { name: "Form", hidden: true })).toHaveClass("hidden");
 
-    fireEvent.click(screen.getByRole("button", { name: "Form" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Form" }));
     expect(screen.getByLabelText("Title")).toBe(titleInput);
     expect(titleInput).toHaveValue("Unsaved title");
   });
@@ -48,9 +45,16 @@ describe("ListingFormLayout pane switcher", () => {
     renderLayout();
 
     for (const name of ["Form", "Preview"]) {
-      const controlledId = screen.getByRole("button", { name }).getAttribute("aria-controls");
+      const controlledId = screen.getByRole("radio", { name }).getAttribute("aria-controls");
       expect(document.getElementById(controlledId ?? "")).toHaveAccessibleName(name);
     }
+  });
+
+  it("keeps the current pane when the selected option is pressed again", () => {
+    renderLayout();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Form" }));
+    expect(screen.getByRole("radio", { name: "Form" })).toHaveAttribute("aria-checked", "true");
   });
 
   it("has no switcher when there is no preview", () => {
