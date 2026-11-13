@@ -55,6 +55,7 @@ export default function ListingsDashboard({
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileFilterSheetRef = useRef<HTMLDivElement>(null);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   // Split view only fits at `lg` (1024px) and up, so phones and tablets get List and Map only.
   // This is `false` until hydration, so nothing that affects first paint may depend on it.
@@ -152,6 +153,12 @@ export default function ListingsDashboard({
                   <SheetContent
                     side="bottom"
                     aria-describedby={undefined}
+                    ref={mobileFilterSheetRef}
+                    // Focus the sheet rather than its first field, which would open the phone's keyboard.
+                    onOpenAutoFocus={(event) => {
+                      event.preventDefault();
+                      mobileFilterSheetRef.current?.focus();
+                    }}
                     // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
                     onCloseAutoFocus={(event) => {
                       event.preventDefault();
