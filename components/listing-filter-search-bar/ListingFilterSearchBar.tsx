@@ -46,7 +46,8 @@ export function ListingFilterSearchBar({
         </div>
       </div>
 
-      <div className="w-full sm:max-w-[280px] sm:shrink-0">
+      {/* On phones, price lives in the filter sheet with the other filters. */}
+      <div className="hidden sm:block sm:max-w-[280px] sm:shrink-0">
         <PriceRangeInput
           {...priceRangeProps}
           fieldClassName="gap-1 sm:gap-1.5"
