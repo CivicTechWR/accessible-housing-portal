@@ -15,7 +15,8 @@ import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared
 import dynamic from "next/dynamic";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetClose, SheetContent, SheetFooter, SheetTitle } from "@/components/ui/sheet";
 
 const LazyListingFilters = dynamic<ListingFiltersProps>(
   () =>
@@ -216,9 +217,25 @@ export default function ListingsDashboard({
                         datePickerProps={datePickerProps}
                         clearFilters={clearFilters}
                         dynamicGroups={dynamicGroups}
+                        showActions={false}
                         className="max-w-none border-0"
                       />
                     </div>
+                    {/* Filters apply as they change; this only closes the sheet and confirms the count. */}
+                    <SheetFooter className="flex-row gap-3 border-t p-4">
+                      <Button
+                        variant="outline"
+                        className="h-11 flex-1 text-sm"
+                        onClick={() => void clearFilters()}
+                      >
+                        Clear
+                      </Button>
+                      <SheetClose asChild>
+                        <Button className="h-11 flex-1 text-sm">
+                          Show {listings.length} listing{listings.length !== 1 ? "s" : ""}
+                        </Button>
+                      </SheetClose>
+                    </SheetFooter>
                   </SheetContent>
                 </Sheet>
               ) : null
