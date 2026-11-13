@@ -35,10 +35,10 @@ for (const role of ROLES) {
         // Client queries can start after networkidle while the page hydrates.
         await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0, { timeout: 30_000 });
         await page.evaluate(() => document.fonts.ready);
-        if (entry.selectOption) {
-          const option = page.getByRole("radio", { name: entry.selectOption, exact: true });
-          await option.click();
-          await expect(option).toHaveAttribute("aria-checked", "true");
+        if (entry.selectTab) {
+          const tab = page.getByRole("tab", { name: entry.selectTab, exact: true });
+          await tab.click();
+          await expect(tab).toHaveAttribute("aria-selected", "true");
         }
 
         await page.screenshot({
