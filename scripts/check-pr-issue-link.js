@@ -9,13 +9,12 @@ const issueRef = String.raw`(?:#\d+|https://github\.com/[\w.-]+/[\w.-]+/issues/\
 const closingKeyword = String.raw`(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)`;
 
 const closingPattern = new RegExp(String.raw`\b${closingKeyword}:?\s+${issueRef}`, "i");
-const partOfPattern = new RegExp(String.raw`\bpart\s+of\s+${issueRef}`, "i");
 
 const failureMessage = [
   "This pull request's description doesn't link an issue.",
-  "Add one of these lines to the description:",
-  "  Closes #N       (this PR finishes issue N)",
-  "  Part of #N      (this PR is partial work on issue N)",
+  "Add `Closes #N` to the description, where N is the issue this PR finishes.",
+  "For partial work, split the issue into sub-issues and close the sub-issue this PR finishes.",
+  '"Part of #N" is only a mention: it doesn\'t link the PR or put it on the project board.',
   "Editing the description re-runs this check.",
 ].join("\n");
 
@@ -25,7 +24,7 @@ const failureMessage = [
  */
 function hasIssueLink(body) {
   if (!body) return false;
-  return closingPattern.test(body) || partOfPattern.test(body);
+  return closingPattern.test(body);
 }
 
 module.exports = { hasIssueLink, failureMessage };
@@ -36,7 +35,7 @@ if (require.main === module) {
   } else {
     console.error(failureMessage);
     console.error(
-      "::error title=Link an issue::Add `Closes #N` to the description, or `Part of #N` for partial work.",
+      "::error title=Link an issue::Add `Closes #N` to the description. For partial work, close a sub-issue.",
     );
     process.exitCode = 1;
   }

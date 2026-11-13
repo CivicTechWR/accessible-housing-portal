@@ -5,7 +5,6 @@ describe("hasIssueLink", () => {
   it.each([
     ["Closes #507", "a closing keyword"],
     ["Replaces #498. Closes #495.", "a closing keyword after other references"],
-    ["Part of #496 (part 2 of 2)", "Part of"],
     ["## What\nStuff\n\nfixes #12", "a lowercase keyword on a later line"],
     ["RESOLVED #3", "an uppercase keyword"],
     ["Fixes: #8", "a keyword followed by a colon"],
@@ -22,6 +21,7 @@ describe("hasIssueLink", () => {
     ["## What\nHides the footer on mobile.\n\n## Testing\nChecked in the browser.", "no issue"],
     ["Replaces #498.", "a reference with no closing keyword"],
     ["See #496", "a bare reference"],
+    ["Part of #496 (part 2 of 2)", "Part of, which GitHub treats as a mention"],
     ["Closes the dialog when you press Escape", "a keyword with no issue"],
     ["Prefixes #4", "a keyword inside another word"],
     [
