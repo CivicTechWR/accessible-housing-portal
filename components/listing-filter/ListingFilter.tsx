@@ -19,6 +19,12 @@ export interface ListingFiltersProps {
   className?: string;
 }
 
+// On phones, stretch the options into full-width segments that are big enough to tap.
+const mobileToggleClassNames = {
+  groupClassName: "max-sm:w-full",
+  itemClassName: "max-sm:h-11 max-sm:flex-1 max-sm:text-sm",
+};
+
 export function ListingFilters({
   bedroomToggleProps,
   priceRangeProps,
@@ -35,8 +41,8 @@ export function ListingFilters({
 
       <PriceRangeInput {...priceRangeProps} />
 
-      <ToggleField {...bedroomToggleProps} allowEmpty />
-      <ToggleField {...bathroomToggleProps} allowEmpty />
+      <ToggleField {...bedroomToggleProps} allowEmpty {...mobileToggleClassNames} />
+      <ToggleField {...bathroomToggleProps} allowEmpty {...mobileToggleClassNames} />
 
       <div className="space-y-4">
         <DatePicker {...datePickerProps} />
