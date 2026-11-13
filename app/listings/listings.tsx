@@ -55,6 +55,7 @@ export default function ListingsDashboard({
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileFilterSheetRef = useRef<HTMLDivElement>(null);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.MAP_LIST);
   const [siteHeaderHeight, setSiteHeaderHeight] = useState("6rem");
@@ -180,6 +181,12 @@ export default function ListingsDashboard({
                   <SheetContent
                     side="bottom"
                     aria-describedby={undefined}
+                    ref={mobileFilterSheetRef}
+                    // Focus the sheet rather than its first field, which would open the phone's keyboard.
+                    onOpenAutoFocus={(event) => {
+                      event.preventDefault();
+                      mobileFilterSheetRef.current?.focus();
+                    }}
                     // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
                     onCloseAutoFocus={(event) => {
                       event.preventDefault();
