@@ -16,6 +16,8 @@ export interface ListingFiltersProps {
   getFeatureCheckboxProps: (id: string) => ComponentProps<typeof Checkbox>;
   datePickerProps: DatePickerProps;
   clearFilters: () => Promise<void>;
+  /** False when the container renders its own pinned actions, as the mobile sheet does. */
+  showActions?: boolean;
   className?: string;
 }
 
@@ -33,6 +35,7 @@ export function ListingFilters({
   datePickerProps,
   clearFilters,
   dynamicGroups,
+  showActions = true,
   className,
 }: ListingFiltersProps) {
   return (
@@ -48,11 +51,13 @@ export function ListingFilters({
 
       <FeatureAccordion groups={dynamicGroups} getCheckboxProps={getFeatureCheckboxProps} />
 
-      <div className="flex items-center gap-4 pt-4 border-t">
-        <Button variant="outline" className="flex-1" onClick={clearFilters}>
-          Clear
-        </Button>
-      </div>
+      {showActions && (
+        <div className="flex items-center gap-4 pt-4 border-t">
+          <Button variant="outline" className="flex-1" onClick={clearFilters}>
+            Clear
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
