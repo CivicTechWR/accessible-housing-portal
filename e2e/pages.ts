@@ -10,6 +10,10 @@ export type PageEntry = {
   expectText?: string;
   /** Captured at desktop size only. Admin screens aren't designed for mobile. */
   desktopOnly?: boolean;
+  /** Captured at mobile size only, for views that only exist below the lg breakpoint. */
+  mobileOnly?: boolean;
+  /** Name of a button to press after the page loads, to capture a different view of it. */
+  pressButton?: string;
 };
 
 // Every route under app/ with a page.tsx. Add new pages here so they get a screenshot.
@@ -35,6 +39,13 @@ export const PAGES: PageEntry[] = [
   { name: "my-listings", path: "/my-listings", role: "partner" },
   { name: "listing-form-new", path: "/listing-form", role: "partner" },
   { name: "listing-form-edit", path: `/listing-form/${E2E_SEEDED_LISTING_ID}`, role: "partner" },
+  {
+    name: "listing-form-edit-preview",
+    path: `/listing-form/${E2E_SEEDED_LISTING_ID}`,
+    role: "partner",
+    mobileOnly: true,
+    pressButton: "Preview",
+  },
 
   { name: "admin-users", path: "/admin/users", role: "admin", desktopOnly: true },
   { name: "admin-invite", path: "/admin/invite", role: "admin", desktopOnly: true },
