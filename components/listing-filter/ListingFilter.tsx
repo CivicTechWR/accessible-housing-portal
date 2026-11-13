@@ -44,9 +44,7 @@ export function ListingFilters({
       <ToggleField {...bedroomToggleProps} allowEmpty {...mobileToggleClassNames} />
       <ToggleField {...bathroomToggleProps} allowEmpty {...mobileToggleClassNames} />
 
-      <div className="space-y-4">
-        <DatePicker {...datePickerProps} />
-      </div>
+      <DatePicker {...datePickerProps} />
 
       <FeatureAccordion groups={dynamicGroups} getCheckboxProps={getFeatureCheckboxProps} />
 
