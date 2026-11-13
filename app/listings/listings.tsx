@@ -9,7 +9,7 @@ import {
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
@@ -29,16 +29,17 @@ const LazyListingFilters = dynamic<ListingFiltersProps>(
   },
 );
 
+function MapLoadingPlaceholder() {
+  return (
+    <div className="flex h-full min-h-0 items-center justify-center bg-muted/30 text-sm text-muted-foreground">
+      Loading map...
+    </div>
+  );
+}
+
 const LazyMapView = dynamic<{ listings: ListingSummary[] }>(
   () => import("../../components/map-view/MapView.tsx").then((mod) => mod.MapView),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full min-h-0 items-center justify-center bg-muted/30 text-sm text-muted-foreground">
-        Loading map...
-      </div>
-    ),
-  },
+  { ssr: false, loading: MapLoadingPlaceholder },
 );
 
 interface ListingsDashboardProps {
@@ -55,10 +56,13 @@ export default function ListingsDashboard({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   // Split view only fits at `lg` (1024px) and up, so phones and tablets get List and Map only.
+  // This is `false` until hydration, so nothing that affects first paint may depend on it.
   const isSplitViewAvailable = useMediaQuery(atLeastBreakpoint("lg"));
-  // Start in List so the server render and smaller screens never show split view first.
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.LIST);
-  const hasAppliedDesktopDefault = useRef(false);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.MAP_LIST);
+  // Below `lg`, split view shows as List. The stored choice stays Split, so widening past `lg`
+  // brings it back.
+  const effectiveDisplayMode =
+    displayMode === DisplayMode.MAP_LIST && !isSplitViewAvailable ? DisplayMode.LIST : displayMode;
   const [siteHeaderHeight, setSiteHeaderHeight] = useState("6rem");
   const isSplitView = displayMode === DisplayMode.MAP_LIST;
   const shellStyle = {
@@ -88,18 +92,6 @@ export default function ListingsDashboard({
       resizeObserver?.disconnect();
     };
   }, []);
-
-  useEffect(() => {
-    if (isSplitViewAvailable) {
-      // Desktop defaults to split view once, after load, unless the user has already picked a view.
-      if (!hasAppliedDesktopDefault.current) {
-        hasAppliedDesktopDefault.current = true;
-        setDisplayMode(DisplayMode.MAP_LIST);
-      }
-    } else if (displayMode === DisplayMode.MAP_LIST) {
-      setDisplayMode(DisplayMode.LIST);
-    }
-  }, [displayMode, isSplitViewAvailable]);
 
   const {
     sortOptionProps,
@@ -163,12 +155,8 @@ export default function ListingsDashboard({
           bathroomToggleProps={bathroomToggleProps}
           displayModeProps={{
             displayModes,
-            onChange: (value: string) => {
-              // A view the user picked wins over the desktop default.
-              hasAppliedDesktopDefault.current = true;
-              setDisplayMode(value as DisplayMode);
-            },
-            value: displayMode,
+            onChange: (value: string) => setDisplayMode(value as DisplayMode),
+            value: effectiveDisplayMode,
           }}
         />
         <FilterButton {...filterButtonProps} viewport="desktop" />
@@ -204,11 +192,18 @@ export default function ListingsDashboard({
         ) : null}
         {[DisplayMode.MAP, DisplayMode.MAP_LIST].includes(displayMode) && (
           <div
+            // In split view, CSS hides the map below `lg`, so the server HTML is right at every width.
             className={`min-h-0 min-w-0 flex-1 overflow-hidden ${
-              isSplitView ? "lg:basis-1/2" : ""
+              isSplitView ? "hidden lg:block lg:basis-1/2" : ""
             }`}
           >
-            <LazyMapView listings={listings} />
+            {/* Server and hydration renders both take the placeholder branch, so they match, and
+                phones never download the map for a pane they can't see. */}
+            {isSplitView && !isSplitViewAvailable ? (
+              <MapLoadingPlaceholder />
+            ) : (
+              <LazyMapView listings={listings} />
+            )}
           </div>
         )}
         {isFilterOpen && !isMobileViewport && (
