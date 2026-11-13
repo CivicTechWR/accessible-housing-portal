@@ -1,9 +1,9 @@
 "use client";
 
-import { ReactNode, useId, useLayoutEffect, useRef, useState } from "react";
+import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export interface FormSectionProps {
   title: string;
@@ -100,45 +100,70 @@ function PreviewDivider({ dividerControl }: { dividerControl?: ReactNode }) {
   );
 }
 
-/** Segmented control shown below lg to pick which pane is visible. */
-function PaneSwitcher({
-  activePane,
-  onChange,
-  paneIds,
-}: {
-  activePane: Pane;
-  onChange: (pane: Pane) => void;
-  paneIds: Record<Pane, string>;
-}) {
+/** Tab list shown below lg to pick which pane is visible. */
+function PaneTabs() {
   return (
     <div className="sticky top-0 z-20 border-b border-foreground/10 bg-background px-4 py-2 md:px-6 lg:hidden">
-      <ToggleGroup
-        type="single"
-        spacing={1}
-        value={activePane}
-        onValueChange={(value) => {
-          // Pressing the selected option again clears the value; keep the current pane.
-          if (value) onChange(value as Pane);
-        }}
+      <TabsList
         aria-label="Listing editor view"
-        className="grid w-full grid-cols-2 rounded-lg bg-muted p-1"
+        className="grid w-full grid-cols-2 gap-1 p-1 group-data-horizontal/tabs:h-auto"
       >
         {PANES.map(({ value, label }) => (
-          <ToggleGroupItem
+          <TabsTrigger
             key={value}
             value={value}
-            aria-controls={paneIds[value]}
             className={cn(
-              "h-11 w-full border-2 border-transparent px-3 text-sm font-medium text-muted-foreground hover:bg-transparent hover:text-foreground",
-              // The selected option gets a border and bold text, not just a color change.
-              "data-[state=on]:border-foreground data-[state=on]:bg-background data-[state=on]:font-semibold data-[state=on]:text-foreground data-[state=on]:shadow-sm",
+              "h-11 border-2 px-3 text-sm",
+              // The selected tab gets a border and bold text, not just a color change.
+              "data-active:border-foreground data-active:font-semibold data-active:shadow-sm dark:data-active:border-foreground",
             )}
           >
             {label}
-          </ToggleGroupItem>
+          </TabsTrigger>
         ))}
-      </ToggleGroup>
+      </TabsList>
     </div>
+  );
+}
+
+/**
+ * Below lg the inactive pane is hidden with CSS only. At lg and up both panes show side by side.
+ * Panes are force-mounted, so form state and the live preview survive switching tabs.
+ */
+function PaneSection({
+  value,
+  hasTabs,
+  className,
+  children,
+}: {
+  value: Pane;
+  hasTabs: boolean;
+  className: string;
+  children: ReactNode;
+}) {
+  if (!hasTabs) {
+    return (
+      <section aria-label={value === "form" ? "Form" : "Preview"} className={className}>
+        {children}
+      </section>
+    );
+  }
+
+  return (
+    // Classes go on TabsContent, not the section: asChild joins class lists without merging them,
+    // so TabsContent's own text-xs would otherwise win over the override.
+    <TabsContent
+      value={value}
+      forceMount
+      asChild
+      className={cn(
+        className,
+        // Keep the page's base text size instead of TabsContent's text-xs.
+        "text-base/normal data-[state=inactive]:hidden lg:data-[state=inactive]:block",
+      )}
+    >
+      <section>{children}</section>
+    </TabsContent>
   );
 }
 
@@ -182,62 +207,60 @@ export function ListingFormLayout({
   const hasPreview = Boolean(previewContent);
   const isExpandedWithPreview = isPreviewExpanded && hasPreview;
   const { activePane, switchPane, containerRef } = usePaneSwitcher();
-  const idPrefix = useId();
-  const paneIds: Record<Pane, string> = {
-    form: `${idPrefix}form-pane`,
-    preview: `${idPrefix}preview-pane`,
-  };
+
+  const panes = (
+    <div
+      className={cn(
+        "grid grid-cols-1 lg:min-h-[calc(100vh-14rem)]",
+        isExpandedWithPreview
+          ? "lg:grid-cols-[320px_44px_minmax(0,1fr)] xl:grid-cols-[360px_44px_minmax(0,1fr)]"
+          : "lg:grid-cols-[1fr_44px_400px] xl:grid-cols-[1fr_44px_450px]",
+      )}
+    >
+      <PaneSection
+        value="form"
+        hasTabs={hasPreview}
+        className="order-2 min-w-0 bg-muted/60 lg:order-1"
+      >
+        {formPaneHeader && <PaneHeader>{formPaneHeader}</PaneHeader>}
+        {isExpandedWithPreview ? (
+          <StickyPaneScroll footer={footer}>{formContent}</StickyPaneScroll>
+        ) : (
+          <PaneBody footer={footer}>{formContent}</PaneBody>
+        )}
+      </PaneSection>
+
+      {previewContent && (
+        <>
+          <PreviewDivider dividerControl={dividerControl} />
+          <PaneSection value="preview" hasTabs className="order-1 min-w-0 lg:order-3">
+            {previewPaneHeader && <PaneHeader>{previewPaneHeader}</PaneHeader>}
+            {isExpandedWithPreview ? (
+              <StickyPaneScroll>{previewContent}</StickyPaneScroll>
+            ) : (
+              <PaneBody isSticky>{previewContent}</PaneBody>
+            )}
+          </PaneSection>
+        </>
+      )}
+    </div>
+  );
+
+  if (!hasPreview) {
+    return <div className="w-full">{panes}</div>;
+  }
 
   return (
-    <div ref={containerRef} className="w-full">
-      {hasPreview && (
-        <PaneSwitcher activePane={activePane} onChange={switchPane} paneIds={paneIds} />
-      )}
-      <div
-        className={cn(
-          "grid grid-cols-1 lg:min-h-[calc(100vh-14rem)]",
-          isExpandedWithPreview
-            ? "lg:grid-cols-[320px_44px_minmax(0,1fr)] xl:grid-cols-[360px_44px_minmax(0,1fr)]"
-            : "lg:grid-cols-[1fr_44px_400px] xl:grid-cols-[1fr_44px_450px]",
-        )}
-      >
-        <section
-          id={paneIds.form}
-          aria-label="Form"
-          className={cn(
-            "order-2 min-w-0 bg-muted/60 lg:order-1",
-            hasPreview && activePane !== "form" && "hidden lg:block",
-          )}
-        >
-          {formPaneHeader && <PaneHeader>{formPaneHeader}</PaneHeader>}
-          {isExpandedWithPreview ? (
-            <StickyPaneScroll footer={footer}>{formContent}</StickyPaneScroll>
-          ) : (
-            <PaneBody footer={footer}>{formContent}</PaneBody>
-          )}
-        </section>
-
-        {previewContent && (
-          <>
-            <PreviewDivider dividerControl={dividerControl} />
-            <section
-              id={paneIds.preview}
-              aria-label="Preview"
-              className={cn(
-                "order-1 min-w-0 lg:order-3",
-                activePane !== "preview" && "hidden lg:block",
-              )}
-            >
-              {previewPaneHeader && <PaneHeader>{previewPaneHeader}</PaneHeader>}
-              {isExpandedWithPreview ? (
-                <StickyPaneScroll>{previewContent}</StickyPaneScroll>
-              ) : (
-                <PaneBody isSticky>{previewContent}</PaneBody>
-              )}
-            </section>
-          </>
-        )}
-      </div>
-    </div>
+    <Tabs
+      ref={containerRef}
+      value={activePane}
+      onValueChange={(value) => {
+        if (value) switchPane(value as Pane);
+      }}
+      className="block w-full"
+    >
+      <PaneTabs />
+      {panes}
+    </Tabs>
   );
 }

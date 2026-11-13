@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "@jest/globals";
 
 import { ListingFormLayout } from "./ListingFormLayout";
@@ -13,54 +13,67 @@ function renderLayout(withPreview = true) {
   );
 }
 
-describe("ListingFormLayout pane switcher", () => {
-  it("shows the form pane by default", () => {
+// Radix tabs select on mouse down (not click), with the primary button.
+function selectTab(name: string) {
+  fireEvent.mouseDown(screen.getByRole("tab", { name }), { button: 0 });
+}
+
+function expectSelected(name: string) {
+  const other = name === "Form" ? "Preview" : "Form";
+  expect(screen.getByRole("tab", { name })).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("tab", { name: other })).toHaveAttribute("aria-selected", "false");
+  expect(screen.getByRole("tabpanel", { name })).toHaveAttribute("data-state", "active");
+  // Both panels stay mounted; the inactive one is hidden below lg by CSS only.
+  expect(screen.getByRole("tabpanel", { name: other })).toHaveAttribute("data-state", "inactive");
+  expect(screen.getByRole("tabpanel", { name: other })).toHaveClass(
+    "data-[state=inactive]:hidden",
+    "lg:data-[state=inactive]:block",
+  );
+}
+
+describe("ListingFormLayout pane tabs", () => {
+  it("shows the form tab by default", () => {
     renderLayout();
 
-    expect(screen.getByRole("radio", { name: "Form" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByRole("radio", { name: "Preview" })).toHaveAttribute("aria-checked", "false");
-    expect(screen.getByRole("region", { name: "Form" })).not.toHaveClass("hidden");
-    expect(screen.getByRole("region", { name: "Preview", hidden: true })).toHaveClass(
-      "hidden",
-      "lg:block",
-    );
+    expect(screen.getByRole("tablist", { name: "Listing editor view" })).toBeInTheDocument();
+    expectSelected("Form");
   });
 
-  it("switches panes without unmounting the form", () => {
+  it("shows the preview panel when its tab is selected, without unmounting the form", () => {
     renderLayout();
     const titleInput = screen.getByLabelText("Title");
     fireEvent.change(titleInput, { target: { value: "Unsaved title" } });
 
-    fireEvent.click(screen.getByRole("radio", { name: "Preview" }));
-    expect(screen.getByRole("radio", { name: "Preview" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByRole("region", { name: "Preview" })).not.toHaveClass("hidden");
-    expect(screen.getByRole("region", { name: "Form", hidden: true })).toHaveClass("hidden");
+    selectTab("Preview");
+    expectSelected("Preview");
+    expect(screen.getByText("Preview content")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("radio", { name: "Form" }));
+    selectTab("Form");
+    expectSelected("Form");
     expect(screen.getByLabelText("Title")).toBe(titleInput);
     expect(titleInput).toHaveValue("Unsaved title");
   });
 
-  it("points each option at the pane it controls", () => {
+  it("moves between tabs with the arrow keys", async () => {
     renderLayout();
+    const formTab = screen.getByRole("tab", { name: "Form" });
+    formTab.focus();
 
-    for (const name of ["Form", "Preview"]) {
-      const controlledId = screen.getByRole("radio", { name }).getAttribute("aria-controls");
-      expect(document.getElementById(controlledId ?? "")).toHaveAccessibleName(name);
-    }
+    fireEvent.keyDown(formTab, { key: "ArrowRight" });
+    // Radix moves roving focus on the next tick.
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Preview" })).toHaveFocus());
+    expectSelected("Preview");
+
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Preview" }), { key: "ArrowLeft" });
+    await waitFor(() => expect(formTab).toHaveFocus());
+    expectSelected("Form");
   });
 
-  it("keeps the current pane when the selected option is pressed again", () => {
-    renderLayout();
-
-    fireEvent.click(screen.getByRole("radio", { name: "Form" }));
-    expect(screen.getByRole("radio", { name: "Form" })).toHaveAttribute("aria-checked", "true");
-  });
-
-  it("has no switcher when there is no preview", () => {
+  it("has no tabs when there is no preview", () => {
     renderLayout(false);
 
-    expect(screen.queryByRole("group", { name: "Listing editor view" })).toBeNull();
-    expect(screen.getByRole("region", { name: "Form" })).not.toHaveClass("hidden");
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.queryByRole("tabpanel")).toBeNull();
+    expect(screen.getByRole("region", { name: "Form" })).toBeVisible();
   });
 });
