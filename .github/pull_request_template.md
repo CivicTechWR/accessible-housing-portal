@@ -1,7 +1,7 @@
 Closes #
 
 <!--
-Put the issue number after "Closes #". Use "Part of #N" instead if this PR covers only part of the issue.
+Put the issue number after "Closes #". If this PR covers only part of an issue, split that issue into sub-issues and close one.
 Add this PR to the issue's milestone too, so it shows on the project board.
 -->
 
