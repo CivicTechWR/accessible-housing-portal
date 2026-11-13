@@ -19,16 +19,21 @@ screen-reader semantics, keyboard support, mobile vs desktop, and any new depend
 Say why the one you chose won.
 Example: Tabs over ToggleGroup for a show-one-pane switcher, because Tabs announces the panel it controls and supports arrow keys.
 
-Screenshots: before and after, at mobile (375px) and desktop. Drop the Before row for a brand-new page.
-If the change is an interaction or a multi-step flow, add a short screen recording instead of or alongside the screenshots.
+Screenshots: use CI's, so before and after show the same seeded data at the same sizes.
+- After: this PR's "Playwright Screenshots" job, playwright-screenshots artifact.
+- Before: the same artifact from the latest CI run on main.
+Each artifact has screenshots/mobile/<page>.png (Pixel 7, 412px wide) and screenshots/desktop/<page>.png (1440px).
+Drop the Before row for a brand-new page, and add the page to e2e/pages.ts so CI captures it.
+For states CI doesn't capture (an open menu, an error, a step partway through a flow), take your own at the same sizes.
+If the change is an interaction or a multi-step flow, add a short screen recording too.
 -->
 
 ### Components considered
 
 ### Screenshots
 
-|        | Mobile (375px) | Desktop |
-| ------ | -------------- | ------- |
+|        | Mobile | Desktop |
+| ------ | ------ | ------- |
 | Before |                |         |
 | After  |                |         |
 
