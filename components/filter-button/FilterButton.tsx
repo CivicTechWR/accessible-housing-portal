@@ -3,12 +3,15 @@
 import { ToggleIconButton } from "@/components/toggle-icon-button/ToggleIconButton";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FilterMailIcon } from "@hugeicons/core-free-icons";
+import type { Ref } from "react";
 
 export interface FilterButtonProps {
   activeFilterCount: number;
   isFilterOpen: boolean;
   onFilterClick: () => void;
   viewport?: "both" | "mobile" | "desktop";
+  /** Ref to the mobile button, so the mobile filter sheet can return focus to it on close. */
+  mobileButtonRef?: Ref<HTMLButtonElement>;
 }
 
 export function FilterButton({
@@ -16,6 +19,7 @@ export function FilterButton({
   isFilterOpen,
   onFilterClick,
   viewport = "both",
+  mobileButtonRef,
 }: FilterButtonProps) {
   return (
     <>
@@ -23,6 +27,7 @@ export function FilterButton({
         <div className="sm:hidden">
           <div className="relative">
             <ToggleIconButton
+              ref={mobileButtonRef}
               isActive={isFilterOpen}
               icon={<HugeiconsIcon icon={FilterMailIcon} strokeWidth={2} />}
               onClick={onFilterClick}

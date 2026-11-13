@@ -9,7 +9,7 @@ import {
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
@@ -122,9 +122,11 @@ export default function ListingsDashboard({
     moveInDate,
     sort,
   } = useListingFilters();
-  const filterButtonProps = getFilterButtonProps(isFilterOpen, () =>
-    setIsFilterOpen(!isFilterOpen),
-  );
+  const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  const filterButtonProps = {
+    ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
+    mobileButtonRef: mobileFilterButtonRef,
+  };
   const query = useMemo<ListingQuery>(
     () => ({
       limit: "50",
@@ -189,6 +191,12 @@ export default function ListingsDashboard({
                   <SheetContent
                     side="bottom"
                     aria-describedby={undefined}
+                    onCloseAutoFocus={(event) => {
+                      // The filter button opens this controlled sheet without being a
+                      // SheetTrigger, so Radix has no trigger to refocus. Return focus to it.
+                      event.preventDefault();
+                      mobileFilterButtonRef.current?.focus();
+                    }}
                     className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
                   >
                     {/* ListingFilters renders its own visible "Filters" heading. */}
