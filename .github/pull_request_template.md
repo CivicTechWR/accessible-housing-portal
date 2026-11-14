@@ -34,8 +34,8 @@ If the change is an interaction or a multi-step flow, add a short screen recordi
 
 |        | Mobile | Desktop |
 | ------ | ------ | ------- |
-| Before |                |         |
-| After  |                |         |
+| Before |        |         |
+| After  |        |         |
 
 ## Testing
 
