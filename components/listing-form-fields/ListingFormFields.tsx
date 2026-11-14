@@ -26,6 +26,7 @@ import { FormSection } from "@/components/listing-form-layout/ListingFormLayout"
 import { LabelledCheckbox } from "@/components/labelled-checkbox/LabelledCheckbox";
 import { InfoPopover } from "@/components/info-popover/InfoPopover";
 import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
+import { formatNumberInput, parseNumberInput, stripLeadingZeros } from "./numberInput";
 
 export interface ListingFormFieldsProps {
   control: ListingFormControl;
@@ -164,7 +165,8 @@ function FieldRenderer({
   }
 
   if (def.fieldType === "number") {
-    const isRent = def.key === "monthlyRentCents";
+    // Rent is stored in cents but typed in dollars.
+    const scale = def.key === "monthlyRentCents" ? 100 : 1;
     const isLeaseTerm = def.key === "leaseTerm";
     return (
       <FormField
@@ -187,21 +189,17 @@ function FieldRenderer({
                 min={0}
                 step={def.key === "bathrooms" ? 0.5 : undefined}
                 placeholder={def.placeholder}
-                {...(isRent
-                  ? {
-                      value: typeof field.value === "number" ? field.value / 100 : "",
-                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                        const val = e.target.value;
-                        field.onChange(val === "" ? undefined : Number(val) * 100);
-                      },
-                    }
-                  : {
-                      value: typeof field.value === "number" ? field.value : "",
-                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                        const val = e.target.value;
-                        field.onChange(val === "" ? undefined : Number(val));
-                      },
-                    })}
+                name={field.name}
+                ref={field.ref}
+                value={formatNumberInput(field.value, scale)}
+                onChange={(e) => {
+                  const text = stripLeadingZeros(e.target.value);
+                  // React leaves "02" on screen because it equals the stored 2, so fix the text here.
+                  if (text !== e.target.value) {
+                    e.target.value = text;
+                  }
+                  field.onChange(parseNumberInput(text, scale));
+                }}
               />
             </FormControl>
             {def.helpText && (

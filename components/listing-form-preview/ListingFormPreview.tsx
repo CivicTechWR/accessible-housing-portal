@@ -80,8 +80,8 @@ export function ListingFormPreview({
           street2={previewStreet2Value}
           city={previewCityValue || ""}
           postalCode={previewPostalCodeValue}
-          beds={formData.bedrooms}
-          baths={formData.bathrooms}
+          beds={formData.bedrooms ?? 0}
+          baths={formData.bathrooms ?? 0}
           sqft={formData.squareFeet || 0}
           heatingType={formData.heatingType || undefined}
           utilitiesIncluded={formData.utilitiesIncluded}
@@ -110,8 +110,8 @@ export function ListingFormPreview({
         price={previewPrice}
         address={previewCardAddress}
         city={previewCityValue || ""}
-        beds={formData.bedrooms}
-        baths={formData.bathrooms}
+        beds={formData.bedrooms ?? 0}
+        baths={formData.bathrooms ?? 0}
         sqft={formData.squareFeet || 0}
         timeAgo={previewAvailability}
         imageUrl={formData.images?.[0]?.url}
