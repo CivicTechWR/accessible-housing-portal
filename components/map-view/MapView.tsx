@@ -110,6 +110,11 @@ export function MapView({ listings }: { listings: Listing[] }) {
     [mappableListings, selectedId],
   );
 
+  // A filter can drop the selected listing. Clear the selection so it doesn't reopen on its own
+  // when a later filter brings that listing back. (The listings query keeps the previous results
+  // while refetching, so this doesn't fire mid-request.)
+  if (selectedId && !selectedListing) setSelectedId(null);
+
   const handleMarkerClick = useCallback((id: string) => {
     setSelectedId((prev) => (prev === id ? null : id));
   }, []);
@@ -123,8 +128,10 @@ export function MapView({ listings }: { listings: Listing[] }) {
   // focus() on a hidden element does nothing. Wait a frame because the map popup can be
   // detached and reattached after mount (React Strict Mode does this in development),
   // which would drop focus that was set straight away.
+  // Keyed on the id, not the listing object: a refetch after a filter change returns a new
+  // object for the same listing, and that mustn't pull focus away from the filter controls.
   useEffect(() => {
-    if (!selectedListing) return;
+    if (!selectedId) return;
     const frame = requestAnimationFrame(() => {
       for (const dialog of [bottomCardRef.current, popupRef.current]) {
         dialog?.focus();
@@ -146,7 +153,7 @@ export function MapView({ listings }: { listings: Listing[] }) {
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [selectedListing]);
+  }, [selectedId]);
 
   if (mapUnavailable) {
     return (
@@ -188,8 +195,9 @@ export function MapView({ listings }: { listings: Listing[] }) {
                 longitude={listing.lng}
                 latitude={listing.lat}
                 anchor="center"
-                style={selected ? { zIndex: 2 } : undefined}
-                className="focus-within:z-1"
+                // A class rather than `style`: react-maplibre never removes inline styles it set,
+                // so a z-index there would stay after the pin is deselected.
+                className={cn("focus-within:z-1", selected && "z-2")}
                 onClick={(e) => {
                   e.originalEvent.stopPropagation();
                   handleMarkerClick(listing.id);

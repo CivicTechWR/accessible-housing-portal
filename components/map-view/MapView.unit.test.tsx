@@ -30,14 +30,25 @@ jest.mock("@vis.gl/react-maplibre", () => ({
       {children}
     </div>
   ),
-  // Like the real Marker, clicks anywhere inside the marker element reach onClick.
+  // Like the real Marker, clicks anywhere inside the marker element reach onClick,
+  // and className lands on the marker element.
   Marker: ({
     onClick,
+    className,
     children,
   }: {
     onClick: (event: { originalEvent: MouseEvent }) => void;
+    className?: string;
     children?: ReactNode;
-  }) => <div onClick={(event) => onClick({ originalEvent: event.nativeEvent })}>{children}</div>,
+  }) => (
+    <div
+      data-testid="marker"
+      className={className}
+      onClick={(event) => onClick({ originalEvent: event.nativeEvent })}
+    >
+      {children}
+    </div>
+  ),
   Popup: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 }));
 
@@ -114,5 +125,56 @@ describe("MapView", () => {
 
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(pin);
+  });
+
+  it("raises only the selected pin, and lowers it again once deselected", () => {
+    render(<MapView listings={[LISTING]} />);
+    const pin = screen.getByRole("button", { name: /per month/ });
+    const marker = screen.getByTestId("marker");
+
+    fireEvent.click(pin);
+    expect(marker.classList.contains("z-2")).toBe(true);
+
+    fireEvent.click(pin);
+    expect(marker.classList.contains("z-2")).toBe(false);
+  });
+
+  it("leaves focus where it is when a refetch returns the selected listing again", async () => {
+    const { rerender } = render(
+      <>
+        <input aria-label="Location" />
+        <MapView listings={[LISTING]} />
+      </>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /per month/ }));
+    const dialogs = screen.getAllByRole("dialog");
+    await waitFor(() => expect(dialogs).toContain(document.activeElement));
+
+    // The user goes back to typing in a filter; the refetch returns a new object for the same listing.
+    const input = screen.getByRole("textbox", { name: "Location" });
+    input.focus();
+    rerender(
+      <>
+        <input aria-label="Location" />
+        <MapView listings={[{ ...LISTING }]} />
+      </>,
+    );
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(document.activeElement).toBe(input);
+  });
+
+  it("forgets the selection when a filter removes that listing", () => {
+    const { rerender } = render(<MapView listings={[LISTING]} />);
+    fireEvent.click(screen.getByRole("button", { name: /per month/ }));
+    expect(screen.queryAllByRole("dialog")).not.toHaveLength(0);
+
+    rerender(<MapView listings={[]} />);
+    rerender(<MapView listings={[LISTING]} />);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("button", { name: /per month/ }).getAttribute("aria-expanded")).toBe(
+      "false",
+    );
   });
 });
