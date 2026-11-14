@@ -15,16 +15,18 @@ export interface DatePickerProps {
 export function DatePicker({ selected, onSelect, formattedText }: DatePickerProps) {
   const labelId = useId();
   const valueId = useId();
+  const triggerId = useId();
 
   return (
     <Field>
-      <FieldLabel id={labelId} className="font-medium leading-none">
+      <FieldLabel id={labelId} htmlFor={triggerId} className="font-medium leading-none">
         Move-In Date
       </FieldLabel>
 
       <Popover>
         <PopoverTrigger asChild>
           <Button
+            id={triggerId}
             variant="outline"
             // Read as "Move-In Date, Any date" so the button isn't announced without a name.
             aria-labelledby={`${labelId} ${valueId}`}
