@@ -156,6 +156,10 @@ function PaneSection({
       value={value}
       forceMount
       asChild
+      // Radix makes panels a tab stop by default. Both panes start with focusable controls, so
+      // the panel itself doesn't need to be one (the ARIA tabs pattern allows this). It also
+      // avoids two invisible tab stops at lg+, where the tab list is hidden.
+      tabIndex={-1}
       className={cn(
         className,
         // Keep the page's base text size instead of TabsContent's text-xs.
@@ -256,6 +260,16 @@ export function ListingFormLayout({
       value={activePane}
       onValueChange={(value) => {
         if (value) switchPane(value as Pane);
+      }}
+      // globals.css keys the page's scroll padding off this attribute.
+      data-listing-form-tabs=""
+      // Chrome scrolls a focused textarea only far enough to show the caret, which can leave
+      // most of it under the sticky Save bar. "nearest" respects the scroll padding and is a
+      // no-op when the field is already fully visible.
+      onFocus={(event) => {
+        if (event.target instanceof HTMLTextAreaElement) {
+          event.target.scrollIntoView({ block: "nearest" });
+        }
       }}
       className="block w-full"
     >
