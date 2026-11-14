@@ -69,6 +69,17 @@ describe("ListingFormLayout pane tabs", () => {
     expectSelected("Form");
   });
 
+  it("doesn't make the panels tab stops", () => {
+    renderLayout();
+
+    for (const name of ["Form", "Preview"]) {
+      expect(screen.getByRole("tabpanel", { name, hidden: true })).toHaveAttribute(
+        "tabindex",
+        "-1",
+      );
+    }
+  });
+
   it("has no tabs when there is no preview", () => {
     renderLayout(false);
 
