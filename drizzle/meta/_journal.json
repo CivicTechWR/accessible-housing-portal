@@ -141,6 +141,13 @@
       "when": 1793987386137,
       "tag": "20261106174946_align_better_auth_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794523063789,
+      "tag": "20261112223743_add_resend_webhook_events",
+      "breakpoints": true
     }
   ]
 }

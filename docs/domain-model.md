@@ -4,16 +4,17 @@ The database schema is defined in `db/schema.ts` with Drizzle. SQL migrations an
 
 ## Enums
 
-| Enum                     | Values                                                                                             | Used by                                                |
-| ------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `user_role`              | `admin`, `partner`, `user`                                                                         | Access control and UI navigation.                      |
-| `user_status`            | `invited`, `active`, `suspended`, `deactivated`                                                    | Sign-in eligibility and account lifecycle.             |
-| `listing_status`         | `draft`, `published`, `archived`                                                                   | Listing visibility, authoring, and deletion behaviour. |
-| `listing_building_type`  | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                 |
-| `utility_included`       | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.             |
-| `listing_field_type`     | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.            |
-| `email_delivery_type`    | `account_invite`, `password_reset`                                                                 | Kinds of transactional email the application sends.    |
-| `email_delivery_outcome` | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.        |
+| Enum                               | Values                                                                                             | Used by                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `user_role`                        | `admin`, `partner`, `user`                                                                         | Access control and UI navigation.                      |
+| `user_status`                      | `invited`, `active`, `suspended`, `deactivated`                                                    | Sign-in eligibility and account lifecycle.             |
+| `listing_status`                   | `draft`, `published`, `archived`                                                                   | Listing visibility, authoring, and deletion behaviour. |
+| `listing_building_type`            | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                 |
+| `utility_included`                 | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.             |
+| `listing_field_type`               | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.            |
+| `email_delivery_type`              | `account_invite`, `password_reset`                                                                 | Kinds of transactional email the application sends.    |
+| `email_delivery_outcome`           | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.        |
+| `resend_webhook_processing_status` | `pending`, `processed`, `unmatched`, `failed`                                                      | State of a verified Resend webhook receipt.            |
 
 Only users with status `active` can sign in.
 
@@ -58,6 +59,14 @@ Important behaviour:
 - `provider_email_id` holds Resend's email id and is the correlation key for later delivery outcomes.
 - `outcome` uses the vocabulary Resend reports identically through webhook event names (`email.<outcome>`) and `resend.emails.get(id).last_event`, so an outcome is stored the same way however it was learned.
 - `outcome_detail` is a short sanitized provider diagnostic only. Invite URLs, reset tokens, recipient addresses, and rendered message bodies are never stored here.
+
+### `resend_webhook_events`
+
+Stores a privacy-minimized ledger of verified operational Resend events. `svix_id` is the idempotency key, so provider retries are acknowledged without creating duplicate rows. The ledger keeps the provider email id, event timestamps, correlation tags, structured bounce classification, short failure and suppression codes such as `reached_daily_quota`, and processing state. It deliberately excludes raw payloads, free-form provider diagnostics, recipient/sender addresses, subjects, message bodies, IP addresses, and links.
+
+Only the six operational event types are stored, and they begin as `pending`. Each row needs an event type and provider email id. `event_created_at` comes from the payload's `created_at` when it parses as a date, and otherwise from the signed `svix-timestamp` header. Tags and the bounce, failure, and suppression fields are null when the payload omits them or sends an unexpected shape. The four bounce, failure, and suppression fields keep only short codes such as `Permanent`, so free-form text is stored as null. Opens, clicks, received mail, and non-email events are acknowledged without a row. Outcome reconciliation is a separate concern and may attach `delivery_attempt_id` and move a pending receipt to `processed`, `unmatched`, or `failed`. A daily pg-boss maintenance job deletes every webhook row older than 90 days by the indexed receipt timestamp, whatever its `processing_status`.
+
+There is no application read endpoint for the webhook ledger. Limit direct database access to authorized operators.
 
 ### `properties`
 
