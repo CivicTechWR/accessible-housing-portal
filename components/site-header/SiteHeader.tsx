@@ -15,7 +15,7 @@ export async function SiteHeader() {
     "rounded-full bg-primary-foreground/20 px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/30";
 
   return (
-    <header data-site-header="true" className="bg-primary text-primary-foreground shrink-0">
+    <header className="bg-primary text-primary-foreground shrink-0">
       <div className="w-full px-4 sm:px-6">
         <div className="relative flex min-h-14 items-center justify-center py-2">
           <Link href="/" className="text-lg font-semibold tracking-tight text-primary-foreground">
