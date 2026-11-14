@@ -352,9 +352,9 @@ export const resendWebhookEvents = pgTable(
     emailTypeTag: text("email_type_tag"),
     deliveryIdTag: text("delivery_id_tag"),
     attemptIdTag: text("attempt_id_tag"),
+    /** Bounce and code fields hold short provider codes only, never free-form messages. */
     bounceType: text("bounce_type"),
     bounceSubtype: text("bounce_subtype"),
-    /** Short provider codes only, such as `reached_daily_quota`; never free-form messages. */
     failureReason: text("failure_reason"),
     suppressionType: text("suppression_type"),
     processingStatus: resendWebhookProcessingStatusEnum("processing_status")

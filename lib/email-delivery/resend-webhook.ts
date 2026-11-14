@@ -8,52 +8,34 @@ import {
   type ResendWebhookEventRecord,
 } from "@/lib/email-delivery/resend-webhook-store";
 
-// Provider classifications such as `reached_daily_quota` or `OnAccountSuppressionList`.
-// Resend doesn't publish a closed set, so keep any value of this shape and drop anything
-// that could be free-form text.
+// Provider classifications such as `Permanent` or `reached_daily_quota`. Resend doesn't
+// publish a closed set, so keep any value of this shape and drop anything that could be
+// free-form text.
 const SHORT_CODE = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 const shortCode = z.string().regex(SHORT_CODE).nullable().catch(null);
+const tag = z.string().nullable().catch(null);
 
-const emailData = z.object({
-  email_id: z.string().min(1),
-  tags: z.record(z.string(), z.string()).optional(),
+// Only `type`, `created_at`, and `data.email_id` are required. A signed payload that fails
+// here is rejected, and Resend's retry would fail the same way, so every other field is
+// best effort and becomes null when missing or malformed.
+const operationalEvent = z.object({
+  type: z.enum([
+    "email.delivered",
+    "email.delivery_delayed",
+    "email.bounced",
+    "email.failed",
+    "email.suppressed",
+    "email.complained",
+  ]),
+  created_at: z.iso.datetime({ offset: true }),
+  data: z.object({
+    email_id: z.string().min(1),
+    tags: z.object({ email_type: tag, delivery_id: tag, attempt_id: tag }).nullable().catch(null),
+    bounce: z.object({ type: shortCode, subType: shortCode }).nullable().catch(null),
+    failed: z.object({ reason: shortCode }).nullable().catch(null),
+    suppressed: z.object({ type: shortCode }).nullable().catch(null),
+  }),
 });
-
-const eventBase = { created_at: z.iso.datetime({ offset: true }) };
-
-const operationalEvent = z.discriminatedUnion("type", [
-  z.object({
-    ...eventBase,
-    type: z.enum(["email.delivered", "email.delivery_delayed", "email.complained"]),
-    data: emailData,
-  }),
-  z.object({
-    ...eventBase,
-    type: z.literal("email.bounced"),
-    data: emailData.extend({
-      bounce: z.object({ type: z.string().min(1), subType: z.string().min(1) }),
-    }),
-  }),
-  z.object({
-    ...eventBase,
-    type: z.literal("email.failed"),
-    data: emailData.extend({ failed: z.object({ reason: shortCode }).optional() }),
-  }),
-  z.object({
-    ...eventBase,
-    type: z.literal("email.suppressed"),
-    data: emailData.extend({ suppressed: z.object({ type: shortCode }).optional() }),
-  }),
-]);
-
-const OPERATIONAL_EVENT_TYPES = new Set<string>([
-  "email.delivered",
-  "email.delivery_delayed",
-  "email.bounced",
-  "email.failed",
-  "email.suppressed",
-  "email.complained",
-] satisfies z.infer<typeof operationalEvent>["type"][]);
 
 export type ResendWebhookHeaders = {
   id: string;
@@ -115,7 +97,7 @@ export function verifyAndNormalizeResendWebhook(params: {
   const type = z.object({ type: z.string().regex(/^[a-z._]{1,64}$/) }).safeParse(verified)
     .data?.type;
 
-  if (type && !OPERATIONAL_EVENT_TYPES.has(type)) {
+  if (type && !operationalEvent.shape.type.safeParse(type).success) {
     // Logged so a webhook subscribed to extra events is noticed.
     console.info(
       `[resend-webhook] Acknowledged unsupported event type "${type}" without storing it.`,
@@ -130,21 +112,19 @@ export function verifyAndNormalizeResendWebhook(params: {
     throw new InvalidResendWebhookError();
   }
 
-  const event = parsed.data;
-  const tags = event.data.tags;
+  const { type: eventType, created_at, data } = parsed.data;
 
   return {
     svixId: params.headers.id,
-    eventType: event.type,
-    providerEmailId: event.data.email_id,
-    eventCreatedAt: new Date(event.created_at),
-    emailTypeTag: tags?.email_type ?? null,
-    deliveryIdTag: tags?.delivery_id ?? null,
-    attemptIdTag: tags?.attempt_id ?? null,
-    bounceType: event.type === "email.bounced" ? event.data.bounce.type : null,
-    bounceSubtype: event.type === "email.bounced" ? event.data.bounce.subType : null,
-    failureReason: event.type === "email.failed" ? (event.data.failed?.reason ?? null) : null,
-    suppressionType:
-      event.type === "email.suppressed" ? (event.data.suppressed?.type ?? null) : null,
+    eventType,
+    providerEmailId: data.email_id,
+    eventCreatedAt: new Date(created_at),
+    emailTypeTag: data.tags?.email_type ?? null,
+    deliveryIdTag: data.tags?.delivery_id ?? null,
+    attemptIdTag: data.tags?.attempt_id ?? null,
+    bounceType: data.bounce?.type ?? null,
+    bounceSubtype: data.bounce?.subType ?? null,
+    failureReason: data.failed?.reason ?? null,
+    suppressionType: data.suppressed?.type ?? null,
   };
 }

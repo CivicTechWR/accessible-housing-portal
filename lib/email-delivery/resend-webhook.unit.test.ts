@@ -85,6 +85,11 @@ describe("verifyAndNormalizeResendWebhook", () => {
       { failed: { reason: "Could not deliver to user@example.com" } },
       { failureReason: null },
     ],
+    [
+      "email.bounced",
+      { bounce: { type: "Permanent", subType: "Rejected by user@example.com" } },
+      { bounceType: "Permanent", bounceSubtype: null },
+    ],
   ] as const)("keeps %s codes only when they are short codes", (type, detail, expected) => {
     const result = verifyAndNormalizeResendWebhook(
       signedWebhook({ type, created_at: EVENT_CREATED_AT, data: { ...emailData(), ...detail } }),
@@ -92,6 +97,38 @@ describe("verifyAndNormalizeResendWebhook", () => {
 
     expect(result).toMatchObject(expected);
     expect(JSON.stringify(result)).not.toContain("user@example.com");
+  });
+
+  it("stores a bounce without details with null bounce fields", () => {
+    expect(
+      verifyAndNormalizeResendWebhook(
+        signedWebhook({ type: "email.bounced", created_at: EVENT_CREATED_AT, data: emailData() }),
+      ),
+    ).toMatchObject({ eventType: "email.bounced", bounceType: null, bounceSubtype: null });
+  });
+
+  it.each([
+    ["an array", ["account_invite"], null],
+    [
+      "non-string values",
+      { email_type: 42, delivery_id: "delivery-123", attempt_id: null },
+      "delivery-123",
+    ],
+  ])("stores an event whose tags are %s", (_case, tags, deliveryIdTag) => {
+    expect(
+      verifyAndNormalizeResendWebhook(
+        signedWebhook({
+          type: "email.delivered",
+          created_at: EVENT_CREATED_AT,
+          data: { ...emailData(), tags },
+        }),
+      ),
+    ).toMatchObject({
+      providerEmailId: "provider-email-123",
+      emailTypeTag: null,
+      deliveryIdTag,
+      attemptIdTag: null,
+    });
   });
 
   it.each(["email.opened", "email.clicked", "email.received", "email.sent"])(
@@ -113,8 +150,8 @@ describe("verifyAndNormalizeResendWebhook", () => {
     ["no email id", { type: "email.delivered", created_at: EVENT_CREATED_AT, data: {} }],
     ["null created_at", { type: "email.delivered", created_at: null, data: emailData() }],
     [
-      "a bounce without details",
-      { type: "email.bounced", created_at: EVENT_CREATED_AT, data: emailData() },
+      "an invalid created_at",
+      { type: "email.delivered", created_at: "yesterday", data: emailData() },
     ],
   ])("rejects a signed payload with %s", (_case, event) => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
