@@ -118,8 +118,9 @@ describe("ListingFormFields", () => {
       "Monthly Rent ($)",
       "Initial Lease Term in Months",
     ];
+    // Required labels end in " *", so match on the start of the accessible name.
     const getNumberInput = (label: string) =>
-      screen.getByRole("spinbutton", { name: new RegExp(label.replace(/[()$]/g, "\\$&")) });
+      screen.getByRole("spinbutton", { name: (name) => name.startsWith(label) });
 
     it.each(numberFields)("starts %s empty on a new listing", (label) => {
       renderForm();
