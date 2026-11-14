@@ -1,6 +1,6 @@
 import {
   ingestResendWebhook,
-  InvalidResendWebhookError,
+  InvalidResendWebhookSignatureError,
 } from "@/lib/email-delivery/resend-webhook";
 
 export const runtime = "nodejs";
@@ -32,10 +32,11 @@ export async function POST(request: Request) {
 
     return Response.json({ received: true, ...result });
   } catch (error) {
-    if (error instanceof InvalidResendWebhookError) {
-      return Response.json({ error: "Invalid webhook." }, { status: 400 });
+    if (error instanceof InvalidResendWebhookSignatureError) {
+      return Response.json({ error: "Invalid webhook signature." }, { status: 400 });
     }
 
+    // Anything else is a storage failure; 500 makes Resend retry.
     console.error("[resend-webhook] Failed to store webhook event:", error);
     return Response.json({ error: "Webhook processing failed." }, { status: 500 });
   }

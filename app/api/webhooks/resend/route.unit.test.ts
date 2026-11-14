@@ -6,12 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals
 import { POST } from "@/app/api/webhooks/resend/route";
 import {
   ingestResendWebhook,
-  InvalidResendWebhookError,
+  InvalidResendWebhookSignatureError,
 } from "@/lib/email-delivery/resend-webhook";
 
 jest.mock("@/lib/email-delivery/resend-webhook", () => ({
   ingestResendWebhook: jest.fn(),
-  InvalidResendWebhookError: class InvalidResendWebhookError extends Error {},
+  InvalidResendWebhookSignatureError: class InvalidResendWebhookSignatureError extends Error {},
 }));
 
 const ingest = jest.mocked(ingestResendWebhook);
@@ -54,7 +54,7 @@ describe("POST /api/webhooks/resend", () => {
   });
 
   it("returns 400 for a failed signature verification", async () => {
-    ingest.mockRejectedValue(new InvalidResendWebhookError());
+    ingest.mockRejectedValue(new InvalidResendWebhookSignatureError());
 
     expect((await POST(request("{}"))).status).toBe(400);
   });

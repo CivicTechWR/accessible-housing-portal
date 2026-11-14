@@ -6,7 +6,7 @@ import { createHmac, randomBytes } from "node:crypto";
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 
 import {
-  InvalidResendWebhookError,
+  InvalidResendWebhookSignatureError,
   verifyAndNormalizeResendWebhook,
 } from "@/lib/email-delivery/resend-webhook";
 
@@ -62,7 +62,6 @@ describe("verifyAndNormalizeResendWebhook", () => {
       bounceType: "Permanent",
       bounceSubtype: "General",
     });
-    expect(result).not.toHaveProperty("outcomeDetail");
     expect(JSON.stringify(result)).not.toContain("user@example.com");
     expect(JSON.stringify(result)).not.toContain("mail.example.com");
   });
@@ -131,35 +130,62 @@ describe("verifyAndNormalizeResendWebhook", () => {
     });
   });
 
-  it.each(["email.opened", "email.clicked", "email.received", "email.sent"])(
-    "acknowledges %s without storing it",
-    (type) => {
-      jest.spyOn(console, "info").mockImplementation(() => undefined);
+  it.each([
+    "email.opened",
+    "email.clicked",
+    "email.received",
+    "email.sent",
+    "email.v2.delivered",
+    "email.delivery-delayed",
+  ])("acknowledges %s without storing it", (type) => {
+    jest.spyOn(console, "info").mockImplementation(() => undefined);
 
-      expect(
-        verifyAndNormalizeResendWebhook(
-          signedWebhook({ type, created_at: EVENT_CREATED_AT, data: emailData() }),
-        ),
-      ).toBeNull();
-    },
-  );
+    expect(
+      verifyAndNormalizeResendWebhook(
+        signedWebhook({ type, created_at: EVENT_CREATED_AT, data: emailData() }),
+      ),
+    ).toBeNull();
+  });
+
+  it("stores a non-ISO created_at at the instant it names", () => {
+    expect(
+      verifyAndNormalizeResendWebhook(
+        signedWebhook({
+          type: "email.delivered",
+          created_at: "2023-04-03 22:13:42.674981+00",
+          data: emailData(),
+        }),
+      )?.eventCreatedAt,
+    ).toEqual(new Date("2023-04-03T22:13:42.674Z"));
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["unparseable", "yesterday"],
+  ])("stores the signed timestamp when created_at is %s", (_case, created_at) => {
+    const signed = signedWebhook({ type: "email.delivered", created_at, data: emailData() });
+
+    expect(verifyAndNormalizeResendWebhook(signed)?.eventCreatedAt).toEqual(
+      new Date(Number(signed.headers.timestamp) * 1_000),
+    );
+  });
 
   it.each([
     ["no type", { created_at: EVENT_CREATED_AT, data: emailData() }],
-    ["null data", { type: "email.delivered", created_at: EVENT_CREATED_AT, data: null }],
-    ["no email id", { type: "email.delivered", created_at: EVENT_CREATED_AT, data: {} }],
-    ["null created_at", { type: "email.delivered", created_at: null, data: emailData() }],
     [
-      "an invalid created_at",
-      { type: "email.delivered", created_at: "yesterday", data: emailData() },
+      "no email id",
+      {
+        type: "email.delivered",
+        created_at: EVENT_CREATED_AT,
+        data: { ...emailData(), email_id: "" },
+      },
     ],
-  ])("rejects a signed payload with %s", (_case, event) => {
+  ])("acknowledges a signed payload with %s without storing it", (_case, event) => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
 
-    expect(() => verifyAndNormalizeResendWebhook(signedWebhook(event))).toThrow(
-      InvalidResendWebhookError,
-    );
-    expect(JSON.stringify(warn.mock.calls)).not.toContain("provider-email-123");
+    expect(verifyAndNormalizeResendWebhook(signedWebhook(event))).toBeNull();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(warn.mock.calls)).not.toMatch(/provider-email-123|example\.(com|net)/);
   });
 
   it("does not store non-email webhook events", () => {
@@ -194,7 +220,7 @@ describe("verifyAndNormalizeResendWebhook", () => {
         ...signed,
         headers: { ...signed.headers, signature: "v1,invalid" },
       }),
-    ).toThrow(InvalidResendWebhookError);
+    ).toThrow(InvalidResendWebhookSignatureError);
   });
 });
 

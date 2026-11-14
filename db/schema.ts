@@ -332,7 +332,7 @@ export const emailDeliveryAttempts = pgTable(
 );
 
 /**
- * Privacy-minimized, append-only receipt ledger for verified Resend webhooks.
+ * Privacy-minimized receipt ledger for verified Resend webhooks.
  * The raw provider payload is deliberately not retained; #347 projects these
  * normalized fields into emailDeliveryAttempts and records processing state.
  */
