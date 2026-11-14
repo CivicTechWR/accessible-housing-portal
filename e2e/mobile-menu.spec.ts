@@ -24,6 +24,9 @@ for (const role of ROLES) {
       await expect(menu).toBeVisible();
       // Focus starts on the first menu item, not the theme toggle.
       await expect(nav.locator("a[href], button").first()).toBeFocused();
+      // Not clicked: signing out would end the session the other tests share.
+      const signOut = nav.getByRole("button", { name: "Sign out" });
+      await expect(signOut).toHaveCount(role === "anonymous" ? 0 : 1);
 
       // Tap the dimmed page to the left of the panel.
       await page.mouse.click(10, 400);
