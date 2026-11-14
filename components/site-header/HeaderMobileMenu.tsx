@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserIcon } from "@hugeicons/core-free-icons";
@@ -8,6 +8,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { signOutFromHeader } from "@/components/site-header/actions";
 import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 type HeaderMobileMenuProps = {
   isSignedIn: boolean;
@@ -29,7 +36,6 @@ export function HeaderMobileMenu({
   user,
 }: HeaderMobileMenuProps) {
   const pathname = usePathname();
-  const menuId = useId();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -38,27 +44,29 @@ export function HeaderMobileMenu({
 
   return (
     <div className="absolute right-0 lg:hidden">
-      <button
-        type="button"
-        aria-controls={menuId}
-        aria-expanded={isOpen}
-        aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
-        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary-foreground/16 text-primary-foreground transition-colors hover:bg-primary-foreground/24"
-        onClick={() => setIsOpen((open) => !open)}
-      >
-        <span className="sr-only">{isOpen ? "Close navigation menu" : "Open navigation menu"}</span>
-        <span className="flex flex-col gap-1">
-          <span className="block h-0.5 w-4 rounded-full bg-current" />
-          <span className="block h-0.5 w-4 rounded-full bg-current" />
-          <span className="block h-0.5 w-4 rounded-full bg-current" />
-        </span>
-      </button>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <button
+            type="button"
+            aria-label="Open navigation menu"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary-foreground/16 text-primary-foreground transition-colors hover:bg-primary-foreground/24"
+          >
+            <span className="flex flex-col gap-1" aria-hidden="true">
+              <span className="block h-0.5 w-4 rounded-full bg-current" />
+              <span className="block h-0.5 w-4 rounded-full bg-current" />
+              <span className="block h-0.5 w-4 rounded-full bg-current" />
+            </span>
+          </button>
+        </SheetTrigger>
 
-      {isOpen ? (
-        <div
-          id={menuId}
-          className="absolute right-0 top-[calc(100%+0.75rem)] z-20 w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-primary-foreground/15 bg-primary p-3 shadow-xl shadow-slate-950/20"
+        <SheetContent
+          side="right"
+          className="w-[min(20rem,calc(100vw-3rem))] gap-4 border-primary-foreground/15 bg-primary p-4 pt-5 text-primary-foreground [&>[data-slot=sheet-close]]:text-primary-foreground [&>[data-slot=sheet-close]]:hover:bg-primary-foreground/20"
         >
+          <SheetTitle className="text-base text-primary-foreground">Menu</SheetTitle>
+          <SheetDescription className="sr-only">
+            Site navigation and account options
+          </SheetDescription>
           <nav aria-label="Mobile navigation" className="space-y-2">
             {isSignedIn ? (
               <>
@@ -128,8 +136,8 @@ export function HeaderMobileMenu({
               <ThemeToggle />
             </div>
           </nav>
-        </div>
-      ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
