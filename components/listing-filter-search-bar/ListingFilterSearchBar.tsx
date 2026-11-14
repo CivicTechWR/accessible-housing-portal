@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { FieldGroup } from "@/components/ui/field";
 import { PriceRangeInput, PriceRangeInputProps } from "../price-range-input/PriceRangeInput";
@@ -25,6 +25,8 @@ export interface ListingFilterSearchBarProps {
     onChange: (value: string) => void;
     value: DisplayMode;
   };
+  /** Shown beside the search box below `sm`, so phones reach the filters in every view. */
+  mobileFilterButton?: ReactNode;
 }
 
 export function ListingFilterSearchBar({
@@ -33,17 +35,19 @@ export function ListingFilterSearchBar({
   bedroomToggleProps,
   bathroomToggleProps,
   displayModeProps,
+  mobileFilterButton,
 }: ListingFilterSearchBarProps) {
   return (
     <FieldGroup className="w-full gap-3 space-y-0 sm:flex-row sm:items-end sm:gap-4 lg:gap-6">
-      <div className="w-full sm:max-w-sm sm:flex-1">
-        <div className="relative">
+      <div className="flex w-full items-center gap-2 sm:max-w-sm sm:flex-1">
+        <div className="relative min-w-0 flex-1">
           <HugeiconsIcon
             icon={Search01Icon}
             className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
           />
           <Input {...searchInputProps} className="h-10 pl-9" />
         </div>
+        {mobileFilterButton}
       </div>
 
       {/* On phones, price lives in the filter sheet with the other filters. */}
