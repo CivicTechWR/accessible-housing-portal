@@ -29,6 +29,7 @@
     "test:unit": "jest --testPathPatterns=\\.unit\\.test\\.",
     "test:integration": "node --conditions=react-server --import tsx --test --test-concurrency=1 test/integration/*.test.ts",
     "screenshots": "playwright test e2e/screenshots.spec.ts",
+    "test:e2e": "playwright test",
     "lockfile:check": "node scripts/check-lockfile-integrity.js",
     "auth:admin": "node --env-file-if-exists=.env.local --import tsx scripts/create-admin.ts",
     "db:seed:auth-review": "node --import tsx scripts/seed-auth-review.ts",
