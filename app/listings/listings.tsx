@@ -174,6 +174,7 @@ export default function ListingsDashboard({
             onChange: (value: string) => setDisplayMode(value as DisplayMode),
             value: displayMode,
           }}
+          mobileFilterButton={<FilterButton {...filterButtonProps} viewport="mobile" />}
         />
         <FilterButton {...filterButtonProps} viewport="desktop" />
       </header>
@@ -188,63 +189,6 @@ export default function ListingsDashboard({
             listings={listings}
             displayMode={displayMode}
             sortOptionProps={sortOptionProps}
-            filterButtonProps={filterButtonProps}
-            mobileFilters={
-              isMobileViewport ? (
-                <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                  <SheetContent
-                    side="bottom"
-                    aria-describedby={undefined}
-                    ref={mobileFilterSheetRef}
-                    // Focus the sheet rather than its first field, which would open the phone's keyboard.
-                    onOpenAutoFocus={(event) => {
-                      event.preventDefault();
-                      mobileFilterSheetRef.current?.focus();
-                    }}
-                    // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
-                    onCloseAutoFocus={(event) => {
-                      event.preventDefault();
-                      mobileFilterButtonRef.current?.focus();
-                    }}
-                    className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
-                  >
-                    {/* ListingFilters renders its own visible "Filters" heading. */}
-                    <SheetTitle className="sr-only">Filters</SheetTitle>
-                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                      <LazyListingFilters
-                        bathroomToggleProps={bathroomToggleProps}
-                        bedroomToggleProps={bedroomToggleProps}
-                        priceRangeProps={priceRangeProps}
-                        getFeatureCheckboxProps={getFeatureCheckboxProps}
-                        datePickerProps={datePickerProps}
-                        clearFilters={clearFilters}
-                        dynamicGroups={dynamicGroups}
-                        showActions={false}
-                        className="max-w-none border-0"
-                      />
-                    </div>
-                    {/* Filters apply as they change; this only closes the sheet and confirms the count. */}
-                    <SheetFooter className="flex-row gap-3 border-t p-4">
-                      <Button
-                        variant="outline"
-                        className="h-11 flex-1 text-sm"
-                        onClick={() => void clearFilters()}
-                      >
-                        Clear
-                      </Button>
-                      <SheetClose asChild>
-                        <Button className="h-11 flex-1 text-sm" aria-busy={isLoading}>
-                          {/* Dimmed while a filter change is still loading, so a stale count reads as pending. */}
-                          <span className={isLoading ? "opacity-60" : undefined}>
-                            Show {matchCount} listing{matchCount !== 1 ? "s" : ""}
-                          </span>
-                        </Button>
-                      </SheetClose>
-                    </SheetFooter>
-                  </SheetContent>
-                </Sheet>
-              ) : null
-            }
             isLoading={isLoading}
           />
         ) : null}
@@ -257,6 +201,61 @@ export default function ListingsDashboard({
             <LazyMapView listings={listings} />
           </div>
         )}
+        {/* Rendered outside the list panel so phones can filter in Map view too. */}
+        {isMobileViewport ? (
+          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <SheetContent
+              side="bottom"
+              aria-describedby={undefined}
+              ref={mobileFilterSheetRef}
+              // Focus the sheet rather than its first field, which would open the phone's keyboard.
+              onOpenAutoFocus={(event) => {
+                event.preventDefault();
+                mobileFilterSheetRef.current?.focus();
+              }}
+              // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                mobileFilterButtonRef.current?.focus();
+              }}
+              className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
+            >
+              {/* ListingFilters renders its own visible "Filters" heading. */}
+              <SheetTitle className="sr-only">Filters</SheetTitle>
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <LazyListingFilters
+                  bathroomToggleProps={bathroomToggleProps}
+                  bedroomToggleProps={bedroomToggleProps}
+                  priceRangeProps={priceRangeProps}
+                  getFeatureCheckboxProps={getFeatureCheckboxProps}
+                  datePickerProps={datePickerProps}
+                  clearFilters={clearFilters}
+                  dynamicGroups={dynamicGroups}
+                  showActions={false}
+                  className="max-w-none border-0"
+                />
+              </div>
+              {/* Filters apply as they change; this only closes the sheet and confirms the count. */}
+              <SheetFooter className="flex-row gap-3 border-t p-4">
+                <Button
+                  variant="outline"
+                  className="h-11 flex-1 text-sm"
+                  onClick={() => void clearFilters()}
+                >
+                  Clear
+                </Button>
+                <SheetClose asChild>
+                  <Button className="h-11 flex-1 text-sm" aria-busy={isLoading}>
+                    {/* Dimmed while a filter change is still loading, so a stale count reads as pending. */}
+                    <span className={isLoading ? "opacity-60" : undefined}>
+                      Show {matchCount} listing{matchCount !== 1 ? "s" : ""}
+                    </span>
+                  </Button>
+                </SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+        ) : null}
         {isFilterOpen && !isMobileViewport && (
           <aside
             aria-label="Filters"
