@@ -195,9 +195,12 @@ export default function ListingsDashboard({
                       </Button>
                       <SheetClose asChild>
                         <Button className="h-11 flex-1 text-sm" aria-busy={isLoading}>
-                          {/* Dimmed while a filter change is still loading, so a stale count reads as pending. */}
+                          {/* Dimmed while a filter change is still loading, so a stale count reads as pending.
+                              After a failed fetch, data still holds the previous response, so drop the count. */}
                           <span className={isLoading ? "opacity-60" : undefined}>
-                            Show {matchCount} listing{matchCount !== 1 ? "s" : ""}
+                            {error
+                              ? "Show listings"
+                              : `Show ${matchCount} listing${matchCount !== 1 ? "s" : ""}`}
                           </span>
                         </Button>
                       </SheetClose>
