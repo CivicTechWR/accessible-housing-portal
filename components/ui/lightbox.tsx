@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, ArrowRight01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { Dialog as DialogPrimitive } from "radix-ui";
@@ -76,12 +76,12 @@ function LightboxPanel({
   const restoreFocusToOpener = useDialogOpenerFocus();
   const total = images.length;
   const initialIndex = wrapIndex(startIndex, total);
-  const [api, setApi] = React.useState<CarouselApi>();
-  const [index, setIndex] = React.useState(initialIndex);
+  const [api, setApi] = useState<CarouselApi>();
+  const [index, setIndex] = useState(initialIndex);
   const hasMultiple = total > 1;
   const caption = images[index]?.caption ?? "";
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!api) return;
     // Keep the counter in sync when the user swipes.
     const onSelect = () => setIndex(api.selectedScrollSnap());
@@ -91,7 +91,7 @@ function LightboxPanel({
     };
   }, [api]);
 
-  const goTo = React.useCallback(
+  const goTo = useCallback(
     (next: number) => {
       const target = wrapIndex(next, total);
       setIndex(target);
@@ -100,7 +100,7 @@ function LightboxPanel({
     [api, total],
   );
 
-  function handleKeyDownCapture(event: React.KeyboardEvent<HTMLDivElement>) {
+  function handleKeyDownCapture(event: KeyboardEvent<HTMLDivElement>) {
     if (!hasMultiple) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     // Handle arrows anywhere in the dialog, and stop the carousel's own
