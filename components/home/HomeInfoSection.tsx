@@ -1,3 +1,5 @@
+import { WALK_SCORE_ATTRIBUTION_URL } from "@/components/listing-details/WalkScore";
+
 export function HomeInfoSection() {
   return (
     <section className="grid gap-10 md:grid-cols-2">
@@ -7,7 +9,16 @@ export function HomeInfoSection() {
           Finding a unit that works for a client often means informal calls, several listing sites,
           and checking accessibility details through site visits. Home Hub puts listings from
           values-aligned providers in one place, on a map, with filters for accessibility and
-          affordability features. Saved filters and alerts are coming soon!
+          affordability features. Listings also show{" "}
+          <a
+            href={WALK_SCORE_ATTRIBUTION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4 hover:text-foreground transition-colors"
+          >
+            Walk Score®
+          </a>{" "}
+          and transit ratings where available. Saved filters and alerts are coming soon!
         </p>
       </div>
       <div>
