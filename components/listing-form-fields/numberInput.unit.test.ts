@@ -20,8 +20,8 @@ describe("stripLeadingZeros", () => {
 
 describe("parseNumberInput", () => {
   it("treats empty text as no value", () => {
-    expect(parseNumberInput("")).toBeUndefined();
-    expect(parseNumberInput("  ")).toBeUndefined();
+    expect(parseNumberInput("")).toBeNull();
+    expect(parseNumberInput("  ")).toBeNull();
   });
 
   it("keeps an explicit zero", () => {
