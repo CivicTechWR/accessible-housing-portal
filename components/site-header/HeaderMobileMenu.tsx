@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserIcon } from "@hugeicons/core-free-icons";
@@ -37,6 +37,7 @@ export function HeaderMobileMenu({
 }: HeaderMobileMenuProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setIsOpen(false);
@@ -61,13 +62,22 @@ export function HeaderMobileMenu({
 
         <SheetContent
           side="right"
+          onOpenAutoFocus={(event) => {
+            // Start on the first menu item (Sign in, or the first account link) rather than
+            // whatever Radix picks, which was the theme toggle.
+            const first = navRef.current?.querySelector<HTMLElement>("a[href], button");
+            if (first) {
+              event.preventDefault();
+              first.focus();
+            }
+          }}
           className="w-[min(20rem,calc(100vw-3rem))] gap-4 border-primary-foreground/15 bg-primary p-4 pt-5 text-primary-foreground [&>[data-slot=sheet-close]]:text-primary-foreground [&>[data-slot=sheet-close]]:hover:bg-primary-foreground/20"
         >
           <SheetTitle className="text-base text-primary-foreground">Menu</SheetTitle>
           <SheetDescription className="sr-only">
             Site navigation and account options
           </SheetDescription>
-          <nav aria-label="Mobile navigation" className="space-y-2">
+          <nav ref={navRef} aria-label="Mobile navigation" className="space-y-2">
             {isSignedIn ? (
               <>
                 {canCreateListing ? (
