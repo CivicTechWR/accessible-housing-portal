@@ -49,6 +49,9 @@ export function PriceRangeInput({
         <Input
           min={0}
           type="number"
+          inputMode="numeric"
+          // 16px text stops iOS Safari from zooming in when the field is focused.
+          className="max-sm:h-10 max-sm:text-base"
           step={step}
           value={minInputValue}
           placeholder="Min"
@@ -67,6 +70,8 @@ export function PriceRangeInput({
         <Input
           min={0}
           type="number"
+          inputMode="numeric"
+          className="max-sm:h-10 max-sm:text-base"
           step={step}
           value={maxInputValue}
           placeholder="Max"

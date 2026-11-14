@@ -9,13 +9,15 @@ import {
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { belowBreakpoint, useMediaQuery } from "@/lib/useMediaQuery";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetClose, SheetContent, SheetFooter, SheetTitle } from "@/components/ui/sheet";
 
 const LazyListingFilters = dynamic<ListingFiltersProps>(
   () =>
@@ -53,6 +55,8 @@ export default function ListingsDashboard({
   dynamicGroups,
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileFilterSheetRef = useRef<HTMLDivElement>(null);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.MAP_LIST);
   const [siteHeaderHeight, setSiteHeaderHeight] = useState("6rem");
@@ -110,9 +114,10 @@ export default function ListingsDashboard({
     moveInDate,
     sort,
   } = useListingFilters();
-  const filterButtonProps = getFilterButtonProps(isFilterOpen, () =>
-    setIsFilterOpen(!isFilterOpen),
-  );
+  const filterButtonProps = {
+    ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
+    mobileButtonRef: mobileFilterButtonRef,
+  };
   const query = useMemo<ListingQuery>(
     () => ({
       limit: "50",
@@ -129,6 +134,8 @@ export default function ListingsDashboard({
   );
   const { data, error, isLoading } = useListingsQuery(query, initialData, initialQueryString);
   const listings = data.data;
+  // The page shows one page of results; the button reports every match.
+  const matchCount = data.pagination.total;
   const displayModes = isMobileViewport
     ? [
         { value: DisplayMode.LIST, label: "List" },
@@ -172,17 +179,59 @@ export default function ListingsDashboard({
             sortOptionProps={sortOptionProps}
             filterButtonProps={filterButtonProps}
             mobileFilters={
-              isFilterOpen && isMobileViewport ? (
-                <LazyListingFilters
-                  bathroomToggleProps={bathroomToggleProps}
-                  bedroomToggleProps={bedroomToggleProps}
-                  priceRangeProps={priceRangeProps}
-                  getFeatureCheckboxProps={getFeatureCheckboxProps}
-                  datePickerProps={datePickerProps}
-                  clearFilters={clearFilters}
-                  dynamicGroups={dynamicGroups}
-                  className="max-w-none rounded-none border-x-0 border-t-0"
-                />
+              isMobileViewport ? (
+                <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                  <SheetContent
+                    side="bottom"
+                    aria-describedby={undefined}
+                    ref={mobileFilterSheetRef}
+                    // Focus the sheet rather than its first field, which would open the phone's keyboard.
+                    onOpenAutoFocus={(event) => {
+                      event.preventDefault();
+                      mobileFilterSheetRef.current?.focus();
+                    }}
+                    // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
+                    onCloseAutoFocus={(event) => {
+                      event.preventDefault();
+                      mobileFilterButtonRef.current?.focus();
+                    }}
+                    className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
+                  >
+                    {/* ListingFilters renders its own visible "Filters" heading. */}
+                    <SheetTitle className="sr-only">Filters</SheetTitle>
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                      <LazyListingFilters
+                        bathroomToggleProps={bathroomToggleProps}
+                        bedroomToggleProps={bedroomToggleProps}
+                        priceRangeProps={priceRangeProps}
+                        getFeatureCheckboxProps={getFeatureCheckboxProps}
+                        datePickerProps={datePickerProps}
+                        clearFilters={clearFilters}
+                        dynamicGroups={dynamicGroups}
+                        showActions={false}
+                        className="max-w-none border-0"
+                      />
+                    </div>
+                    {/* Filters apply as they change; this only closes the sheet and confirms the count. */}
+                    <SheetFooter className="flex-row gap-3 border-t p-4">
+                      <Button
+                        variant="outline"
+                        className="h-11 flex-1 text-sm"
+                        onClick={() => void clearFilters()}
+                      >
+                        Clear
+                      </Button>
+                      <SheetClose asChild>
+                        <Button className="h-11 flex-1 text-sm" aria-busy={isLoading}>
+                          {/* Dimmed while a filter change is still loading, so a stale count reads as pending. */}
+                          <span className={isLoading ? "opacity-60" : undefined}>
+                            Show {matchCount} listing{matchCount !== 1 ? "s" : ""}
+                          </span>
+                        </Button>
+                      </SheetClose>
+                    </SheetFooter>
+                  </SheetContent>
+                </Sheet>
               ) : null
             }
             isLoading={isLoading}

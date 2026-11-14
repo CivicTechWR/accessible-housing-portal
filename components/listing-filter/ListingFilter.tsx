@@ -16,8 +16,16 @@ export interface ListingFiltersProps {
   getFeatureCheckboxProps: (id: string) => ComponentProps<typeof Checkbox>;
   datePickerProps: DatePickerProps;
   clearFilters: () => Promise<void>;
+  /** False when the container renders its own pinned actions, as the mobile sheet does. */
+  showActions?: boolean;
   className?: string;
 }
+
+// On phones, stretch the options into full-width segments that are big enough to tap.
+const mobileToggleClassNames = {
+  groupClassName: "max-sm:w-full",
+  itemClassName: "max-sm:h-11 max-sm:flex-1 max-sm:text-sm",
+};
 
 export function ListingFilters({
   bedroomToggleProps,
@@ -27,6 +35,7 @@ export function ListingFilters({
   datePickerProps,
   clearFilters,
   dynamicGroups,
+  showActions = true,
   className,
 }: ListingFiltersProps) {
   return (
@@ -35,20 +44,20 @@ export function ListingFilters({
 
       <PriceRangeInput {...priceRangeProps} />
 
-      <ToggleField {...bedroomToggleProps} allowEmpty />
-      <ToggleField {...bathroomToggleProps} allowEmpty />
+      <ToggleField {...bedroomToggleProps} allowEmpty {...mobileToggleClassNames} />
+      <ToggleField {...bathroomToggleProps} allowEmpty {...mobileToggleClassNames} />
 
-      <div className="space-y-4">
-        <DatePicker {...datePickerProps} />
-      </div>
+      <DatePicker {...datePickerProps} />
 
       <FeatureAccordion groups={dynamicGroups} getCheckboxProps={getFeatureCheckboxProps} />
 
-      <div className="flex items-center gap-4 pt-4 border-t">
-        <Button variant="outline" className="flex-1" onClick={clearFilters}>
-          Clear
-        </Button>
-      </div>
+      {showActions && (
+        <div className="flex items-center gap-4 pt-4 border-t">
+          <Button variant="outline" className="flex-1" onClick={clearFilters}>
+            Clear
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
