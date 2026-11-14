@@ -9,6 +9,7 @@ import {
   CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { Lightbox } from "@/components/common/lightbox";
 
 interface ListingImageCarouselProps {
   images: Array<{ url: string; caption: string }>;
@@ -18,6 +19,7 @@ interface ListingImageCarouselProps {
 export function ListingImageCarousel({ images, altPrefix }: ListingImageCarouselProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const onSelect = useCallback(() => {
     if (!api) return;
@@ -38,13 +40,25 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
       <Carousel className="w-full" opts={{ loop: true }} setApi={setApi}>
         <CarouselContent>
           {images.map((image, index) => (
-            <CarouselItem key={`${image.url}-${index}`}>
-              <div className="overflow-hidden rounded-lg">
-                <img
-                  src={image.url}
-                  alt={image.caption || `${altPrefix} image ${index + 1}`}
-                  className="h-64 w-full object-cover sm:h-80"
-                />
+            <CarouselItem
+              key={`${image.url}-${index}`}
+              // Keep off-screen photo buttons out of the tab order and screen reader.
+              aria-hidden={index !== current}
+              inert={index !== current}
+            >
+              <div>
+                <button
+                  type="button"
+                  className="block w-full cursor-zoom-in overflow-hidden rounded-lg focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-primary"
+                  aria-label={`View image ${index + 1} of ${images.length} larger`}
+                  onClick={() => setLightboxOpen(true)}
+                >
+                  <img
+                    src={image.url}
+                    alt={image.caption || `${altPrefix} image ${index + 1}`}
+                    className="h-64 w-full object-cover sm:h-80"
+                  />
+                </button>
                 <div className="flex items-center justify-between mt-2">
                   {image.caption && (
                     <p className="text-sm text-muted-foreground">{image.caption}</p>
@@ -62,6 +76,14 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
         <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow-lg hover:bg-white dark:bg-background/90 dark:hover:bg-background" />
         <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow-lg hover:bg-white dark:bg-background/90 dark:hover:bg-background" />
       </Carousel>
+      <Lightbox
+        images={images}
+        startIndex={current}
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        title={`Photos of ${altPrefix}`}
+        altPrefix={`${altPrefix} image`}
+      />
     </div>
   );
 }
