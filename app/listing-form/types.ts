@@ -73,9 +73,16 @@ export const listingFormSchema = z.object({
 });
 
 type ListingFormSchemaInput = z.input<typeof listingFormSchema>;
-export type ListingFormInput = Omit<ListingFormSchemaInput, "buildingType" | "leaseTerm"> & {
+// Number fields are empty (undefined) until the user types a value; the schema still
+// requires the ones that are required.
+export type ListingFormInput = Omit<
+  ListingFormSchemaInput,
+  "buildingType" | "leaseTerm" | "bedrooms" | "bathrooms"
+> & {
   buildingType: string;
   leaseTerm?: number;
+  bedrooms?: number;
+  bathrooms?: number;
 };
 export type ListingFormData = z.output<typeof listingFormSchema>;
 export type ListingFormImage = z.output<typeof listingImageSchema>;
@@ -91,8 +98,8 @@ export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents" | "
   title: "",
   description: "",
   buildingType: "",
-  bedrooms: 0,
-  bathrooms: 0,
+  bedrooms: undefined,
+  bathrooms: undefined,
   squareFeet: undefined,
   depositInfo: undefined,
   heatingType: undefined,

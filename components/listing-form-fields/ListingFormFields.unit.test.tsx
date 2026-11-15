@@ -109,4 +109,76 @@ describe("ListingFormFields", () => {
       "Select primary heating type",
     );
   });
+
+  describe("number fields", () => {
+    const numberFields = [
+      "Bedrooms",
+      "Bathrooms",
+      "Square Feet",
+      "Monthly Rent ($)",
+      "Initial Lease Term in Months",
+    ];
+    // Required labels end in " *", so match on the start of the accessible name.
+    const getNumberInput = (label: string) =>
+      screen.getByRole("spinbutton", { name: (name) => name.startsWith(label) });
+
+    it.each(numberFields)("starts %s empty on a new listing", (label) => {
+      renderForm();
+
+      expect(getNumberInput(label)).toHaveValue(null);
+    });
+
+    it("keeps the remaining zeros when the first digit of a saved number is deleted", () => {
+      const form = renderForm({ squareFeet: 1000 });
+      const input = getNumberInput("Square Feet");
+
+      fireEvent.change(input, { target: { value: "000" } });
+
+      expect(input).toHaveDisplayValue("000");
+      expect(form.getValues("squareFeet")).toBe(0);
+    });
+
+    it("drops a leading zero typed after a saved 0", () => {
+      const form = renderForm({ bedrooms: 0 });
+      const input = getNumberInput("Bedrooms");
+      expect(input).toHaveDisplayValue("0");
+
+      fireEvent.change(input, { target: { value: "02" } });
+
+      expect(input).toHaveDisplayValue("2");
+      expect(form.getValues("bedrooms")).toBe(2);
+    });
+
+    it("stores an explicitly typed 0", () => {
+      const form = renderForm();
+      const input = getNumberInput("Bedrooms");
+
+      fireEvent.change(input, { target: { value: "0" } });
+
+      expect(input).toHaveDisplayValue("0");
+      expect(form.getValues("bedrooms")).toBe(0);
+    });
+
+    it("stores no value after a typed number is cleared", () => {
+      const form = renderForm();
+      const input = getNumberInput("Square Feet");
+
+      fireEvent.change(input, { target: { value: "850" } });
+      fireEvent.change(input, { target: { value: "" } });
+
+      expect(input).toHaveValue(null);
+      expect(form.getValues("squareFeet")).toBeUndefined();
+    });
+
+    it("shows saved rent in dollars and stores typed rent in cents", () => {
+      const form = renderForm({ monthlyRentCents: 185000 });
+      const input = getNumberInput("Monthly Rent ($)");
+      expect(input).toHaveDisplayValue("1850");
+
+      fireEvent.change(input, { target: { value: "1900" } });
+
+      expect(input).toHaveDisplayValue("1900");
+      expect(form.getValues("monthlyRentCents")).toBe(190000);
+    });
+  });
 });

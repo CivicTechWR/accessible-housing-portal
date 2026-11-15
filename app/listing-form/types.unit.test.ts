@@ -81,6 +81,23 @@ describe("listingFormSchema", () => {
     expectIssueAt(listingFormSchema.safeParse({ ...validFormInput, title: "   " }), "title");
   });
 
+  it("requires bedrooms and bathrooms, which start empty on a new listing", () => {
+    expect(CREATE_FORM_DEFAULTS.bedrooms).toBeUndefined();
+    expect(CREATE_FORM_DEFAULTS.bathrooms).toBeUndefined();
+
+    const result = listingFormSchema.safeParse({
+      ...validFormInput,
+      bedrooms: undefined,
+      bathrooms: undefined,
+    });
+    expectIssueAt(result, "bedrooms");
+    expectIssueAt(result, "bathrooms");
+  });
+
+  it("accepts an explicit zero for bedrooms", () => {
+    expect(listingFormSchema.parse({ ...validFormInput, bedrooms: 0 }).bedrooms).toBe(0);
+  });
+
   it("accepts root-relative uploaded image URLs", () => {
     const parsed = listingFormSchema.parse({
       ...validFormInput,
