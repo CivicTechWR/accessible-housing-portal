@@ -5,14 +5,12 @@ import ListingsSkeleton from "@/components/listings-skeleton/ListingsSkeleton";
 import { Suspense } from "react";
 import { getOptionalSession } from "@/lib/auth/session";
 import { getListingsService } from "@/lib/listings/listing.service";
+import { listingQuerySchema } from "@/shared/schemas/listings";
 
 import ListingsDashboard from "./listings";
 import { getListingsDashboardData } from "./data";
-import {
-  createListingsQueryString,
-  getListingsQueryFromSearchParams,
-  LISTINGS_PAGE_SIZE,
-} from "./query";
+import { createListingsQueryString, LISTINGS_PAGE_SIZE, toListingSearchFilters } from "./query";
+import { loadListingSearchParams } from "./searchParams";
 
 export default async function ListingsPage({
   searchParams,
@@ -20,10 +18,7 @@ export default async function ListingsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const resolvedSearchParams = await searchParams;
-  const query = getListingsQueryFromSearchParams({
-    ...resolvedSearchParams,
-    sort: resolvedSearchParams.sort ?? "newest",
-  });
+  const filters = toListingSearchFilters(loadListingSearchParams(resolvedSearchParams));
 
   await connection();
 
@@ -34,8 +29,11 @@ export default async function ListingsPage({
   }
 
   const [listingsResult, { dynamicGroups }] = await Promise.all([
-    // The first page of the client's infinite query, so it can seed the cache.
-    getListingsService({ ...query, page: "1", limit: String(LISTINGS_PAGE_SIZE) }),
+    // The first page of the client's infinite query, so it can seed the cache. The schema check
+    // keeps a malformed URL value, such as `bedrooms=abc`, from reaching the database.
+    getListingsService(
+      listingQuerySchema.parse({ ...filters, page: "1", limit: String(LISTINGS_PAGE_SIZE) }),
+    ),
     getListingsDashboardData(),
   ]);
 
@@ -53,7 +51,7 @@ export default async function ListingsPage({
       <Suspense fallback={<ListingsSkeleton />}>
         <ListingsDashboard
           initialData={initialData}
-          initialQueryString={createListingsQueryString(query)}
+          initialQueryString={createListingsQueryString(filters)}
           initialDataUpdatedAt={initialDataUpdatedAt}
           dynamicGroups={dynamicGroups}
         />

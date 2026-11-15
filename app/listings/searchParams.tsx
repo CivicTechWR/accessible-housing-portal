@@ -1,13 +1,14 @@
 import {
-  createSearchParamsCache,
+  createLoader,
   parseAsString,
   parseAsInteger,
   parseAsArrayOf,
-  parseAsStringEnum,
+  parseAsStringLiteral,
   parseAsIsoDateTime,
+  type inferParserType,
 } from "nuqs/server";
 
-const sortOptions = ["newest", "oldest", "price_asc", "price_desc"];
+const sortOptions = ["newest", "oldest", "price_asc", "price_desc"] as const;
 
 export const listingSearchParamsParsers = {
   location: parseAsString,
@@ -16,8 +17,11 @@ export const listingSearchParamsParsers = {
   bedrooms: parseAsString,
   bathrooms: parseAsString,
   moveInDate: parseAsIsoDateTime,
-  sort: parseAsStringEnum(sortOptions).withDefault("newest"),
+  sort: parseAsStringLiteral(sortOptions).withDefault("newest"),
   features: parseAsArrayOf(parseAsString).withDefault([]),
 };
 
-export const listingSearchParamsCache = createSearchParamsCache(listingSearchParamsParsers);
+export type ListingSearchParams = inferParserType<typeof listingSearchParamsParsers>;
+
+/** Parses the search page's URL on the server with the parsers `useQueryStates` uses in the browser. */
+export const loadListingSearchParams = createLoader(listingSearchParamsParsers);
