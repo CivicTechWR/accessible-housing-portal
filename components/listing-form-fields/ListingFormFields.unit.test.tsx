@@ -167,7 +167,28 @@ describe("ListingFormFields", () => {
       fireEvent.change(input, { target: { value: "" } });
 
       expect(input).toHaveValue(null);
-      expect(form.getValues("squareFeet")).toBeUndefined();
+      expect(form.getValues("squareFeet")).toBeNull();
+    });
+
+    it("keeps a saved number cleared instead of showing it again", () => {
+      const form = renderForm({ squareFeet: 850 });
+      const input = getNumberInput("Square Feet");
+
+      fireEvent.change(input, { target: { value: "" } });
+
+      expect(input).toHaveValue(null);
+      expect(form.getValues("squareFeet")).toBeNull();
+    });
+
+    it("replaces a saved number after backspacing it", () => {
+      const form = renderForm({ bedrooms: 3 });
+      const input = getNumberInput("Bedrooms");
+
+      fireEvent.change(input, { target: { value: "" } });
+      fireEvent.change(input, { target: { value: "2" } });
+
+      expect(input).toHaveDisplayValue("2");
+      expect(form.getValues("bedrooms")).toBe(2);
     });
 
     it("shows saved rent in dollars and stores typed rent in cents", () => {

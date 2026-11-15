@@ -182,6 +182,16 @@ describe("mapListingFormToAutosavePatchInput", () => {
     });
   });
 
+  it("leaves empty number fields out of the autosave payload", () => {
+    const payload = mapListingFormToAutosavePatchInput({
+      ...CREATE_FORM_DEFAULTS,
+      title: "Draft title",
+    });
+
+    expect(payload?.unit).toBeUndefined();
+    expect(payload?.leaseTermMonths).toBeUndefined();
+  });
+
   it("keeps a nullable clear pending until null has been autosaved", () => {
     const populatedDraft: ListingFormInput = {
       ...CREATE_FORM_DEFAULTS,
@@ -198,7 +208,7 @@ describe("mapListingFormToAutosavePatchInput", () => {
       ...CREATE_FORM_DEFAULTS,
       description: "",
       street2: "",
-      squareFeet: undefined,
+      squareFeet: null,
       monthlyRentCents: 0,
     };
     const pendingClearIntent = getPendingAutosaveNullableFieldClearIntent(

@@ -76,7 +76,7 @@ export function getPendingAutosaveNullableFieldClearIntent(
       normalizeOptionalString(data.street2) === undefined &&
       hasConcreteValue(lastAutosavedPayload?.address?.street2),
     squareFeet:
-      !Number.isFinite(data.squareFeet) && hasConcreteValue(lastAutosavedPayload?.unit?.sqft),
+      !isFiniteNumber(data.squareFeet) && hasConcreteValue(lastAutosavedPayload?.unit?.sqft),
   };
 }
 
@@ -151,21 +151,21 @@ export function mapListingFormToAutosavePatchInput(
     patch.leaseTermMonths = leaseTermMonths;
   }
 
-  if (Number.isFinite(data.bedrooms)) {
+  if (isFiniteNumber(data.bedrooms)) {
     unit.bedrooms = data.bedrooms;
   }
 
-  if (Number.isFinite(data.bathrooms)) {
+  if (isFiniteNumber(data.bathrooms)) {
     unit.bathrooms = data.bathrooms;
   }
 
-  if (Number.isFinite(data.squareFeet)) {
+  if (isFiniteNumber(data.squareFeet)) {
     unit.sqft = data.squareFeet;
   } else if (nullableFieldEditIntent.squareFeet) {
     unit.sqft = null;
   }
 
-  if (Number.isFinite(data.monthlyRentCents)) {
+  if (isFiniteNumber(data.monthlyRentCents)) {
     unit.rent = Math.round(data.monthlyRentCents / 100);
   }
 
@@ -280,6 +280,11 @@ function assignNullableTrimmedString(
   }
 }
 
-function parseLeaseTermMonths(value: number | undefined) {
-  return value !== undefined && Number.isInteger(value) && value > 0 ? value : undefined;
+// Empty number fields are null in the form, so narrow before using them.
+function isFiniteNumber(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function parseLeaseTermMonths(value: number | null | undefined) {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }

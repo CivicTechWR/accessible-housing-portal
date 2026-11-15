@@ -82,16 +82,33 @@ describe("listingFormSchema", () => {
   });
 
   it("requires bedrooms and bathrooms, which start empty on a new listing", () => {
-    expect(CREATE_FORM_DEFAULTS.bedrooms).toBeUndefined();
-    expect(CREATE_FORM_DEFAULTS.bathrooms).toBeUndefined();
+    expect(CREATE_FORM_DEFAULTS.bedrooms).toBeNull();
+    expect(CREATE_FORM_DEFAULTS.bathrooms).toBeNull();
 
     const result = listingFormSchema.safeParse({
       ...validFormInput,
-      bedrooms: undefined,
-      bathrooms: undefined,
+      bedrooms: null,
+      bathrooms: null,
     });
     expectIssueAt(result, "bedrooms");
     expectIssueAt(result, "bathrooms");
+  });
+
+  it("requires rent and lease term when they are empty", () => {
+    const result = listingFormSchema.safeParse({
+      ...validFormInput,
+      monthlyRentCents: null,
+      leaseTerm: null,
+    });
+    expect(result.error?.issues.map((issue) => issue.message)).toEqual(
+      expect.arrayContaining(["Rent is required", "Lease term is required"]),
+    );
+  });
+
+  it("parses an empty square feet as not set", () => {
+    expect(listingFormSchema.parse({ ...validFormInput, squareFeet: null }).squareFeet).toBe(
+      undefined,
+    );
   });
 
   it("accepts an explicit zero for bedrooms", () => {

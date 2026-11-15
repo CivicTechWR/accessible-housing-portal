@@ -30,9 +30,13 @@ export const listingFormSchema = z.object({
   buildingType: z.enum(LISTING_BUILDING_TYPE_VALUES),
   bedrooms: z.number({ message: "Bedrooms are required" }).min(0, "Invalid number of bedrooms"),
   bathrooms: z.number({ message: "Bathrooms are required" }).min(0, "Invalid number of bathrooms"),
-  squareFeet: z.number().optional(),
+  // An empty optional number is null in the form; parsed data uses undefined for "not set".
+  squareFeet: z
+    .number()
+    .nullish()
+    .transform((value) => value ?? undefined),
   monthlyRentCents: z.number({ message: "Rent is required" }).min(0, "Rent cannot be negative"),
-  leaseTerm: z.number().int().positive(),
+  leaseTerm: z.number({ message: "Lease term is required" }).int().positive(),
   depositInfo: optionalTrimmedStringToUndefined(),
   heatingType: z
     .union([z.enum(HEATING_TYPE_VALUES), z.literal("")])
@@ -73,16 +77,17 @@ export const listingFormSchema = z.object({
 });
 
 type ListingFormSchemaInput = z.input<typeof listingFormSchema>;
-// Number fields are empty (undefined) until the user types a value; the schema still
-// requires the ones that are required.
+// An empty number field holds null (not undefined, which react-hook-form would replace with
+// the loaded value). The schema still requires the required ones when the form is submitted.
 export type ListingFormInput = Omit<
   ListingFormSchemaInput,
-  "buildingType" | "leaseTerm" | "bedrooms" | "bathrooms"
+  "buildingType" | "leaseTerm" | "bedrooms" | "bathrooms" | "monthlyRentCents"
 > & {
   buildingType: string;
-  leaseTerm?: number;
-  bedrooms?: number;
-  bathrooms?: number;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  monthlyRentCents?: number | null;
+  leaseTerm?: number | null;
 };
 export type ListingFormData = z.output<typeof listingFormSchema>;
 export type ListingFormImage = z.output<typeof listingImageSchema>;
@@ -94,13 +99,15 @@ export type ListingFormMethods = UseFormReturn<
   ListingFormData
 >;
 
-export const CREATE_FORM_DEFAULTS: Omit<ListingFormInput, "monthlyRentCents" | "leaseTerm"> = {
+export const CREATE_FORM_DEFAULTS: ListingFormInput = {
   title: "",
   description: "",
   buildingType: "",
-  bedrooms: undefined,
-  bathrooms: undefined,
-  squareFeet: undefined,
+  bedrooms: null,
+  bathrooms: null,
+  squareFeet: null,
+  monthlyRentCents: null,
+  leaseTerm: null,
   depositInfo: undefined,
   heatingType: undefined,
   utilitiesIncluded: [],

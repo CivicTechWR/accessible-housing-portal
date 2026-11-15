@@ -7,12 +7,13 @@ export function stripLeadingZeros(text: string): string {
 }
 
 /**
- * Turns the text of a number input into the form value: empty text is `undefined`
+ * Turns the text of a number input into the form value: empty text is `null`
  * (so required fields still fail validation), anything else is the number times `scale`.
+ * Not `undefined`: react-hook-form shows the loaded value again for an undefined field.
  */
-export function parseNumberInput(text: string, scale = 1): number | undefined {
+export function parseNumberInput(text: string, scale = 1): number | null {
   if (text.trim() === "") {
-    return undefined;
+    return null;
   }
 
   return Number(text) * scale;

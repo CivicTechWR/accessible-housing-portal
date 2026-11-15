@@ -27,7 +27,7 @@ type KeysMatching<T, V> = {
 }[keyof T];
 
 type ListingStringKey = Extract<KeysMatching<ListingFormInput, string | undefined>, string>;
-type ListingNumberKey = Extract<KeysMatching<ListingFormInput, number | undefined>, string>;
+type ListingNumberKey = Extract<KeysMatching<ListingFormInput, number | null | undefined>, string>;
 type ListingStringArrayKey = Extract<KeysMatching<ListingFormInput, string[] | undefined>, string>;
 
 interface BaseCoreFieldDefinition {
