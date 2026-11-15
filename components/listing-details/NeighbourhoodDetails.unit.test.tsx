@@ -17,6 +17,10 @@ const mode = {
   grocery_minutes: [15, 27, null] as [number | null, number | null, number | null],
   access,
 };
+const cyclingMode = {
+  grocery_minutes: [9, 19, null] as [number | null, number | null, number | null],
+  access: { ...access, health_care: 61, schools: 46 },
+};
 
 const details: NeighbourhoodDetailsResult = {
   block: {
@@ -26,7 +30,7 @@ const details: NeighbourhoodDetailsResult = {
     walking: mode,
     transit_peak: mode,
     transit_offpeak: mode,
-    cycling: mode,
+    cycling: cyclingMode,
   },
   nearby: [
     {
@@ -61,6 +65,20 @@ const details: NeighbourhoodDetailsResult = {
       distanceM: 1_234,
     },
     { groupId: "pharmacy", label: "Pharmacy", place: null, distanceM: null },
+    {
+      groupId: "library",
+      label: "Library",
+      place: {
+        osm_id: "node/3",
+        category: "libraries",
+        kind: "amenity=library",
+        name: "Central Library",
+        lat: 43.4643,
+        lon: -80.5204,
+        opening_hours: "Mo-Sa 09:00-20:00",
+      },
+      distanceM: 0,
+    },
   ],
 };
 
@@ -83,6 +101,7 @@ describe("NeighbourhoodDetails", () => {
     within(section).getByText("Limited wheelchair access");
     within(section).getByText("Unnamed · 1.2 km");
     within(section).getByText("Hours: Mo-Fr 09:00-17:00");
+    within(section).getByText("Hours: Mo-Sa 09:00-20:00");
     within(section).getByText("None within 5 km");
   });
 
@@ -95,6 +114,9 @@ describe("NeighbourhoodDetails", () => {
 
     const { rerender } = render(<NeighbourhoodDetails details={details} />);
     expect(screen.getAllByText("15 min")).toHaveLength(2);
+    screen.getByText("9 min");
+    screen.getByText("Travel time to nearest grocery store");
+    expect(screen.getAllByText("Transit (peak)")).toHaveLength(2);
 
     rerender(
       <NeighbourhoodDetails
@@ -112,11 +134,22 @@ describe("NeighbourhoodDetails", () => {
     render(<NeighbourhoodDetails details={details} />);
 
     expect(screen.getAllByText("Better than 59%")).toHaveLength(2);
+    screen.getByRole("columnheader", { name: "Cycling" });
+    const schoolsRow = screen.getByRole("row", { name: /Schools/ });
+    expect(schoolsRow).toBeInTheDocument();
+    const healthRow = screen.getByRole("row", { name: /Health care/ });
+    within(healthRow).getByText("Better than 61%");
+    screen.getByRole("heading", {
+      name: "Access compared with the rest of Waterloo Region",
+    });
     screen.getByRole("link", { name: "Statistics Canada Spatial Access Measures 2024" });
     const statcan = screen.getByRole("link", {
       name: "Statistics Canada Spatial Access Measures 2024",
     });
-    expect(statcan).toHaveAttribute("href", "https://www150.statcan.gc.ca/");
+    expect(statcan).toHaveAttribute(
+      "href",
+      "https://www150.statcan.gc.ca/n1/en/catalogue/27260001",
+    );
     expect(statcan).toHaveAttribute("target", "_blank");
     expect(statcan).toHaveAttribute("rel", "noopener noreferrer");
 

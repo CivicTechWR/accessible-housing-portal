@@ -10,7 +10,7 @@ import {
 import { loadBlocks, loadPlaces } from "@/lib/neighbourhood/neighbourhood.data";
 import type { ListingIdParam } from "@/shared/schemas/listings";
 
-export async function getListingNeighbourhood(
+export async function getListingNeighbourhoodService(
   listingId: ListingIdParam,
 ): Promise<NeighbourhoodDetailsResult | null> {
   try {

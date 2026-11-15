@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { formatWalkScoreAddress } from "@/lib/walk-score/address";
 import { getListingByIdService } from "@/lib/listings/listing.service";
 import { getListingWalkScoreService } from "@/lib/listings/walk-score.service";
-import { getListingNeighbourhood } from "@/lib/listings/neighbourhood.service";
+import { getListingNeighbourhoodService } from "@/lib/listings/neighbourhood.service";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
 import { WalkScore } from "@/components/listing-details/WalkScore";
 import { NeighbourhoodDetails } from "@/components/listing-details/NeighbourhoodDetails";
@@ -20,7 +20,7 @@ async function ListingWalkScore({ listingId, address }: { listingId: string; add
 }
 
 async function ListingNeighbourhood({ listingId }: { listingId: string }) {
-  const details = await getListingNeighbourhood(listingId);
+  const details = await getListingNeighbourhoodService(listingId);
 
   return <NeighbourhoodDetails details={details} />;
 }

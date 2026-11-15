@@ -7,6 +7,7 @@ export const MAX_PLACE_DISTANCE_M = 5_000;
 // TODO: Confirm these missing-store cutoffs with Statistics Canada.
 export const WALKING_GROCERY_LIMIT_MINUTES = 30;
 export const TRANSIT_GROCERY_LIMIT_MINUTES = 40;
+export const CYCLING_GROCERY_LIMIT_MINUTES = 30;
 
 type NearbyGroup = {
   id: string;
@@ -22,7 +23,12 @@ export const NEARBY_GROUPS: readonly NearbyGroup[] = [
     category: "transit",
     kinds: ["highway=bus_stop", "public_transport=station", "amenity=bus_station"],
   },
-  { id: "clinic", label: "Clinic or doctor", category: "health", kinds: ["amenity=doctors"] },
+  {
+    id: "clinic",
+    label: "Clinic or doctor",
+    category: "health",
+    kinds: ["amenity=clinic", "amenity=doctors"],
+  },
   { id: "pharmacy", label: "Pharmacy", category: "health", kinds: ["amenity=pharmacy"] },
   {
     id: "school",
@@ -39,13 +45,14 @@ export const NEARBY_GROUPS: readonly NearbyGroup[] = [
   },
   {
     id: "community",
-    label: "Community or sports centre",
+    label: "Community or recreation centre",
     category: "community_space",
     kinds: [
       "amenity=community_centre",
-      "amenity=sports_centre",
+      "amenity=social_centre",
       "leisure=sports_centre",
       "leisure=sports_hall",
+      "leisure=ice_rink",
     ],
   },
 ];
@@ -134,8 +141,8 @@ export function buildNeighbourhoodDetails(
 }
 
 export function formatDistance(metres: number): string {
-  if (metres < 1_000) {
-    return `${Math.round(metres)} m`;
+  if (metres < 995) {
+    return `${Math.round(metres / 10) * 10} m`;
   }
 
   return `${(metres / 1_000).toFixed(1)} km`;

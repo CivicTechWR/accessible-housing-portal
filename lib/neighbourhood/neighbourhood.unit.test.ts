@@ -89,6 +89,21 @@ describe("neighbourhood calculations", () => {
     expect(park?.distanceM).toBeCloseTo(11.1, 0);
   });
 
+  it("finds an amenity=clinic place in the clinic group", () => {
+    const clinic: Place = {
+      osm_id: "node/clinic",
+      category: "health",
+      kind: "amenity=clinic",
+      name: "Community Clinic",
+      lat: 43.4644,
+      lon: -80.5204,
+    };
+
+    const result = findNearestPlaces(43.4643, -80.5204, [clinic]);
+
+    expect(result.find((item) => item.groupId === "clinic")?.place).toBe(clinic);
+  });
+
   it("returns an empty result when no allowed place is within range", () => {
     const results = findNearestPlaces(43.4643, -80.5204, [
       {
@@ -107,7 +122,9 @@ describe("neighbourhood calculations", () => {
   });
 
   it("formats distances in metres below one kilometre and one-decimal kilometres otherwise", () => {
-    expect(formatDistance(350)).toBe("350 m");
+    expect(formatDistance(347)).toBe("350 m");
+    expect(formatDistance(994)).toBe("990 m");
+    expect(formatDistance(995)).toBe("1.0 km");
     expect(formatDistance(1_234)).toBe("1.2 km");
   });
 

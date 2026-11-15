@@ -1,11 +1,12 @@
 import type { NeighbourhoodDetailsResult } from "@/lib/neighbourhood/neighbourhood";
 import {
+  CYCLING_GROCERY_LIMIT_MINUTES,
   formatDistance,
   TRANSIT_GROCERY_LIMIT_MINUTES,
   WALKING_GROCERY_LIMIT_MINUTES,
 } from "@/lib/neighbourhood/neighbourhood";
 
-const STATCAN_URL = "https://www150.statcan.gc.ca/";
+const STATCAN_URL = "https://www150.statcan.gc.ca/n1/en/catalogue/27260001";
 const STATCAN_LICENSE_URL = "https://www.statcan.gc.ca/en/reference/licence";
 const OSM_URL = "https://www.openstreetmap.org/copyright";
 const footerLinkClassName = "text-primary-text underline-offset-4 hover:underline";
@@ -16,6 +17,7 @@ type NeighbourhoodDetailsProps = {
 
 const accessRows = [
   { label: "Health care", key: "health_care" },
+  { label: "Schools", key: "schools" },
   { label: "Child care", key: "child_care" },
   { label: "Jobs", key: "jobs" },
   { label: "Culture and arts", key: "culture_arts" },
@@ -58,7 +60,9 @@ export function NeighbourhoodDetails({ details }: NeighbourhoodDetailsProps) {
                     {item.place.wheelchair === "yes" && <p>Wheelchair accessible</p>}
                     {item.place.wheelchair === "limited" && <p>Limited wheelchair access</p>}
                     {item.place.wheelchair === "no" && <p>Not wheelchair accessible</p>}
-                    {(item.groupId === "clinic" || item.groupId === "pharmacy") &&
+                    {(item.groupId === "clinic" ||
+                      item.groupId === "pharmacy" ||
+                      item.groupId === "library") &&
                       item.place.opening_hours && <p>Hours: {item.place.opening_hours}</p>}
                   </div>
                 ) : (
@@ -72,8 +76,8 @@ export function NeighbourhoodDetails({ details }: NeighbourhoodDetailsProps) {
         {block && (
           <>
             <div>
-              <h3 className="text-sm font-semibold">Travel time to nearby grocery stores</h3>
-              <dl className="mt-2 grid grid-cols-2 gap-2 text-sm">
+              <h3 className="text-sm font-semibold">Travel time to nearest grocery store</h3>
+              <dl className="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
                 <div>
                   <dt className="text-muted-foreground">Walking</dt>
                   <dd>
@@ -84,7 +88,7 @@ export function NeighbourhoodDetails({ details }: NeighbourhoodDetailsProps) {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Transit</dt>
+                  <dt className="text-muted-foreground">Transit (peak)</dt>
                   <dd>
                     {formatGroceryMinutes(
                       block.transit_peak.grocery_minutes[0],
@@ -92,11 +96,22 @@ export function NeighbourhoodDetails({ details }: NeighbourhoodDetailsProps) {
                     )}
                   </dd>
                 </div>
+                <div>
+                  <dt className="text-muted-foreground">Cycling</dt>
+                  <dd>
+                    {formatGroceryMinutes(
+                      block.cycling.grocery_minutes[0],
+                      CYCLING_GROCERY_LIMIT_MINUTES,
+                    )}
+                  </dd>
+                </div>
               </dl>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold">Access compared with</h3>
+              <h3 className="text-sm font-semibold">
+                Access compared with the rest of Waterloo Region
+              </h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 Each value is the share of Waterloo Region blocks with lower access.
               </p>
@@ -111,7 +126,10 @@ export function NeighbourhoodDetails({ details }: NeighbourhoodDetailsProps) {
                         Walking
                       </th>
                       <th scope="col" className="py-1 font-medium">
-                        Transit
+                        Transit (peak)
+                      </th>
+                      <th scope="col" className="py-1 font-medium">
+                        Cycling
                       </th>
                     </tr>
                   </thead>
@@ -122,7 +140,10 @@ export function NeighbourhoodDetails({ details }: NeighbourhoodDetailsProps) {
                           {row.label}
                         </th>
                         <td className="py-1 pr-3">{formatAccess(block.walking.access[row.key])}</td>
-                        <td className="py-1">{formatAccess(block.transit_peak.access[row.key])}</td>
+                        <td className="py-1 pr-3">
+                          {formatAccess(block.transit_peak.access[row.key])}
+                        </td>
+                        <td className="py-1">{formatAccess(block.cycling.access[row.key])}</td>
                       </tr>
                     ))}
                   </tbody>

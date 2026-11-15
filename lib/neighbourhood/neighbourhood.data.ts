@@ -56,7 +56,12 @@ export function loadBlocks(): Promise<SamBlock[]> {
   blocksPromise ??= readFile(
     path.join(process.cwd(), "data", "neighbourhood", "waterloo-blocks.json"),
     "utf8",
-  ).then((contents) => JSON.parse(contents) as SamBlock[]);
+  )
+    .then((contents) => JSON.parse(contents) as SamBlock[])
+    .catch((error: unknown) => {
+      blocksPromise = undefined;
+      throw error;
+    });
 
   return blocksPromise;
 }
@@ -65,7 +70,12 @@ export function loadPlaces(): Promise<Place[]> {
   placesPromise ??= readFile(
     path.join(process.cwd(), "data", "neighbourhood", "waterloo-places.json"),
     "utf8",
-  ).then((contents) => JSON.parse(contents) as Place[]);
+  )
+    .then((contents) => JSON.parse(contents) as Place[])
+    .catch((error: unknown) => {
+      placesPromise = undefined;
+      throw error;
+    });
 
   return placesPromise;
 }

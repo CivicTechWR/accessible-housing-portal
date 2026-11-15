@@ -4,7 +4,7 @@ import { getOptionalSession } from "@/lib/auth/session";
 import { findListingRecordById, type ListingRecord } from "@/lib/listings/listing.repository";
 import { loadBlocks, loadPlaces, type SamModeData } from "@/lib/neighbourhood/neighbourhood.data";
 
-import { getListingNeighbourhood } from "./neighbourhood.service";
+import { getListingNeighbourhoodService } from "./neighbourhood.service";
 
 jest.mock("@/lib/auth/session", () => ({
   getOptionalSession: jest.fn(),
@@ -85,7 +85,7 @@ function mockSession(userId = OWNER_ID) {
   });
 }
 
-describe("getListingNeighbourhood", () => {
+describe("getListingNeighbourhoodService", () => {
   let warnSpy: jest.Spied<typeof console.warn>;
 
   beforeEach(() => {
@@ -121,7 +121,7 @@ describe("getListingNeighbourhood", () => {
   });
 
   it("returns neighbourhood details for a readable listing", async () => {
-    const result = await getListingNeighbourhood(LISTING_ID);
+    const result = await getListingNeighbourhoodService(LISTING_ID);
 
     expect(findListingRecordByIdMock).toHaveBeenCalledWith(LISTING_ID);
     expect(loadBlocksMock).toHaveBeenCalledTimes(1);
@@ -135,7 +135,7 @@ describe("getListingNeighbourhood", () => {
   it("returns null without a session and does not load neighbourhood data", async () => {
     getOptionalSessionMock.mockResolvedValue({ session: null, authzUser: null });
 
-    await expect(getListingNeighbourhood(LISTING_ID)).resolves.toBeNull();
+    await expect(getListingNeighbourhoodService(LISTING_ID)).resolves.toBeNull();
 
     expect(findListingRecordByIdMock).not.toHaveBeenCalled();
     expect(loadBlocksMock).not.toHaveBeenCalled();
@@ -146,7 +146,7 @@ describe("getListingNeighbourhood", () => {
     mockSession("44444444-4444-4444-8444-444444444444");
     findListingRecordByIdMock.mockResolvedValue({ ...listing, status: "draft" });
 
-    await expect(getListingNeighbourhood(LISTING_ID)).resolves.toBeNull();
+    await expect(getListingNeighbourhoodService(LISTING_ID)).resolves.toBeNull();
 
     expect(loadBlocksMock).not.toHaveBeenCalled();
     expect(loadPlacesMock).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe("getListingNeighbourhood", () => {
       property: { ...listing.property, longitude: null },
     });
 
-    await expect(getListingNeighbourhood(LISTING_ID)).resolves.toBeNull();
+    await expect(getListingNeighbourhoodService(LISTING_ID)).resolves.toBeNull();
 
     expect(loadBlocksMock).not.toHaveBeenCalled();
     expect(loadPlacesMock).not.toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe("getListingNeighbourhood", () => {
   it("returns null and warns if listing lookup fails", async () => {
     findListingRecordByIdMock.mockRejectedValue(new Error("Database error"));
 
-    await expect(getListingNeighbourhood(LISTING_ID)).resolves.toBeNull();
+    await expect(getListingNeighbourhoodService(LISTING_ID)).resolves.toBeNull();
 
     expect(warnSpy).toHaveBeenCalledWith("[neighbourhood] Listing lookup failed.");
   });
