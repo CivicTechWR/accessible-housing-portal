@@ -193,9 +193,12 @@ function FieldRenderer({
                 ref={field.ref}
                 value={formatNumberInput(field.value, scale)}
                 onChange={(e) => {
-                  const text = stripLeadingZeros(e.target.value);
-                  // React leaves "02" on screen because it equals the stored 2, so fix the text here.
-                  if (text !== e.target.value) {
+                  const raw = e.target.value;
+                  // Typing 2 after a 0 gives "02", which React leaves on screen because it
+                  // equals the stored 2, so fix the text here. Only a stored 0 needs this:
+                  // stripping every time would turn 1050 into 50 when the 1 is deleted.
+                  const text = field.value === 0 ? stripLeadingZeros(raw) : raw;
+                  if (text !== raw) {
                     e.target.value = text;
                   }
                   field.onChange(parseNumberInput(text, scale));

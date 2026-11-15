@@ -128,13 +128,14 @@ describe("ListingFormFields", () => {
       expect(getNumberInput(label)).toHaveValue(null);
     });
 
-    it.each(numberFields)("shows 2, not 02, after typing 2 into %s", (label) => {
-      renderForm();
-      const input = getNumberInput(label);
+    it("keeps the remaining zeros when the first digit of a saved number is deleted", () => {
+      const form = renderForm({ squareFeet: 1000 });
+      const input = getNumberInput("Square Feet");
 
-      fireEvent.change(input, { target: { value: "2" } });
+      fireEvent.change(input, { target: { value: "000" } });
 
-      expect(input).toHaveDisplayValue("2");
+      expect(input).toHaveDisplayValue("000");
+      expect(form.getValues("squareFeet")).toBe(0);
     });
 
     it("drops a leading zero typed after a saved 0", () => {
@@ -174,7 +175,7 @@ describe("ListingFormFields", () => {
       const input = getNumberInput("Monthly Rent ($)");
       expect(input).toHaveDisplayValue("1850");
 
-      fireEvent.change(input, { target: { value: "01900" } });
+      fireEvent.change(input, { target: { value: "1900" } });
 
       expect(input).toHaveDisplayValue("1900");
       expect(form.getValues("monthlyRentCents")).toBe(190000);
