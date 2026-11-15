@@ -28,10 +28,11 @@ export function FilterButton({
             <ToggleIconButton
               ref={mobileButtonRef}
               isActive={isFilterOpen}
-              icon={<HugeiconsIcon icon={FilterMailIcon} strokeWidth={2} />}
+              icon={<HugeiconsIcon icon={FilterMailIcon} strokeWidth={2} className="size-5" />}
               onClick={onFilterClick}
               aria-label="Filters"
               aria-expanded={isFilterOpen}
+              className="size-11"
             />
             {activeFilterCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">

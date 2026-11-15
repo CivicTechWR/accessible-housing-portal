@@ -171,6 +171,13 @@ export default function ListingsDashboard({
                   >
                     {/* ListingFilters renders its own visible "Filters" heading. */}
                     <SheetTitle className="sr-only">Filters</SheetTitle>
+                    {/* Radix hides the page's result count while the sheet is open, so announce it here.
+                        Empty while loading so typing a price doesn't announce every keystroke. */}
+                    <p role="status" className="sr-only">
+                      {isLoading || error
+                        ? ""
+                        : `${matchCount} ${matchCount === 1 ? "listing matches" : "listings match"}`}
+                    </p>
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                       <LazyListingFilters
                         bathroomToggleProps={bathroomToggleProps}
@@ -194,7 +201,7 @@ export default function ListingsDashboard({
                         Clear
                       </Button>
                       <SheetClose asChild>
-                        <Button className="h-11 flex-1 text-sm" aria-busy={isLoading}>
+                        <Button className="h-11 flex-1 text-sm">
                           {/* Dimmed while a filter change is still loading, so a stale count reads as pending.
                               After a failed fetch, data still holds the previous response, so drop the count. */}
                           <span className={isLoading ? "opacity-60" : undefined}>
