@@ -4,8 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { formatWalkScoreAddress } from "@/lib/walk-score/address";
 import { getListingByIdService } from "@/lib/listings/listing.service";
 import { getListingWalkScoreService } from "@/lib/listings/walk-score.service";
+import { getListingNeighbourhood } from "@/lib/listings/neighbourhood.service";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
 import { WalkScore } from "@/components/listing-details/WalkScore";
+import { NeighbourhoodDetails } from "@/components/listing-details/NeighbourhoodDetails";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -15,6 +17,12 @@ async function ListingWalkScore({ listingId, address }: { listingId: string; add
   const score = await getListingWalkScoreService(listingId);
 
   return <WalkScore score={score} address={address} />;
+}
+
+async function ListingNeighbourhood({ listingId }: { listingId: string }) {
+  const details = await getListingNeighbourhood(listingId);
+
+  return <NeighbourhoodDetails details={details} />;
 }
 
 export default async function ListingDetailsPage({ params }: Readonly<PageProps>) {
@@ -65,6 +73,11 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       walkScore={
         <Suspense fallback={<WalkScore score={null} address={walkScoreAddress} />}>
           <ListingWalkScore listingId={id} address={walkScoreAddress} />
+        </Suspense>
+      }
+      neighbourhood={
+        <Suspense fallback={null}>
+          <ListingNeighbourhood listingId={id} />
         </Suspense>
       }
     />

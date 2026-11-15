@@ -67,6 +67,7 @@ export interface ListingDetailProps {
   features: ListingFeatureCategory[];
   embedded?: boolean;
   walkScore?: ReactNode;
+  neighbourhood?: ReactNode;
 }
 
 function formatAvailableDate(isoDate: string) {
@@ -106,6 +107,7 @@ export function ListingDetails({
   postalCode,
   embedded = false,
   walkScore,
+  neighbourhood,
 }: ListingDetailProps) {
   const address = buildAddress({ unitNumber, street1, street2, city, postalCode });
   const rentalCost = `$${price.toLocaleString()}`;
@@ -290,6 +292,7 @@ export function ListingDetails({
         </Card>
 
         {walkScore}
+        {neighbourhood}
 
         <Card>
           <CardHeader className="gap-x-4 gap-y-2 border-b">
