@@ -1,6 +1,5 @@
 "use client";
 
-import { FilterButton, FilterButtonProps } from "@/components/filter-button/FilterButton";
 import {
   SortOptions as SortOptionsType,
   SortOptions as SortOptionsComponent,
@@ -10,14 +9,12 @@ import { Listing } from "@/components/listing-card-list/ListingsCardList";
 interface ListingsPanelHeaderProps {
   listings: Listing[];
   sortOptionProps: { sortOptions: SortOptionsType[]; onChange: (value: string) => void };
-  filterButtonProps: FilterButtonProps;
   isLoading?: boolean;
 }
 
 export function ListingsPanelHeader({
   listings,
   sortOptionProps,
-  filterButtonProps,
   isLoading = false,
 }: ListingsPanelHeaderProps) {
   return (
@@ -30,7 +27,6 @@ export function ListingsPanelHeader({
       <div className="min-w-0 flex-1 sm:flex-none">
         <SortOptionsComponent {...sortOptionProps} />
       </div>
-      <FilterButton {...filterButtonProps} viewport="mobile" />
     </div>
   );
 }
