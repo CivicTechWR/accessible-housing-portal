@@ -12,10 +12,11 @@ import { useMemo, useRef, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
+import type { ListingSearchFilters } from "./query";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
-import { atLeastBreakpoint, belowBreakpoint, useMediaQuery } from "@/lib/useMediaQuery";
 import { Button } from "@/components/ui/button";
+import { atLeastBreakpoint, belowBreakpoint, useMediaQuery } from "@/lib/useMediaQuery";
 import { Sheet, SheetClose, SheetContent, SheetFooter, SheetTitle } from "@/components/ui/sheet";
 
 const LazyListingFilters = dynamic<ListingFiltersProps>(
@@ -46,12 +47,15 @@ const LazyMapView = dynamic<{ listings: ListingSummary[] }>(
 interface ListingsDashboardProps {
   initialData: ListingListResponse;
   initialQueryString: string;
+  /** When the server fetched `initialData`, in epoch milliseconds. */
+  initialDataUpdatedAt: number;
   dynamicGroups: DynamicFilterGroup[];
 }
 
 export default function ListingsDashboard({
   initialData,
   initialQueryString,
+  initialDataUpdatedAt,
   dynamicGroups,
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -91,9 +95,8 @@ export default function ListingsDashboard({
     ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
     mobileButtonRef: mobileFilterButtonRef,
   };
-  const query = useMemo<ListingQuery>(
+  const query = useMemo<ListingSearchFilters>(
     () => ({
-      limit: "50",
       bathrooms: bathrooms ?? undefined,
       bedrooms: bedrooms ?? undefined,
       features: features.length > 0 ? features : undefined,
@@ -105,10 +108,12 @@ export default function ListingsDashboard({
     }),
     [bathrooms, bedrooms, features, location, maxPrice, minPrice, moveInDate, sort],
   );
-  const { data, error, isLoading } = useListingsQuery(query, initialData, initialQueryString);
-  const listings = data.data;
-  // The page shows one page of results; the button reports every match.
-  const matchCount = data.pagination.total;
+  const { listings, total, error, retry, isLoading, isLoadingMore, isPartial, isCapped } =
+    useListingsQuery(query, {
+      data: initialData,
+      queryString: initialQueryString,
+      updatedAt: initialDataUpdatedAt,
+    });
   const displayModes = isSplitViewAvailable
     ? [
         { value: DisplayMode.MAP_LIST, label: "Split" },
@@ -140,14 +145,25 @@ export default function ListingsDashboard({
         <FilterButton {...filterButtonProps} viewport="desktop" />
       </header>
       {error ? (
-        <AlertBanner variant="error" size="flush" className="border-b">
+        <AlertBanner
+          variant="error"
+          size="flush"
+          className="flex items-center justify-between gap-3 border-b"
+        >
           {error}
+          <Button variant="outline" size="sm" onClick={retry}>
+            Try again
+          </Button>
         </AlertBanner>
       ) : null}
       <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         {displayMode !== DisplayMode.MAP ? (
           <ListingsPanel
             listings={listings}
+            total={total}
+            isLoadingMore={isLoadingMore}
+            isPartial={isPartial}
+            isCapped={isCapped}
             displayMode={displayMode}
             sortOptionProps={sortOptionProps}
             isLoading={isLoading}
@@ -156,7 +172,7 @@ export default function ListingsDashboard({
         {[DisplayMode.MAP, DisplayMode.MAP_LIST].includes(displayMode) && (
           <div
             // In split view, CSS hides the map below `lg`, so the server HTML is right at every width.
-            className={`min-h-0 min-w-0 flex-1 overflow-hidden ${
+            className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${
               isSplitView ? "hidden lg:block lg:basis-1/2" : ""
             }`}
           >
@@ -167,6 +183,13 @@ export default function ListingsDashboard({
             ) : (
               <LazyMapView listings={listings} />
             )}
+            {/* Map view has no list header to show the count, so say here when pins are missing.
+                Bottom left stays clear of the attribution and the selected-listing card. */}
+            {displayMode === DisplayMode.MAP && isPartial ? (
+              <p className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm">
+                Showing {listings.length} of {total} listings
+              </p>
+            ) : null}
           </div>
         )}
         {/* Rendered outside the list panel so phones can filter in Map view too. */}
@@ -195,7 +218,7 @@ export default function ListingsDashboard({
               <p role="status" className="sr-only">
                 {isLoading || error
                   ? ""
-                  : `${matchCount} ${matchCount === 1 ? "listing matches" : "listings match"}`}
+                  : `${total} ${total === 1 ? "listing matches" : "listings match"}`}
               </p>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 <LazyListingFilters
@@ -224,9 +247,7 @@ export default function ListingsDashboard({
                     {/* Dimmed while a filter change is still loading, so a stale count reads as pending.
                         After a failed fetch, data still holds the previous response, so drop the count. */}
                     <span className={isLoading ? "opacity-60" : undefined}>
-                      {error
-                        ? "Show listings"
-                        : `Show ${matchCount} listing${matchCount !== 1 ? "s" : ""}`}
+                      {error ? "Show listings" : `Show ${total} listing${total !== 1 ? "s" : ""}`}
                     </span>
                   </Button>
                 </SheetClose>

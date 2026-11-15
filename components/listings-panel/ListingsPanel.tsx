@@ -11,6 +11,11 @@ import { ListingsPanelHeader } from "@/components/listings-panel-header/Listings
 
 interface ListingsPanelProps {
   listings: Listing[];
+  /** How many listings match the filters, which can be more than `listings` holds. */
+  total: number;
+  isLoadingMore: boolean;
+  isPartial: boolean;
+  isCapped: boolean;
   displayMode: DisplayMode;
   sortOptionProps: { sortOptions: SortOptionsType[]; onChange: (value: string) => void };
   isLoading?: boolean;
@@ -18,6 +23,10 @@ interface ListingsPanelProps {
 
 export function ListingsPanel({
   listings,
+  total,
+  isLoadingMore,
+  isPartial,
+  isCapped,
   displayMode,
   sortOptionProps,
   isLoading = false,
@@ -31,12 +40,16 @@ export function ListingsPanel({
       }`}
     >
       <ListingsPanelHeader
-        listings={listings}
+        shown={listings.length}
+        total={total}
+        isPartial={isPartial}
         sortOptionProps={sortOptionProps}
         isLoading={isLoading}
       />
       <ListingCardGallery
         listings={listings}
+        isLoadingMore={isLoadingMore}
+        isCapped={isCapped}
         mode={
           [DisplayMode.LIST, DisplayMode.MAP_LIST].includes(displayMode)
             ? ListingsDisplayMode.FULLSCREEN

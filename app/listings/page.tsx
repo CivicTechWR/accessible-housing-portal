@@ -8,7 +8,11 @@ import { getListingsService } from "@/lib/listings/listing.service";
 
 import ListingsDashboard from "./listings";
 import { getListingsDashboardData } from "./data";
-import { createListingsQueryString, getListingsQueryFromSearchParams } from "./query";
+import {
+  createListingsQueryString,
+  getListingsQueryFromSearchParams,
+  LISTINGS_PAGE_SIZE,
+} from "./query";
 
 export default async function ListingsPage({
   searchParams,
@@ -18,7 +22,6 @@ export default async function ListingsPage({
   const resolvedSearchParams = await searchParams;
   const query = getListingsQueryFromSearchParams({
     ...resolvedSearchParams,
-    limit: resolvedSearchParams.limit ?? "50",
     sort: resolvedSearchParams.sort ?? "newest",
   });
 
@@ -31,7 +34,8 @@ export default async function ListingsPage({
   }
 
   const [listingsResult, { dynamicGroups }] = await Promise.all([
-    getListingsService(query),
+    // The first page of the client's infinite query, so it can seed the cache.
+    getListingsService({ ...query, page: "1", limit: String(LISTINGS_PAGE_SIZE) }),
     getListingsDashboardData(),
   ]);
 
@@ -40,6 +44,7 @@ export default async function ListingsPage({
   }
 
   const initialData = listingsResult.value;
+  const initialDataUpdatedAt = Date.now();
 
   return (
     <NuqsAdapter>
@@ -49,6 +54,7 @@ export default async function ListingsPage({
         <ListingsDashboard
           initialData={initialData}
           initialQueryString={createListingsQueryString(query)}
+          initialDataUpdatedAt={initialDataUpdatedAt}
           dynamicGroups={dynamicGroups}
         />
       </Suspense>
