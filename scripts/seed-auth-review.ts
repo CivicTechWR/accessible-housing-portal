@@ -11,12 +11,19 @@ async function main() {
   if (!databaseURL || !password || password.length < 12)
     throw new Error("DATABASE_URL and REVIEW_PASSWORD of at least 12 characters are required.");
   const url = new URL(databaseURL);
-  if (
-    process.env.NODE_ENV === "production" ||
-    !["localhost", "127.0.0.1"].includes(url.hostname) ||
-    url.pathname !== "/homehub_auth_review"
-  )
-    throw new Error("Review seeds require a local homehub_auth_review database.");
+  // Every review account shares one password, so seed them only into the local
+  // review database or the Railway previews project. Requiring the project name
+  // keeps a PREVIEW_SEED copied anywhere else, including production, harmless.
+  const isLocalReviewDatabase =
+    process.env.NODE_ENV !== "production" &&
+    ["localhost", "127.0.0.1"].includes(url.hostname) &&
+    url.pathname === "/homehub_auth_review";
+  const isPreview =
+    process.env.PREVIEW_SEED === "true" && process.env.RAILWAY_PROJECT_NAME === "home-hub-previews";
+  if (!isLocalReviewDatabase && !isPreview)
+    throw new Error(
+      "Review seeds require a local homehub_auth_review database or the home-hub-previews Railway project with PREVIEW_SEED=true.",
+    );
   const sql = postgres(databaseURL, { max: 1 });
   const db = drizzle(sql);
   try {

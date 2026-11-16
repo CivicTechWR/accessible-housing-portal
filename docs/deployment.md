@@ -106,6 +106,16 @@ Passkeys require HTTPS outside localhost. Because these hostnames have different
 
 The Dockerfile starts Node directly and uses Railway's injected variables. The optional `*:secrets` scripts remain available for explicit Infisical workflows.
 
+## Pull request previews
+
+Railway PR environments run in the `home-hub-previews` project, separate from production. Railway creates them only for pull requests opened by members of the project's workspace, and bot pull requests stay off. Each preview gets its own Postgres and is copied from the project's `preview` base environment, so set these variables once on that environment:
+
+- `PREVIEW_SEED=true` and a `REVIEW_PASSWORD` of at least 12 characters
+- `BETTER_AUTH_URL` set to `https://${{RAILWAY_PUBLIC_DOMAIN}}`, so each preview uses its own origin
+- `EMAIL_WORKER_ENABLED=false` and no `RESEND_API_KEY`, so previews never send email and the app can sleep when idle
+
+Give the app service a Railway-generated domain, since `RAILWAY_PUBLIC_DOMAIN` is empty without one. Turn on App Sleeping for both the app and Postgres. Set the pre-deploy command to `npm run db:prepare-preview` in the service settings, not in a committed config file, which would also apply to production. It applies migrations, seeds the mock listings, and creates the review accounts from `scripts/seed-auth-review.ts`, such as `admin@homehub.test`, all sharing `REVIEW_PASSWORD`. It runs on every deploy and resets the seeded records each time. Share `REVIEW_PASSWORD` through the team password manager, not in pull requests. The review seed runs only in the `home-hub-previews` project, so renaming that project means updating `scripts/seed-auth-review.ts`. Never set `PREVIEW_SEED` in production.
+
 ## Migrations
 
 The production Docker image does not automatically run migrations. Apply migrations explicitly before or during release with the environment pointed at the target database.
