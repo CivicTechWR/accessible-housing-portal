@@ -35,6 +35,9 @@ const listingBuildingTypeSchema = z.enum(LISTING_BUILDING_TYPE_VALUES);
 const heatingTypeSchema = z.enum(HEATING_TYPE_VALUES);
 const utilityIncludedSchema = z.enum(UTILITY_INCLUDED_VALUES);
 const listingLeaseTermMonthsSchema = z.number().int().positive();
+// Square footage is a positive whole number when known and null when unknown.
+export const listingSquareFeetSchema = z.number().int().positive();
+export const nullableListingSquareFeetSchema = listingSquareFeetSchema.nullable();
 const hasAtLeastOneField = (value: Record<string, unknown>) => Object.keys(value).length > 0;
 
 export const listingIdParamSchema = z.uuid("Invalid listing id.");
@@ -136,7 +139,7 @@ export const listingDetailsSchema = z.object({
   address: listingDetailsAddressSchema,
   beds: z.number().int().min(0),
   baths: z.number().min(0),
-  sqft: z.number().int().min(0),
+  sqft: nullableListingSquareFeetSchema,
   heatingType: heatingTypeSchema.optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   depositInfo: optionalTrimmedString(),
@@ -159,7 +162,7 @@ export const listingSummarySchema = z.object({
   city: nonEmptyString,
   beds: z.number().int().min(0),
   baths: z.number().min(0),
-  sqft: z.number().int().min(0),
+  sqft: nullableListingSquareFeetSchema,
   accessibilityFeatures: z.array(listingFeatureSchema).optional(),
   lat: z.number().optional(),
   lng: z.number().optional(),
@@ -181,14 +184,13 @@ const listingAddressSchema = z.object({
 const listingUnitSchema = z.object({
   bedrooms: z.number().int().min(0),
   bathrooms: z.number().min(0),
-  sqft: z.number().int().min(0).optional(),
+  sqft: listingSquareFeetSchema.optional(),
   rent: z.number().int().min(0),
   availableDate: z.iso.date().optional(),
 });
 
 const nullableListingDescriptionSchema = z.union([nonEmptyString, z.null()]);
 const nullableListingStreet2Schema = z.union([nonEmptyString, z.null()]);
-const nullableListingSquareFeetSchema = z.union([z.number().int().min(0), z.null()]);
 const nullableListingAvailableDateSchema = z.union([z.iso.date(), z.null()]);
 const listingAddressMutationSchema = listingAddressSchema.extend({
   street2: nullableListingStreet2Schema.optional(),
@@ -289,7 +291,7 @@ const listingEditorDataSchema = z.object({
   buildingType: z.union([listingBuildingTypeSchema, z.literal("")]),
   bedrooms: z.number().min(0),
   bathrooms: z.number().min(0),
-  squareFeet: z.number().min(0).optional(),
+  squareFeet: nullableListingSquareFeetSchema,
   monthlyRentCents: z.number().min(0),
   leaseTerm: listingLeaseTermMonthsSchema.optional(),
   heatingType: heatingTypeSchema.optional(),

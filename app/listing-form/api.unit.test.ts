@@ -266,4 +266,18 @@ describe("mapListingFormToAutosavePatchInput", () => {
     expect(payload).not.toHaveProperty("applicationEmail");
     expect(payload?.contact).toEqual({ name: "Leasing Office", phone: "519-555-0100" });
   });
+
+  it.each([0, -5, 12.5])(
+    "omits an invalid square footage of %d instead of sending or clearing it",
+    (squareFeet) => {
+      const draft = { ...validFormData, squareFeet };
+      const lastAutosavedPayload = mapListingFormToAutosavePatchInput(validFormData);
+      const clearIntent = getPendingAutosaveNullableFieldClearIntent(draft, lastAutosavedPayload);
+
+      expect(clearIntent.squareFeet).toBe(false);
+      expect(
+        mapListingFormToAutosavePatchInput(draft, "draft", { squareFeet: true })?.unit,
+      ).not.toHaveProperty("sqft");
+    },
+  );
 });

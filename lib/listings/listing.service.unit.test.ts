@@ -207,6 +207,23 @@ describe("listing edits and reads", () => {
     });
   });
 
+  it("returns an unknown square footage as null in detail and editor responses", async () => {
+    findListingRecordByIdMock.mockResolvedValue({
+      ...archivedListing,
+      status: "draft",
+      squareFeet: null,
+    });
+
+    expect(await getListingByIdService(LISTING_ID)).toMatchObject({
+      ok: true,
+      value: { data: { sqft: null } },
+    });
+    expect(await getListingEditorByIdService(LISTING_ID)).toMatchObject({
+      ok: true,
+      value: { data: { squareFeet: null } },
+    });
+  });
+
   it.each([
     ["Leasing coordinator", "Leasing coordinator"],
     [null, null],

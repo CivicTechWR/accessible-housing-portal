@@ -12,7 +12,7 @@ interface ListingsCardProps {
   city: string;
   beds: number;
   baths: number;
-  sqft: number;
+  sqft: number | null;
   imageUrl?: string;
   timeAgo: string;
   variant?: "vertical" | "horizontal";
@@ -138,10 +138,14 @@ export function ListingsCard({
           <span className={`flex items-center ${v.statGap}`}>
             <strong className="text-foreground">{baths}</strong> ba
           </span>
-          <span className="text-border">|</span>
-          <span className={`flex items-center ${v.statGap}`}>
-            <strong className="text-foreground">{sqft || "-"}</strong> sqft
-          </span>
+          {sqft !== null && (
+            <>
+              <span className="text-border">|</span>
+              <span className={`flex items-center ${v.statGap}`}>
+                <strong className="text-foreground">{sqft}</strong> sqft
+              </span>
+            </>
+          )}
         </div>
 
         {safeFeatures.length > 0 && (

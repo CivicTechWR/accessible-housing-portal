@@ -99,7 +99,7 @@ Filtering by dynamic feature checks:
 
 Details include:
 
-- title, price, address, beds/baths/square footage
+- title, price, address, beds/baths/square footage (`sqft` is `null` when unknown, and the details, cards, and form preview leave the measurement out)
 - display accessibility features
 - image URLs
 - relative time

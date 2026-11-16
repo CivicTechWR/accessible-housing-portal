@@ -4,6 +4,7 @@ import { errorMessageSchema } from "@/shared/schemas/common";
 import {
   createDraftListingResponseSchema,
   listingEditorResponseSchema,
+  listingSquareFeetSchema,
   type ListingEditorData,
   type PatchListingInput,
   type ReplaceListingInput,
@@ -76,7 +77,7 @@ export function getPendingAutosaveNullableFieldClearIntent(
       normalizeOptionalString(data.street2) === undefined &&
       hasConcreteValue(lastAutosavedPayload?.address?.street2),
     squareFeet:
-      !isFiniteNumber(data.squareFeet) && hasConcreteValue(lastAutosavedPayload?.unit?.sqft),
+      !hasConcreteValue(data.squareFeet) && hasConcreteValue(lastAutosavedPayload?.unit?.sqft),
   };
 }
 
@@ -159,9 +160,11 @@ export function mapListingFormToAutosavePatchInput(
     unit.bathrooms = data.bathrooms;
   }
 
-  if (isFiniteNumber(data.squareFeet)) {
-    unit.sqft = data.squareFeet;
-  } else if (nullableFieldEditIntent.squareFeet) {
+  // An invalid measurement is left out so the rest of the draft still saves.
+  const squareFeet = listingSquareFeetSchema.safeParse(data.squareFeet);
+  if (squareFeet.success) {
+    unit.sqft = squareFeet.data;
+  } else if (!hasConcreteValue(data.squareFeet) && nullableFieldEditIntent.squareFeet) {
     unit.sqft = null;
   }
 

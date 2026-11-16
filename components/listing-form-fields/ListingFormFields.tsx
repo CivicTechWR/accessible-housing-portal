@@ -186,11 +186,13 @@ function FieldRenderer({
             <FormControl>
               <Input
                 type="number"
-                min={0}
+                min={def.key === "squareFeet" ? 1 : 0}
                 step={def.key === "bathrooms" ? 0.5 : undefined}
                 placeholder={def.placeholder}
                 name={field.name}
                 ref={field.ref}
+                // Autosave only clears a stored optional number once its field is touched.
+                onBlur={field.onBlur}
                 value={formatNumberInput(field.value, scale)}
                 onChange={(e) => {
                   const raw = e.target.value;
