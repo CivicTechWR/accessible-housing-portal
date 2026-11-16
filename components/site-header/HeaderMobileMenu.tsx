@@ -71,7 +71,7 @@ export function HeaderMobileMenu({
               first.focus();
             }
           }}
-          className="w-[min(20rem,calc(100vw-3rem))] gap-4 border-primary-foreground/15 bg-primary p-4 pt-5 text-primary-foreground [&>[data-slot=sheet-close]]:text-primary-foreground [&>[data-slot=sheet-close]]:hover:bg-primary-foreground/20 [&>[data-slot=sheet-close]]:top-3 [&>[data-slot=sheet-close]]:right-3 [&>[data-slot=sheet-close]]:size-10 [&>[data-slot=sheet-close]]:rounded-full"
+          className="gap-4 data-[side=right]:w-[min(20rem,calc(100vw-3rem))] border-primary-foreground/15 bg-primary p-4 pt-5 text-primary-foreground [&>[data-slot=sheet-close]]:text-primary-foreground [&>[data-slot=sheet-close]]:hover:bg-primary-foreground/20 [&>[data-slot=sheet-close]]:top-3 [&>[data-slot=sheet-close]]:right-3 [&>[data-slot=sheet-close]]:size-10 [&>[data-slot=sheet-close]]:rounded-full [&>[data-slot=sheet-close]]:focus-visible:border-transparent [&>[data-slot=sheet-close]]:focus-visible:ring-primary-foreground/40 [&>[data-slot=sheet-close]_svg]:size-5"
         >
           <SheetTitle className="text-base text-primary-foreground">Menu</SheetTitle>
           <SheetDescription className="sr-only">
