@@ -10,9 +10,9 @@ import {
 import { FilterButton } from "@/components/filter-button/FilterButton";
 import { useMemo, useRef, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
-import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
+import type { ListingListResponse, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
-import type { ListingSearchFilters } from "./query";
+import { toListingSearchFilters } from "./query";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { Button } from "@/components/ui/button";
@@ -82,32 +82,13 @@ export default function ListingsDashboard({
     datePickerProps,
     clearFilters,
     getFilterButtonProps,
-    bathrooms,
-    bedrooms,
-    features,
-    location,
-    maxPrice,
-    minPrice,
-    moveInDate,
-    sort,
+    filters,
   } = useListingFilters();
   const filterButtonProps = {
     ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
     mobileButtonRef: mobileFilterButtonRef,
   };
-  const query = useMemo<ListingSearchFilters>(
-    () => ({
-      bathrooms: bathrooms ?? undefined,
-      bedrooms: bedrooms ?? undefined,
-      features: features.length > 0 ? features : undefined,
-      location: location ?? undefined,
-      maxPrice: maxPrice == null ? undefined : maxPrice.toString(),
-      minPrice: minPrice == null ? undefined : minPrice.toString(),
-      moveInDate: moveInDate?.toISOString(),
-      sort: sort as ListingQuery["sort"],
-    }),
-    [bathrooms, bedrooms, features, location, maxPrice, minPrice, moveInDate, sort],
-  );
+  const query = useMemo(() => toListingSearchFilters(filters), [filters]);
   const { listings, total, error, retry, isLoading, isLoadingMore, isPartial, isCapped } =
     useListingsQuery(query, {
       data: initialData,

@@ -1,58 +1,53 @@
-import {
-  listingQuerySchema,
-  type ListingListResponse,
-  type ListingQuery,
-  type ListingSummary,
-} from "@/shared/schemas/listings";
-
-type RawSearchParams = Record<string, string | string[] | undefined>;
+import type { ListingListResponse, ListingQuery, ListingSummary } from "@/shared/schemas/listings";
+import type { ListingSearchParams } from "./searchParams";
 
 /** The search page loads results in pages of this size, the API's maximum. */
 export const LISTINGS_PAGE_SIZE = 100;
 /** The search page stops loading pages once it has this many listings, to bound memory and map pins. */
 export const LISTINGS_LOAD_CAP = 500;
 
-/** A listing search without paging. The search page always pages through every match itself. */
-export type ListingSearchFilters = Omit<ListingQuery, "page" | "limit">;
+/**
+ * The filters the search page controls, as `/api/listings` takes them. The page sets its own
+ * paging, and `status` and `neighbourhood` are API-only.
+ */
+export type ListingSearchFilters = Omit<
+  ListingQuery,
+  "page" | "limit" | "status" | "neighbourhood" | "features"
+> & { features?: string[] };
 
-export function getListingsQueryFromSearchParams(
-  searchParams: RawSearchParams,
-): ListingSearchFilters {
-  const rawFeatures = searchParams.features;
-
-  return listingQuerySchema.parse({
-    status: getFirstValue(searchParams.status),
-    neighbourhood: getFirstValue(searchParams.neighbourhood),
-    bedrooms: getFirstValue(searchParams.bedrooms),
-    bathrooms: getFirstValue(searchParams.bathrooms),
-    location: getFirstValue(searchParams.location),
-    minPrice: getFirstValue(searchParams.minPrice),
-    maxPrice: getFirstValue(searchParams.maxPrice),
-    moveInDate: getFirstValue(searchParams.moveInDate),
-    sort: getFirstValue(searchParams.sort),
-    features: rawFeatures,
-  });
+/**
+ * Converts the parsed URL state to filters. The server page and the browser both use this, so
+ * the same URL gives the same query string on each side and the browser reuses the server's
+ * first page.
+ */
+export function toListingSearchFilters(params: ListingSearchParams): ListingSearchFilters {
+  return {
+    bathrooms: params.bathrooms ?? undefined,
+    bedrooms: params.bedrooms ?? undefined,
+    features: params.features.length > 0 ? params.features : undefined,
+    // Trimmed here because the server page and `/api/listings` would otherwise search for
+    // different text and the loaded pages would not belong to one result set.
+    location: params.location?.trim() || undefined,
+    maxPrice: params.maxPrice?.toString(),
+    minPrice: params.minPrice?.toString(),
+    moveInDate: params.moveInDate?.toISOString(),
+    sort: params.sort,
+  };
 }
 
-export function createListingsQueryString(query: ListingSearchFilters) {
+export function createListingsQueryString(filters: ListingSearchFilters) {
   const params = new URLSearchParams();
 
-  appendQueryParam(params, "status", query.status);
-  appendQueryParam(params, "neighbourhood", query.neighbourhood);
-  appendQueryParam(params, "bedrooms", query.bedrooms);
-  appendQueryParam(params, "bathrooms", query.bathrooms);
-  appendQueryParam(params, "location", query.location);
-  appendQueryParam(params, "minPrice", query.minPrice);
-  appendQueryParam(params, "maxPrice", query.maxPrice);
-  appendQueryParam(params, "moveInDate", query.moveInDate);
-  appendQueryParam(params, "sort", query.sort);
+  appendQueryParam(params, "bedrooms", filters.bedrooms);
+  appendQueryParam(params, "bathrooms", filters.bathrooms);
+  appendQueryParam(params, "location", filters.location);
+  appendQueryParam(params, "minPrice", filters.minPrice);
+  appendQueryParam(params, "maxPrice", filters.maxPrice);
+  appendQueryParam(params, "moveInDate", filters.moveInDate);
+  appendQueryParam(params, "sort", filters.sort);
 
-  if (Array.isArray(query.features)) {
-    for (const feature of query.features) {
-      appendQueryParam(params, "features", feature);
-    }
-  } else {
-    appendQueryParam(params, "features", query.features);
+  for (const feature of filters.features ?? []) {
+    appendQueryParam(params, "features", feature);
   }
 
   return params.toString();
@@ -82,14 +77,6 @@ export function flattenListingPages(pages: ListingListResponse[]) {
   }
 
   return [...listingsById.values()];
-}
-
-function getFirstValue(value: string | string[] | undefined) {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-
-  return value;
 }
 
 function appendQueryParam(params: URLSearchParams, key: string, value: string | undefined) {

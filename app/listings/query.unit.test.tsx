@@ -1,25 +1,55 @@
+/**
+ * @jest-environment node
+ */
+// jsdom has no `Request` global, and without it the nuqs loader silently returns every default.
 import { describe, expect, it } from "@jest/globals";
+import { useQueryStates } from "nuqs";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
+import { renderToString } from "react-dom/server";
 import type { ListingListResponse, ListingSummary } from "@/shared/schemas/listings";
 import {
   createListingsQueryString,
   flattenListingPages,
-  getListingsQueryFromSearchParams,
   getNextListingsPage,
   LISTINGS_LOAD_CAP,
   LISTINGS_PAGE_SIZE,
+  toListingSearchFilters,
 } from "./query";
+import { listingSearchParamsParsers, loadListingSearchParams } from "./searchParams";
+
+/** The query string the browser builds from the URL's nuqs state. */
+function clientQueryString(search: string) {
+  let queryString = "";
+
+  function ReadFilters() {
+    const [params] = useQueryStates(listingSearchParamsParsers);
+    queryString = createListingsQueryString(toListingSearchFilters(params));
+    return null;
+  }
+
+  renderToString(
+    <NuqsTestingAdapter searchParams={search}>
+      <ReadFilters />
+    </NuqsTestingAdapter>,
+  );
+
+  return queryString;
+}
 
 describe("listing search URLs", () => {
-  it("round-trips the Canadian neighbourhood parameter", () => {
-    const query = getListingsQueryFromSearchParams({
-      neighbourhood: ["  Uptown Waterloo  ", "Downtown Kitchener"],
-      bedrooms: "2+",
-    });
+  it("parses the URL into the same query string on the server and in the browser", () => {
+    const search =
+      "features=elevator,braille_signage&minPrice=900&bedrooms=2%2B&moveInDate=2026-12-01" +
+      "&location=%20Waterloo%20&status=draft&neighbourhood=Uptown";
+    // Next passes the page its search params as a record.
+    const serverParams = loadListingSearchParams(Object.fromEntries(new URLSearchParams(search)));
+    const serverQueryString = createListingsQueryString(toListingSearchFilters(serverParams));
 
-    expect(query.neighbourhood).toBe("Uptown Waterloo");
-    const params = new URLSearchParams(createListingsQueryString(query));
-    expect(params.get("neighbourhood")).toBe("Uptown Waterloo");
-    expect(getListingsQueryFromSearchParams(Object.fromEntries(params))).toEqual(query);
+    expect(serverQueryString).toBe(clientQueryString(search));
+    expect(new URLSearchParams(serverQueryString).getAll("features")).toEqual([
+      "elevator",
+      "braille_signage",
+    ]);
   });
 });
 

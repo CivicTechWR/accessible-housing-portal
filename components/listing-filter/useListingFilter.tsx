@@ -28,7 +28,9 @@ export function useListingFilters() {
         { value: "price_asc", label: "Price: Low to High" },
         { value: "price_desc", label: "Price: High to Low" },
       ],
-      onChange: async (value: string) => await setFilters({ sort: value }),
+      // An unknown value parses to null, which resets the sort to its default.
+      onChange: async (value: string) =>
+        await setFilters({ sort: listingSearchParamsParsers.sort.parse(value) }),
     }),
     [filters.sort, setFilters],
   );
@@ -190,7 +192,7 @@ export function useListingFilters() {
   }, [setFilters]);
 
   return {
-    ...filters,
+    filters,
     activeFilterCount,
     sortOptionProps,
     searchInputProps,
