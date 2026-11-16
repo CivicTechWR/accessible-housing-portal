@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, useRef, type Ref } from "react";
+import { memo, useState, useCallback, useEffect, useMemo, useRef, type Ref } from "react";
 import { Map, Marker, Popup, type ErrorEvent, type MapRef } from "@vis.gl/react-maplibre";
 import { useTheme } from "next-themes";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -87,7 +87,9 @@ function SelectedListing({
   );
 }
 
-export function MapView({ listings }: { listings: Listing[] }) {
+// Memoized because the search page re-renders on every keystroke in its filters, and this can
+// hold hundreds of pins.
+export const MapView = memo(function MapView({ listings }: { listings: Listing[] }) {
   const { resolvedTheme } = useTheme();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
@@ -111,8 +113,8 @@ export function MapView({ listings }: { listings: Listing[] }) {
   );
 
   // A filter can drop the selected listing. Clear the selection so it doesn't reopen on its own
-  // when a later filter brings that listing back. (The listings query keeps the previous results
-  // while refetching, so this doesn't fire mid-request.)
+  // when a later filter brings that listing back. The listings query keeps the previous results
+  // while the first page of new results loads, so this doesn't fire until that page arrives.
   if (selectedId && !selectedListing) setSelectedId(null);
 
   const handleMarkerClick = useCallback((id: string) => {
@@ -266,4 +268,4 @@ export function MapView({ listings }: { listings: Listing[] }) {
       )}
     </div>
   );
-}
+});

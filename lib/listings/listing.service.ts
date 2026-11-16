@@ -218,21 +218,29 @@ function normalizeQueryFeatures(features: ListingQuery["features"]) {
     .filter((feature) => feature.length > 0);
 }
 
+// Offset paging needs a total order, or a page boundary that falls inside a run of equal sort
+// values can repeat or skip rows. The unique id breaks those ties.
 function getListingSortOrder(sort: ListingQuery["sort"]): SQL<unknown>[] {
   switch (sort) {
     case "oldest":
-      return [asc(listings.publishedAt), asc(listings.createdAt)];
+      return [asc(listings.publishedAt), asc(listings.createdAt), asc(listings.id)];
     case "price_asc":
-      return [asc(listings.monthlyRentCents), desc(listings.publishedAt), desc(listings.createdAt)];
+      return [
+        asc(listings.monthlyRentCents),
+        desc(listings.publishedAt),
+        desc(listings.createdAt),
+        asc(listings.id),
+      ];
     case "price_desc":
       return [
         desc(listings.monthlyRentCents),
         desc(listings.publishedAt),
         desc(listings.createdAt),
+        asc(listings.id),
       ];
     case "newest":
     default:
-      return [desc(listings.publishedAt), desc(listings.createdAt)];
+      return [desc(listings.publishedAt), desc(listings.createdAt), asc(listings.id)];
   }
 }
 
