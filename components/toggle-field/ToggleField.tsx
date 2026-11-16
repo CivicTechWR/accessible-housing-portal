@@ -18,6 +18,8 @@ export type ToggleFieldProps = {
   className?: string;
   titleWrapperClassName?: string;
   labelClassName?: string;
+  groupClassName?: string;
+  itemClassName?: string;
 };
 
 export function ToggleField({
@@ -32,6 +34,8 @@ export function ToggleField({
   className,
   titleWrapperClassName,
   labelClassName,
+  groupClassName,
+  itemClassName,
 }: ToggleFieldProps) {
   return (
     <Field className={className}>
@@ -61,10 +65,14 @@ export function ToggleField({
             onValueChange("");
           }
         }}
-        className="justify-start"
+        className={cn("justify-start", groupClassName)}
       >
         {options.map((option) => (
-          <ToggleGroupItem key={option.value} value={option.value} className="border">
+          <ToggleGroupItem
+            key={option.value}
+            value={option.value}
+            className={cn("border", itemClassName)}
+          >
             {option.label}
           </ToggleGroupItem>
         ))}

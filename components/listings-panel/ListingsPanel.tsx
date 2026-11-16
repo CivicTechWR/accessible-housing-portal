@@ -1,6 +1,5 @@
 "use client";
 
-import { FilterButtonProps } from "@/components/filter-button/FilterButton";
 import {
   Listing,
   ListingsDisplayMode,
@@ -14,8 +13,6 @@ interface ListingsPanelProps {
   listings: Listing[];
   displayMode: DisplayMode;
   sortOptionProps: { sortOptions: SortOptionsType[]; onChange: (value: string) => void };
-  filterButtonProps: FilterButtonProps;
-  mobileFilters?: React.ReactNode;
   isLoading?: boolean;
 }
 
@@ -23,8 +20,6 @@ export function ListingsPanel({
   listings,
   displayMode,
   sortOptionProps,
-  filterButtonProps,
-  mobileFilters,
   isLoading = false,
 }: ListingsPanelProps) {
   return (
@@ -38,10 +33,8 @@ export function ListingsPanel({
       <ListingsPanelHeader
         listings={listings}
         sortOptionProps={sortOptionProps}
-        filterButtonProps={filterButtonProps}
         isLoading={isLoading}
       />
-      {mobileFilters}
       <ListingCardGallery
         listings={listings}
         mode={
