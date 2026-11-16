@@ -187,10 +187,6 @@ export function formatListingTimeAgo(publishedAt: Date | null, createdAt: Date) 
   });
 }
 
-export function getListingSquareFeet(squareFeet: number | null) {
-  return squareFeet ?? 0;
-}
-
 function applyAccessibilityFeatureState(
   customFields: ListingCustomFields,
   featureIds: string[],

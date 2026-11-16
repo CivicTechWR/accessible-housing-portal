@@ -28,7 +28,7 @@ type MyListingItem = {
   unitNumber?: string;
   beds: number;
   baths: number;
-  sqft: number;
+  sqft: number | null;
   imageUrl?: string;
   imageCount: number;
   updatedAt: string;
@@ -245,7 +245,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                         ${listing.price.toLocaleString("en-CA")}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {listing.beds} bd • {listing.baths} ba • {listing.sqft} sqft
+                        {listing.beds} bd • {listing.baths} ba
+                        {listing.sqft !== null && <> • {listing.sqft} sqft</>}
                       </div>
                     </div>
                   </CardHeader>

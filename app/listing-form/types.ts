@@ -7,7 +7,11 @@ import {
   trimmedEmailString,
   trimmedAbsoluteOrRootRelativeUrlString,
 } from "@/shared/schemas/string-normalizers";
-import { LISTING_BUILDING_TYPE_VALUES, UTILITY_INCLUDED_VALUES } from "@/shared/schemas/listings";
+import {
+  LISTING_BUILDING_TYPE_VALUES,
+  listingSquareFeetSchema,
+  UTILITY_INCLUDED_VALUES,
+} from "@/shared/schemas/listings";
 
 export const listingImageSchema = z.object({
   id: z.uuid("Invalid uploaded image id"),
@@ -33,6 +37,10 @@ export const listingFormSchema = z.object({
   // An empty optional number is null in the form; parsed data uses undefined for "not set".
   squareFeet: z
     .number()
+    .refine(
+      (value) => listingSquareFeetSchema.safeParse(value).success,
+      "Square footage must be a whole number greater than 0",
+    )
     .nullish()
     .transform((value) => value ?? undefined),
   monthlyRentCents: z.number({ message: "Rent is required" }).min(0, "Rent cannot be negative"),

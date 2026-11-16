@@ -15,7 +15,6 @@ import {
   getDisplayAccessibilityFeatures,
   getEnabledBooleanCustomFieldKeys,
   getOptionalListingText,
-  getListingSquareFeet,
   mergeListingCustomFields,
   resolveListingStatusTimestamps,
   selectDuplicateCustomFields,
@@ -164,7 +163,7 @@ export async function getListingsService(
         city: row.city,
         beds: row.bedrooms,
         baths: row.bathrooms,
-        sqft: getListingSquareFeet(row.squareFeet),
+        sqft: row.squareFeet,
         accessibilityFeatures: accessibilityFeatures.length > 0 ? accessibilityFeatures : undefined,
         imageUrl: imageByListingId.get(row.id),
         timeAgo: formatListingTimeAgo(row.publishedAt, row.createdAt),
@@ -423,7 +422,7 @@ export async function getMyListingsService(): Promise<
       unitNumber?: string;
       beds: number;
       baths: number;
-      sqft: number;
+      sqft: number | null;
       imageUrl?: string;
       imageCount: number;
       updatedAt: string;
@@ -467,7 +466,7 @@ export async function getMyListingsService(): Promise<
       unitNumber: row.unitNumber?.trim() || undefined,
       beds: row.bedrooms,
       baths: row.bathrooms,
-      sqft: getListingSquareFeet(row.squareFeet),
+      sqft: row.squareFeet,
       imageUrl: imageByListingId.get(row.id),
       imageCount: imageCountByListingId.get(row.id) ?? 0,
       updatedAt: row.updatedAt.toISOString(),
@@ -732,7 +731,7 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
     },
     beds: listing.bedrooms,
     baths: listing.bathrooms,
-    sqft: getListingSquareFeet(listing.squareFeet),
+    sqft: listing.squareFeet,
     heatingType: listing.heatingType ?? undefined,
     utilitiesIncluded: [...listing.utilitiesIncluded],
     depositInfo: getOptionalListingText(listing.depositInfo),
@@ -792,7 +791,7 @@ async function buildListingEditorData(listing: ListingRecord): Promise<ListingEd
     buildingType: listing.buildingType ?? "",
     bedrooms: listing.bedrooms,
     bathrooms: listing.bathrooms,
-    squareFeet: listing.squareFeet ?? undefined,
+    squareFeet: listing.squareFeet,
     monthlyRentCents: listing.monthlyRentCents,
     leaseTerm: listing.leaseTermMonths ?? undefined,
     heatingType: listing.heatingType ?? undefined,

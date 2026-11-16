@@ -51,7 +51,7 @@ export interface ListingDetailProps {
   postalCode?: string;
   beds: number;
   baths: number;
-  sqft: number;
+  sqft: number | null;
   heatingType?: HeatingType;
   utilitiesIncluded?: UtilityIncluded[];
   contactRole?: string;
@@ -137,7 +137,7 @@ export function ListingDetails({
       : []),
     { label: "Bedrooms", value: String(beds) },
     { label: "Bathrooms", value: String(baths) },
-    { label: "Square Feet", value: `${sqft.toLocaleString()} sqft` },
+    ...(sqft !== null ? [{ label: "Square Feet", value: `${sqft.toLocaleString()} sqft` }] : []),
     ...(heatingType
       ? [{ label: "Primary heating type", value: HEATING_TYPE_LABELS[heatingType] }]
       : []),

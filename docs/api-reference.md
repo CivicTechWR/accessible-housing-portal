@@ -49,6 +49,8 @@ Replacement and partial-update payloads accept `applicationUrl` as a valid HTTP(
 
 The `heatingType` values are `natural_gas`, `electric_resistance`, `heat_pump`, `propane`, `heating_oil`, `other`, or `unknown`. PUT requires a value or `null`. PATCH omission preserves the stored value; `null` clears it. `unknown` records an explicit "Not sure" answer. Detail and editor responses omit the field when unanswered.
 
+Square footage is a positive whole number when known and `null` when unknown. Payloads reject `unit.sqft` values of 0, negative numbers, and fractions. List and details responses always include `sqft`, and the editor response always includes `squareFeet`; both are `null` for an unknown measurement. A database check constraint (`listings_square_feet_positive`) enforces the same rule.
+
 Replacement payloads require `depositInfo` as trimmed text or `null`. Partial-update payloads may include `depositInfo` as trimmed text or `null` to clear the stored value.
 
 Replacement and partial-update payloads accept `null` to clear an application field. Omitted application email, phone, or instructions preserve the stored value, including on `PUT` for clients that do not send these optional fields. The listing form sends explicit values or `null` for all application fields when saving.

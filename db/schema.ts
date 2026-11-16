@@ -2,6 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { HEATING_TYPE_VALUES } from "../shared/heating-type.ts";
 import {
   boolean,
+  check,
   customType,
   date,
   doublePrecision,
@@ -461,6 +462,7 @@ export const listings = pgTable(
     index("listings_bedrooms_bathrooms_idx").on(table.bedrooms, table.bathrooms),
     index("listings_available_on_idx").on(table.availableOn),
     index("listings_custom_fields_gin_idx").using("gin", table.customFields),
+    check("listings_square_feet_positive", sql`${table.squareFeet} > 0`),
   ],
 );
 

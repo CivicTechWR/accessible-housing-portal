@@ -105,6 +105,17 @@ describe("listingFormSchema", () => {
     );
   });
 
+  it.each([0, -5, 12.5])("rejects a square footage of %d with a field error", (squareFeet) => {
+    const result = listingFormSchema.safeParse({ ...validFormInput, squareFeet });
+
+    expect(result.error?.issues).toEqual([
+      expect.objectContaining({
+        path: ["squareFeet"],
+        message: "Square footage must be a whole number greater than 0",
+      }),
+    ]);
+  });
+
   it("parses an empty square feet as not set", () => {
     expect(listingFormSchema.parse({ ...validFormInput, squareFeet: null }).squareFeet).toBe(
       undefined,

@@ -84,10 +84,11 @@ describe("ListingDetails rental details", () => {
   });
 
   it("omits the optional rows and a whitespace-only description", () => {
-    render(<ListingDetails {...baseProps} description="   " />);
+    render(<ListingDetails {...baseProps} sqft={null} description="   " />);
 
     for (const label of [
       "Description",
+      "Square Feet",
       "Building Type",
       "Primary heating type",
       "Initial Lease Term",

@@ -2,7 +2,7 @@ import type { ListingFormInput } from "@/app/listing-form/types";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
 import { ListingsCard } from "@/components/listings-card/ListingsCard";
 import { buildAddress } from "@/lib/address";
-import { LISTING_BUILDING_TYPE_VALUES } from "@/shared/schemas/listings";
+import { LISTING_BUILDING_TYPE_VALUES, listingSquareFeetSchema } from "@/shared/schemas/listings";
 
 export type ListingFormPreviewMode = "card" | "details";
 
@@ -38,6 +38,7 @@ export function ListingFormPreview({
   );
   const previewAvailability = formData.availableOn || "Now";
   const previewPrice = Math.round((formData.monthlyRentCents ?? 0) / 100);
+  const previewSquareFeet = listingSquareFeetSchema.safeParse(formData.squareFeet).data ?? null;
   const previewBuildingType = LISTING_BUILDING_TYPE_VALUES.find(
     (value) => value === formData.buildingType,
   );
@@ -82,7 +83,7 @@ export function ListingFormPreview({
           postalCode={previewPostalCodeValue}
           beds={formData.bedrooms ?? 0}
           baths={formData.bathrooms ?? 0}
-          sqft={formData.squareFeet || 0}
+          sqft={previewSquareFeet}
           heatingType={formData.heatingType || undefined}
           utilitiesIncluded={formData.utilitiesIncluded}
           contactName={formData.contactName}
@@ -112,7 +113,7 @@ export function ListingFormPreview({
         city={previewCityValue || ""}
         beds={formData.bedrooms ?? 0}
         baths={formData.bathrooms ?? 0}
-        sqft={formData.squareFeet || 0}
+        sqft={previewSquareFeet}
         timeAgo={previewAvailability}
         imageUrl={formData.images?.[0]?.url}
         variant="vertical"

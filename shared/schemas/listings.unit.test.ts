@@ -136,6 +136,22 @@ describe("listing API schemas", () => {
     ).toBe(true);
   });
 
+  it("accepts a positive whole square footage or null and rejects other measurements", () => {
+    for (const sqft of [900, null]) {
+      expect(patchListingSchema.safeParse({ unit: { sqft } }).success).toBe(true);
+    }
+    for (const sqft of [0, -5, 12.5]) {
+      expectIssueAt(patchListingSchema.safeParse({ unit: { sqft } }), "unit.sqft");
+      expectIssueAt(
+        replaceListingSchema.safeParse({
+          ...validReplacePayload,
+          unit: { ...validReplacePayload.unit, sqft },
+        }),
+        "unit.sqft",
+      );
+    }
+  });
+
   it("keeps replacement and PATCH payload completeness distinct", () => {
     const { description: _description, ...withoutDescription } = validReplacePayload;
     const withoutSquareFeet = {
@@ -168,6 +184,7 @@ describe("listing API schemas", () => {
         buildingType: "",
         bedrooms: 0,
         bathrooms: 0,
+        squareFeet: null,
         monthlyRentCents: 0,
         utilitiesIncluded: [],
         images: [],
