@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { ReactNode } from "react";
 
 import ListingForm from "./ListingForm";
-import { patchListingSchema } from "@/shared/schemas/listings";
+import { patchListingSchema, type PatchListingInput } from "@/shared/schemas/listings";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }),
@@ -155,5 +155,52 @@ describe("ListingForm hydration", () => {
     );
     fireEvent.click(screen.getByRole("radio", { name: "No" }));
     await waitFor(() => expect(savedSelections).toEqual([true, false]), { timeout: 3000 });
+  });
+
+  it("keeps a draft's in-progress edits when the autosave refetch returns", async () => {
+    let savedTitle = editorResponse.data.title;
+    const savedPatches: PatchListingInput[] = [];
+    let editorRequests = 0;
+    let releaseRefetch = () => {};
+    const refetchReleased = new Promise<void>((resolve) => {
+      releaseRefetch = resolve;
+    });
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      const url = String(input);
+      let response: unknown = { data: [] };
+      if (init?.method === "PATCH") {
+        const patch = patchListingSchema.parse(JSON.parse(String(init.body)));
+        savedPatches.push(patch);
+        savedTitle = patch.title ?? savedTitle;
+        response = { data: { id: LISTING_ID } };
+      } else if (url.includes("/editor")) {
+        editorRequests += 1;
+        if (editorRequests > 1) {
+          await refetchReleased;
+        }
+        response = { data: { ...editorResponse.data, status: "draft", title: savedTitle } };
+      }
+      return { ok: true, status: 200, json: async () => response };
+    }) as unknown as typeof fetch;
+
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    const bedrooms = screen.getByRole("spinbutton", {
+      name: (name) => name.startsWith("Bedrooms"),
+    });
+    await waitFor(() => expect(bedrooms).toHaveValue(3));
+
+    fireEvent.change(bedrooms, { target: { value: "" } });
+    fireEvent.change(title, { target: { value: "Renamed" } });
+    await waitFor(() => expect(editorRequests).toBe(2), { timeout: 3000 });
+
+    // Typed after the autosave response, while its refetch is still in flight.
+    fireEvent.change(title, { target: { value: "Renamed again" } });
+    releaseRefetch();
+    await waitFor(() => expect(savedTitle).toBe("Renamed again"), { timeout: 3000 });
+
+    expect(title).toHaveValue("Renamed again");
+    expect(bedrooms).toHaveValue(null);
+    expect(savedPatches.map((patch) => patch.title)).toEqual(["Renamed", "Renamed again"]);
   });
 });
