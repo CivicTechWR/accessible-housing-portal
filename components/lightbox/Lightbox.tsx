@@ -109,8 +109,9 @@ function LightboxPanel({
   function handleKeyDownCapture(event: KeyboardEvent<HTMLDivElement>) {
     if (!hasMultiple) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    // Handle arrows anywhere in the dialog, and stop the carousel's own
-    // handler so the lightbox can wrap from the last image to the first.
+    // Handle arrows anywhere in the dialog, including on the close button
+    // outside the carousel, and stop the carousel's own handler so one key
+    // press moves one image.
     event.preventDefault();
     event.stopPropagation();
     goTo(event.key === "ArrowLeft" ? index - 1 : index + 1);
@@ -139,7 +140,7 @@ function LightboxPanel({
 
       <Carousel
         className="min-h-0 flex-1"
-        opts={{ startIndex: initialIndex }}
+        opts={{ startIndex: initialIndex, loop: true }}
         setApi={setApi}
         aria-label={title}
       >
