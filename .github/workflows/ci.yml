@@ -117,7 +117,17 @@ jobs:
           node-version: 26
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps --only-shell chromium
+      - id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium-shell
+      # No --with-deps: the runner image already has the libraries Chromium needs, and the apt
+      # step it adds can stall for minutes on a slow package mirror.
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --only-shell chromium
       - run: npm run screenshots
       - run: npx playwright test e2e/mobile-menu.spec.ts
       - uses: actions/upload-artifact@v4
