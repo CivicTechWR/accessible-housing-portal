@@ -83,7 +83,9 @@ function LightboxPanel({
   const total = images.length;
   const initialIndex = wrapIndex(startIndex, total);
   const [api, setApi] = useState<CarouselApi>();
-  const [index, setIndex] = useState(initialIndex);
+  const [selectedIndex, setIndex] = useState(initialIndex);
+  // The list can shrink while the lightbox is open, for example after a refetch.
+  const index = Math.min(selectedIndex, total - 1);
   const hasMultiple = total > 1;
   const caption = images[index]?.caption ?? "";
 
@@ -109,6 +111,8 @@ function LightboxPanel({
   function handleKeyDownCapture(event: KeyboardEvent<HTMLDivElement>) {
     if (!hasMultiple) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    // Leave browser shortcuts such as Alt+Left (Back) alone.
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     // Handle arrows anywhere in the dialog, including on the close button
     // outside the carousel, and stop the carousel's own handler so one key
     // press moves one image.
@@ -119,7 +123,6 @@ function LightboxPanel({
 
   return (
     <DialogPanel
-      aria-describedby={undefined}
       onCloseAutoFocus={restoreFocusToOpener}
       onKeyDownCapture={handleKeyDownCapture}
       className="flex h-dvh max-w-none flex-col rounded-none border-0 bg-background text-foreground shadow-none"
@@ -195,9 +198,11 @@ function LightboxPanel({
         <p className="text-sm text-muted-foreground" aria-hidden="true">
           {caption}
         </p>
-        <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {/* As the dialog's description, this is read after its name on open. As a live
+            region, it is read again on each image change. */}
+        <DialogPrimitive.Description className="sr-only" aria-live="polite" aria-atomic="true">
           {`Image ${index + 1} of ${total}${caption ? `: ${caption}` : ""}`}
-        </p>
+        </DialogPrimitive.Description>
       </div>
     </DialogPanel>
   );
