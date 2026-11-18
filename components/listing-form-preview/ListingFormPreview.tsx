@@ -78,9 +78,14 @@ export function ListingFormPreview({
           variant="outline"
           size="lg"
           onClick={onCloseDetails}
-          className="h-10 lg:hidden"
+          className="h-11 text-sm lg:hidden"
         >
-          <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} data-icon="inline-start" />
+          <HugeiconsIcon
+            icon={ArrowLeft01Icon}
+            strokeWidth={2}
+            data-icon="inline-start"
+            aria-hidden
+          />
           Back to card preview
         </Button>
         <ListingDetails
