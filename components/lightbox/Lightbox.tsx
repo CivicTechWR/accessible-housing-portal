@@ -32,7 +32,10 @@ type LightboxProps = {
   onOpenChange: (open: boolean) => void;
   /** Accessible name for the dialog. Screen readers announce it on open. */
   title?: string;
-  /** Used for alt text when an image has no caption, e.g. "Unit 204 image 2 of 5". */
+  /**
+   * Names the images in alt text when an image has no caption: "Unit 204" gives
+   * "Unit 204 image 2 of 5". Without it the alt text is "Image 2 of 5".
+   */
   altPrefix?: string;
 };
 
@@ -40,8 +43,10 @@ function wrapIndex(index: number, length: number) {
   return ((index % length) + length) % length;
 }
 
-function getImageAlt(image: LightboxImage, index: number, total: number, altPrefix: string) {
-  return image.caption || `${altPrefix} ${index + 1} of ${total}`;
+function getImageAlt(image: LightboxImage, index: number, total: number, altPrefix?: string) {
+  if (image.caption) return image.caption;
+  const name = altPrefix ? `${altPrefix} image` : "Image";
+  return `${name} ${index + 1} of ${total}`;
 }
 
 const navButtonClassName =
@@ -53,7 +58,7 @@ function Lightbox({
   open,
   onOpenChange,
   title = "Photos",
-  altPrefix = "Image",
+  altPrefix,
 }: LightboxProps) {
   if (images.length === 0) return null;
 
@@ -71,7 +76,8 @@ function LightboxPanel({
   startIndex,
   title,
   altPrefix,
-}: Required<Pick<LightboxProps, "images" | "startIndex" | "title" | "altPrefix">>) {
+}: Required<Pick<LightboxProps, "images" | "startIndex" | "title">> &
+  Pick<LightboxProps, "altPrefix">) {
   // Captures the focused element (the opener) on the render where the lightbox opens.
   const restoreFocusToOpener = useDialogOpenerFocus();
   const total = images.length;

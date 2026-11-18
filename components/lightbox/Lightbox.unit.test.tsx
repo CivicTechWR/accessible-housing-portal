@@ -49,7 +49,7 @@ function LightboxHarness({ startIndex = 0 }: { startIndex?: number }) {
         open={open}
         onOpenChange={setOpen}
         title="Listing photos"
-        altPrefix="Unit 204 image"
+        altPrefix="Unit 204"
       />
     </>
   );
@@ -82,6 +82,12 @@ describe("Lightbox", () => {
 
     expect(getStatus()).toHaveTextContent(/^Image 3 of 3$/);
     screen.getByRole("img", { name: "Unit 204 image 3 of 3" });
+  });
+
+  it("falls back to a plain image number without an alt prefix", () => {
+    render(<Lightbox images={images} startIndex={2} open onOpenChange={() => {}} />);
+
+    screen.getByRole("img", { name: "Image 3 of 3" });
   });
 
   it("hides the other images from assistive technology", () => {
