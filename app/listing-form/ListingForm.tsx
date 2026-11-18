@@ -41,15 +41,17 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     setPreviewMode("details");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  const handleCloseDetails = () => {
+    setPreviewMode("card");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   const handleDividerToggle = () => {
     if (previewMode === "card") {
       handleOpenDetails();
       return;
     }
 
-    setPreviewMode("card");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    return;
+    handleCloseDetails();
   };
   const handleInvalidSubmit: SubmitErrorHandler<ListingFormInput> = (errors) => {
     const firstInvalidField =
@@ -181,6 +183,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
           formData={liveFormData}
           listingId={activeListingId}
           onOpenDetails={handleOpenDetails}
+          onCloseDetails={handleCloseDetails}
         />
       }
       footer={
