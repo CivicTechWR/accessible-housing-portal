@@ -138,12 +138,14 @@ function LightboxPanel({
         </DialogPrimitive.Close>
       </div>
 
+      {/* The slides fill whatever height the header and caption leave. CarouselContent
+          doesn't take a class for its viewport wrapper, so it's sized from here. */}
       <Carousel
-        className="min-h-0 flex-1"
+        className="flex min-h-0 flex-1 flex-col [&>[data-slot=carousel-content]]:min-h-0 [&>[data-slot=carousel-content]]:flex-1"
         opts={{ startIndex: initialIndex, loop: true }}
         setApi={setApi}
       >
-        <CarouselContent className="h-[calc(100dvh-8.5rem)]">
+        <CarouselContent className="h-full">
           {images.map((image, imageIndex) => {
             const isCurrent = imageIndex === index;
             return (
