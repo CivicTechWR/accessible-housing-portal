@@ -84,18 +84,22 @@ function LightboxPanel({
   const initialIndex = wrapIndex(startIndex, total);
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setIndex] = useState(initialIndex);
-  // The list can shrink while the lightbox is open, for example after a refetch.
+  // The list can shrink while the lightbox is open, for example after a refetch. This keeps
+  // the index in range for the render before Embla reports the slide it moved to.
   const index = Math.min(selectedIndex, total - 1);
   const hasMultiple = total > 1;
   const caption = images[index]?.caption ?? "";
 
   useEffect(() => {
     if (!api) return;
-    // Keep the counter in sync when the user swipes.
+    // Keep the counter in sync when the user swipes. Embla also picks a new slide, without
+    // a select event, when it rebuilds after the slides change.
     const onSelect = () => setIndex(api.selectedScrollSnap());
     api.on("select", onSelect);
+    api.on("reInit", onSelect);
     return () => {
       api.off("select", onSelect);
+      api.off("reInit", onSelect);
     };
   }, [api]);
 

@@ -139,15 +139,17 @@ describe("Lightbox", () => {
     expect(getStatus()).toHaveTextContent("Image 1 of 3: Kitchen");
   });
 
-  it("shows the last image when the list shrinks below the current one", () => {
+  it("keeps the counter and the visible image together when the list shrinks", async () => {
     const { rerender } = render(<LightboxHarness startIndex={2} />);
     fireEvent.click(screen.getByRole("button", { name: "Open photos" }));
     expect(getStatus()).toHaveTextContent("Image 3 of 3");
 
     rerender(<LightboxHarness startIndex={2} images={images.slice(0, 2)} />);
 
-    expect(screen.getByText(/^Image \d of 2/)).toHaveTextContent("Image 2 of 2: Roll-in shower");
-    expect(screen.getByRole("img", { name: "Roll-in shower" })).toBeVisible();
+    const status = await screen.findByText(/^Image [12] of 2: /);
+    // Only the current slide is exposed, so exactly one image has the img role.
+    const currentImage = screen.getByRole("img");
+    expect(status).toHaveTextContent(`: ${currentImage.getAttribute("alt")}`);
   });
 
   it("starts again at startIndex each time it opens", () => {
