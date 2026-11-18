@@ -2,7 +2,7 @@ import { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeAll, describe, expect, it } from "@jest/globals";
 
-import { Lightbox, type LightboxImage } from "./lightbox";
+import { Lightbox, type LightboxImage } from "./Lightbox";
 
 const images: LightboxImage[] = [
   { url: "/photos/kitchen.jpg", caption: "Kitchen" },
