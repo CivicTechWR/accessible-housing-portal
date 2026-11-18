@@ -32,7 +32,8 @@
     "lockfile:check": "node scripts/check-lockfile-integrity.js",
     "auth:admin": "node --env-file-if-exists=.env.local --import tsx scripts/create-admin.ts",
     "db:seed:auth-review": "node --import tsx scripts/seed-auth-review.ts",
-    "db:prepare-preview": "npm run db:migrate && npm run db:seed && npm run db:seed:auth-review"
+    "db:wait": "node --import tsx scripts/wait-for-database.ts",
+    "db:prepare-preview": "npm run db:wait && npm run db:migrate && npm run db:seed && npm run db:seed:auth-review"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.18",
