@@ -233,4 +233,42 @@ describe("ListingForm hydration", () => {
     expect(bedrooms).toHaveValue(null);
     expect(savedPatches.map((patch) => patch.title)).toEqual(["Renamed", "Renamed again"]);
   });
+
+  it("keeps clearing publish errors as fields are fixed after an autosave refetch", async () => {
+    let savedTitle = "";
+    let editorRequests = 0;
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      let response: unknown = { data: [] };
+      if (init?.method === "PATCH") {
+        savedTitle = patchListingSchema.parse(JSON.parse(String(init.body))).title ?? savedTitle;
+        response = { data: { id: LISTING_ID } };
+      } else if (String(input).includes("/editor")) {
+        editorRequests += 1;
+        response = {
+          data: { ...editorResponse.data, status: "draft", title: savedTitle, city: "" },
+        };
+      }
+      return { ok: true, status: 200, json: async () => response };
+    }) as unknown as typeof fetch;
+    // jsdom has no scrollIntoView, which a failed publish calls on the first invalid field.
+    Element.prototype.scrollIntoView = jest.fn();
+
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    const city = screen.getByRole("textbox", { name: (name) => name.startsWith("City") });
+    await waitFor(() => expect(editorRequests).toBe(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish Listing" }));
+    await waitFor(() => expect(title).toBeInvalid());
+    expect(city).toBeInvalid();
+
+    fireEvent.change(title, { target: { value: "Fixed title" } });
+    await waitFor(() => expect(title).toBeValid());
+    await waitFor(() => expect(editorRequests).toBe(2), { timeout: 3000 });
+    // Let the refetched listing reach the form before the next edit.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    fireEvent.change(city, { target: { value: "Waterloo" } });
+    await waitFor(() => expect(city).toBeValid());
+  });
 });

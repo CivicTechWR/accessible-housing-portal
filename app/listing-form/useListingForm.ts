@@ -162,15 +162,18 @@ export function useListingForm(initialListingId?: string) {
   useEffect(() => {
     if (initialData) {
       if (loadedListingIdRef.current === initialListingId) {
-        // A refetch of the listing already in the form (after an autosave, or on window focus)
-        // only moves the baseline that dirty state compares against. The form stays the source
-        // of truth for values, so edits made since the request started, and cleared numbers
-        // that autosave leaves out of the patch, are not overwritten.
+        // A refetch of the listing already in the form (autosave and publish both invalidate
+        // the query) only moves the baseline that dirty state compares against. The form stays
+        // the source of truth for values, so edits made since the request started, and cleared
+        // numbers that autosave leaves out of the patch, are not overwritten. Keeping the
+        // submitted state lets errors from a failed publish keep clearing as fields are fixed.
         form.reset(initialData, {
           keepValues: true,
           keepDirty: true,
           keepTouched: true,
           keepErrors: true,
+          keepIsSubmitted: true,
+          keepSubmitCount: true,
         });
         return;
       }
