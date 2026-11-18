@@ -142,7 +142,6 @@ function LightboxPanel({
         className="min-h-0 flex-1"
         opts={{ startIndex: initialIndex, loop: true }}
         setApi={setApi}
-        aria-label={title}
       >
         <CarouselContent className="h-[calc(100dvh-8.5rem)]">
           {images.map((image, imageIndex) => {
