@@ -19,6 +19,10 @@ export function useGetListingQuery(listingId?: string) {
       return payload.data;
     },
     enabled: Boolean(listingId),
+    // The form loads a listing into its fields once and then ignores refetches, so it must
+    // never start from a cached copy left by an earlier visit. Dropping the cache on unmount
+    // makes every open wait for the server's current values.
+    gcTime: 0,
   });
 
   return { data: result.data ?? null, isLoading: result.isLoading, isError: result.isError };

@@ -157,6 +157,36 @@ describe("ListingForm hydration", () => {
     await waitFor(() => expect(savedSelections).toEqual([true, false]), { timeout: 3000 });
   });
 
+  it("loads the server's current values when a listing is opened again", async () => {
+    let savedTitle = editorResponse.data.title;
+    global.fetch = jest.fn(async (input: unknown) => ({
+      ok: true,
+      status: 200,
+      json: async () =>
+        String(input).includes("/editor")
+          ? { data: { ...editorResponse.data, status: "draft", title: savedTitle } }
+          : { data: [] },
+    })) as unknown as typeof fetch;
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const findTitle = () =>
+      screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+
+    const firstVisit = render(<ListingForm listingId={LISTING_ID} />, { wrapper });
+    await waitFor(async () => expect(await findTitle()).toHaveValue("123 Main St Apartments"));
+    firstVisit.unmount();
+    // Navigation always yields before the form mounts again; the cache is dropped in that gap.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Renamed from another device or tab while this one was elsewhere in the app.
+    savedTitle = "Renamed elsewhere";
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper });
+
+    await waitFor(async () => expect(await findTitle()).toHaveValue("Renamed elsewhere"));
+  });
+
   it("keeps a draft's in-progress edits when the autosave refetch returns", async () => {
     let savedTitle = editorResponse.data.title;
     const savedPatches: PatchListingInput[] = [];
