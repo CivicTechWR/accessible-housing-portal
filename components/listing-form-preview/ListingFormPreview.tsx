@@ -1,4 +1,7 @@
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ListingFormInput } from "@/app/listing-form/types";
+import { Button } from "@/components/ui/button";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
 import { ListingsCard } from "@/components/listings-card/ListingsCard";
 import { buildAddress } from "@/lib/address";
@@ -11,6 +14,8 @@ export interface ListingFormPreviewProps {
   formData: ListingFormInput;
   listingId?: string;
   onOpenDetails: () => void;
+  /** Returns to the card preview. At lg and up the layout divider does this instead. */
+  onCloseDetails: () => void;
 }
 
 export function ListingFormPreview({
@@ -18,6 +23,7 @@ export function ListingFormPreview({
   formData,
   listingId,
   onOpenDetails,
+  onCloseDetails,
 }: ListingFormPreviewProps) {
   const previewTitleValue = formData.title?.trim();
   const previewStreet1Value = formData.street1?.trim();
@@ -67,6 +73,21 @@ export function ListingFormPreview({
   if (mode === "details") {
     return (
       <div className="space-y-4">
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={onCloseDetails}
+          className="h-11 text-sm lg:hidden"
+        >
+          <HugeiconsIcon
+            icon={ArrowLeft01Icon}
+            strokeWidth={2}
+            data-icon="inline-start"
+            aria-hidden
+          />
+          Back to card preview
+        </Button>
         <ListingDetails
           embedded
           title={previewTitle}

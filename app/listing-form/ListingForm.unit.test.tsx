@@ -157,3 +157,27 @@ describe("ListingForm hydration", () => {
     await waitFor(() => expect(savedSelections).toEqual([true, false]), { timeout: 3000 });
   });
 });
+
+describe("ListingForm live preview", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn(async (input: unknown) =>
+      String(input).includes("/editor")
+        ? { ok: true, status: 200, json: async () => editorResponse }
+        : { ok: true, status: 200, json: async () => ({ data: [] }) },
+    ) as unknown as typeof fetch;
+    window.scrollTo = jest.fn() as unknown as typeof window.scrollTo;
+  });
+
+  // Below lg the layout divider is hidden, so this button is the only way back to the card.
+  it("returns from the details preview to the card preview", async () => {
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+
+    fireEvent.click(await screen.findByRole("button", { name: /^View listing:/ }));
+    expect(screen.queryByRole("button", { name: /^View listing:/ })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to card preview" }));
+
+    expect(screen.getByRole("button", { name: /^View listing:/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Back to card preview" })).toBeNull();
+  });
+});
