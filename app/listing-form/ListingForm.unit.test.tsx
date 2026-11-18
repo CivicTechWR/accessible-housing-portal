@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import type { ReactNode } from "react";
 
 import ListingForm from "./ListingForm";
-import { patchListingSchema } from "@/shared/schemas/listings";
+import { patchListingSchema, type PatchListingInput } from "@/shared/schemas/listings";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }),
@@ -155,6 +155,121 @@ describe("ListingForm hydration", () => {
     );
     fireEvent.click(screen.getByRole("radio", { name: "No" }));
     await waitFor(() => expect(savedSelections).toEqual([true, false]), { timeout: 3000 });
+  });
+
+  it("loads the server's current values when a listing is opened again", async () => {
+    let savedTitle = editorResponse.data.title;
+    global.fetch = jest.fn(async (input: unknown) => ({
+      ok: true,
+      status: 200,
+      json: async () =>
+        String(input).includes("/editor")
+          ? { data: { ...editorResponse.data, status: "draft", title: savedTitle } }
+          : { data: [] },
+    })) as unknown as typeof fetch;
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const findTitle = () =>
+      screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+
+    const firstVisit = render(<ListingForm listingId={LISTING_ID} />, { wrapper });
+    await waitFor(async () => expect(await findTitle()).toHaveValue("123 Main St Apartments"));
+    firstVisit.unmount();
+    // Navigation always yields before the form mounts again; the cache is dropped in that gap.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Renamed from another device or tab while this one was elsewhere in the app.
+    savedTitle = "Renamed elsewhere";
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper });
+
+    await waitFor(async () => expect(await findTitle()).toHaveValue("Renamed elsewhere"));
+  });
+
+  it("keeps a draft's in-progress edits when the autosave refetch returns", async () => {
+    let savedTitle = editorResponse.data.title;
+    const savedPatches: PatchListingInput[] = [];
+    let editorRequests = 0;
+    let releaseRefetch = () => {};
+    const refetchReleased = new Promise<void>((resolve) => {
+      releaseRefetch = resolve;
+    });
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      const url = String(input);
+      let response: unknown = { data: [] };
+      if (init?.method === "PATCH") {
+        const patch = patchListingSchema.parse(JSON.parse(String(init.body)));
+        savedPatches.push(patch);
+        savedTitle = patch.title ?? savedTitle;
+        response = { data: { id: LISTING_ID } };
+      } else if (url.includes("/editor")) {
+        editorRequests += 1;
+        if (editorRequests > 1) {
+          await refetchReleased;
+        }
+        response = { data: { ...editorResponse.data, status: "draft", title: savedTitle } };
+      }
+      return { ok: true, status: 200, json: async () => response };
+    }) as unknown as typeof fetch;
+
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    const bedrooms = screen.getByRole("spinbutton", {
+      name: (name) => name.startsWith("Bedrooms"),
+    });
+    await waitFor(() => expect(bedrooms).toHaveValue(3));
+
+    fireEvent.change(bedrooms, { target: { value: "" } });
+    fireEvent.change(title, { target: { value: "Renamed" } });
+    await waitFor(() => expect(editorRequests).toBe(2), { timeout: 3000 });
+
+    // Typed after the autosave response, while its refetch is still in flight.
+    fireEvent.change(title, { target: { value: "Renamed again" } });
+    releaseRefetch();
+    await waitFor(() => expect(savedTitle).toBe("Renamed again"), { timeout: 3000 });
+
+    expect(title).toHaveValue("Renamed again");
+    expect(bedrooms).toHaveValue(null);
+    expect(savedPatches.map((patch) => patch.title)).toEqual(["Renamed", "Renamed again"]);
+  });
+
+  it("keeps clearing publish errors as fields are fixed after an autosave refetch", async () => {
+    let savedTitle = "";
+    let editorRequests = 0;
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      let response: unknown = { data: [] };
+      if (init?.method === "PATCH") {
+        savedTitle = patchListingSchema.parse(JSON.parse(String(init.body))).title ?? savedTitle;
+        response = { data: { id: LISTING_ID } };
+      } else if (String(input).includes("/editor")) {
+        editorRequests += 1;
+        response = {
+          data: { ...editorResponse.data, status: "draft", title: savedTitle, city: "" },
+        };
+      }
+      return { ok: true, status: 200, json: async () => response };
+    }) as unknown as typeof fetch;
+    // jsdom has no scrollIntoView, which a failed publish calls on the first invalid field.
+    Element.prototype.scrollIntoView = jest.fn();
+
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    const city = screen.getByRole("textbox", { name: (name) => name.startsWith("City") });
+    await waitFor(() => expect(editorRequests).toBe(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish Listing" }));
+    await waitFor(() => expect(title).toBeInvalid());
+    expect(city).toBeInvalid();
+
+    fireEvent.change(title, { target: { value: "Fixed title" } });
+    await waitFor(() => expect(title).toBeValid());
+    await waitFor(() => expect(editorRequests).toBe(2), { timeout: 3000 });
+    // Let the refetched listing reach the form before the next edit.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    fireEvent.change(city, { target: { value: "Waterloo" } });
+    await waitFor(() => expect(city).toBeValid());
   });
 });
 

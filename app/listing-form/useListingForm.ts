@@ -26,6 +26,7 @@ export function useListingForm(initialListingId?: string) {
     useRef<ReturnType<typeof mapListingFormToAutosavePatchInput>>(null);
   const autosaveTimeoutRef = useRef<number | null>(null);
   const inFlightAutosaveRef = useRef<Promise<void> | null>(null);
+  const loadedListingIdRef = useRef<string | undefined>(undefined);
   const [activeListingId, setActiveListingId] = useState(initialListingId);
   const [isAutosaveInFlight, setIsAutosaveInFlight] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -160,13 +161,29 @@ export function useListingForm(initialListingId?: string) {
 
   useEffect(() => {
     if (initialData) {
-      if (!form.formState.isDirty || initialListingId) {
-        form.reset(initialData);
-        lastAutosavedPayloadRef.current = mapListingFormToAutosavePatchInput(
-          initialData,
-          initialListingId ? initialData.status : "draft",
-        );
+      if (loadedListingIdRef.current === initialListingId) {
+        // A refetch of the listing already in the form (autosave and publish both invalidate
+        // the query) only moves the baseline that dirty state compares against. The form stays
+        // the source of truth for values, so edits made since the request started, and cleared
+        // numbers that autosave leaves out of the patch, are not overwritten. Keeping the
+        // submitted state lets errors from a failed publish keep clearing as fields are fixed.
+        form.reset(initialData, {
+          keepValues: true,
+          keepDirty: true,
+          keepTouched: true,
+          keepErrors: true,
+          keepIsSubmitted: true,
+          keepSubmitCount: true,
+        });
+        return;
       }
+
+      loadedListingIdRef.current = initialListingId;
+      form.reset(initialData);
+      lastAutosavedPayloadRef.current = mapListingFormToAutosavePatchInput(
+        initialData,
+        initialListingId ? initialData.status : "draft",
+      );
       return;
     }
 
