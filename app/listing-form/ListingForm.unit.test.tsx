@@ -390,6 +390,48 @@ describe("ListingForm autosave status", () => {
   });
 });
 
+describe("ListingForm new listing autosave", () => {
+  it("reuses the created draft when the first save fails", async () => {
+    let draftsCreated = 0;
+    let patchAttempts = 0;
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      if (String(input).includes("/api/listing-drafts")) {
+        draftsCreated += 1;
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({ message: "Draft created.", data: { id: LISTING_ID } }),
+        };
+      }
+      if (init?.method === "PATCH") {
+        patchAttempts += 1;
+        return patchAttempts === 1
+          ? { ok: false, status: 500, json: async () => ({ message: "Server unavailable." }) }
+          : { ok: true, status: 200, json: async () => ({ data: { id: LISTING_ID } }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ data: [] }) };
+    }) as unknown as typeof fetch;
+    window.history.replaceState = jest.fn();
+
+    render(<ListingForm />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    fireEvent.change(title, { target: { value: "New home" } });
+    await waitFor(
+      () => expect(screen.getByRole("status")).toHaveTextContent("Not saved. Server unavailable."),
+      { timeout: 3000 },
+    );
+
+    // A different change saves without waiting for the retry delay.
+    fireEvent.change(title, { target: { value: "New home on Main" } });
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+      timeout: 3000,
+    });
+
+    expect(draftsCreated).toBe(1);
+    expect(patchAttempts).toBe(2);
+  });
+});
+
 describe("ListingForm live preview", () => {
   beforeEach(() => {
     global.fetch = jest.fn(async (input: unknown) =>

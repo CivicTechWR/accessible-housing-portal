@@ -128,12 +128,15 @@ export function useListingForm(initialListingId?: string) {
       return draftBootstrapPromiseRef.current;
     }
 
+    // A created draft is kept even when the save that follows fails, so a retry reuses it
+    // instead of creating another. Only a failed creation is forgotten.
     const bootstrapPromise = createDraftListing()
       .then((draftListing) => draftListing.id)
-      .finally(() => {
+      .catch((error: unknown) => {
         if (draftBootstrapPromiseRef.current === bootstrapPromise) {
           draftBootstrapPromiseRef.current = null;
         }
+        throw error;
       });
 
     draftBootstrapPromiseRef.current = bootstrapPromise;
