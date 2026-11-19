@@ -1,7 +1,8 @@
-import { cn } from "@/lib/utils";
+import { useEffect, useId, useState } from "react";
+
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export interface PriceRangeInputProps {
   min?: number;
@@ -31,6 +32,8 @@ export function PriceRangeInput({
   fieldClassName,
   labelClassName,
 }: PriceRangeInputProps) {
+  const minInputId = useId();
+  const maxInputId = useId();
   const [minInputValue, setMinInputValue] = useState(min?.toString() ?? "");
   const [maxInputValue, setMaxInputValue] = useState(max?.toString() ?? "");
 
@@ -45,8 +48,11 @@ export function PriceRangeInput({
   return (
     <FieldSet className={cn("flex-row", className)}>
       <Field className={fieldClassName}>
-        <FieldLabel className={labelClassName}>Min Price</FieldLabel>
+        <FieldLabel htmlFor={minInputId} className={labelClassName}>
+          Min Price
+        </FieldLabel>
         <Input
+          id={minInputId}
           min={0}
           type="number"
           inputMode="numeric"
@@ -65,9 +71,12 @@ export function PriceRangeInput({
       </Field>
 
       <Field className={fieldClassName}>
-        <FieldLabel className={labelClassName}>Max Price</FieldLabel>
+        <FieldLabel htmlFor={maxInputId} className={labelClassName}>
+          Max Price
+        </FieldLabel>
 
         <Input
+          id={maxInputId}
           min={0}
           type="number"
           inputMode="numeric"
