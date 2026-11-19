@@ -68,6 +68,16 @@ describe("ListingImageCarousel", () => {
     within(dialog).getByRole("img", { name: "12 King St image 3 of 3" });
   });
 
+  it("keeps focus on the photo when arrow keys change the slide", () => {
+    renderCarousel();
+    const photo = screen.getByRole("button", { name: "View image 1 of 3 larger" });
+    photo.focus();
+
+    fireEvent.keyDown(photo, { key: "ArrowRight" });
+
+    expect(screen.getByRole("button", { name: "View image 2 of 3 larger" })).toHaveFocus();
+  });
+
   it("returns focus to the photo when the lightbox closes", async () => {
     renderCarousel();
     const photo = screen.getByRole("button", { name: "View image 1 of 3 larger" });

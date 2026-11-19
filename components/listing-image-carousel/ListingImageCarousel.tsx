@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Carousel,
   CarouselContent,
@@ -20,11 +20,23 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const photoRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const focusWasInSlides = useRef(false);
 
   const onSelect = useCallback(() => {
     if (!api) return;
+    focusWasInSlides.current = api.containerNode().contains(document.activeElement);
     setCurrent(api.selectedScrollSnap());
   }, [api]);
+
+  // The carousel handles arrow keys pressed on a photo, and the slide that held focus
+  // becomes inert, which drops focus to the page. Move it to the new photo instead.
+  // preventScroll stops the browser scrolling Embla's overflow-hidden viewport.
+  useEffect(() => {
+    if (!focusWasInSlides.current) return;
+    focusWasInSlides.current = false;
+    photoRefs.current[current]?.focus({ preventScroll: true });
+  }, [current]);
 
   useEffect(() => {
     if (!api) return;
@@ -48,6 +60,9 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
             >
               <div>
                 <button
+                  ref={(node) => {
+                    photoRefs.current[index] = node;
+                  }}
                   type="button"
                   className="block w-full cursor-zoom-in overflow-hidden rounded-lg focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-primary"
                   aria-label={`View image ${index + 1} of ${images.length} larger`}
