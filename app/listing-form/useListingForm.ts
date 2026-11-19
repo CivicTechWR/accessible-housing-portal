@@ -34,6 +34,7 @@ export function useListingForm(initialListingId?: string) {
     useRef<ReturnType<typeof mapListingFormToAutosavePatchInput>>(null);
   const autosaveTimeoutRef = useRef<number | null>(null);
   const inFlightAutosaveRef = useRef<Promise<void> | null>(null);
+  const inFlightDraftPreparationRef = useRef<Promise<string> | null>(null);
   const loadedListingIdRef = useRef<string | undefined>(undefined);
   const [activeListingId, setActiveListingId] = useState(initialListingId);
   const [isAutosaveInFlight, setIsAutosaveInFlight] = useState(false);
@@ -144,7 +145,7 @@ export function useListingForm(initialListingId?: string) {
     return bootstrapPromise;
   }, [activeListingId, createDraftListing]);
 
-  const prepareDraftListing = useCallback(async (): Promise<string> => {
+  const createAndSaveDraftListing = useCallback(async (): Promise<string> => {
     const listingId = await createDraftListingId();
 
     if (!form.formState.isDirty && !hasPendingNullableFieldClear) {
@@ -175,6 +176,22 @@ export function useListingForm(initialListingId?: string) {
     nullableFieldEditIntent,
     patchListing,
   ]);
+
+  // An image upload calls this too. Its draft save is tracked so that a publish started in
+  // the meantime waits for it; a draft save landing after the publish would undo it.
+  const prepareDraftListing = useCallback((): Promise<string> => {
+    const preparation = createAndSaveDraftListing();
+    const clear = () => {
+      if (inFlightDraftPreparationRef.current === preparation) {
+        inFlightDraftPreparationRef.current = null;
+      }
+    };
+
+    inFlightDraftPreparationRef.current = preparation;
+    preparation.then(clear, clear);
+
+    return preparation;
+  }, [createAndSaveDraftListing]);
 
   useEffect(() => {
     setActiveListingId(initialListingId);
@@ -360,7 +377,6 @@ export function useListingForm(initialListingId?: string) {
 
   const onSubmit = async (data: ListingFormData) => {
     setSubmitFeedback(null);
-    setLastAutosave(null);
     setIsPublishing(true);
     let createdDraftListingId: string | null = null;
 
@@ -373,6 +389,14 @@ export function useListingForm(initialListingId?: string) {
       if (inFlightAutosaveRef.current) {
         await inFlightAutosaveRef.current;
       }
+
+      if (inFlightDraftPreparationRef.current) {
+        // A failure here belongs to the upload that started it; the publish carries on.
+        await inFlightDraftPreparationRef.current.catch(() => undefined);
+      }
+
+      // Cleared after the saves above, which set it when they finish.
+      setLastAutosave(null);
 
       let listingId = activeListingId;
 
