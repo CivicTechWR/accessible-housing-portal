@@ -16,6 +16,19 @@ describe("ListingApplyButton", () => {
     expect(screen.queryByText("Leaving Home Hub")).toBeNull();
   });
 
+   it("restores focus to the opener button when the dialog is dismissed", () => {
+        render(<ListingApplyButton applicationUrl="https://example.org/apply" />);
+        const applyButton = screen.getByRole("button", { name: "Apply" });
+
+        applyButton.focus();
+        fireEvent.click(applyButton);
+
+        const cancelButton = screen.getByRole("button", { name: "Cancel" });
+        fireEvent.click(cancelButton);
+
+        expect(screen.queryByText("Leaving Home Hub")).toBeNull();
+      });
+
   it("navigates to the application URL when the user confirms", () => {
     const originalUrl = window.location.href;
     const applicationUrl = new URL("#application", originalUrl).toString();
