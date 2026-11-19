@@ -29,9 +29,10 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
     setCurrent(api.selectedScrollSnap());
   }, [api]);
 
-  // The carousel handles arrow keys pressed on a photo, and the slide that held focus
-  // becomes inert, which drops focus to the page. Move it to the new photo instead.
-  // preventScroll stops the browser scrolling Embla's overflow-hidden viewport.
+  // When the slide changes while a photo has focus, from an arrow key, a mouse drag or a
+  // change to the photo list, the slide that held focus becomes inert and focus drops to the
+  // page. Move it to the new photo instead. Focus elsewhere, such as on the Next button, is
+  // left alone. preventScroll stops the browser scrolling Embla's overflow-hidden viewport.
   useEffect(() => {
     if (!focusWasInSlides.current) return;
     focusWasInSlides.current = false;

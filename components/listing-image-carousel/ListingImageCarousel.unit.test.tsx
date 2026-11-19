@@ -79,6 +79,17 @@ describe("ListingImageCarousel", () => {
     expect(screen.getByRole("button", { name: "View image 2 of 3 larger" })).toHaveFocus();
   });
 
+  it("leaves focus on the Next button when it changes the slide", () => {
+    renderCarousel();
+    const next = screen.getByRole("button", { name: "Next slide" });
+    next.focus();
+
+    fireEvent.click(next);
+
+    screen.getByRole("button", { name: "View image 2 of 3 larger" });
+    expect(next).toHaveFocus();
+  });
+
   it("keeps a photo clickable after the shown photo is removed", async () => {
     const { rerender } = render(<ListingImageCarousel images={images} altPrefix="12 King St" />);
     fireEvent.click(screen.getByRole("button", { name: "Previous slide" }));
@@ -87,7 +98,9 @@ describe("ListingImageCarousel", () => {
     rerender(<ListingImageCarousel images={images.slice(0, 2)} altPrefix="12 King St" />);
 
     // Hidden slides are left out of the accessibility tree, so this finds the shown photo.
-    await screen.findByRole("button", { name: /^View image \d of 2 larger$/ });
+    fireEvent.click(await screen.findByRole("button", { name: /^View image \d of 2 larger$/ }));
+
+    screen.getByRole("dialog", { name: "Photos of 12 King St" });
   });
 
   it("returns focus to the photo when the lightbox closes", async () => {
