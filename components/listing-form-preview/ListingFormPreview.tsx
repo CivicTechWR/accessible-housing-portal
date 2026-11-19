@@ -4,7 +4,7 @@ import type { ListingFormInput } from "@/app/listing-form/types";
 import { Button } from "@/components/ui/button";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
 import { ListingsCard } from "@/components/listings-card/ListingsCard";
-import { buildAddress } from "@/lib/address";
+import { formatListingAddress } from "@/lib/address";
 import { LISTING_BUILDING_TYPE_VALUES, listingSquareFeetSchema } from "@/shared/schemas/listings";
 
 export type ListingFormPreviewMode = "card" | "details";
@@ -33,12 +33,7 @@ export function ListingFormPreview({
   const previewUnitNumberValue = formData.unitNumber?.trim();
   const previewTitle = previewTitleValue || "Title Here";
   const previewStreet1 = previewStreet1Value || "Address Here";
-  const previewCardAddress = buildAddress({
-    unitNumber: previewUnitNumberValue,
-    street1: previewStreet1,
-    street2: previewStreet2Value,
-    city: previewCityValue,
-  });
+  const previewCardAddress = formatListingAddress(previewStreet1, previewUnitNumberValue);
   const previewCardFeatures = Array.from(
     new Set((formData.customFeatures ?? []).map((feature) => feature.name)),
   );

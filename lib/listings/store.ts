@@ -82,10 +82,6 @@ export function getDisplayAccessibilityFeatures(
   }));
 }
 
-export function formatListingAddress(street1: string, unitNumber: string | null) {
-  return unitNumber ? `${street1} #${unitNumber}` : street1;
-}
-
 export function buildDuplicateListingTitle(title: string) {
   return title ? `Copy of ${title}` : "";
 }
