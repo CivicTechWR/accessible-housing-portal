@@ -42,8 +42,11 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
     if (!api) return;
     onSelect();
     api.on("select", onSelect);
+    // When the photos change, Embla rebuilds and picks a slide without a select event.
+    api.on("reInit", onSelect);
     return () => {
       api.off("select", onSelect);
+      api.off("reInit", onSelect);
     };
   }, [api, onSelect]);
 

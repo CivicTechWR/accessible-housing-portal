@@ -78,6 +78,17 @@ describe("ListingImageCarousel", () => {
     expect(screen.getByRole("button", { name: "View image 2 of 3 larger" })).toHaveFocus();
   });
 
+  it("keeps a photo clickable after the shown photo is removed", async () => {
+    const { rerender } = render(<ListingImageCarousel images={images} altPrefix="12 King St" />);
+    fireEvent.click(screen.getByRole("button", { name: "Previous slide" }));
+    screen.getByRole("button", { name: "View image 3 of 3 larger" });
+
+    rerender(<ListingImageCarousel images={images.slice(0, 2)} altPrefix="12 King St" />);
+
+    // Hidden slides are left out of the accessibility tree, so this finds the shown photo.
+    await screen.findByRole("button", { name: /^View image \d of 2 larger$/ });
+  });
+
   it("returns focus to the photo when the lightbox closes", async () => {
     renderCarousel();
     const photo = screen.getByRole("button", { name: "View image 1 of 3 larger" });
