@@ -210,7 +210,7 @@ export function ListingDetails({
     <WrapperElement className={wrapperClasses}>
       <div className={contentClasses}>
         <div className="flex items-center justify-between gap-3">
-          <div>
+          <div className="wrap-anywhere">
             <h1>{address}</h1>
             {title && <h2>{title}</h2>}
             <h3 className="sm:text-xl">{`${rentalCost}/month`}</h3>
@@ -230,7 +230,9 @@ export function ListingDetails({
               <CardTitle>Description</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="whitespace-pre-line text-sm text-foreground">{trimmedDescription}</p>
+              <p className="whitespace-pre-line wrap-anywhere text-sm text-foreground">
+                {trimmedDescription}
+              </p>
             </CardContent>
           </Card>
         )}
@@ -251,7 +253,7 @@ export function ListingDetails({
                     {row.info && <InfoPopover {...row.info} />}
                   </dt>
                   <dd
-                    className={`mt-1 text-sm font-medium text-foreground${
+                    className={`mt-1 wrap-anywhere text-sm font-medium text-foreground${
                       row.preserveWhitespace ? " whitespace-pre-line" : ""
                     }`}
                   >
@@ -326,10 +328,12 @@ export function ListingDetails({
                     {(contactName?.trim() || contactRole?.trim()) && (
                       <div>
                         {contactName?.trim() && (
-                          <p className="text-sm font-medium">{contactName.trim()}</p>
+                          <p className="wrap-anywhere text-sm font-medium">{contactName.trim()}</p>
                         )}
                         {contactRole?.trim() && (
-                          <p className="text-sm text-muted-foreground">{contactRole.trim()}</p>
+                          <p className="wrap-anywhere text-sm text-muted-foreground">
+                            {contactRole.trim()}
+                          </p>
                         )}
                       </div>
                     )}
@@ -338,7 +342,7 @@ export function ListingDetails({
                         {contactRows.map((row) => (
                           <div key={row.label} className="min-w-0">
                             <dt className="sr-only">{row.label}</dt>
-                            <dd className="break-words text-sm leading-relaxed">
+                            <dd className="wrap-anywhere text-sm leading-relaxed">
                               <a
                                 href={row.href}
                                 className="text-primary-text underline-offset-4 hover:underline"
@@ -370,7 +374,7 @@ export function ListingDetails({
                       {applicationRows.map((row) => (
                         <div key={row.label} className="min-w-0">
                           <dt className="sr-only">{row.label}</dt>
-                          <dd className="break-words text-sm leading-relaxed">
+                          <dd className="wrap-anywhere text-sm leading-relaxed">
                             <a
                               href={row.href}
                               className="text-primary-text underline-offset-4 hover:underline"
@@ -396,7 +400,7 @@ export function ListingDetails({
                   <h3 className="text-sm font-semibold">Additional application information</h3>
                   <p className="text-xs text-muted-foreground">From the housing lister</p>
                 </figcaption>
-                <blockquote className="whitespace-pre-line break-words rounded-r-md border-l-2 border-primary/30 bg-muted/40 px-4 py-3 text-sm leading-relaxed">
+                <blockquote className="whitespace-pre-line wrap-anywhere rounded-r-md border-l-2 border-primary/30 bg-muted/40 px-4 py-3 text-sm leading-relaxed">
                   {instructions}
                 </blockquote>
               </figure>
