@@ -50,12 +50,13 @@ describe("ListingImageCarousel", () => {
 
   it("opens the shown photo in a full-screen lightbox", () => {
     renderCarousel();
+    fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "View image 1 of 3 larger" }));
+    fireEvent.click(screen.getByRole("button", { name: "View image 2 of 3 larger" }));
 
     const dialog = screen.getByRole("dialog", { name: "Photos of 12 King St" });
-    within(dialog).getByText("Image 1 of 3: Kitchen");
-    within(dialog).getByRole("img", { name: "Kitchen" });
+    within(dialog).getByText("Image 2 of 3: Roll-in shower");
+    within(dialog).getByRole("img", { name: "Roll-in shower" });
   });
 
   it("uses the address for alt text in the lightbox when a photo has no caption", () => {
