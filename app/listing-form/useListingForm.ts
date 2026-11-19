@@ -64,8 +64,8 @@ export function useListingForm(initialListingId?: string) {
     isLoading: isFetching,
     isError: isFetchError,
   } = useGetListingQuery(initialListingId);
-  const { createDraftListing, isLoading: isCreatingDraft } = useCreateDraftListingQuery();
-  const { patchListing, replaceListing, isLoading: isEditing } = useEditListingQuery();
+  const { createDraftListing } = useCreateDraftListingQuery();
+  const { patchListing, replaceListing } = useEditListingQuery();
   const pendingNullableFieldClearIntent = getPendingAutosaveNullableFieldClearIntent(
     watchedValues,
     lastAutosavedPayloadRef.current,
@@ -411,7 +411,9 @@ export function useListingForm(initialListingId?: string) {
     autosaveStatus,
     isLoading: isFetching,
     isError: isFetchError,
-    isSubmitting: isCreatingDraft || isEditing || isPublishing || form.formState.isSubmitting,
+    // Only the person's own submit. Autosave requests leave the button usable: onSubmit waits
+    // for a save that is in flight before it publishes.
+    isSubmitting: isPublishing || form.formState.isSubmitting,
     submitFeedback,
   };
 }
