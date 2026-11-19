@@ -33,3 +33,8 @@ export function buildAddress({
 
   return [lineOne, lineTwo].filter(Boolean).join(", ");
 }
+
+/** The street line listing cards show; the card appends the city itself. */
+export function formatListingAddress(street1: string, unitNumber?: string | null): string {
+  return unitNumber ? `${street1} #${unitNumber}` : street1;
+}

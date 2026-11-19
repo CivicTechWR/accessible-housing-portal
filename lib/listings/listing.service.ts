@@ -3,13 +3,13 @@ import "server-only";
 import { asc, desc, type SQL } from "drizzle-orm";
 
 import { listings, type ListingCustomFields } from "@/db/schema";
+import { formatListingAddress } from "@/lib/address";
 import type { getOptionalSession } from "@/lib/auth/session";
 import {
   buildDuplicateListingTitle,
   buildListingFeatureCategories,
   centsToDollars,
   dollarsToCents,
-  formatListingAddress,
   getListingImageUrl,
   formatListingTimeAgo,
   getDisplayAccessibilityFeatures,
