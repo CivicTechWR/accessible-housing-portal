@@ -68,17 +68,19 @@ export default function ListingForm({ listingId }: ListingFormProps) {
         `[data-field-name="${escapeAttributeValue(String(firstInvalidField))}"]`,
       );
 
-      fieldContainer?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-
       const focusTarget =
         fieldContainer?.querySelector<HTMLElement>(
           "input, textarea, button, [tabindex]:not([tabindex='-1'])",
         ) ?? fieldContainer;
       focusTarget?.focus({ preventScroll: true });
       form.setFocus(firstInvalidField);
+
+      // Scroll after focusing: ListingFormLayout scrolls focused textareas into view
+      // instantly, which would cancel an earlier smooth scroll.
+      fieldContainer?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     });
   };
 

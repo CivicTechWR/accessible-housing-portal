@@ -19,6 +19,7 @@ export default defineConfig({
     { name: "setup", testMatch: /auth\.setup\.ts/ },
     {
       name: "desktop",
+      grepInvert: /@mobile-only/,
       dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },

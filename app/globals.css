@@ -242,6 +242,17 @@
 }
 
 @layer base {
+  /*
+   * Below lg the listing form has a sticky tab bar (about 69px) at the top and a sticky
+   * Save bar (about 57px) at the bottom. Scroll padding keeps a focused field from landing
+   * under either one (WCAG 2.4.11). Scoped to pages that render the tabs, so anchor links
+   * elsewhere don't move.
+   */
+  @media (width < 64rem) {
+    html:has([data-listing-form-tabs]) {
+      scroll-padding-block: 5rem 4.5rem;
+    }
+  }
   * {
     @apply border-border outline-ring/50;
   }

@@ -12,8 +12,12 @@ for (const role of ROLES) {
     if (role !== "anonymous") test.use({ storageState: storageStatePath(role) });
 
     for (const entry of PAGES.filter((page) => page.role === role)) {
-      // The mobile project skips @desktop-only tests (see playwright.config.ts).
-      const details = entry.desktopOnly ? { tag: "@desktop-only" } : {};
+      // Each project skips the other's size-only tests (see playwright.config.ts).
+      const details = entry.desktopOnly
+        ? { tag: "@desktop-only" }
+        : entry.mobileOnly
+          ? { tag: "@mobile-only" }
+          : {};
       test(`${entry.name} (${entry.path})`, details, async ({ page }, testInfo) => {
         const response = await page.goto(entry.path);
         expect(response?.status(), "page should load without an error status").toBeLessThan(400);
@@ -31,6 +35,11 @@ for (const role of ROLES) {
         // Client queries can start after networkidle while the page hydrates.
         await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0, { timeout: 30_000 });
         await page.evaluate(() => document.fonts.ready);
+        if (entry.selectTab) {
+          const tab = page.getByRole("tab", { name: entry.selectTab, exact: true });
+          await tab.click();
+          await expect(tab).toHaveAttribute("aria-selected", "true");
+        }
 
         await page.screenshot({
           path: `e2e/screenshots/${testInfo.project.name}/${entry.name}.png`,
