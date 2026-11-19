@@ -273,6 +273,79 @@ describe("ListingForm hydration", () => {
   });
 });
 
+describe("ListingForm autosave status", () => {
+  function mockDraftApi(patchResponse: () => { ok: boolean; status: number; body: unknown }) {
+    const patches: PatchListingInput[] = [];
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        patches.push(patchListingSchema.parse(JSON.parse(String(init.body))));
+        const { ok, status, body } = patchResponse();
+        return { ok, status, json: async () => body };
+      }
+      const body = String(input).includes("/editor")
+        ? { data: { ...editorResponse.data, status: "draft" } }
+        : { data: [] };
+      return { ok: true, status: 200, json: async () => body };
+    }) as unknown as typeof fetch;
+    return patches;
+  }
+
+  async function editTitle(value: string) {
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    await waitFor(() => expect(title).toHaveValue("123 Main St Apartments"));
+    fireEvent.change(title, { target: { value } });
+  }
+
+  it("keeps showing Saved after an autosave until the next edit", async () => {
+    const patches = mockDraftApi(() => ({
+      ok: true,
+      status: 200,
+      body: { data: { id: LISTING_ID } },
+    }));
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    await editTitle("Renamed");
+
+    expect(screen.getByRole("status")).toHaveTextContent("Saving...");
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+      timeout: 3000,
+    });
+    // Well past the save and the refetch it triggers.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+
+    fireEvent.change(screen.getByRole("textbox", { name: (name) => name.startsWith("Title") }), {
+      target: { value: "Renamed again" },
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Saving...");
+    await waitFor(
+      () => expect(patches.map((patch) => patch.title)).toEqual(["Renamed", "Renamed again"]),
+      {
+        timeout: 3000,
+      },
+    );
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+  });
+
+  it("keeps a failed autosave's error on screen without retrying the same change", async () => {
+    const patches = mockDraftApi(() => ({
+      ok: false,
+      status: 500,
+      body: { message: "Server unavailable." },
+    }));
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    await editTitle("Renamed");
+
+    await waitFor(
+      () => expect(screen.getByRole("status")).toHaveTextContent("Not saved. Server unavailable."),
+      { timeout: 3000 },
+    );
+    // Longer than the autosave delay, so a retry of the same change would have started.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(screen.getByRole("status")).toHaveTextContent("Not saved. Server unavailable.");
+    expect(patches).toHaveLength(1);
+  });
+});
+
 describe("ListingForm live preview", () => {
   beforeEach(() => {
     global.fetch = jest.fn(async (input: unknown) =>

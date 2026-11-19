@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { SubmitErrorHandler } from "react-hook-form";
-import { useListingForm } from "./useListingForm";
+import { useListingForm, type AutosaveStatus } from "./useListingForm";
 import { CORE_FIELD_DEFINITIONS } from "./fieldDefinitions";
 import type { ListingFormInput } from "./types";
 import { ListingFormFields } from "@/components/listing-form-fields/ListingFormFields";
@@ -17,6 +17,7 @@ import { ListingFormSkeleton } from "@/components/listing-form-skeleton/ListingF
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import { cn } from "@/lib/utils";
 
 export interface ListingFormProps {
   listingId?: string;
@@ -33,7 +34,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     isError,
     isSubmitting,
     submitFeedback,
-    autosaveFeedback,
+    autosaveStatus,
     listingId: activeListingId,
   } = useListingForm(listingId);
   const [previewMode, setPreviewMode] = useState<ListingFormPreviewMode>("card");
@@ -189,12 +190,19 @@ export default function ListingForm({ listingId }: ListingFormProps) {
         />
       }
       footer={
-        <div className="flex items-center gap-3">
-          {autosaveFeedback ? (
-            <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
-              {autosaveFeedback}
-            </p>
-          ) : null}
+        <div className="flex min-w-0 items-center gap-3">
+          {/* Always rendered so screen readers pick up the first change. Two lines of text-xs/4
+              match the button's height, so a long error never makes the sticky bar taller. */}
+          <p
+            className={cn(
+              "line-clamp-2 min-w-0 text-xs/4",
+              autosaveStatus?.status === "error" ? "text-destructive" : "text-muted-foreground",
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            {autosaveStatus ? autosaveStatusText(autosaveStatus) : null}
+          </p>
           {submitFeedback && (
             <p
               className={
@@ -215,6 +223,17 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       }
     />
   );
+}
+
+function autosaveStatusText(autosaveStatus: AutosaveStatus) {
+  switch (autosaveStatus.status) {
+    case "saving":
+      return "Saving...";
+    case "saved":
+      return "Saved";
+    case "error":
+      return `Not saved. ${autosaveStatus.message}`;
+  }
 }
 
 function escapeAttributeValue(value: string) {

@@ -19,6 +19,11 @@ import { useCreateDraftListingQuery } from "./useCreateDraftListingQuery";
 import { useEditListingQuery } from "./useEditListingQuery";
 import { useGetListingQuery } from "./useGetListingQuery";
 
+export type AutosaveStatus =
+  | { status: "saving" }
+  | { status: "saved" }
+  | { status: "error"; message: string };
+
 export function useListingForm(initialListingId?: string) {
   const router = useRouter();
   const draftBootstrapPromiseRef = useRef<Promise<string> | null>(null);
@@ -34,7 +39,11 @@ export function useListingForm(initialListingId?: string) {
     status: "success" | "error";
     message: string;
   } | null>(null);
-  const [autosaveFeedback, setAutosaveFeedback] = useState<string | null>(null);
+  // Outcome of the latest autosave in this visit. An error keeps the payload it failed on, so
+  // the same payload is not retried in a loop; the next edit tries again.
+  const [lastAutosave, setLastAutosave] = useState<
+    { status: "saved" } | { status: "error"; message: string; payloadKey: string } | null
+  >(null);
   const form = useForm<ListingFormInput, ListingFormContext, ListingFormData>({
     resolver: zodResolver(listingFormSchema) as Resolver<
       ListingFormInput,
@@ -88,11 +97,14 @@ export function useListingForm(initialListingId?: string) {
       autosavePayload &&
       autosavePayloadKey &&
       lastAutosavedPayloadKey !== autosavePayloadKey &&
+      !(lastAutosave?.status === "error" && lastAutosave.payloadKey === autosavePayloadKey) &&
       (form.formState.isDirty || hasPendingNullableFieldClear) &&
       !isAutosaveInFlight &&
       !isPublishing &&
       !form.formState.isSubmitting,
     );
+  const autosaveStatus: AutosaveStatus | null =
+    shouldAutosaveDraft || isAutosaveInFlight ? { status: "saving" } : lastAutosave;
   const shouldWarnOnNavigateAway =
     isPublishedEditMode && form.formState.isDirty && !form.formState.isSubmitting;
 
@@ -200,7 +212,6 @@ export function useListingForm(initialListingId?: string) {
 
     const timeout = window.setTimeout(() => {
       setIsAutosaveInFlight(true);
-      setAutosaveFeedback("Saving draft...");
 
       const autosavePromise = Promise.resolve(
         activeListingId
@@ -225,10 +236,14 @@ export function useListingForm(initialListingId?: string) {
         )
         .then(() => {
           lastAutosavedPayloadRef.current = autosavePayload;
-          setAutosaveFeedback("Draft saved");
+          setLastAutosave({ status: "saved" });
         })
         .catch((error) => {
-          setAutosaveFeedback(error instanceof Error ? error.message : "Unable to autosave draft");
+          setLastAutosave({
+            status: "error",
+            message: error instanceof Error ? error.message : "Unable to save draft.",
+            payloadKey: autosavePayloadKey,
+          });
         })
         .finally(() => {
           if (inFlightAutosaveRef.current === autosavePromise) {
@@ -257,14 +272,6 @@ export function useListingForm(initialListingId?: string) {
     patchListing,
     shouldAutosaveDraft,
   ]);
-
-  useEffect(() => {
-    if (shouldAutosaveDraft || isAutosaveInFlight) {
-      return;
-    }
-
-    setAutosaveFeedback(null);
-  }, [isAutosaveInFlight, shouldAutosaveDraft]);
 
   useEffect(() => {
     if (!shouldWarnOnNavigateAway) {
@@ -330,7 +337,7 @@ export function useListingForm(initialListingId?: string) {
 
   const onSubmit = async (data: ListingFormData) => {
     setSubmitFeedback(null);
-    setAutosaveFeedback(null);
+    setLastAutosave(null);
     setIsPublishing(true);
     let createdDraftListingId: string | null = null;
 
@@ -377,7 +384,7 @@ export function useListingForm(initialListingId?: string) {
     activateDraftListing,
     prepareDraftListing,
     listingId: activeListingId,
-    autosaveFeedback,
+    autosaveStatus,
     isLoading: isFetching,
     isError: isFetchError,
     isSubmitting: isCreatingDraft || isEditing || isPublishing || form.formState.isSubmitting,
