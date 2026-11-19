@@ -273,6 +273,165 @@ describe("ListingForm hydration", () => {
   });
 });
 
+describe("ListingForm autosave status", () => {
+  function mockDraftApi(patchResponse: () => { ok: boolean; status: number; body: unknown }) {
+    const patches: PatchListingInput[] = [];
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        patches.push(patchListingSchema.parse(JSON.parse(String(init.body))));
+        const { ok, status, body } = patchResponse();
+        return { ok, status, json: async () => body };
+      }
+      const body = String(input).includes("/editor")
+        ? { data: { ...editorResponse.data, status: "draft" } }
+        : { data: [] };
+      return { ok: true, status: 200, json: async () => body };
+    }) as unknown as typeof fetch;
+    return patches;
+  }
+
+  async function editTitle(value: string) {
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    await waitFor(() => expect(title).toHaveValue("123 Main St Apartments"));
+    fireEvent.change(title, { target: { value } });
+  }
+
+  it("keeps showing Saved after an autosave until the next edit", async () => {
+    const patches = mockDraftApi(() => ({
+      ok: true,
+      status: 200,
+      body: { data: { id: LISTING_ID } },
+    }));
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    await editTitle("Renamed");
+
+    expect(screen.getByRole("status")).toHaveTextContent("Saving...");
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+      timeout: 3000,
+    });
+    // Well past the save and the refetch it triggers.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+
+    fireEvent.change(screen.getByRole("textbox", { name: (name) => name.startsWith("Title") }), {
+      target: { value: "Renamed again" },
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Saving...");
+    await waitFor(
+      () => expect(patches.map((patch) => patch.title)).toEqual(["Renamed", "Renamed again"]),
+      {
+        timeout: 3000,
+      },
+    );
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+  });
+
+  it("keeps a failed autosave's error on screen, then tries the same change again", async () => {
+    let serverUp = false;
+    const patches = mockDraftApi(() =>
+      serverUp
+        ? { ok: true, status: 200, body: { data: { id: LISTING_ID } } }
+        : { ok: false, status: 500, body: { message: "Server unavailable." } },
+    );
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    await editTitle("Renamed");
+
+    await waitFor(
+      () => expect(screen.getByRole("status")).toHaveTextContent("Not saved. Server unavailable."),
+      { timeout: 3000 },
+    );
+    // Longer than the autosave delay, so an immediate retry would have started.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(screen.getByRole("status")).toHaveTextContent("Not saved. Server unavailable.");
+    expect(patches).toHaveLength(1);
+
+    serverUp = true;
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+      timeout: 8000,
+    });
+    expect(patches.map((patch) => patch.title)).toEqual(["Renamed", "Renamed"]);
+  }, 15_000);
+
+  it("saves a change that is undone while its autosave is in flight", async () => {
+    const patches: PatchListingInput[] = [];
+    let releaseFirstPatch = () => {};
+    const firstPatchReleased = new Promise<void>((resolve) => {
+      releaseFirstPatch = resolve;
+    });
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      let body: unknown = { data: [] };
+      if (init?.method === "PATCH") {
+        patches.push(patchListingSchema.parse(JSON.parse(String(init.body))));
+        if (patches.length === 1) {
+          await firstPatchReleased;
+        }
+        body = { data: { id: LISTING_ID } };
+      } else if (String(input).includes("/editor")) {
+        body = { data: { ...editorResponse.data, status: "draft" } };
+      }
+      return { ok: true, status: 200, json: async () => body };
+    }) as unknown as typeof fetch;
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    await editTitle("Renamed");
+    await waitFor(() => expect(patches).toHaveLength(1), { timeout: 3000 });
+
+    // Back to the loaded title while the server is about to hold "Renamed".
+    fireEvent.change(screen.getByRole("textbox", { name: (name) => name.startsWith("Title") }), {
+      target: { value: "123 Main St Apartments" },
+    });
+    releaseFirstPatch();
+
+    await waitFor(
+      () =>
+        expect(patches.map((patch) => patch.title)).toEqual(["Renamed", "123 Main St Apartments"]),
+      { timeout: 3000 },
+    );
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+  });
+});
+
+describe("ListingForm new listing autosave", () => {
+  it("reuses the created draft when the first save fails", async () => {
+    let draftsCreated = 0;
+    let patchAttempts = 0;
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      if (String(input).includes("/api/listing-drafts")) {
+        draftsCreated += 1;
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({ message: "Draft created.", data: { id: LISTING_ID } }),
+        };
+      }
+      if (init?.method === "PATCH") {
+        patchAttempts += 1;
+        return patchAttempts === 1
+          ? { ok: false, status: 500, json: async () => ({ message: "Server unavailable." }) }
+          : { ok: true, status: 200, json: async () => ({ data: { id: LISTING_ID } }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ data: [] }) };
+    }) as unknown as typeof fetch;
+    window.history.replaceState = jest.fn();
+
+    render(<ListingForm />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    fireEvent.change(title, { target: { value: "New home" } });
+    await waitFor(
+      () => expect(screen.getByRole("status")).toHaveTextContent("Not saved. Server unavailable."),
+      { timeout: 3000 },
+    );
+
+    // A different change saves without waiting for the retry delay.
+    fireEvent.change(title, { target: { value: "New home on Main" } });
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+      timeout: 3000,
+    });
+
+    expect(draftsCreated).toBe(1);
+    expect(patchAttempts).toBe(2);
+  });
+});
+
 describe("ListingForm live preview", () => {
   beforeEach(() => {
     global.fetch = jest.fn(async (input: unknown) =>

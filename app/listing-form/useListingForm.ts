@@ -19,6 +19,14 @@ import { useCreateDraftListingQuery } from "./useCreateDraftListingQuery";
 import { useEditListingQuery } from "./useEditListingQuery";
 import { useGetListingQuery } from "./useGetListingQuery";
 
+// A failed autosave stays on screen this long before the same change is tried again.
+const AUTOSAVE_RETRY_DELAY_MS = 5000;
+
+export type AutosaveStatus =
+  | { status: "saving" }
+  | { status: "saved" }
+  | { status: "error"; message: string };
+
 export function useListingForm(initialListingId?: string) {
   const router = useRouter();
   const draftBootstrapPromiseRef = useRef<Promise<string> | null>(null);
@@ -34,7 +42,12 @@ export function useListingForm(initialListingId?: string) {
     status: "success" | "error";
     message: string;
   } | null>(null);
-  const [autosaveFeedback, setAutosaveFeedback] = useState<string | null>(null);
+  // Outcome of the latest autosave in this visit. An error holds back the payload it failed
+  // on, so the message can be read; a different payload saves at once, and the same one is
+  // tried again after AUTOSAVE_RETRY_DELAY_MS, when heldPayloadKey is cleared.
+  const [lastAutosave, setLastAutosave] = useState<
+    { status: "saved" } | { status: "error"; message: string; heldPayloadKey: string | null } | null
+  >(null);
   const form = useForm<ListingFormInput, ListingFormContext, ListingFormData>({
     resolver: zodResolver(listingFormSchema) as Resolver<
       ListingFormInput,
@@ -88,11 +101,16 @@ export function useListingForm(initialListingId?: string) {
       autosavePayload &&
       autosavePayloadKey &&
       lastAutosavedPayloadKey !== autosavePayloadKey &&
-      (form.formState.isDirty || hasPendingNullableFieldClear) &&
+      !(lastAutosave?.status === "error" && lastAutosave.heldPayloadKey === autosavePayloadKey) &&
+      // Before the first autosave, only an edit starts one. After it, the form can match the
+      // loaded values again while the server holds a later save, so the payloads alone decide.
+      (lastAutosave !== null || form.formState.isDirty || hasPendingNullableFieldClear) &&
       !isAutosaveInFlight &&
       !isPublishing &&
       !form.formState.isSubmitting,
     );
+  const autosaveStatus: AutosaveStatus | null =
+    shouldAutosaveDraft || isAutosaveInFlight ? { status: "saving" } : lastAutosave;
   const shouldWarnOnNavigateAway =
     isPublishedEditMode && form.formState.isDirty && !form.formState.isSubmitting;
 
@@ -110,12 +128,15 @@ export function useListingForm(initialListingId?: string) {
       return draftBootstrapPromiseRef.current;
     }
 
+    // A created draft is kept even when the save that follows fails, so a retry reuses it
+    // instead of creating another. Only a failed creation is forgotten.
     const bootstrapPromise = createDraftListing()
       .then((draftListing) => draftListing.id)
-      .finally(() => {
+      .catch((error: unknown) => {
         if (draftBootstrapPromiseRef.current === bootstrapPromise) {
           draftBootstrapPromiseRef.current = null;
         }
+        throw error;
       });
 
     draftBootstrapPromiseRef.current = bootstrapPromise;
@@ -200,7 +221,6 @@ export function useListingForm(initialListingId?: string) {
 
     const timeout = window.setTimeout(() => {
       setIsAutosaveInFlight(true);
-      setAutosaveFeedback("Saving draft...");
 
       const autosavePromise = Promise.resolve(
         activeListingId
@@ -225,10 +245,14 @@ export function useListingForm(initialListingId?: string) {
         )
         .then(() => {
           lastAutosavedPayloadRef.current = autosavePayload;
-          setAutosaveFeedback("Draft saved");
+          setLastAutosave({ status: "saved" });
         })
         .catch((error) => {
-          setAutosaveFeedback(error instanceof Error ? error.message : "Unable to autosave draft");
+          setLastAutosave({
+            status: "error",
+            message: error instanceof Error ? error.message : "Unable to save draft.",
+            heldPayloadKey: autosavePayloadKey,
+          });
         })
         .finally(() => {
           if (inFlightAutosaveRef.current === autosavePromise) {
@@ -259,12 +283,18 @@ export function useListingForm(initialListingId?: string) {
   ]);
 
   useEffect(() => {
-    if (shouldAutosaveDraft || isAutosaveInFlight) {
+    if (lastAutosave?.status !== "error" || lastAutosave.heldPayloadKey === null) {
       return;
     }
 
-    setAutosaveFeedback(null);
-  }, [isAutosaveInFlight, shouldAutosaveDraft]);
+    const timeout = window.setTimeout(() => {
+      setLastAutosave((current) =>
+        current?.status === "error" ? { ...current, heldPayloadKey: null } : current,
+      );
+    }, AUTOSAVE_RETRY_DELAY_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [lastAutosave]);
 
   useEffect(() => {
     if (!shouldWarnOnNavigateAway) {
@@ -330,7 +360,7 @@ export function useListingForm(initialListingId?: string) {
 
   const onSubmit = async (data: ListingFormData) => {
     setSubmitFeedback(null);
-    setAutosaveFeedback(null);
+    setLastAutosave(null);
     setIsPublishing(true);
     let createdDraftListingId: string | null = null;
 
@@ -377,7 +407,7 @@ export function useListingForm(initialListingId?: string) {
     activateDraftListing,
     prepareDraftListing,
     listingId: activeListingId,
-    autosaveFeedback,
+    autosaveStatus,
     isLoading: isFetching,
     isError: isFetchError,
     isSubmitting: isCreatingDraft || isEditing || isPublishing || form.formState.isSubmitting,
