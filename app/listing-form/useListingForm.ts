@@ -34,7 +34,7 @@ export function useListingForm(initialListingId?: string) {
     useRef<ReturnType<typeof mapListingFormToAutosavePatchInput>>(null);
   const autosaveTimeoutRef = useRef<number | null>(null);
   const inFlightAutosaveRef = useRef<Promise<void> | null>(null);
-  const inFlightDraftPreparationRef = useRef<Promise<string> | null>(null);
+  const inFlightDraftPreparationsRef = useRef(new Set<Promise<string>>());
   const loadedListingIdRef = useRef<string | undefined>(undefined);
   const [activeListingId, setActiveListingId] = useState(initialListingId);
   const [isAutosaveInFlight, setIsAutosaveInFlight] = useState(false);
@@ -177,18 +177,18 @@ export function useListingForm(initialListingId?: string) {
     patchListing,
   ]);
 
-  // An image upload calls this too. Its draft save is tracked so that a publish started in
-  // the meantime waits for it; a draft save landing after the publish would undo it.
+  // Image uploads call this too, and more than one can be running. Their draft saves are
+  // tracked so that a publish started in the meantime waits for them; a draft save landing
+  // after the publish would undo it.
   const prepareDraftListing = useCallback((): Promise<string> => {
+    const preparations = inFlightDraftPreparationsRef.current;
     const preparation = createAndSaveDraftListing();
-    const clear = () => {
-      if (inFlightDraftPreparationRef.current === preparation) {
-        inFlightDraftPreparationRef.current = null;
-      }
+    const forget = () => {
+      preparations.delete(preparation);
     };
 
-    inFlightDraftPreparationRef.current = preparation;
-    preparation.then(clear, clear);
+    preparations.add(preparation);
+    preparation.then(forget, forget);
 
     return preparation;
   }, [createAndSaveDraftListing]);
@@ -390,12 +390,13 @@ export function useListingForm(initialListingId?: string) {
         await inFlightAutosaveRef.current;
       }
 
-      if (inFlightDraftPreparationRef.current) {
-        // A failure here belongs to the upload that started it; the publish carries on.
-        await inFlightDraftPreparationRef.current.catch(() => undefined);
+      // A failure here belongs to the upload that started it; the publish carries on. Another
+      // upload can start during the wait, so check again until none is left.
+      while (inFlightDraftPreparationsRef.current.size > 0) {
+        await Promise.allSettled(inFlightDraftPreparationsRef.current);
       }
 
-      // Cleared after the saves above, which set it when they finish.
+      // Cleared after waiting, since an autosave sets it when it finishes.
       setLastAutosave(null);
 
       let listingId = activeListingId;
