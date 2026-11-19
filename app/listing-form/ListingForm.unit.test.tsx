@@ -455,3 +455,34 @@ describe("ListingForm live preview", () => {
     expect(screen.queryByRole("button", { name: "Back to card preview" })).toBeNull();
   });
 });
+
+describe("ListingForm publishing", () => {
+  it("sends no autosave after a successful publish", async () => {
+    const requests: string[] = [];
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      if (method !== "GET") {
+        requests.push(method);
+      }
+      const body = String(input).includes("/editor")
+        ? { data: { ...editorResponse.data, status: "draft" } }
+        : method === "GET"
+          ? { data: [] }
+          : { data: { id: LISTING_ID } };
+      return { ok: true, status: 200, json: async () => body };
+    }) as unknown as typeof fetch;
+
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    await waitFor(() => expect(title).toHaveValue("123 Main St Apartments"));
+
+    // Publish before the autosave for this edit has fired.
+    fireEvent.change(title, { target: { value: "Renamed" } });
+    fireEvent.click(screen.getByRole("button", { name: "Publish Listing" }));
+    await waitFor(() => expect(requests).toEqual(["PUT"]), { timeout: 3000 });
+
+    // The listing page has not replaced the form yet. Longer than the autosave delay.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(requests).toEqual(["PUT"]);
+  });
+});

@@ -112,7 +112,7 @@ export function useListingForm(initialListingId?: string) {
   const autosaveStatus: AutosaveStatus | null =
     shouldAutosaveDraft || isAutosaveInFlight ? { status: "saving" } : lastAutosave;
   const shouldWarnOnNavigateAway =
-    isPublishedEditMode && form.formState.isDirty && !form.formState.isSubmitting;
+    isPublishedEditMode && form.formState.isDirty && !form.formState.isSubmitting && !isPublishing;
 
   const activateDraftListing = useCallback((listingId: string) => {
     setActiveListingId(listingId);
@@ -385,6 +385,8 @@ export function useListingForm(initialListingId?: string) {
         listingId,
         payload: mapListingFormToReplaceListingInput(data, "published"),
       });
+      // isPublishing stays true: this form stays mounted until the listing page renders, and
+      // an autosave in that gap would save the listing as a draft again.
       router.push(`/listings/${listingId}`);
       router.refresh();
     } catch (error) {
@@ -396,7 +398,6 @@ export function useListingForm(initialListingId?: string) {
         message:
           error instanceof Error ? error.message : "Unable to save listing. Please try again.",
       });
-    } finally {
       setIsPublishing(false);
     }
   };
