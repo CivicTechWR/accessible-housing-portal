@@ -9,7 +9,7 @@ import {
   CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Lightbox } from "@/components/common/lightbox";
+import { Lightbox } from "@/components/lightbox/Lightbox";
 
 interface ListingImageCarouselProps {
   images: Array<{ url: string; caption: string }>;
@@ -82,7 +82,7 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
         open={lightboxOpen}
         onOpenChange={setLightboxOpen}
         title={`Photos of ${altPrefix}`}
-        altPrefix={`${altPrefix} image`}
+        altPrefix={altPrefix}
       />
     </div>
   );
