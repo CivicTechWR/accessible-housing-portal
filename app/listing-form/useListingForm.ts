@@ -19,6 +19,9 @@ import { useCreateDraftListingQuery } from "./useCreateDraftListingQuery";
 import { useEditListingQuery } from "./useEditListingQuery";
 import { useGetListingQuery } from "./useGetListingQuery";
 
+// A failed autosave stays on screen this long before the same change is tried again.
+const AUTOSAVE_RETRY_DELAY_MS = 5000;
+
 export type AutosaveStatus =
   | { status: "saving" }
   | { status: "saved" }
@@ -39,10 +42,11 @@ export function useListingForm(initialListingId?: string) {
     status: "success" | "error";
     message: string;
   } | null>(null);
-  // Outcome of the latest autosave in this visit. An error keeps the payload it failed on, so
-  // the same payload is not retried in a loop; the next edit tries again.
+  // Outcome of the latest autosave in this visit. An error holds back the payload it failed
+  // on, so the message can be read; a different payload saves at once, and the same one is
+  // tried again after AUTOSAVE_RETRY_DELAY_MS, when heldPayloadKey is cleared.
   const [lastAutosave, setLastAutosave] = useState<
-    { status: "saved" } | { status: "error"; message: string; payloadKey: string } | null
+    { status: "saved" } | { status: "error"; message: string; heldPayloadKey: string | null } | null
   >(null);
   const form = useForm<ListingFormInput, ListingFormContext, ListingFormData>({
     resolver: zodResolver(listingFormSchema) as Resolver<
@@ -97,8 +101,10 @@ export function useListingForm(initialListingId?: string) {
       autosavePayload &&
       autosavePayloadKey &&
       lastAutosavedPayloadKey !== autosavePayloadKey &&
-      !(lastAutosave?.status === "error" && lastAutosave.payloadKey === autosavePayloadKey) &&
-      (form.formState.isDirty || hasPendingNullableFieldClear) &&
+      !(lastAutosave?.status === "error" && lastAutosave.heldPayloadKey === autosavePayloadKey) &&
+      // Before the first autosave, only an edit starts one. After it, the form can match the
+      // loaded values again while the server holds a later save, so the payloads alone decide.
+      (lastAutosave !== null || form.formState.isDirty || hasPendingNullableFieldClear) &&
       !isAutosaveInFlight &&
       !isPublishing &&
       !form.formState.isSubmitting,
@@ -242,7 +248,7 @@ export function useListingForm(initialListingId?: string) {
           setLastAutosave({
             status: "error",
             message: error instanceof Error ? error.message : "Unable to save draft.",
-            payloadKey: autosavePayloadKey,
+            heldPayloadKey: autosavePayloadKey,
           });
         })
         .finally(() => {
@@ -272,6 +278,20 @@ export function useListingForm(initialListingId?: string) {
     patchListing,
     shouldAutosaveDraft,
   ]);
+
+  useEffect(() => {
+    if (lastAutosave?.status !== "error" || lastAutosave.heldPayloadKey === null) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setLastAutosave((current) =>
+        current?.status === "error" ? { ...current, heldPayloadKey: null } : current,
+      );
+    }, AUTOSAVE_RETRY_DELAY_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [lastAutosave]);
 
   useEffect(() => {
     if (!shouldWarnOnNavigateAway) {
