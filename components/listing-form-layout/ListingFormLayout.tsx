@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { ReactNode, Ref, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -101,9 +101,12 @@ function PreviewDivider({ dividerControl }: { dividerControl?: ReactNode }) {
 }
 
 /** Tab list shown below lg to pick which pane is visible. */
-function PaneTabs() {
+function PaneTabs({ ref }: { ref: Ref<HTMLDivElement> }) {
   return (
-    <div className="sticky top-0 z-20 border-b border-foreground/10 bg-background px-4 py-2 md:px-6 lg:hidden">
+    <div
+      ref={ref}
+      className="sticky top-0 z-20 border-b border-foreground/10 bg-background px-4 py-2 md:px-6 lg:hidden"
+    >
       <TabsList
         aria-label="Listing editor view"
         className="grid w-full grid-cols-2 gap-1 p-1 group-data-horizontal/tabs:h-auto"
@@ -211,6 +214,7 @@ export function ListingFormLayout({
   const hasPreview = Boolean(previewContent);
   const isExpandedWithPreview = isPreviewExpanded && hasPreview;
   const { activePane, switchPane, containerRef } = usePaneSwitcher();
+  const tabBarRef = useRef<HTMLDivElement>(null);
 
   const panes = (
     <div
@@ -265,15 +269,21 @@ export function ListingFormLayout({
       data-listing-form-tabs=""
       // Chrome scrolls a focused textarea only far enough to show the caret, which can leave
       // most of it under the sticky Save bar. "nearest" respects the scroll padding and is a
-      // no-op when the field is already fully visible.
+      // no-op when the field is already fully visible. The sticky bars only exist while the
+      // tab bar shows (below lg), so skip it otherwise.
       onFocus={(event) => {
-        if (event.target instanceof HTMLTextAreaElement) {
+        const tabBar = tabBarRef.current;
+        if (
+          event.target instanceof HTMLTextAreaElement &&
+          tabBar &&
+          getComputedStyle(tabBar).display !== "none"
+        ) {
           event.target.scrollIntoView({ block: "nearest" });
         }
       }}
       className="block w-full"
     >
-      <PaneTabs />
+      <PaneTabs ref={tabBarRef} />
       {panes}
     </Tabs>
   );
