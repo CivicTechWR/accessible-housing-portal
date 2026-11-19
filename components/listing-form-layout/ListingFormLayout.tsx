@@ -80,11 +80,12 @@ function StickyPaneScroll({ children, footer }: { children: ReactNode; footer?: 
     <ScrollArea
       type="always"
       // Below lg the pane scrolls with the page; a visible viewport lets the footer stick to the
-      // window. Clipping sideways, unlike hiding, keeps the viewport from becoming a scroll
-      // container, and stops a long unbreakable string from widening the page.
+      // window. Radix wraps the content in a display:table div, which grows to fit a long
+      // unbreakable string and would then widen the page, so it is a block here and the
+      // text wraps at the pane's width.
       className={cn(
         "lg:sticky lg:top-0 lg:h-[calc(100vh-10rem)]",
-        "max-lg:[&>[data-slot=scroll-area-viewport]]:overflow-visible! max-lg:[&>[data-slot=scroll-area-viewport]]:overflow-x-clip! max-lg:[&>[data-slot=scroll-area-scrollbar]]:hidden",
+        "max-lg:[&>[data-slot=scroll-area-viewport]]:overflow-visible! max-lg:[&>[data-slot=scroll-area-viewport]>div]:block! max-lg:[&>[data-slot=scroll-area-scrollbar]]:hidden",
       )}
     >
       <PaneBody footer={footer}>{children}</PaneBody>

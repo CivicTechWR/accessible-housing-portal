@@ -75,8 +75,8 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       focusTarget?.focus({ preventScroll: true });
       form.setFocus(firstInvalidField);
 
-      // Scroll after focusing: ListingFormLayout scrolls focused textareas into view, and an
-      // instant scroll started after this one would cancel it.
+      // Scroll after focusing: setFocus scrolls to the field, and ListingFormLayout scrolls
+      // focused textareas into view. An instant scroll started after this one would cancel it.
       fieldContainer?.scrollIntoView({
         behavior: "smooth",
         block: "center",
