@@ -457,6 +457,48 @@ describe("ListingForm live preview", () => {
 });
 
 describe("ListingForm publishing", () => {
+  it("keeps the publish button usable during an autosave and publishes after it", async () => {
+    const requests: string[] = [];
+    let releasePatch = () => {};
+    const patchReleased = new Promise<void>((resolve) => {
+      releasePatch = resolve;
+    });
+    global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      if (method === "PATCH") {
+        requests.push("PATCH started");
+        await patchReleased;
+        requests.push("PATCH finished");
+      } else if (method === "PUT") {
+        requests.push("PUT");
+      }
+      const body = String(input).includes("/editor")
+        ? { data: { ...editorResponse.data, status: "draft" } }
+        : method === "GET"
+          ? { data: [] }
+          : { data: { id: LISTING_ID } };
+      return { ok: true, status: 200, json: async () => body };
+    }) as unknown as typeof fetch;
+
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    await waitFor(() => expect(title).toHaveValue("123 Main St Apartments"));
+    fireEvent.change(title, { target: { value: "Renamed" } });
+    await waitFor(() => expect(requests).toEqual(["PATCH started"]), { timeout: 3000 });
+
+    const publish = screen.getByRole("button", { name: "Publish Listing" });
+    expect(publish).toBeEnabled();
+    fireEvent.click(publish);
+    // The publish waits for the save that is in flight.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(requests).toEqual(["PATCH started"]);
+
+    releasePatch();
+    await waitFor(() => expect(requests).toEqual(["PATCH started", "PATCH finished", "PUT"]), {
+      timeout: 3000,
+    });
+  });
+
   it("sends no autosave after a successful publish", async () => {
     const requests: string[] = [];
     global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {

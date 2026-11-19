@@ -34,6 +34,7 @@ export function useListingForm(initialListingId?: string) {
     useRef<ReturnType<typeof mapListingFormToAutosavePatchInput>>(null);
   const autosaveTimeoutRef = useRef<number | null>(null);
   const inFlightAutosaveRef = useRef<Promise<void> | null>(null);
+  const inFlightDraftPreparationsRef = useRef(new Set<Promise<string>>());
   const loadedListingIdRef = useRef<string | undefined>(undefined);
   const [activeListingId, setActiveListingId] = useState(initialListingId);
   const [isAutosaveInFlight, setIsAutosaveInFlight] = useState(false);
@@ -64,8 +65,8 @@ export function useListingForm(initialListingId?: string) {
     isLoading: isFetching,
     isError: isFetchError,
   } = useGetListingQuery(initialListingId);
-  const { createDraftListing, isLoading: isCreatingDraft } = useCreateDraftListingQuery();
-  const { patchListing, replaceListing, isLoading: isEditing } = useEditListingQuery();
+  const { createDraftListing } = useCreateDraftListingQuery();
+  const { patchListing, replaceListing } = useEditListingQuery();
   const pendingNullableFieldClearIntent = getPendingAutosaveNullableFieldClearIntent(
     watchedValues,
     lastAutosavedPayloadRef.current,
@@ -144,7 +145,7 @@ export function useListingForm(initialListingId?: string) {
     return bootstrapPromise;
   }, [activeListingId, createDraftListing]);
 
-  const prepareDraftListing = useCallback(async (): Promise<string> => {
+  const createAndSaveDraftListing = useCallback(async (): Promise<string> => {
     const listingId = await createDraftListingId();
 
     if (!form.formState.isDirty && !hasPendingNullableFieldClear) {
@@ -175,6 +176,22 @@ export function useListingForm(initialListingId?: string) {
     nullableFieldEditIntent,
     patchListing,
   ]);
+
+  // Image uploads call this too, and more than one can be running. Their draft saves are
+  // tracked so that a publish started in the meantime waits for them; a draft save landing
+  // after the publish would undo it.
+  const prepareDraftListing = useCallback((): Promise<string> => {
+    const preparations = inFlightDraftPreparationsRef.current;
+    const preparation = createAndSaveDraftListing();
+    const forget = () => {
+      preparations.delete(preparation);
+    };
+
+    preparations.add(preparation);
+    preparation.then(forget, forget);
+
+    return preparation;
+  }, [createAndSaveDraftListing]);
 
   useEffect(() => {
     setActiveListingId(initialListingId);
@@ -360,7 +377,6 @@ export function useListingForm(initialListingId?: string) {
 
   const onSubmit = async (data: ListingFormData) => {
     setSubmitFeedback(null);
-    setLastAutosave(null);
     setIsPublishing(true);
     let createdDraftListingId: string | null = null;
 
@@ -373,6 +389,15 @@ export function useListingForm(initialListingId?: string) {
       if (inFlightAutosaveRef.current) {
         await inFlightAutosaveRef.current;
       }
+
+      // A failure here belongs to the upload that started it; the publish carries on. Another
+      // upload can start during the wait, so check again until none is left.
+      while (inFlightDraftPreparationsRef.current.size > 0) {
+        await Promise.allSettled(inFlightDraftPreparationsRef.current);
+      }
+
+      // Cleared after waiting, since an autosave sets it when it finishes.
+      setLastAutosave(null);
 
       let listingId = activeListingId;
 
@@ -411,7 +436,9 @@ export function useListingForm(initialListingId?: string) {
     autosaveStatus,
     isLoading: isFetching,
     isError: isFetchError,
-    isSubmitting: isCreatingDraft || isEditing || isPublishing || form.formState.isSubmitting,
+    // Only the person's own submit. Autosave requests leave the button usable: onSubmit waits
+    // for a save that is in flight before it publishes.
+    isSubmitting: isPublishing || form.formState.isSubmitting,
     submitFeedback,
   };
 }
