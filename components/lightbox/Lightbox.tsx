@@ -103,13 +103,19 @@ function LightboxPanel({
     };
   }, [api]);
 
-  const goTo = useCallback(
-    (next: number) => {
-      const target = wrapIndex(next, total);
+  const step = useCallback(
+    (direction: 1 | -1) => {
+      const target = wrapIndex(index + direction, total);
       setIndex(target);
-      api?.scrollTo(target);
+      if (!api) return;
+      // scrollNext and scrollPrev keep the direction pressed. scrollTo takes the shortest way,
+      // which with two images is a tie, so Next would slide back and forth. Embla turns
+      // looping off when the slides cannot fill it, and then the ends need scrollTo to wrap.
+      if (direction === 1 && api.canScrollNext()) api.scrollNext();
+      else if (direction === -1 && api.canScrollPrev()) api.scrollPrev();
+      else api.scrollTo(target);
     },
-    [api, total],
+    [api, index, total],
   );
 
   function handleKeyDownCapture(event: KeyboardEvent<HTMLDivElement>) {
@@ -122,7 +128,7 @@ function LightboxPanel({
     // press moves one image.
     event.preventDefault();
     event.stopPropagation();
-    goTo(event.key === "ArrowLeft" ? index - 1 : index + 1);
+    step(event.key === "ArrowLeft" ? -1 : 1);
   }
 
   return (
@@ -180,7 +186,7 @@ function LightboxPanel({
               variant="outline"
               size="icon-lg"
               className={cn(navButtonClassName, "absolute top-1/2 left-3 -translate-y-1/2")}
-              onClick={() => goTo(index - 1)}
+              onClick={() => step(-1)}
             >
               <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
               <span className="sr-only">Previous image</span>
@@ -189,7 +195,7 @@ function LightboxPanel({
               variant="outline"
               size="icon-lg"
               className={cn(navButtonClassName, "absolute top-1/2 right-3 -translate-y-1/2")}
-              onClick={() => goTo(index + 1)}
+              onClick={() => step(1)}
             >
               <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
               <span className="sr-only">Next image</span>
