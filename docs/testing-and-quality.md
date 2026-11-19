@@ -10,6 +10,7 @@ This project uses Jest for unit tests, the Node.js test runner for PostgreSQL in
 | `npm run test:unit`        | Run tests matching `.unit.test.`.                             |
 | `npm run test:integration` | Run `test/integration/*.test.ts` against `TEST_DATABASE_URL`. |
 | `npm run screenshots`      | Capture a full-page screenshot of every page with Playwright. |
+| `npm run test:e2e`         | Run every Playwright spec in `e2e/`, screenshots included.    |
 | `npm run typecheck`        | Run `tsc --noEmit`.                                           |
 | `npm run lint`             | Run oxlint.                                                   |
 | `npm run lint:fix`         | Apply oxlint fixes.                                           |
@@ -44,7 +45,9 @@ Playwright starts its own `next dev` server on port 3100 (`E2E_PORT`) with `.nex
 
 `e2e/fixtures.ts` replaces every browser request that leaves the app, so screenshots are stable and need no network. Listing photos and other outside images get a local placeholder, the OpenFreeMap style gets a blank background (listing markers still render), and all other outside requests are blocked. Page data still comes from the seeded database.
 
-CI runs the suite in the `Playwright Screenshots` job against a `homehub_auth_review` Postgres service. The screenshots and HTML report are uploaded as the `playwright-screenshots` artifact on each run.
+CI runs `npm run test:e2e` in the `Playwright E2E` job against a `homehub_auth_review` Postgres service. That runs every spec in `e2e/`, so a failing behaviour test fails the job the same way a broken page does. The screenshots and HTML report are uploaded as the `playwright-screenshots` artifact on each run.
+
+Behaviour specs live next to `screenshots.spec.ts` in `e2e/` and import `test` from `e2e/fixtures.ts` so outside requests stay mocked. Run one locally with `npx playwright test e2e/<name>.spec.ts`.
 
 When you add a page under `app/`, add it to `e2e/pages.ts`. Admin screens aren't designed for mobile, so they set `desktopOnly: true` and are captured at desktop size only.
 

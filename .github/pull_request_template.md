@@ -20,7 +20,7 @@ Say why the one you chose won.
 Example: Tabs over ToggleGroup for a show-one-pane switcher, because Tabs announces the panel it controls and supports arrow keys.
 
 Screenshots: use CI's, so before and after show the same seeded data at the same sizes.
-- After: this PR's "Playwright Screenshots" job, playwright-screenshots artifact.
+- After: this PR's "Playwright E2E" job, playwright-screenshots artifact.
 - Before: the same artifact from the latest CI run on main.
 Each artifact has screenshots/mobile/<page>.png (Pixel 7, 412px wide) and screenshots/desktop/<page>.png (1440px).
 Drop the Before row for a brand-new page, and add the page to e2e/pages.ts so CI captures it.

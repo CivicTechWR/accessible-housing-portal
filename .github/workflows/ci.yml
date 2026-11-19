@@ -93,8 +93,9 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-  screenshots:
-    name: Playwright Screenshots
+  e2e:
+    # Runs every spec in e2e/: the screenshots and the behaviour tests, against one server start.
+    name: Playwright E2E
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -128,8 +129,7 @@ jobs:
       # step it adds can stall for minutes on a slow package mirror.
       - if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --only-shell chromium
-      - run: npm run screenshots
-      - run: npx playwright test e2e/mobile-menu.spec.ts
+      - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: always()
         with:
