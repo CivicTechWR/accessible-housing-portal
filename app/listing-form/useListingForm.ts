@@ -94,7 +94,7 @@ export function useListingForm(initialListingId?: string) {
       !form.formState.isSubmitting,
     );
   const shouldWarnOnNavigateAway =
-    isPublishedEditMode && form.formState.isDirty && !form.formState.isSubmitting;
+    isPublishedEditMode && form.formState.isDirty && !form.formState.isSubmitting && !isPublishing;
 
   const activateDraftListing = useCallback((listingId: string) => {
     setActiveListingId(listingId);
