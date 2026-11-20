@@ -18,6 +18,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import type { ResendOperationalEventType } from "../lib/email-delivery/outcome.ts";
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "partner", "user"]);
 export const userStatusEnum = pgEnum("user_status", [
@@ -334,14 +335,15 @@ export const emailDeliveryAttempts = pgTable(
 
 /**
  * Privacy-minimized receipt ledger for verified Resend webhooks.
- * The raw provider payload is deliberately not retained; #347 projects these
- * normalized fields into emailDeliveryAttempts and records processing state.
+ * The raw provider payload is deliberately not retained. Reconciliation applies each row
+ * to its emailDeliveryAttempts row and records the result in processingStatus,
+ * deliveryAttemptId and processedAt.
  */
 export const resendWebhookEvents = pgTable(
   "resend_webhook_events",
   {
     svixId: text("svix_id").primaryKey(),
-    eventType: text("event_type").notNull(),
+    eventType: text("event_type").$type<ResendOperationalEventType>().notNull(),
     providerEmailId: text("provider_email_id").notNull(),
     eventCreatedAt: timestamp("event_created_at", { withTimezone: true }).notNull(),
     webhookReceivedAt: timestamp("webhook_received_at", { withTimezone: true })

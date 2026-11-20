@@ -17,6 +17,7 @@ import {
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
+import { reconcileStoredResendWebhookEvents } from "@/lib/email-delivery/resend-webhook-reconciliation";
 import { pruneExpiredResendWebhookEvents } from "@/lib/email-delivery/resend-webhook-store";
 import {
   EMAIL_JOB_PRIORITY,
@@ -32,6 +33,7 @@ import {
   EMAIL_QUEUE_SCHEMA,
   getEmailQueue,
   isEmailWorkerEnabled,
+  RESEND_WEBHOOK_RECONCILIATION_QUEUE,
   RESEND_WEBHOOK_RETENTION_QUEUE,
 } from "@/lib/email-queue/queue";
 
@@ -46,6 +48,7 @@ const DEFAULT_RATE_LIMIT_DEFER_SECONDS = 2;
  */
 export const MAX_EMAIL_JOB_DEFERRALS = 30;
 export const RESEND_WEBHOOK_RETENTION_CRON = "17 3 * * *";
+export const RESEND_WEBHOOK_RECONCILIATION_CRON = "*/5 * * * *";
 
 /** Stored as the completed job's output: the audit trail for the send. */
 export type EmailJobResult =
@@ -102,8 +105,20 @@ export async function startEmailWorker() {
       tz: "UTC",
     });
 
+    await boss.work(
+      RESEND_WEBHOOK_RECONCILIATION_QUEUE,
+      { batchSize: 1 },
+      async () => await reconcileStoredResendWebhookEvents(),
+    );
+    await boss.schedule(
+      RESEND_WEBHOOK_RECONCILIATION_QUEUE,
+      RESEND_WEBHOOK_RECONCILIATION_CRON,
+      null,
+      { tz: "UTC" },
+    );
+
     console.log(
-      `[email-queue] Worker started for queues "${EMAIL_QUEUE}", "${EMAIL_DEAD_LETTER_QUEUE}", and "${RESEND_WEBHOOK_RETENTION_QUEUE}".`,
+      `[email-queue] Worker started for queues "${EMAIL_QUEUE}", "${EMAIL_DEAD_LETTER_QUEUE}", "${RESEND_WEBHOOK_RETENTION_QUEUE}", and "${RESEND_WEBHOOK_RECONCILIATION_QUEUE}".`,
     );
   } catch (error) {
     globalForEmailWorker.__ahpEmailWorkerStarted = false;

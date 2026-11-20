@@ -12,7 +12,7 @@ The database schema is defined in `db/schema.ts` with Drizzle. SQL migrations an
 | `listing_building_type`            | `apartment`, `house`, `townhouse`, `condo`                                                         | Built-in listing building type values.                 |
 | `utility_included`                 | `heat`, `water`, `electricity`, `gas`, `internet`                                                  | Built-in listing utility inclusion values.             |
 | `listing_field_type`               | `boolean`, `number`, `text`, `select`, `multi_select`, `date`                                      | Admin-configured listing field definitions.            |
-| `email_delivery_type`              | `account_invite`, `password_reset`                                                                 | Kinds of transactional email the application sends.    |
+| `email_delivery_type`              | `account_invite`, `password_reset`, `account_welcome`                                              | Kinds of transactional email the application sends.    |
 | `email_delivery_outcome`           | `queued`, `sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`, `failed`, `suppressed` | Provider outcome of one email delivery attempt.        |
 | `resend_webhook_processing_status` | `pending`, `processed`, `unmatched`, `failed`                                                      | State of a verified Resend webhook receipt.            |
 
@@ -56,15 +56,31 @@ Important behaviour:
 
 - `email_deliveries` is one logical email — `(email_type, source_entity_id)` is unique, so "the invite email for invite X" is a single row. `source_entity_id` is deliberately not a foreign key because the referenced table varies by email type.
 - `email_delivery_attempts` is one provider submission of that email. An ordinary queue retry reuses its attempt row and therefore its `idempotency_key`; a genuine resend inserts a new attempt and gets a new attempt number, idempotency key, queue job, and provider email id.
-- `provider_email_id` holds Resend's email id and is the correlation key for later delivery outcomes.
+- `provider_email_id` holds Resend's email id and is the correlation key for delivery outcomes.
 - `outcome` uses the vocabulary Resend reports identically through webhook event names (`email.<outcome>`) and `resend.emails.get(id).last_event`, so an outcome is stored the same way however it was learned.
-- `outcome_detail` is a short sanitized provider diagnostic only. Invite URLs, reset tokens, recipient addresses, and rendered message bodies are never stored here.
+- Webhook reconciliation moves `outcome` past `sent`. It finds the attempt by `provider_email_id`. When no attempt holds that id yet, because the webhook arrived before the worker saved it, it uses the event's `attempt_id` and `delivery_id` tags. Both must be UUIDs and name the same attempt, and that attempt must not have a provider email id of its own. `outcome_at` is the provider's event time.
+- An event is applied only when its outcome ranks above the attempt's current one, in this order: `queued`, `sent`, `delivery_delayed`, `delivered`, `failed`, `bounced`, `suppressed`, `complained`. An attempt therefore holds the highest-ranked outcome reported so far, whatever order events arrive in and however often they are replayed. The rules live in `lib/email-delivery/outcome.ts`:
+  - `delivery_delayed` is not terminal, because Resend is still trying. Any terminal outcome replaces it and it replaces none.
+  - `delivered` gives way to every failure. A mail server can accept a message and bounce it afterwards, and a late `delivered` must not hide a failure.
+  - When two failures disagree, the one that more firmly rules out sending again wins.
+  - `complained` outranks everything, so a complaint after `delivered` is stored as a complaint.
+  - An event that repeats the current outcome changes nothing. The first one applied keeps its time and detail.
+- `outcome_detail` is a JSON object holding the short provider codes of the event that set the outcome: `bounceType`, `bounceSubtype`, `failureReason`, and `suppressionType`, each present only when Resend sent one. `{"bounceType":"Permanent","bounceSubtype":"General"}` is a permanent bounce, and `Transient` and `Undetermined` bounces are told apart the same way. Read it with `parseOutcomeDetail`. Invite URLs, reset tokens, recipient addresses, free-form provider messages, and rendered message bodies are never stored here.
+- The queue worker also writes `failed` when a job is dead-lettered and `suppressed` when it skips an administrator's welcome email. Those outcomes have no `outcome_at`.
 
 ### `resend_webhook_events`
 
 Stores a privacy-minimized ledger of verified operational Resend events. `svix_id` is the idempotency key, so provider retries are acknowledged without creating duplicate rows. The ledger keeps the provider email id, event timestamps, correlation tags, structured bounce classification, short failure and suppression codes such as `reached_daily_quota`, and processing state. It deliberately excludes raw payloads, free-form provider diagnostics, recipient/sender addresses, subjects, message bodies, IP addresses, and links.
 
-Only the six operational event types are stored, and they begin as `pending`. Each row needs an event type and provider email id. `event_created_at` comes from the payload's `created_at` when it parses as a date, and otherwise from the signed `svix-timestamp` header. Tags and the bounce, failure, and suppression fields are null when the payload omits them or sends an unexpected shape. The four bounce, failure, and suppression fields keep only short codes such as `Permanent`, so free-form text is stored as null. Opens, clicks, received mail, and non-email events are acknowledged without a row. Outcome reconciliation is a separate concern and may attach `delivery_attempt_id` and move a pending receipt to `processed`, `unmatched`, or `failed`. A daily pg-boss maintenance job deletes every webhook row older than 90 days by the indexed receipt timestamp, whatever its `processing_status`.
+Only the six operational event types are stored, and they begin as `pending`. Each row needs an event type and provider email id. `event_created_at` comes from the payload's `created_at` when it parses as a date, and otherwise from the signed `svix-timestamp` header. Tags and the bounce, failure, and suppression fields are null when the payload omits them or sends an unexpected shape. The four bounce, failure, and suppression fields keep only short codes such as `Permanent`, so free-form text is stored as null. Opens, clicks, received mail, and non-email events are acknowledged without a row. A daily pg-boss maintenance job deletes every webhook row older than 90 days by the indexed receipt timestamp, whatever its `processing_status`.
+
+Reconciliation applies each event to its delivery attempt. It runs when the event is stored, and again in a `resend_webhook_reconciliation` job that the email worker schedules every five minutes. Each event is handled in its own transaction with the event row and the attempt row locked, so the webhook request and the job cannot apply one event twice.
+
+- `processed` rows were matched to the attempt in `delivery_attempt_id`, whether or not they changed its outcome.
+- `unmatched` rows had no attempt when they were examined. The job picks one up again once an attempt holds its provider email id.
+- `failed` rows hit an error. The job retries them, along with rows still `pending`.
+
+`processed_at` is when the row was last classified.
 
 There is no application read endpoint for the webhook ledger. Limit direct database access to authorized operators.
 
