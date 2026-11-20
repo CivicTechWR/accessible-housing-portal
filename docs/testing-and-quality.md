@@ -122,7 +122,7 @@ These hooks are not a substitute for running targeted tests while developing.
 
 ## CI
 
-GitHub Actions runs lockfile, lint, format, test, and build jobs for pull requests to `main` and pushes to `main` or `rewrite`. See [Deployment and Operations](deployment.md) for the exact workflow shape.
+GitHub Actions runs lockfile, lint, format, test, build, and Playwright end-to-end jobs for pull requests to `main` and pushes to `main` or `rewrite`. See [Deployment and Operations](deployment.md) for the exact workflow shape.
 
 ## Review Checklist
 

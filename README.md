@@ -81,7 +81,7 @@ npm run docker:up
 
 ## Transactional Email Queue
 
-Transactional emails, currently admin invites, are queued durably in Postgres with pg-boss instead of being sent inline. Invite creation and job enqueueing happen in the same transaction, and the worker started from `instrumentation.ts` records whether the provider accepted the request or the job permanently failed. Provider acceptance does not confirm delivery to the recipient's mail server; delivered, bounced, failed, and suppressed webhook outcomes are not currently reconciled.
+Account invitations, welcome emails, and password resets are queued durably in Postgres with pg-boss instead of being sent inline. Invite creation and job enqueueing happen in the same transaction, and the worker started from `instrumentation.ts` records whether the provider accepted the request or the job permanently failed. Provider acceptance does not confirm delivery to the recipient's mail server. Resend's webhook events report what happened next, and the app records each delivered, bounced, failed, or suppressed outcome on its delivery attempt.
 
 Set `EMAIL_WORKER_ENABLED=true` on the long-lived app server that should process jobs. Docker Compose enables it by default. See [Auth and Admin](docs/auth-and-admin.md) for submission behaviour and [Deployment and Operations](docs/deployment.md) for worker, retry, dead-letter, and secret-rotation guidance.
 
