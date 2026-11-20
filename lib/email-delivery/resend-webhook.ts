@@ -3,16 +3,14 @@ import "server-only";
 import { Resend } from "resend";
 import { z } from "zod";
 
+import { PROVIDER_CODE } from "@/lib/email-delivery/outcome";
+import { reconcileResendWebhookEvent } from "@/lib/email-delivery/resend-webhook-reconciliation";
 import {
   recordResendWebhookEvent,
   type ResendWebhookEventRecord,
 } from "@/lib/email-delivery/resend-webhook-store";
 
-// Provider classifications such as `Permanent` or `reached_daily_quota`. Resend doesn't
-// publish a closed set, so keep any value of this shape and drop anything that could be
-// free-form text.
-const SHORT_CODE = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
-const shortCode = z.string().regex(SHORT_CODE).nullable().catch(null);
+const shortCode = z.string().regex(PROVIDER_CODE).nullable().catch(null);
 const tag = z.string().nullable().catch(null);
 
 // Resend doesn't use one timestamp format everywhere, so accept anything Date.parse reads.
@@ -78,7 +76,15 @@ export async function ingestResendWebhook(params: {
     return { status: "ignored" };
   }
 
-  return { status: await recordResendWebhookEvent(event) };
+  const status = await recordResendWebhookEvent(event);
+
+  if (status === "recorded") {
+    // Reconciliation never throws and the worker's sweep retries what it could not settle,
+    // so the stored event is acknowledged whatever happens here.
+    await reconcileResendWebhookEvent(event.svixId);
+  }
+
+  return { status };
 }
 
 /**
