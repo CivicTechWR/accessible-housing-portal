@@ -21,45 +21,64 @@ test.describe(`reflow at ${REFLOW_WIDTH}px`, { tag: "@mobile-only" }, () => {
         test(`${entry.name} (${entry.path})`, async ({ page }) => {
           await openPage(page, entry);
 
-          const overflow = await page.evaluate(() => {
-            const root = document.documentElement;
-            if (root.scrollWidth <= root.clientWidth) return null;
+          const overflows = await page.evaluate(() => {
+            const describe = (element: Element) =>
+              `<${element.tagName.toLowerCase()} class="${element.getAttribute("class") ?? ""}">`;
 
             // Finds the element to name in the failure. Visiting parents first means a
             // fixed-width container wins over the children that only fill it.
-            const widest: { element: Element | null; right: number } = {
-              element: null,
-              right: root.clientWidth,
+            const findWidest = (scroller: Element, edge: number) => {
+              const widest: { element: Element | null; right: number } = {
+                element: null,
+                right: edge,
+              };
+              const visit = (element: Element) => {
+                const style = getComputedStyle(element);
+                // Fixed elements, and anything inside a container that scrolls or clips,
+                // can't widen the scroller.
+                if (style.position === "fixed") return;
+                const { right } = element.getBoundingClientRect();
+                if (right > widest.right) {
+                  widest.element = element;
+                  widest.right = right;
+                }
+                if (style.overflowX !== "visible") return;
+                for (const child of element.children) visit(child);
+              };
+              for (const child of scroller.children) visit(child);
+              return widest.element
+                ? `${describe(widest.element)} ends at ${Math.round(widest.right)}px`
+                : "not found";
             };
-            const visit = (element: Element) => {
-              const style = getComputedStyle(element);
-              // Fixed elements, and anything inside a container that scrolls or clips,
-              // can't widen the document.
-              if (style.position === "fixed") return;
-              const { right } = element.getBoundingClientRect();
-              if (right > widest.right) {
-                widest.element = element;
-                widest.right = right;
-              }
-              if (style.overflowX !== "visible") return;
-              for (const child of element.children) visit(child);
-            };
-            visit(document.body);
 
-            const { element, right } = widest;
-            return {
-              scrollWidth: root.scrollWidth,
-              widest: element
-                ? `<${element.tagName.toLowerCase()} class="${element.getAttribute("class") ?? ""}"> ends at ${Math.round(right)}px`
-                : "not found",
-            };
+            // Pages such as /listings scroll inside their own panes, so content that is too wide
+            // is clipped by the pane, or scrolls it sideways, and leaves the document's width
+            // alone. Check the document and every pane that scrolls vertically. Elements that
+            // only clip, such as carousels and truncated text, are left out on purpose.
+            const root = document.documentElement;
+            const scrollers = [root, ...document.body.querySelectorAll("*")].filter((element) => {
+              if (element !== root) {
+                const { overflowY } = getComputedStyle(element);
+                if (overflowY !== "auto" && overflowY !== "scroll") return false;
+              }
+              // Fractional widths at the device scale factor can round up by a pixel.
+              return element.scrollWidth > element.clientWidth + 1;
+            });
+
+            return scrollers.map((scroller) => {
+              const isRoot = scroller === root;
+              const edge = isRoot ? root.clientWidth : scroller.getBoundingClientRect().right;
+              return (
+                `${isRoot ? "The document" : describe(scroller)} is ${scroller.scrollWidth}px wide ` +
+                `in ${scroller.clientWidth}px. Widest element: ${findWidest(isRoot ? document.body : scroller, edge)}`
+              );
+            });
           });
 
           expect(
-            overflow,
-            `${entry.name} (${entry.path}) scrolls sideways at ${REFLOW_WIDTH}px. ` +
-              `The document is ${overflow?.scrollWidth}px wide. Widest element: ${overflow?.widest}`,
-          ).toBeNull();
+            overflows,
+            `${entry.name} (${entry.path}) has content that does not fit at ${REFLOW_WIDTH}px`,
+          ).toEqual([]);
         });
       }
     });

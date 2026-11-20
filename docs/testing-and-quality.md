@@ -49,7 +49,7 @@ CI runs `npm run test:e2e` in the `Playwright E2E` job against a `homehub_auth_r
 
 Behaviour specs live next to `screenshots.spec.ts` in `e2e/` and import `test` from `e2e/fixtures.ts` so outside requests stay mocked. Run one locally with `npx playwright test e2e/<name>.spec.ts`.
 
-`e2e/reflow.spec.ts` checks WCAG 2.1 AA 1.4.10 Reflow. It opens each page in `e2e/pages.ts` at 320px wide and fails if the document scrolls sideways. The failure names the page and the widest element. It runs in the `mobile` project only, takes no screenshots, and leaves out the `desktopOnly` pages. `e2e/open-page.ts` holds the loading steps it shares with the screenshot spec.
+`e2e/reflow.spec.ts` checks WCAG 2.1 AA 1.4.10 Reflow. It opens each page in `e2e/pages.ts` at 320px wide and fails if the document, or a pane that scrolls on its own such as the results list on `/listings`, holds content wider than itself. The failure names the page, the pane and the widest element. It checks each page as it first loads, so loading skeletons, open menus and sheets are not covered. It runs in the `mobile` project only, takes no screenshots, and leaves out the `desktopOnly` pages. `e2e/open-page.ts` holds the loading steps it shares with the screenshot spec.
 
 When you add a page under `app/`, add it to `e2e/pages.ts` so it gets screenshots and the reflow check. Admin screens aren't designed for mobile, so they set `desktopOnly: true` and are captured at desktop size only.
 
