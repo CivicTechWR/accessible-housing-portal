@@ -11,6 +11,7 @@ import {
   DialogPanel,
   DialogTitle,
 } from "@/components/ui/dialog-shell";
+import { siteConfig } from "@/lib/site-config";
 
 export function ListingApplyButton({ applicationUrl }: { applicationUrl: string }) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -28,7 +29,7 @@ export function ListingApplyButton({ applicationUrl }: { applicationUrl: string 
       <DialogOverlay open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <DialogPanel>
           <DialogHeader>
-            <DialogTitle>Leaving Home Hub</DialogTitle>
+            <DialogTitle>Leaving {siteConfig.name}</DialogTitle>
             <DialogDescription>
               You&apos;re now leaving the site. This will take you to:
             </DialogDescription>

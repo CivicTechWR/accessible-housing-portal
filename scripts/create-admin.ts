@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { z } from "zod";
 import { accounts, lower, users } from "../db/schema.ts";
+import { siteConfig } from "../lib/site-config.ts";
 
 async function main() {
   const config = z
@@ -27,7 +28,7 @@ async function main() {
         .insert(users)
         .values({
           email: config.BOOTSTRAP_ADMIN_EMAIL,
-          fullName: "Home Hub Admin",
+          fullName: `${siteConfig.name} Admin`,
           role: "admin",
           status: "active",
           emailVerified: true,

@@ -6,6 +6,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { CommunityAgreementTerms } from "@/components/community-agreement/CommunityAgreementTerms";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { siteConfig } from "@/lib/site-config";
 
 type CommunityAgreementProps = {
   onAccept: () => void;
@@ -17,7 +18,7 @@ export function CommunityAgreement({ onAccept }: CommunityAgreementProps) {
   return (
     <AuthCard
       title="Community Agreement & Terms of Use"
-      description="Home Hub Platform"
+      description={`${siteConfig.name} Platform`}
       className="max-w-3xl"
       footer={
         <Button type="button" disabled={!agreed} onClick={onAccept}>

@@ -12,6 +12,7 @@ import { createAuthDatabaseAdapter } from "@/lib/auth/database-adapter";
 import { queueAuthEmail } from "@/lib/auth/email";
 import { invitationEmailContext } from "@/lib/auth/invite-context";
 import { hashOpaqueToken } from "@/lib/auth/token";
+import { siteConfig } from "@/lib/site-config";
 
 type AuthTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -29,7 +30,7 @@ export function createAuth(
   )
     throw new Error("BETTER_AUTH_URL must be the public HTTPS origin in production.");
   return betterAuth({
-    appName: "Home Hub",
+    appName: siteConfig.name,
     baseURL,
     secret,
     trustedOrigins: [new URL(baseURL).origin],
@@ -235,10 +236,10 @@ export function createAuth(
       }),
     },
     plugins: [
-      twoFactor({ issuer: "Home Hub" }),
+      twoFactor({ issuer: siteConfig.name }),
       passkey({
         rpID: new URL(baseURL).hostname,
-        rpName: "Home Hub",
+        rpName: siteConfig.name,
         origin: new URL(baseURL).origin,
         authenticatorSelection: { residentKey: "required", userVerification: "required" },
         registration: {

@@ -1,3 +1,5 @@
+import { siteConfig } from "@/lib/site-config";
+
 const isItems = [
   "A listing website for affordable and accessible units in Waterloo Region—think Realtor.ca for specific types of units.",
   "Free to join",
@@ -13,8 +15,8 @@ const isNotItems = [
 ];
 
 const lists = [
-  { title: "Home Hub is:", items: isItems },
-  { title: "Home Hub is not:", items: isNotItems },
+  { title: `${siteConfig.name} is:`, items: isItems },
+  { title: `${siteConfig.name} is not:`, items: isNotItems },
 ];
 
 export function HomeScopeSection() {

@@ -1,12 +1,14 @@
+import { siteConfig } from "@/lib/site-config";
+
 const linkClass = "text-primary-text underline underline-offset-4";
 
 export function HomeAboutSection() {
   return (
     <section className="max-w-3xl text-muted-foreground">
       <p>
-        <strong className="text-foreground">Home Hub</strong> is a community-led rental listing
-        platform connecting housing navigators from social service organizations with affordable and
-        accessible units from values-aligned housing providers. Co-created by{" "}
+        <strong className="text-foreground">{siteConfig.name}</strong> is a community-led rental
+        listing platform connecting housing navigators from social service organizations with
+        affordable and accessible units from values-aligned housing providers. Co-created by{" "}
         <a href="https://unioncommunityhousing.org/" className={linkClass}>
           Union Community Housing
         </a>{" "}

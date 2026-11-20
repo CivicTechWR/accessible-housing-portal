@@ -4,6 +4,7 @@ import { HeaderAccountMenu } from "@/components/site-header/HeaderAccountMenu";
 import { HeaderMobileMenu } from "@/components/site-header/HeaderMobileMenu";
 import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
 import { getOptionalSession } from "@/lib/auth/session";
+import { siteConfig } from "@/lib/site-config";
 
 export async function SiteHeader() {
   const optionalSession = await getOptionalSession();
@@ -19,7 +20,7 @@ export async function SiteHeader() {
       <div className="w-full px-4 sm:px-6">
         <div className="relative flex min-h-14 items-center justify-center py-2">
           <Link href="/" className="text-lg font-semibold tracking-tight text-primary-foreground">
-            Home Hub
+            {siteConfig.name}
           </Link>
 
           <nav className="absolute right-0 hidden items-center gap-2 lg:flex">

@@ -5,7 +5,7 @@ import ListingForm from "@/app/listing-form/ListingForm";
 import { ListingFormSkeleton } from "@/components/listing-form-skeleton/ListingFormSkeleton";
 
 export const metadata: Metadata = {
-  title: "New Listing | Home Hub",
+  title: "New Listing",
 };
 
 export const dynamic = "force-dynamic";

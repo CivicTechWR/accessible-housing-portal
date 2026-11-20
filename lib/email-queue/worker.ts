@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { emailDeliveryAttempts, users, userInvites } from "@/db/schema";
 import { sendEmail } from "@/lib/email";
+import { siteConfig } from "@/lib/site-config";
 import { auth } from "@/lib/auth";
 
 import type { Job, PgBoss } from "pg-boss";
@@ -259,7 +260,7 @@ async function sendEmailForJob(data: EmailJobData, signal: AbortSignal): Promise
         return { status: "skipped", reason: "reset_unavailable" };
       const result = await sendEmail({
         to: user.email,
-        subject: "Reset your Home Hub password",
+        subject: `Reset your ${siteConfig.name} password`,
         text: `Use this link to reset your password. It expires in one hour.\n\n${url}\n\nIf you did not request this, ignore this email.`,
         html: `<p>Use this link to reset your password. It expires in one hour.</p><p><a href="${url.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}">Reset password</a></p><p>If you did not request this, ignore this email.</p>`,
         attempt: data.attempt,
