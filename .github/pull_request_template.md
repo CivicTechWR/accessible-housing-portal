@@ -22,7 +22,7 @@ Example: Tabs over ToggleGroup for a show-one-pane switcher, because Tabs announ
 Screenshots: use CI's, so before and after show the same seeded data at the same sizes.
 - After: this PR's "Playwright E2E" job, playwright-screenshots artifact.
 - Before: the same artifact from the latest CI run on main.
-Each artifact has screenshots/mobile/<page>.png (Pixel 7, 412px wide) and screenshots/desktop/<page>.png (1440px).
+Each artifact has screenshots/mobile/<page>.png (Pixel 7 settings, 375px wide) and screenshots/desktop/<page>.png (1440px).
 Drop the Before row for a brand-new page, and add the page to e2e/pages.ts so CI captures it.
 For states CI doesn't capture (an open menu, an error, a step partway through a flow), take your own at the same sizes.
 If the change is an interaction or a multi-step flow, add a short screen recording too.

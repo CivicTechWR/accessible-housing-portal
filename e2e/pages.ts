@@ -8,7 +8,7 @@ export type PageEntry = {
   role: Role;
   /** Text the page must show, for pages whose error state would otherwise also pass. */
   expectText?: string;
-  /** Captured at desktop size only. Admin screens aren't designed for mobile. */
+  /** Captured at desktop size only and left out of the reflow check. Admin screens aren't designed for mobile. */
   desktopOnly?: boolean;
   /** Captured at mobile size only, for views that only exist below the lg breakpoint. */
   mobileOnly?: boolean;
@@ -16,7 +16,8 @@ export type PageEntry = {
   selectTab?: string;
 };
 
-// Every route under app/ with a page.tsx. Add new pages here so they get a screenshot.
+// Every route under app/ with a page.tsx. Add new pages here so they get a screenshot and the
+// 320px reflow check.
 export const PAGES: PageEntry[] = [
   { name: "home", path: "/", role: "anonymous" },
   { name: "sign-in", path: "/sign-in", role: "anonymous" },
