@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { siteConfig } from "@/lib/site-config";
 
 import { WALK_SCORE_ATTRIBUTION_URL } from "@/components/listing-details/WalkScore";
 
@@ -55,7 +56,7 @@ export function SiteFooter({ className }: { className?: string }) {
               </li>
               <li>
                 <a
-                  href="https://github.com/CivicTechWR/accessible-housing-portal"
+                  href={siteConfig.repositoryUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary-foreground transition-colors"
@@ -69,7 +70,7 @@ export function SiteFooter({ className }: { className?: string }) {
       </div>
       <div className="border-t border-primary-foreground/20 px-6 py-4 text-xs text-primary-foreground/60">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 sm:flex-row sm:justify-between">
-          <p>Home Hub</p>
+          <p>{siteConfig.name}</p>
           <p className="text-[11px]">
             Location scores:{" "}
             <a

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { sendEmail, type TransactionalEmailSendOptions } from "@/lib/email";
+import { siteConfig } from "@/lib/site-config";
 
 export async function sendInviteEmail(
   params: {
@@ -14,9 +15,9 @@ export async function sendInviteEmail(
   return await sendEmail({
     to: params.email,
     signal: params.signal,
-    subject: "You’ve been invited to Home Hub",
-    text: `Hello ${params.fullName},\n\nYou’ve been invited to Home Hub. Use the link below to create your password and activate your account:\n\n${inviteUrl}\n\nIf you were not expecting this invite, you can ignore this email.`,
-    html: `<p>Hello ${escapeHtml(params.fullName)},</p><p>You’ve been invited to Home Hub.</p><p><a href="${escapeHtml(inviteUrl)}">Create your password and activate your account</a></p><p>If you were not expecting this invite, you can ignore this email.</p>`,
+    subject: `You’ve been invited to ${siteConfig.name}`,
+    text: `Hello ${params.fullName},\n\nYou’ve been invited to ${siteConfig.name}. Use the link below to create your password and activate your account:\n\n${inviteUrl}\n\nIf you were not expecting this invite, you can ignore this email.`,
+    html: `<p>Hello ${escapeHtml(params.fullName)},</p><p>You’ve been invited to ${escapeHtml(siteConfig.name)}.</p><p><a href="${escapeHtml(inviteUrl)}">Create your password and activate your account</a></p><p>If you were not expecting this invite, you can ignore this email.</p>`,
     attempt: params.attempt,
   });
 }

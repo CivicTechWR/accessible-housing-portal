@@ -7,11 +7,13 @@ import { HomeHeroSection } from "@/components/home/HomeHeroSection";
 import { HomeInfoSection } from "@/components/home/HomeInfoSection";
 import { HomeScopeSection } from "@/components/home/HomeScopeSection";
 import { getOptionalSession } from "@/lib/auth/session";
+import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Home Hub | Affordable & Accessible Housing Rental Listings in Waterloo Region",
-  description:
-    "Home Hub is a platform connecting affordable and accessible housing navigators with values-aligned providers in Waterloo Region.",
+  title: {
+    absolute: `${siteConfig.name} | Affordable & Accessible Housing Rental Listings in Waterloo Region`,
+  },
+  description: `${siteConfig.name} is a platform connecting affordable and accessible housing navigators with values-aligned providers in Waterloo Region.`,
 };
 
 export default async function Home() {

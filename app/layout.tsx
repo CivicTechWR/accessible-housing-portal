@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import { SiteHeader } from "@/components/site-header/SiteHeader";
 import { SiteFooter } from "@/components/site-footer/SiteFooter";
+import { siteConfig } from "@/lib/site-config";
 import { QueryProvider } from "./query-provider";
 import "./globals.css";
 
@@ -18,7 +19,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Home Hub — Connect with affordable housing",
+  // The template adds the suffix to titles set in child segments. It does not apply to app/page.tsx.
+  title: {
+    default: `${siteConfig.name} — ${siteConfig.tagline}`,
+    template: `%s | ${siteConfig.name}`,
+  },
   description: "Connecting social workers with affordable housing providers in Waterloo Region.",
 };
 

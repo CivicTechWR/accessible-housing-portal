@@ -1,3 +1,5 @@
+import { siteConfig } from "@/lib/site-config";
+
 const contactEmail = "hello@unioncommunityhousing.org";
 
 export function HomeContactSection() {
@@ -5,8 +7,8 @@ export function HomeContactSection() {
     <section aria-labelledby="join-title" className="border-t pt-12">
       <h2 id="join-title">Getting access</h2>
       <p className="mt-3 max-w-2xl text-muted-foreground">
-        Home Hub is invitation-only while we onboard our first cohort of navigators and providers.
-        Please reach out if you would like to learn more about Home Hub.
+        {siteConfig.name} is invitation-only while we onboard our first cohort of navigators and
+        providers. Please reach out if you would like to learn more about {siteConfig.name}.
       </p>
       <a
         href={`mailto:${contactEmail}`}

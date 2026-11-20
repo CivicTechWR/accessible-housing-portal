@@ -1,3 +1,5 @@
+import { siteConfig } from "@/lib/site-config";
+
 const agreementSections = [
   {
     title: "1. Community Expectations (For Everyone)",
@@ -78,9 +80,10 @@ export function CommunityAgreementTerms() {
   return (
     <div className="space-y-6 text-sm leading-6">
       <p>
-        Welcome! We are excited to have you here. Home Hub is a platform built to connect community
-        members with affordable, supportive, and accessible housing. By using Home Hub, you join our
-        community network with the following shared expectations and guidelines in mind.
+        Welcome! We are excited to have you here. {siteConfig.name} is a platform built to connect
+        community members with affordable, supportive, and accessible housing. By using{" "}
+        {siteConfig.name}, you join our community network with the following shared expectations and
+        guidelines in mind.
       </p>
 
       {agreementSections.map((section) => (
@@ -97,7 +100,7 @@ export function CommunityAgreementTerms() {
       ))}
 
       <p className="font-medium text-foreground">
-        By using Home Hub, you accept these community guidelines and terms of use.
+        By using {siteConfig.name}, you accept these community guidelines and terms of use.
       </p>
     </div>
   );
