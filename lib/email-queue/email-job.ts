@@ -22,7 +22,10 @@ type EmailJobBase = {
 export type AccountInviteEmailJobData = EmailJobBase & {
   type: "account_invite";
   inviteId: string;
-  /** Absent on older jobs and admin invitations. Shared across this user's invitation resends. */
+  /**
+   * Absent on older jobs, admin invitations and automatic retries after a bounce. Shared
+   * across this user's invitation resends.
+   */
   welcomeAttempt?: EmailDeliveryAttemptRef;
   /** Sealed invite URL; contains the raw one-time token, so never store it in plaintext. */
   secret: string;

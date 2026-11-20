@@ -17,8 +17,13 @@ import {
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
+import {
+  findInviteRetrySendBlocker,
+  scheduleInviteEmailRetries,
+} from "@/lib/email-delivery/invite-retry";
 import { reconcileStoredResendWebhookEvents } from "@/lib/email-delivery/resend-webhook-reconciliation";
 import { pruneExpiredResendWebhookEvents } from "@/lib/email-delivery/resend-webhook-store";
+import { recordUnsentEmailDeliveryAttempt } from "@/lib/email-delivery/store";
 import {
   EMAIL_JOB_PRIORITY,
   getEmailJobId,
@@ -105,11 +110,12 @@ export async function startEmailWorker() {
       tz: "UTC",
     });
 
-    await boss.work(
-      RESEND_WEBHOOK_RECONCILIATION_QUEUE,
-      { batchSize: 1 },
-      async () => await reconcileStoredResendWebhookEvents(),
-    );
+    // Retries are scheduled from stored attempt state after every sweep, so one missed by a
+    // crash is scheduled by the next run without another webhook.
+    await boss.work(RESEND_WEBHOOK_RECONCILIATION_QUEUE, { batchSize: 1 }, async () => ({
+      events: await reconcileStoredResendWebhookEvents(),
+      inviteRetries: await scheduleInviteEmailRetries(),
+    }));
     await boss.schedule(
       RESEND_WEBHOOK_RECONCILIATION_QUEUE,
       RESEND_WEBHOOK_RECONCILIATION_CRON,
@@ -162,12 +168,10 @@ export async function processDeadLetteredEmailJob(
 }
 
 async function recordEmailJobFailure(data: EmailJobData): Promise<EmailDeadLetterJobResult> {
+  await recordUnsentEmailDeliveryAttempt(data.attempt.id, { outcome: "failed" });
+
   switch (data.type) {
     case "password_reset":
-      await db
-        .update(emailDeliveryAttempts)
-        .set({ outcome: "failed" })
-        .where(eq(emailDeliveryAttempts.id, data.attempt.id));
       return { status: "failure_recorded" };
     case "account_invite":
       await markInviteEmailFailed(data.inviteId);
@@ -290,7 +294,28 @@ async function sendAccountInviteEmailJob(
   data: AccountInviteEmailJobData,
   signal: AbortSignal,
 ): Promise<EmailJobResult> {
-  let target = await findInviteEmailJobTarget(data.inviteId);
+  const result = await submitAccountInviteEmail(data, signal);
+
+  if (result.status === "skipped") {
+    if (result.reason === "invite_already_submitted") {
+      // The attempt was submitted by a run that stopped before it marked the invitation.
+      await markInviteEmailSubmitted(data.inviteId);
+    } else {
+      await recordUnsentEmailDeliveryAttempt(data.attempt.id, {
+        outcome: "suppressed",
+        skipReason: result.reason,
+      });
+    }
+  }
+
+  return result;
+}
+
+async function submitAccountInviteEmail(
+  data: AccountInviteEmailJobData,
+  signal: AbortSignal,
+): Promise<EmailJobResult> {
+  let target = await findInviteEmailJobTarget(data.inviteId, data.attempt.id);
   if (!target) return { status: "skipped", reason: "invite_not_found" };
   const unavailableReason = getUnavailableInviteReason(target);
   if (unavailableReason) return { status: "skipped", reason: unavailableReason };
@@ -332,10 +357,17 @@ async function sendAccountInviteEmailJob(
     }
 
     signal.throwIfAborted();
-    target = await findInviteEmailJobTarget(data.inviteId);
+    target = await findInviteEmailJobTarget(data.inviteId, data.attempt.id);
     if (!target) return { status: "skipped", reason: "invite_not_found" };
     const updatedUnavailableReason = getUnavailableInviteReason(target);
     if (updatedUnavailableReason) return { status: "skipped", reason: updatedUnavailableReason };
+  }
+
+  // Only automatic retries have an attempt number above 1. A manual resend replaces the
+  // invitation, which starts a new delivery at attempt 1.
+  if (data.attempt.attemptNumber > 1) {
+    const blocker = await findInviteRetrySendBlocker(data.attempt);
+    if (blocker) return { status: "skipped", reason: blocker };
   }
 
   const submission = await sendInviteEmail({
@@ -364,8 +396,10 @@ function getUnavailableInviteReason(
   if (target.userStatus !== "invited") return "account_not_invited";
   if (target.acceptedAt) return "invite_accepted";
   if (target.revokedAt) return "invite_revoked";
-  // Check before decrypting: a recovered send may have an already-redacted secret.
-  if (target.sentAt) return "invite_already_submitted";
+  // Check before decrypting: a recovered send may have an already-redacted secret. The
+  // check is per attempt, so an earlier attempt's submission does not stop a retry while a
+  // queue retry of this attempt still cannot send it twice.
+  if (target.attemptSubmittedAt) return "invite_already_submitted";
   // Also covers superseded invites: creating a new invite expires older ones.
   if (target.expiresAt.getTime() <= Date.now()) return "invite_expired";
   return null;

@@ -3,7 +3,7 @@ import "server-only";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { userInvites, users, type UserRole } from "@/db/schema";
+import { emailDeliveryAttempts, userInvites, users, type UserRole } from "@/db/schema";
 import { hashOpaqueToken } from "@/lib/auth/token";
 
 export type AccountInviteEmailStatus = "not_requested" | "queued" | "failed" | "submitted";
@@ -148,7 +148,7 @@ function toEmailStatus(row: {
   return row.emailQueuedAt ? "queued" : "not_requested";
 }
 
-export async function findInviteEmailJobTarget(inviteId: string) {
+export async function findInviteEmailJobTarget(inviteId: string, attemptId: string) {
   const [row] = await db
     .select({
       email: userInvites.email,
@@ -157,19 +157,26 @@ export async function findInviteEmailJobTarget(inviteId: string) {
       userStatus: users.status,
       expiresAt: userInvites.expiresAt,
       acceptedAt: userInvites.acceptedAt,
-      sentAt: userInvites.sentAt,
       revokedAt: userInvites.revokedAt,
+      // Of the job's own attempt. An invitation can have several attempts, so the
+      // invite-wide `sentAt` can't say whether this one went out.
+      attemptSubmittedAt: emailDeliveryAttempts.submittedAt,
     })
     .from(userInvites)
     .innerJoin(users, eq(userInvites.userId, users.id))
+    .leftJoin(emailDeliveryAttempts, eq(emailDeliveryAttempts.id, attemptId))
     .where(eq(userInvites.id, inviteId))
     .limit(1);
 
   return row ?? null;
 }
 
+/** Keeps the first submission time when a later attempt of the same invitation is sent. */
 export async function markInviteEmailSubmitted(inviteId: string) {
-  await db.update(userInvites).set({ sentAt: new Date() }).where(eq(userInvites.id, inviteId));
+  await db
+    .update(userInvites)
+    .set({ sentAt: new Date() })
+    .where(and(eq(userInvites.id, inviteId), isNull(userInvites.sentAt)));
 }
 
 export async function markInviteEmailFailed(inviteId: string) {

@@ -139,6 +139,10 @@ The `user_invites.email_queued_at` and `email_failed_at` columns are managed thr
 
 The worker retries transient provider failures with bounded exponential backoff, honours `Retry-After`, and defers daily quota failures without consuming retries. Permanent failures and exhausted retry/deferral chains enter `email_send_dead_letter`; the dead-letter worker records the failure on the source invite so the admin UI can surface it.
 
+Those are submission retries: the provider did not accept the request. A delivery retry is separate. When Resend accepts an invitation email and later reports a recoverable bounce (`Transient` with subtype `General` or `MailboxFull`), the worker sends the same invitation link again as a new attempt, 4 hours after the worker sees the first bounce and 24 hours after it sees a second, three attempts at most. The five-minute `resend_webhook_reconciliation` job schedules these from the stored attempt rows, so a missed one is scheduled on the next run. Each one logs `[email-queue] Invite <id> bounced recoverably; attempt <n> is scheduled for <time>`, and a scheduling error logs `[email-queue] Failed to schedule a retry after invite attempt <id>` and is tried again five minutes later. Nothing else is retried automatically. Permanent and undetermined bounces, suppressions, complaints, failures and delays wait for an administrator, who can resend the invitation. See `docs/domain-model.md` for the full rules.
+
+The retry needs no configuration and no migration. It does need the Resend webhook below, because bounces arrive through it, and a process with `EMAIL_WORKER_ENABLED=true`.
+
 Monitor server logs for `[email-queue]` errors and inspect the pg-boss queues when invites remain queued. Treat `EMAIL_JOB_SECRET` rotation as an operational migration: queued invite URLs are encrypted with a derived key, so drain or replace outstanding jobs before rotating it.
 
 ## Resend webhook

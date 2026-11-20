@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { emailDeliveries, emailDeliveryAttempts, type EmailDeliveryType } from "@/db/schema";
@@ -8,6 +8,7 @@ import {
   getEmailDeliveryAttemptIdempotencyKey,
   type EmailDeliveryAttemptRef,
 } from "@/lib/email-delivery/attempt";
+import type { EmailOutcomeDetail } from "@/lib/email-delivery/outcome";
 
 export type EmailDeliveryTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -94,6 +95,32 @@ export async function startEmailDeliveryAttempt(
   };
 }
 
+/**
+ * Opens the attempt numbered `attemptNumber` on an existing delivery. Returns null when the
+ * delivery already has that attempt. The unique `(delivery_id, attempt_number)` index decides
+ * that, so callers racing to follow the same attempt end up with one successor.
+ */
+export async function startNumberedEmailDeliveryAttempt(
+  tx: EmailDeliveryTransaction,
+  params: {
+    deliveryId: string;
+    emailType: EmailDeliveryType;
+    sourceEntityId: string;
+    attemptNumber: number;
+  },
+): Promise<EmailDeliveryAttemptRef | null> {
+  const { deliveryId, emailType, attemptNumber } = params;
+  const idempotencyKey = getEmailDeliveryAttemptIdempotencyKey(params);
+
+  const [attempt] = await tx
+    .insert(emailDeliveryAttempts)
+    .values({ deliveryId, attemptNumber, idempotencyKey })
+    .onConflictDoNothing()
+    .returning({ id: emailDeliveryAttempts.id });
+
+  return attempt ? { id: attempt.id, deliveryId, emailType, attemptNumber, idempotencyKey } : null;
+}
+
 export async function recordEmailDeliveryAttemptQueueJob(
   tx: EmailDeliveryTransaction,
   params: { attemptId: string; queueJobId: string },
@@ -116,4 +143,29 @@ export async function recordEmailDeliveryAttemptSubmission(params: {
       outcome: sql`case when ${emailDeliveryAttempts.outcome} = 'queued' then 'sent'::"email_delivery_outcome" else ${emailDeliveryAttempts.outcome} end`,
     })
     .where(eq(emailDeliveryAttempts.id, params.attemptId));
+}
+
+/**
+ * Records how the queue ended an attempt it never submitted: `failed` when its job was
+ * dead-lettered, `suppressed` with the reason when the worker chose not to send it. An
+ * attempt the provider accepted keeps the outcome the provider reports.
+ */
+export async function recordUnsentEmailDeliveryAttempt(
+  attemptId: string,
+  result: { outcome: "failed" } | { outcome: "suppressed"; skipReason: string },
+) {
+  const detail: EmailOutcomeDetail | null =
+    result.outcome === "suppressed" ? { skipReason: result.skipReason } : null;
+
+  await db
+    .update(emailDeliveryAttempts)
+    .set({ outcome: result.outcome, outcomeDetail: detail && JSON.stringify(detail) })
+    .where(
+      and(
+        eq(emailDeliveryAttempts.id, attemptId),
+        isNull(emailDeliveryAttempts.submittedAt),
+        // A webhook can report on an attempt before its submission is saved.
+        eq(emailDeliveryAttempts.outcome, "queued"),
+      ),
+    );
 }
