@@ -24,7 +24,35 @@ When email sending is selected, housing searchers and listers receive a welcome 
 
 Welcome delivery uses `account_welcome` records keyed to the user. Invitation resends reuse the pending or submitted welcome attempt, so retries and replacement invitations do not send the welcome again after submission. Each attempt stores its first rendered message encrypted, keeping the provider payload stable when a name or role changes before recovery. A permanently failed welcome gets a new attempt when the invitation is resent. Only the invitation currently owning the welcome attempt can mark it failed. The queue submits the welcome before the invitation, then checks invitation validity and account status again. A welcome failure delays the invitation until retry succeeds. Older jobs without a welcome attempt continue to send only their invitation.
 
-Invitation links expire after seven days. A verification hook sets this expiry on Better Auth's token; ordinary reset links expire after one hour. Sending a new invitation expires previous links. Admins can copy a valid link, send a replacement, or revoke it. The users page shows pending, accepted, expired, and revoked invitations alongside email submission states: `not_requested`, `queued`, `submitted`, and `failed`. `submitted` means Resend accepted the message, not that the recipient received it.
+Invitation links expire after seven days. A verification hook sets this expiry on Better Auth's token; ordinary reset links expire after one hour. Sending a new invitation expires previous links. Admins can copy a valid link, send a replacement, or revoke it. The users page shows pending, accepted, expired, and revoked invitations.
+
+### Invitation email status
+
+For every invitation that can still be used, the users page and the recent invites list on `/admin/invite` show what happened to its email, with a sentence on what that means or what to do. Statuses that need an administrator are shown in the alert colour with a warning icon.
+
+| Status shown            | When                                                                                                                                                               | What the administrator does                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| No email requested      | The invitation was created as a link only.                                                                                                                         | Copy the link and share it.                                       |
+| Email queued            | The email worker has not sent the first attempt yet.                                                                                                               | Nothing.                                                          |
+| Email sent              | Resend accepted the latest attempt and has reported nothing since. This is not confirmed delivery.                                                                 | Nothing.                                                          |
+| Email delayed           | Resend reported a delay and is still trying.                                                                                                                       | Nothing.                                                          |
+| Email delivered         | The recipient's mail server accepted the email.                                                                                                                    | Nothing.                                                          |
+| Email bounced, retrying | The email bounced for a reason that can clear, and an automatic retry is waiting or will be scheduled by the next worker sweep.                                    | Nothing.                                                          |
+| Email not delivered     | A permanent bounce, a bounce that is not retried, three bounced attempts, an address Resend suppresses, a failure at Resend, or a send job that was dead-lettered. | Check the address, then send a new invite or contact the person.  |
+| Email marked as spam    | The recipient reported the email as spam.                                                                                                                          | Contact the person another way. Resend blocks more email to them. |
+
+Accepted, revoked, replaced and expired invitations, and invitations whose account is no longer `invited`, show only their invitation status. Their email needs no action, so it is not reported.
+
+`getInviteEmailStatus` in `lib/email-delivery/invite-email-status.ts` derives the status from the delivery's attempts and the provider events reconciled to them, and `components/admin-invite/InviteEmailStatusSummary.tsx` holds the wording. `findAccountInvites` and `findRecentAccountInvites` in `lib/auth/invite-store.ts` load the attempts and events for all listed invitations in one query. The rules:
+
+- The delivery is read as a whole, not from its latest attempt. An attempt keeps only its highest-ranked outcome, and `bounced` outranks `delivered`.
+- A `delivered` event next to a bounce that is not permanent shows as delivered, with a note that a bounce was also reported. That bounce is usually an automatic reply, and the retry rules send nothing more for the same reason. A permanent bounce shows as not delivered even after a `delivered` event, because a mail server can accept a message and reject it afterwards.
+- Whether a bounce is retried is decided by `decideInviteRetry` and `getProviderRetryBlocker`, the functions the worker uses, so the page and the worker agree.
+- A retry that the worker chose not to send is `suppressed` with a `skipReason`. It is not a report about the address, so the attempts before it decide the status.
+- `failed` and `suppressed` written by the worker have no `outcome_at`. A `failed` attempt without one is a dead-lettered send job, including a dead-lettered automatic retry, which `user_invites.email_failed_at` does not record.
+- Only short provider codes are read. The page never shows `outcome_detail`, provider email ids or provider text.
+
+Welcome and password-reset emails are not reported on these pages.
 
 If Resend later reports that an invitation email bounced for a reason that can clear, a full mailbox or a temporary mail-server problem, the email worker sends the same link again by itself: once after 4 hours and once more after 24, and only while the invitation is still pending and unexpired. It issues no new token, so the link in the earlier email still works, and it does not repeat the welcome message. Every other failure waits for an administrator. Sending a replacement from the users page works as before and cancels any retry still waiting, because the replaced invitation has expired. `docs/domain-model.md` lists the bounce types that are retried.
 

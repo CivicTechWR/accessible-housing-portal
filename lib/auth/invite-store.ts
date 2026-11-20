@@ -1,27 +1,35 @@
 import "server-only";
 
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { emailDeliveryAttempts, userInvites, users, type UserRole } from "@/db/schema";
+import {
+  emailDeliveries,
+  emailDeliveryAttempts,
+  resendWebhookEvents,
+  userInvites,
+  users,
+  type UserRole,
+} from "@/db/schema";
 import { hashOpaqueToken } from "@/lib/auth/token";
+import {
+  getInviteEmailStatus,
+  type InviteEmailHistory,
+} from "@/lib/email-delivery/invite-email-status";
+import type { InviteEmailStatus } from "@/shared/schemas/account-management";
 
-export type AccountInviteEmailStatus = "not_requested" | "queued" | "failed" | "submitted";
-
-export type RecentAccountInviteRow = {
+export type AccountInviteRow = {
   id: string;
   email: string;
   name: string;
   role: UserRole;
   organization: string | null;
   invitedAt: Date;
-  status: AccountInviteEmailStatus;
-};
-
-export type AccountInviteRow = RecentAccountInviteRow & {
   expiresAt: Date;
   lifecycle: "pending" | "accepted" | "expired" | "revoked";
   canResend: boolean;
+  /** Null unless the invitation can still be used. */
+  emailStatus: InviteEmailStatus | null;
 };
 
 export async function getPendingInviteByToken(token: string) {
@@ -51,8 +59,8 @@ export async function getPendingInviteByToken(token: string) {
   return invite ?? null;
 }
 
-export async function findRecentAccountInvites(limit: number): Promise<RecentAccountInviteRow[]> {
-  const rows = await db
+function selectInvites() {
+  return db
     .select({
       id: userInvites.id,
       email: userInvites.email,
@@ -60,92 +68,129 @@ export async function findRecentAccountInvites(limit: number): Promise<RecentAcc
       role: users.role,
       organization: users.organization,
       sentAt: userInvites.sentAt,
-      emailQueuedAt: userInvites.emailQueuedAt,
-      emailFailedAt: userInvites.emailFailedAt,
-      createdAt: userInvites.createdAt,
-    })
-    .from(userInvites)
-    .innerJoin(users, eq(userInvites.userId, users.id))
-    .where(and(isNull(userInvites.acceptedAt), gt(userInvites.expiresAt, new Date())))
-    .orderBy(desc(sql`coalesce(${userInvites.sentAt}, ${userInvites.createdAt})`))
-    .limit(limit);
-
-  return rows.map(toAccountInviteRow);
-}
-
-export async function findAccountInvites(): Promise<AccountInviteRow[]> {
-  const rows = await db
-    .select({
-      id: userInvites.id,
-      email: userInvites.email,
-      name: users.fullName,
-      role: users.role,
-      organization: users.organization,
-      sentAt: userInvites.sentAt,
-      emailQueuedAt: userInvites.emailQueuedAt,
-      emailFailedAt: userInvites.emailFailedAt,
       createdAt: userInvites.createdAt,
       expiresAt: userInvites.expiresAt,
       acceptedAt: userInvites.acceptedAt,
       revokedAt: userInvites.revokedAt,
+      sealedUrl: userInvites.sealedUrl,
       userStatus: users.status,
       inviteAcceptedAt: users.inviteAcceptedAt,
     })
     .from(userInvites)
-    .innerJoin(users, eq(userInvites.userId, users.id))
-    .orderBy(desc(userInvites.createdAt))
-    .limit(100);
-
-  return rows.map((row) => ({
-    ...toAccountInviteRow(row),
-    expiresAt: row.expiresAt,
-    lifecycle: row.acceptedAt
-      ? "accepted"
-      : row.revokedAt
-        ? "revoked"
-        : row.expiresAt <= new Date()
-          ? "expired"
-          : "pending",
-    canResend: row.userStatus === "invited" && !row.inviteAcceptedAt,
-  }));
+    .innerJoin(users, eq(userInvites.userId, users.id));
 }
 
-function toAccountInviteRow(row: {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  organization: string | null;
-  sentAt: Date | null;
-  emailQueuedAt: Date | null;
-  emailFailedAt: Date | null;
-  createdAt: Date;
-}): RecentAccountInviteRow {
-  return {
-    id: row.id,
-    email: row.email,
-    name: row.name,
-    role: row.role,
-    organization: row.organization,
-    invitedAt: row.sentAt ?? row.createdAt,
-    status: toEmailStatus(row),
-  };
+/** Unaccepted, unexpired invitations, most recently sent first. */
+export async function findRecentAccountInvites(limit: number): Promise<AccountInviteRow[]> {
+  return toAccountInviteRows(
+    await selectInvites()
+      .where(and(isNull(userInvites.acceptedAt), gt(userInvites.expiresAt, new Date())))
+      .orderBy(desc(sql`coalesce(${userInvites.sentAt}, ${userInvites.createdAt})`))
+      .limit(limit),
+  );
 }
 
-function toEmailStatus(row: {
-  sentAt: Date | null;
-  emailQueuedAt: Date | null;
-  emailFailedAt: Date | null;
-}): AccountInviteEmailStatus {
-  if (row.sentAt) {
-    return "submitted";
+export async function findAccountInvites(): Promise<AccountInviteRow[]> {
+  return toAccountInviteRows(await selectInvites().orderBy(desc(userInvites.createdAt)).limit(100));
+}
+
+async function toAccountInviteRows(
+  rows: Awaited<ReturnType<typeof selectInvites>>,
+): Promise<AccountInviteRow[]> {
+  const now = new Date();
+  const emailHistories = await findInviteEmailHistories(rows.map((row) => row.id));
+
+  return rows.map((row) => {
+    const history = emailHistories.get(row.id);
+
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      role: row.role,
+      organization: row.organization,
+      invitedAt: row.sentAt ?? row.createdAt,
+      expiresAt: row.expiresAt,
+      lifecycle: row.acceptedAt
+        ? "accepted"
+        : row.revokedAt
+          ? "revoked"
+          : row.expiresAt <= now
+            ? "expired"
+            : "pending",
+      canResend: row.userStatus === "invited" && !row.inviteAcceptedAt,
+      emailStatus: getInviteEmailStatus(
+        {
+          invite: row,
+          userStatus: row.userStatus,
+          attempts: [...(history?.attempts.values() ?? [])],
+          events: history?.events ?? [],
+        },
+        now,
+      ),
+    };
+  });
+}
+
+type InviteEmailRecords = {
+  // Keyed by attempt id: the join repeats an attempt once per event.
+  attempts: Map<string, InviteEmailHistory["attempts"][number]>;
+  events: InviteEmailHistory["events"][number][];
+};
+
+/**
+ * The delivery attempts of each invitation's email and the provider events reconciled to
+ * them, in one query for all `inviteIds`. An event that reconciliation has not linked to
+ * its attempt yet is left out. It has not changed the attempt either, and the worker links
+ * it within five minutes.
+ */
+async function findInviteEmailHistories(
+  inviteIds: string[],
+): Promise<Map<string, InviteEmailRecords>> {
+  if (inviteIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      inviteId: emailDeliveries.sourceEntityId,
+      attempt: {
+        id: emailDeliveryAttempts.id,
+        attemptNumber: emailDeliveryAttempts.attemptNumber,
+        outcome: emailDeliveryAttempts.outcome,
+        outcomeAt: emailDeliveryAttempts.outcomeAt,
+        outcomeDetail: emailDeliveryAttempts.outcomeDetail,
+      },
+      event: {
+        eventType: resendWebhookEvents.eventType,
+        bounceType: resendWebhookEvents.bounceType,
+        bounceSubtype: resendWebhookEvents.bounceSubtype,
+      },
+    })
+    .from(emailDeliveries)
+    .innerJoin(emailDeliveryAttempts, eq(emailDeliveryAttempts.deliveryId, emailDeliveries.id))
+    .leftJoin(
+      resendWebhookEvents,
+      eq(resendWebhookEvents.deliveryAttemptId, emailDeliveryAttempts.id),
+    )
+    .where(
+      and(
+        eq(emailDeliveries.emailType, "account_invite"),
+        inArray(emailDeliveries.sourceEntityId, inviteIds),
+      ),
+    );
+
+  const histories = new Map<string, InviteEmailRecords>();
+
+  for (const { inviteId, attempt, event } of rows) {
+    let history = histories.get(inviteId);
+    if (!history) {
+      history = { attempts: new Map(), events: [] };
+      histories.set(inviteId, history);
+    }
+    history.attempts.set(attempt.id, attempt);
+    if (event) history.events.push(event);
   }
 
-  if (row.emailFailedAt) {
-    return "failed";
-  }
-
-  return row.emailQueuedAt ? "queued" : "not_requested";
+  return histories;
 }
 
 export async function findInviteEmailJobTarget(inviteId: string, attemptId: string) {

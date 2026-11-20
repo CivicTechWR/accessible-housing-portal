@@ -1,8 +1,9 @@
 import verbiage from "@/content/verbiage.json";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
 import type { InviteRecord } from "@/components/admin-invite/types";
-import { inviteRoleLabels, inviteStatusLabels } from "@/components/admin-invite/types";
+import { inviteRoleLabels } from "@/components/admin-invite/types";
 
 type RecentInvitesListProps = {
   invites: InviteRecord[];
@@ -27,22 +28,17 @@ export function RecentInvitesList({ invites }: RecentInvitesListProps) {
       ) : (
         <ul className="space-y-2">
           {invites.map((invite) => (
-            <li
-              key={invite.id}
-              className="flex flex-col gap-2 rounded-md border border-border/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0 space-y-0.5">
-                <p className="truncate text-sm font-medium text-foreground">{invite.email}</p>
-                <p className="text-xs text-muted-foreground">
-                  {inviteDateFormatter.format(new Date(invite.invitedAt))}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
+            <li key={invite.id} className="space-y-2 rounded-md border border-border/70 px-3 py-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-0.5">
+                  <p className="truncate text-sm font-medium text-foreground">{invite.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {inviteDateFormatter.format(new Date(invite.invitedAt))}
+                  </p>
+                </div>
                 <Badge variant="outline">{inviteRoleLabels[invite.role]}</Badge>
-                <Badge variant={invite.status === "failed" ? "destructive" : "secondary"}>
-                  {inviteStatusLabels[invite.status]}
-                </Badge>
               </div>
+              {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
             </li>
           ))}
         </ul>

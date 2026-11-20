@@ -126,14 +126,14 @@ Reorder requires the request to include every field in the target category exact
 
 ## Admin Accounts
 
-| Method   | Path                         | Auth  | Purpose                                                          | Contract source                                               |
-| -------- | ---------------------------- | ----- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
-| `GET`    | `/api/admin/accounts`        | Admin | List accounts with pagination and filters.                       | `accountQuerySchema`, `accountListResponseSchema`             |
-| `POST`   | `/api/admin/accounts`        | Admin | Invite/create an account.                                        | `createAccountInviteSchema`, `createAccountResponseSchema`    |
-| `GET`    | `/api/admin/accounts/:id`    | Admin | Get one account.                                                 | `accountByIdResponseSchema`                                   |
-| `PUT`    | `/api/admin/accounts/:id`    | Admin | Update account fields.                                           | `updateAccountSchema`, `updateAccountResponseSchema`          |
-| `DELETE` | `/api/admin/accounts/:id`    | Admin | Deactivate an account.                                           | `deactivateAccountResponseSchema`                             |
-| `GET`    | `/api/admin/account-invites` | Admin | List recent unaccepted, unexpired invites and submission status. | `accountInviteQuerySchema`, `accountInviteListResponseSchema` |
+| Method   | Path                         | Auth  | Purpose                                                     | Contract source                                               |
+| -------- | ---------------------------- | ----- | ----------------------------------------------------------- | ------------------------------------------------------------- |
+| `GET`    | `/api/admin/accounts`        | Admin | List accounts with pagination and filters.                  | `accountQuerySchema`, `accountListResponseSchema`             |
+| `POST`   | `/api/admin/accounts`        | Admin | Invite/create an account.                                   | `createAccountInviteSchema`, `createAccountResponseSchema`    |
+| `GET`    | `/api/admin/accounts/:id`    | Admin | Get one account.                                            | `accountByIdResponseSchema`                                   |
+| `PUT`    | `/api/admin/accounts/:id`    | Admin | Update account fields.                                      | `updateAccountSchema`, `updateAccountResponseSchema`          |
+| `DELETE` | `/api/admin/accounts/:id`    | Admin | Deactivate an account.                                      | `deactivateAccountResponseSchema`                             |
+| `GET`    | `/api/admin/account-invites` | Admin | List recent unaccepted, unexpired invites and email status. | `accountInviteQuerySchema`, `accountInviteListResponseSchema` |
 
 Account list query parameters:
 
@@ -145,7 +145,7 @@ Account list query parameters:
 
 Account safety conflicts return `409`, such as trying to remove your own admin access or deactivate yourself.
 
-Creating an account with `sendInviteEmail: true` returns success after the email job is queued, not after provider acceptance. Invite-list records expose `status` as `not_requested`, `queued`, `submitted`, or `failed`; queued, failed, and manually shared invites are no longer hidden from the list. `submitted` means Resend accepted the API request, not that the recipient's mail server confirmed delivery.
+Creating an account with `sendInviteEmail: true` returns success after the email job is queued, not after provider acceptance. Invite-list records expose `emailStatus`, an object whose `state` is `not_requested`, `queued`, `submitted`, `delayed`, `delivered`, `retrying`, `failed`, or `complained` (`inviteEmailStatusSchema`). `submitted` and `retrying` carry an `attemptNumber`, `delivered` carries `bounceReported`, and `failed` carries a `reason`. `submitted` means Resend accepted the API request, and `delivered` means the recipient's mail server confirmed delivery. `emailStatus` is `null` for an invitation whose account is no longer `invited`. [Invitation email status](auth-and-admin.md#invitation-email-status) explains each state.
 
 ## Auth
 

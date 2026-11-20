@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { findAccountInvites, type AccountInviteRow } from "@/lib/auth/invite-store";
-import { inviteStatusLabels } from "@/components/admin-invite/types";
+import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
 import { getAccountsService } from "@/lib/accounts/account.service";
 import { cn } from "@/lib/utils";
 import type { AccountListResponse } from "@/shared/schemas/account-management";
@@ -98,9 +98,12 @@ function roleBadgeVariant(role: AccountListResponse["data"][number]["role"]) {
   }
 }
 
-function inviteEmailBadgeVariant(status: AccountInviteRow["status"]) {
-  return status === "failed" ? ("destructive" as const) : ("outline" as const);
-}
+const inviteLifecycleLabels: Record<AccountInviteRow["lifecycle"], string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  expired: "Expired",
+  revoked: "Revoked",
+};
 
 function statusBadgeVariant(status: AccountListResponse["data"][number]["status"]) {
   switch (status) {
@@ -261,9 +264,12 @@ export default async function AdminUsersPage() {
                     <Badge variant={roleBadgeVariant(invite.role)}>{formatRole(invite.role)}</Badge>
                   </DesktopDataCell>
                   <DesktopDataCell>
-                    <Badge variant={inviteEmailBadgeVariant(invite.status)}>
-                      {inviteStatusLabels[invite.status]} • {invite.lifecycle}
-                    </Badge>
+                    <div className="max-w-xs min-w-52 space-y-2">
+                      <Badge variant="outline">{inviteLifecycleLabels[invite.lifecycle]}</Badge>
+                      {invite.emailStatus && (
+                        <InviteEmailStatusSummary status={invite.emailStatus} />
+                      )}
+                    </div>
                   </DesktopDataCell>
                   <DesktopDataCell muted>
                     {formatDateTime(invite.invitedAt.toISOString())}
@@ -303,12 +309,13 @@ export default async function AdminUsersPage() {
                         <Badge variant={roleBadgeVariant(invite.role)}>
                           {formatRole(invite.role)}
                         </Badge>
-                        <Badge variant={inviteEmailBadgeVariant(invite.status)}>
-                          {inviteStatusLabels[invite.status]} • {invite.lifecycle}
-                        </Badge>
+                        <Badge variant="outline">{inviteLifecycleLabels[invite.lifecycle]}</Badge>
                       </>
                     }
                   />
+                  {invite.emailStatus && (
+                    <InviteEmailStatusSummary status={invite.emailStatus} className="mt-4" />
+                  )}
                   <MobileDetails>
                     <MobileDetail label="Organization">
                       {invite.organization ?? "Not provided"}

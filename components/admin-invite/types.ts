@@ -1,4 +1,5 @@
 import verbiage from "@/content/verbiage.json";
+import type { InviteEmailStatus } from "@/shared/schemas/account-management";
 
 export type InviteRole = "admin" | "partner" | "user";
 
@@ -23,27 +24,16 @@ export type InviteFormValues = {
   organization: string;
 };
 
-export type InviteEmailStatus = "not_requested" | "queued" | "failed" | "submitted";
-
-export const inviteStatusLabels: Record<InviteEmailStatus, string> = {
-  not_requested: verbiage.adminInvite.status.notRequested,
-  queued: verbiage.adminInvite.status.queued,
-  failed: verbiage.adminInvite.status.failed,
-  submitted: verbiage.adminInvite.status.submitted,
-};
-
-export type InviteStatus = InviteEmailStatus | "error";
-
 export type InviteRecord = {
   id: string;
   email: string;
   role: InviteRole;
   invitedAt: string;
-  status: InviteEmailStatus;
+  emailStatus: InviteEmailStatus | null;
 };
 
 export type InviteActionResult = {
-  status: InviteStatus;
+  status: "not_requested" | "queued" | "error";
   message: string;
   invite?: InviteRecord;
   inviteUrl?: string;
