@@ -83,7 +83,7 @@ export default function ListingsDashboard({
     clearFilters,
     getFilterButtonProps,
     filters,
-  } = useListingFilters();
+  } = useListingFilters({ navigationKey: initialDataUpdatedAt });
   const filterButtonProps = {
     ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
     mobileButtonRef: mobileFilterButtonRef,

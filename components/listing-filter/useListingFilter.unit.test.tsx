@@ -7,6 +7,9 @@ const useQueryStatesMock = jest.fn();
 
 jest.mock("@/app/listings/searchParams", () => ({
   listingSearchParamsParsers: {},
+  loadListingSearchParams: (search: string) => ({
+    location: new URLSearchParams(search).get("location"),
+  }),
 }));
 
 jest.mock("nuqs", () => ({
@@ -80,7 +83,11 @@ describe("useListingFilters", () => {
       const setFilters = jest.fn(async (..._args: unknown[]) => new URLSearchParams());
       let filters = createFilters({ location: initialLocation });
       useQueryStatesMock.mockImplementation(() => [filters, setFilters]);
-      const { result, rerender } = renderHook(() => useListingFilters());
+      const { result, rerender } = renderHook(
+        ({ navigationKey }: { navigationKey: number }) => useListingFilters({ navigationKey }),
+        { initialProps: { navigationKey: 1 } },
+      );
+      let navigationKey = 1;
 
       // Like a real keystroke, each change builds on whatever the input currently shows.
       const changeInput = (value: string) =>
@@ -94,7 +101,15 @@ describe("useListingFilters", () => {
       };
       const urlChangesTo = (location: string | undefined) => {
         filters = createFilters({ location });
-        rerender();
+        rerender({ navigationKey });
+      };
+      // A link or router push to `url`: the server renders the page again with a new key.
+      const navigateTo = (url: string) => {
+        act(() => {
+          window.history.pushState(null, "", url);
+        });
+        navigationKey += 1;
+        urlChangesTo(new URLSearchParams(url.split("?")[1]).get("location") ?? undefined);
       };
       // The URL update for the nth change sent to setFilters (1-based) lands.
       const urlCatchesUpTo = (n: number) => {
@@ -104,7 +119,7 @@ describe("useListingFilters", () => {
       };
       const sentCount = () => setFilters.mock.calls.length;
 
-      return { result, setFilters, typeKeys, urlChangesTo, urlCatchesUpTo, sentCount };
+      return { result, setFilters, typeKeys, urlChangesTo, urlCatchesUpTo, sentCount, navigateTo };
     }
 
     it("keeps every typed character when an older keystroke's URL update arrives late", () => {
@@ -155,6 +170,30 @@ describe("useListingFilters", () => {
       urlChangesTo(undefined);
 
       expect(result.current.searchInputProps.value).toBe("");
+    });
+
+    it("shows the new location after a link or router push while the page is open", () => {
+      const { result, typeKeys, urlCatchesUpTo, sentCount, navigateTo } = renderWithUrl();
+
+      typeKeys("Kitchener");
+      urlCatchesUpTo(sentCount());
+      navigateTo("/listings?location=Guelph");
+
+      expect(result.current.searchInputProps.value).toBe("Guelph");
+
+      navigateTo("/listings");
+
+      expect(result.current.searchInputProps.value).toBe("");
+    });
+
+    it("keeps the typed text when the page re-renders without a navigation", () => {
+      const { result, typeKeys, urlCatchesUpTo } = renderWithUrl();
+
+      typeKeys("Waterloo");
+      // An older update lands with the same navigation key, as it does while typing.
+      urlCatchesUpTo(3);
+
+      expect(result.current.searchInputProps.value).toBe("Waterloo");
     });
   });
 
