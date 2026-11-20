@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CardHeader, CardTitle, CardDescription, CardAction, CardContent, Card } from "../ui/card";
 import { buildAddress } from "@/lib/address";
@@ -274,18 +273,23 @@ export function ListingDetails({
             {features.map((category) => (
               <section key={category.categoryName} className="space-y-2">
                 <h2 className="text-sm text-foreground">{category.categoryName}</h2>
-                <div className="flex flex-wrap gap-2">
-                  {category.features.map((feature) => (
-                    <Badge
-                      key={feature.name}
-                      variant="secondary"
-                      title={feature.description}
-                      className="text-sm px-3 py-1"
-                    >
-                      {feature.name}
-                    </Badge>
-                  ))}
-                </div>
+                {/* Safari drops list semantics from a list without markers unless the role is set. */}
+                <ul role="list" className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                  {category.features.map((feature) => {
+                    // The listings API sends a feature's name as its description when it has none.
+                    const featureDescription = feature.description.trim();
+                    const hasDescription =
+                      featureDescription !== "" && featureDescription !== feature.name;
+                    return (
+                      <li key={feature.name} className="wrap-anywhere text-sm">
+                        <p className="font-medium text-foreground">{feature.name}</p>
+                        {hasDescription && (
+                          <p className="text-muted-foreground">{featureDescription}</p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               </section>
             ))}
           </CardContent>

@@ -113,6 +113,34 @@ describe("ListingDetails rental details", () => {
   });
 });
 
+describe("ListingDetails rental features", () => {
+  it("shows each feature's description as text and omits it when there is none", () => {
+    render(
+      <ListingDetails
+        {...baseProps}
+        features={[
+          {
+            categoryName: "Entry",
+            features: [
+              { name: "Step-free entrance", description: "The main entrance has no steps." },
+              { name: "Custom feature", description: "" },
+              // The listings API falls back to the name when a feature has no description.
+              { name: "Braille signage", description: "Braille signage" },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    const [withDescription, emptyDescription, nameAsDescription] = screen.getAllByRole("listitem");
+    expect(withDescription).toHaveTextContent("Step-free entrance");
+    expect(screen.getByText("The main entrance has no steps.")).toBeVisible();
+    expect(withDescription?.children).toHaveLength(2);
+    expect(emptyDescription?.children).toHaveLength(1);
+    expect(nameAsDescription?.children).toHaveLength(1);
+  });
+});
+
 describe("ListingDetails apply section", () => {
   it("shows the apply button when the listing has an application URL", () => {
     render(
