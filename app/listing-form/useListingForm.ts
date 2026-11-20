@@ -63,7 +63,7 @@ export function useListingForm(initialListingId?: string) {
   const {
     data: initialData,
     isLoading: isFetching,
-    isError: isFetchError,
+    loadError,
   } = useGetListingQuery(initialListingId);
   const { createDraftListing } = useCreateDraftListingQuery();
   const { patchListing, replaceListing } = useEditListingQuery();
@@ -435,7 +435,7 @@ export function useListingForm(initialListingId?: string) {
     listingId: activeListingId,
     autosaveStatus,
     isLoading: isFetching,
-    isError: isFetchError,
+    loadError,
     // Only the person's own submit. Autosave requests leave the button usable: onSubmit waits
     // for a save that is in flight before it publishes.
     isSubmitting: isPublishing || form.formState.isSubmitting,
