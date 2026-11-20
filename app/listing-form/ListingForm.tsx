@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SubmitErrorHandler } from "react-hook-form";
 import { useListingForm, type AutosaveStatus } from "./useListingForm";
 import { CORE_FIELD_DEFINITIONS } from "./fieldDefinitions";
@@ -54,6 +54,40 @@ export default function ListingForm({ listingId }: ListingFormProps) {
 
     handleCloseDetails();
   };
+
+  // The preview card and the "Back to card preview" button unmount when they switch the preview,
+  // which would drop focus to <body>. Focus moves to the control that reverses the switch instead.
+  // The divider stays mounted and keeps focus, so it never asks for this.
+  const previewCardButtonRef = useRef<HTMLButtonElement>(null);
+  const previewBackButtonRef = useRef<HTMLButtonElement>(null);
+  const dividerButtonRef = useRef<HTMLButtonElement>(null);
+  const isPreviewFocusWanted = useRef(false);
+  const handlePreviewOpenDetails = () => {
+    isPreviewFocusWanted.current = true;
+    handleOpenDetails();
+  };
+  const handlePreviewCloseDetails = () => {
+    isPreviewFocusWanted.current = true;
+    handleCloseDetails();
+  };
+  useEffect(() => {
+    if (!isPreviewFocusWanted.current) return;
+    isPreviewFocusWanted.current = false;
+
+    // preventScroll keeps the focus move from cutting short the smooth scroll to the top.
+    if (previewMode === "card") {
+      previewCardButtonRef.current?.focus({ preventScroll: true });
+      return;
+    }
+
+    // The Back button is hidden at lg and up, where focus() on it does nothing and the divider
+    // is the control that returns to the card.
+    const backButton = previewBackButtonRef.current;
+    backButton?.focus({ preventScroll: true });
+    if (document.activeElement !== backButton) {
+      dividerButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [previewMode]);
   const handleInvalidSubmit: SubmitErrorHandler<ListingFormInput> = (errors) => {
     const firstInvalidField =
       CORE_FIELD_DEFINITIONS.find((definition) => errors[definition.key])?.key ??
@@ -145,6 +179,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       }
       dividerControl={
         <Button
+          ref={dividerButtonRef}
           type="button"
           variant="secondary"
           onClick={handleDividerToggle}
@@ -185,8 +220,10 @@ export default function ListingForm({ listingId }: ListingFormProps) {
           mode={previewMode}
           formData={liveFormData}
           listingId={activeListingId}
-          onOpenDetails={handleOpenDetails}
-          onCloseDetails={handleCloseDetails}
+          onOpenDetails={handlePreviewOpenDetails}
+          onCloseDetails={handlePreviewCloseDetails}
+          cardButtonRef={previewCardButtonRef}
+          backButtonRef={previewBackButtonRef}
         />
       }
       footer={

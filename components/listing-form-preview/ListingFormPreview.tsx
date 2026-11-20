@@ -1,5 +1,6 @@
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { Ref } from "react";
 import type { ListingFormInput } from "@/app/listing-form/types";
 import { Button } from "@/components/ui/button";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
@@ -16,6 +17,10 @@ export interface ListingFormPreviewProps {
   onOpenDetails: () => void;
   /** Returns to the card preview. At lg and up the layout divider does this instead. */
   onCloseDetails: () => void;
+  /** The card's button, shown in card mode. */
+  cardButtonRef?: Ref<HTMLButtonElement>;
+  /** The "Back to card preview" button, shown in details mode below lg. */
+  backButtonRef?: Ref<HTMLButtonElement>;
 }
 
 export function ListingFormPreview({
@@ -24,6 +29,8 @@ export function ListingFormPreview({
   listingId,
   onOpenDetails,
   onCloseDetails,
+  cardButtonRef,
+  backButtonRef,
 }: ListingFormPreviewProps) {
   const previewTitleValue = formData.title?.trim();
   const previewStreet1Value = formData.street1?.trim();
@@ -69,6 +76,7 @@ export function ListingFormPreview({
     return (
       <div className="space-y-4">
         <Button
+          ref={backButtonRef}
           type="button"
           variant="outline"
           size="lg"
@@ -134,6 +142,7 @@ export function ListingFormPreview({
         imageUrl={formData.images?.[0]?.url}
         variant="vertical"
         onClick={onOpenDetails}
+        buttonRef={cardButtonRef}
       />
       <p className="text-xs text-muted-foreground px-1">
         Click the listing card to preview full listing details.
