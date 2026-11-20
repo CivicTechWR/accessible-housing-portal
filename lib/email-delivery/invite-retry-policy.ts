@@ -14,12 +14,13 @@ import { parseOutcomeDetail, type ResendOperationalEventType } from "@/lib/email
  * `Permanent` and `Undetermined` bounces, and any type or subtype not named here, are never
  * retried.
  */
-export const RECOVERABLE_BOUNCE_TYPE = "Transient";
-export const RECOVERABLE_BOUNCE_SUBTYPES: ReadonlySet<string> = new Set(["General", "MailboxFull"]);
+const RECOVERABLE_BOUNCE_TYPE = "Transient";
+const RECOVERABLE_BOUNCE_SUBTYPES: ReadonlySet<string> = new Set(["General", "MailboxFull"]);
 
 /**
  * Hours to wait before each automatic retry: the first entry follows a bounce of attempt 1,
- * the second a bounce of attempt 2. Long enough for a mailbox to be emptied or a mail server
+ * the second a bounce of attempt 2. The wait starts when the retry is scheduled, which is the
+ * first worker sweep after the bounce is stored. Long enough for a mailbox to be emptied or a mail server
  * to recover, and short enough that the last retry falls well inside an invitation's seven
  * days.
  */
@@ -30,7 +31,7 @@ export const INVITE_EMAIL_MAX_ATTEMPTS = INVITE_RETRY_BACKOFF_HOURS.length + 1;
 
 const HOUR_IN_MS = 60 * 60 * 1_000;
 
-export type BounceClassification = {
+type BounceClassification = {
   bounceType?: string | null;
   bounceSubtype?: string | null;
 };
@@ -40,7 +41,7 @@ export type ProviderEventReport = BounceClassification & {
   eventType: ResendOperationalEventType;
 };
 
-export type BouncedAttempt = {
+type BouncedAttempt = {
   outcome: EmailDeliveryOutcome;
   outcomeDetail: string | null;
 };
@@ -73,7 +74,7 @@ export type InviteRetryDecision =
         | "invite_expires_first";
     };
 
-export function isRecoverableBounce(bounce: BounceClassification): boolean {
+function isRecoverableBounce(bounce: BounceClassification): boolean {
   return (
     bounce.bounceType === RECOVERABLE_BOUNCE_TYPE &&
     typeof bounce.bounceSubtype === "string" &&

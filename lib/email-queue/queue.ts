@@ -1,6 +1,6 @@
 import "server-only";
 
-import { sql, type SQL } from "drizzle-orm";
+import { DrizzleQueryError, sql, type SQL } from "drizzle-orm";
 import { fromDrizzle, PgBoss } from "pg-boss";
 
 import { db } from "@/db";
@@ -160,7 +160,15 @@ export async function enqueueEmail(
       {
         // drizzle's postgres-js driver returns rows as a bare array, while
         // pg-boss's adapter expects a node-postgres style { rows } result.
-        execute: async (query) => ({ rows: await tx.execute(query as SQL) }),
+        execute: async (query) => {
+          try {
+            return { rows: await tx.execute(query as SQL) };
+          } catch (error) {
+            // drizzle's message quotes the query parameters, here the whole job payload with
+            // its sealed secret. Callers log what this throws, so pass on the database error.
+            throw error instanceof DrizzleQueryError && error.cause ? error.cause : error;
+          }
+        },
       },
       sql,
     ),

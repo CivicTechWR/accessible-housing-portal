@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, gt, inArray, lt, notExists, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lt, notExists, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "@/db";
@@ -27,7 +27,7 @@ import { enqueueEmail } from "@/lib/email-queue/queue";
 
 type Executor = typeof db | EmailDeliveryTransaction;
 
-export type InviteRetryResult =
+type InviteRetryResult =
   | "scheduled"
   | "already_scheduled"
   | Extract<InviteRetryDecision, { retry: false }>["reason"];
@@ -119,7 +119,7 @@ export async function scheduleInviteEmailRetry(
   const scheduled = await db.transaction(async (tx) => {
     // Replacing, revoking and accepting an invitation all hold this user row lock, so the
     // invitation cannot change between the decision below and the commit. It is taken
-    // before any attempt row is written, the same order the dead-letter path uses.
+    // before any attempt row is written, and reconciliation never takes it.
     await tx
       .select({ id: users.id })
       .from(users)
@@ -140,11 +140,13 @@ export async function scheduleInviteEmailRetry(
     if (!attempt) return "already_scheduled";
 
     // No welcome attempt: the welcome email belongs to the first send only.
-    await enqueueEmail(
+    const jobId = await enqueueEmail(
       tx,
       { type: "account_invite", inviteId: state.invite.id, attempt, secret: decision.sealedUrl },
       { startAfter: decision.sendAt },
     );
+    // Rolls the attempt back with it: an attempt without a job would never be sent or retried.
+    if (!jobId) throw new Error(`A job for invite attempt ${attempt.id} already exists.`);
 
     return {
       inviteId: state.invite.id,
@@ -171,7 +173,8 @@ export async function scheduleInviteEmailRetries(now = new Date()) {
   const successor = alias(emailDeliveryAttempts, "successor");
 
   // A cheap superset of the attempts to retry. `scheduleInviteEmailRetry` makes the real
-  // decision. Only bounced attempts of unexpired invitations qualify, so the set stays small.
+  // decision. Only bounced attempts of pending, unexpired invitations qualify, so the set
+  // stays small.
   const candidates = await db
     .select({ id: emailDeliveryAttempts.id })
     .from(emailDeliveryAttempts)
@@ -182,6 +185,7 @@ export async function scheduleInviteEmailRetries(now = new Date()) {
         eq(emailDeliveries.emailType, "account_invite"),
         eq(emailDeliveryAttempts.outcome, "bounced"),
         lt(emailDeliveryAttempts.attemptNumber, INVITE_EMAIL_MAX_ATTEMPTS),
+        isNull(userInvites.acceptedAt),
         gt(userInvites.expiresAt, now),
         notExists(
           db

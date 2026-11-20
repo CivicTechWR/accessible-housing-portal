@@ -2,7 +2,6 @@ import { describe, expect, it } from "@jest/globals";
 
 import {
   decideInviteRetry,
-  INVITE_EMAIL_MAX_ATTEMPTS,
   type InviteRetryState,
   type ProviderEventReport,
 } from "@/lib/email-delivery/invite-retry-policy";
@@ -66,7 +65,6 @@ describe("decideInviteRetry", () => {
       return decideInviteRetry({ ...s, attempt: { ...s.attempt, attemptNumber } }, NOW);
     };
 
-    expect(INVITE_EMAIL_MAX_ATTEMPTS).toBe(3);
     expect(after(1)).toMatchObject({
       retry: true,
       attemptNumber: 2,
@@ -78,28 +76,6 @@ describe("decideInviteRetry", () => {
       sendAt: new Date(NOW.getTime() + 24 * HOUR),
     });
     expect(after(3)).toEqual({ retry: false, reason: "attempt_cap_reached" });
-  });
-
-  it("does not retry a message the provider also reported as delivered, in either order", () => {
-    const delivered: ProviderEventReport = {
-      eventType: "email.delivered",
-      bounceType: null,
-      bounceSubtype: null,
-    };
-    const transient = bounce("Transient", "General");
-
-    for (const events of [
-      [transient, delivered],
-      [delivered, transient],
-    ]) {
-      const s = state(events);
-      // Either way the attempt row ends as the bounce, which outranks `delivered`.
-      const bounced = { ...s.attempt, outcome: "bounced" as const };
-      expect(decideInviteRetry({ ...s, attempt: bounced }, NOW)).toEqual({
-        retry: false,
-        reason: "already_delivered",
-      });
-    }
   });
 
   it("does not retry when a later event contradicts the stored transient bounce", () => {

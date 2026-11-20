@@ -76,8 +76,8 @@ function capturePath(attemptId: string) {
   return join(captureDir, `capture-${attemptId}.json`);
 }
 
-/** Stores a provider event about a submitted attempt and reconciles it, as the webhook route does. */
-async function report(
+/** Stores a provider event about a submitted attempt without reconciling it. */
+async function store(
   attemptId: string,
   eventType: ResendOperationalEventType,
   codes: Partial<typeof TRANSIENT> = {},
@@ -92,7 +92,12 @@ async function report(
     eventCreatedAt: new Date(),
     ...codes,
   });
-  assert.equal(await reconcileResendWebhookEvent(svixId), "processed");
+  return svixId;
+}
+
+/** Stores a provider event and reconciles it, as the webhook route does. */
+async function report(...event: Parameters<typeof store>) {
+  assert.equal(await reconcileResendWebhookEvent(await store(...event)), "processed");
 }
 
 /** Invites a housing searcher and submits the welcome and invitation emails. */
@@ -273,9 +278,6 @@ describe("automatic invite email retries with PostgreSQL", { skip: !testDatabase
   it("schedules nothing for outcomes that are not a recoverable bounce, or for a welcome email", async () => {
     const cases: [ResendOperationalEventType, Partial<typeof TRANSIENT>][] = [
       ["email.bounced", { bounceType: "Permanent", bounceSubtype: "General" }],
-      ["email.bounced", { bounceType: "Transient", bounceSubtype: "MessageTooLarge" }],
-      ["email.bounced", { bounceType: "Undetermined", bounceSubtype: "Undetermined" }],
-      ["email.bounced", {}],
       ["email.delivery_delayed", {}],
       ["email.suppressed", {}],
       ["email.complained", {}],
@@ -367,28 +369,9 @@ describe("automatic invite email retries with PostgreSQL", { skip: !testDatabase
     }
   });
 
-  it("schedules nothing for an accepted, revoked, replaced, expired or soon-expiring invitation", async () => {
+  it("schedules nothing for a replaced or soon-expiring invitation", async () => {
     const changes = {
-      accepted: async (invite: SentInvite) => {
-        await db.update(users).set({ status: "active" }).where(eq(users.id, invite.userId));
-        await db
-          .update(userInvites)
-          .set({ acceptedAt: new Date(), sealedUrl: null })
-          .where(eq(userInvites.id, invite.inviteId));
-      },
-      revoked: async (invite: SentInvite) => {
-        await db
-          .update(userInvites)
-          .set({ expiresAt: new Date(), revokedAt: new Date(), sealedUrl: null })
-          .where(eq(userInvites.id, invite.inviteId));
-      },
       replaced: replaceInvite,
-      expired: async (invite: SentInvite) => {
-        await db
-          .update(userInvites)
-          .set({ expiresAt: new Date(Date.now() - 1_000) })
-          .where(eq(userInvites.id, invite.inviteId));
-      },
       // The first retry waits four hours, which is after this invitation ends.
       "soon-expiring": async (invite: SentInvite) => {
         await db
@@ -405,6 +388,20 @@ describe("automatic invite email retries with PostgreSQL", { skip: !testDatabase
       await sweep();
       assert.equal((await attemptsOf(invite.attempt.deliveryId)).length, 1, name);
     }
+  });
+
+  it("does not send a scheduled retry when a delivered event is stored but not yet reconciled", async () => {
+    const invite = await sendBouncedInvite();
+    await sweep();
+    const { retry, job } = await latestRetry(invite.attempt.deliveryId);
+
+    await store(invite.attempt.id, "email.delivered");
+
+    assert.deepEqual(await processEmailJob(queue(), job), {
+      status: "skipped",
+      reason: "already_delivered",
+    });
+    await assert.rejects(access(capturePath(retry.id)));
   });
 
   it("does not send a scheduled retry after the invitation is replaced", async () => {

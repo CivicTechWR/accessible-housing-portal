@@ -66,7 +66,7 @@ Important behaviour:
   - `complained` outranks everything, so a complaint after `delivered` is stored as a complaint.
   - An event that repeats the current outcome changes nothing. The first one applied keeps its time and detail.
 - `outcome_detail` is a JSON object holding the short provider codes of the event that set the outcome: `bounceType`, `bounceSubtype`, `failureReason`, and `suppressionType`, each present only when Resend sent one. `{"bounceType":"Permanent","bounceSubtype":"General"}` is a permanent bounce, and `Transient` and `Undetermined` bounces are told apart the same way. The queue worker's `skipReason` is the only other key. Read the column with `parseOutcomeDetail`. Invite URLs, reset tokens, recipient addresses, free-form provider messages, and rendered message bodies are never stored here.
-- The queue worker also writes outcomes, always without an `outcome_at` and only on an attempt the provider has not accepted. A dead-lettered job leaves `failed`. An invitation job that the worker skips leaves `suppressed` with the reason in `outcome_detail`, for example `{"skipReason":"invite_accepted"}`. An administrator's skipped welcome email is `suppressed` with no detail.
+- The queue worker also writes outcomes, always without an `outcome_at` and only on an attempt with no recorded submission. A dead-lettered job leaves `failed`. An invitation job that the worker skips leaves `suppressed` with the reason in `outcome_detail`, for example `{"skipReason":"invite_revoked"}`. An administrator's skipped welcome email is `suppressed` with no detail.
 
 #### Automatic retries of bounced invitation emails
 
@@ -93,7 +93,7 @@ The attempt row is not the whole test. It keeps only its highest-ranked outcome,
 | 2               | 24 hours    | 3                |
 | 3               | no retry    |                  |
 
-The delays are `INVITE_RETRY_BACKOFF_HOURS` and the cap of three attempts is `INVITE_EMAIL_MAX_ATTEMPTS`, both in `lib/email-delivery/invite-retry-policy.ts` with the allowlist and the decision function. The cap is read from the bounced attempt's stored `attempt_number`.
+The wait starts when the retry is scheduled, which is the first worker sweep after the bounce is stored. The delays are `INVITE_RETRY_BACKOFF_HOURS` and the cap of three attempts is `INVITE_EMAIL_MAX_ATTEMPTS`, both in `lib/email-delivery/invite-retry-policy.ts` with the allowlist and the decision function. The cap is read from the bounced attempt's stored `attempt_number`.
 
 The invitation must still be usable: not accepted, not revoked, not replaced, not expired, with its user still `invited`. A retry that would be sent after the invitation expires is not scheduled.
 
@@ -103,7 +103,7 @@ How it runs:
 - Scheduling locks the user row first, the same lock that replacing, revoking and accepting an invitation take, then decides, then inserts the new attempt and its delayed pg-boss job in that one transaction.
 - The new attempt's number is the bounced attempt's plus one. The unique `(delivery_id, attempt_number)` index therefore allows one successor per bounced attempt, however many events, replays or concurrent runs ask for it.
 - The retry is a new attempt with its own idempotency key, queue job and provider email id. It sends the link in the invitation's `sealed_url`, so no new token is issued and the earlier email's link keeps working. The welcome email is not sent again.
-- The worker checks again right before sending, because the backoff is hours long. It skips the retry if the invitation is no longer usable or if the provider has since reported delivery, a complaint or a non-recoverable bounce for an earlier attempt. The skipped attempt becomes `suppressed` with a `skipReason` such as `already_delivered`, `bounce_not_recoverable`, `invite_expired` or `invite_accepted`.
+- The worker checks again right before sending, because the backoff is hours long. It skips the retry if the invitation is no longer usable or if the provider has since reported delivery, a complaint or a non-recoverable bounce for an earlier attempt. The skipped attempt becomes `suppressed` with a `skipReason` such as `already_delivered`, `bounce_not_recoverable`, `invite_expired` or `invite_revoked`.
 - A retry whose job is dead-lettered becomes `failed`. Neither a `failed` nor a `suppressed` attempt is retried, and its existence stops any further retry of the attempt before it.
 - The worker's "already submitted" check is per attempt (`submitted_at` on the job's own attempt), so an earlier submission does not block a retry and a queue retry of one attempt cannot send it twice.
 
