@@ -160,6 +160,7 @@ async function findInviteEmailHistories(
         outcomeDetail: emailDeliveryAttempts.outcomeDetail,
       },
       event: {
+        // Kept first: drizzle reads a left-joined object as null from its first column.
         eventType: resendWebhookEvents.eventType,
         bounceType: resendWebhookEvents.bounceType,
         bounceSubtype: resendWebhookEvents.bounceSubtype,

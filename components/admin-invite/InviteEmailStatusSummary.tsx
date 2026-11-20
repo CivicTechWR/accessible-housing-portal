@@ -41,10 +41,10 @@ const icons: Record<State, IconSvgElement> = {
 
 const failureExplanations: Record<FailureReason, string> = {
   permanent_bounce:
-    "The address does not accept mail. Check it for typos, then send a new invite or invite the correct address.",
+    "The address does not accept mail. Check it for typos and invite the correct address. If it is correct, contact the person another way.",
   bounced:
-    "The email bounced and will not be sent again automatically. Check the address, then send a new invite.",
-  retries_used_up: `The email bounced ${INVITE_EMAIL_MAX_ATTEMPTS} times and will not be sent again automatically. Check the address, then send a new invite.`,
+    "The email bounced and will not be sent again automatically. Check the address, then send a new invite or copy the link and share it another way.",
+  retries_used_up: `The email bounced ${INVITE_EMAIL_MAX_ATTEMPTS} times and will not be sent again automatically. Check the address, then send a new invite or copy the link and share it another way.`,
   address_suppressed:
     "The email provider blocks this address because an earlier email to it bounced or was reported as spam. Contact the person another way.",
   provider_failed:
@@ -67,10 +67,10 @@ function explain(status: InviteEmailStatus): string {
       return "The recipient's mail server has not accepted the email yet. The email provider is still trying.";
     case "delivered":
       return status.bounceReported
-        ? "The recipient's mail server accepted the email. It also reported a bounce, which is usually an automatic reply, so the email is not sent again."
+        ? "The recipient's mail server accepted the email and also reported a bounce, which is often an automatic reply. If the person does not respond, send a new invite."
         : "The recipient's mail server accepted the email.";
     case "retrying":
-      return `The mailbox was full or the mail server had a temporary problem. Attempt ${status.attemptNumber} of ${INVITE_EMAIL_MAX_ATTEMPTS} is sent automatically within about a day.`;
+      return `The mailbox was full or the mail server had a temporary problem. Attempt ${status.attemptNumber} of ${INVITE_EMAIL_MAX_ATTEMPTS} will be sent automatically.`;
     case "failed":
       return failureExplanations[status.reason];
     case "complained":

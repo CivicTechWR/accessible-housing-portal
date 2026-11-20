@@ -35,7 +35,7 @@ export type InviteEmailHistory = Pick<InviteRetryState, "invite" | "userStatus">
  *
  * - An attempt keeps only its highest-ranked outcome and `bounced` outranks `delivered`, so
  *   a `delivered` event can sit behind a bounce. A permanent bounce still means the address
- *   does not accept mail. Any other bounce next to a `delivered` event is usually an
+ *   does not accept mail. Any other bounce next to a `delivered` event is often an
  *   automatic reply, and the email counts as delivered. The retry rules treat it the same way
  *   and send nothing more.
  * - A retry the worker chose not to send is `suppressed` without the provider having said
