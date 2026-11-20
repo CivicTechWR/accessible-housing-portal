@@ -35,6 +35,7 @@ export const E2E_ACCOUNTS = {
 export type SignedInRole = keyof typeof E2E_ACCOUNTS;
 export type Role = SignedInRole | "anonymous";
 export const SIGNED_IN_ROLES = Object.keys(E2E_ACCOUNTS) as SignedInRole[];
+export const ROLES: Role[] = ["anonymous", ...SIGNED_IN_ROLES];
 
 export function storageStatePath(role: SignedInRole) {
   return `e2e/.auth/${role}.json`;

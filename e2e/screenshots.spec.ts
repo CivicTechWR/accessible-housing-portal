@@ -1,8 +1,7 @@
-import { expect, test } from "./fixtures.ts";
+import { test } from "./fixtures.ts";
+import { openPage } from "./open-page.ts";
 import { PAGES } from "./pages.ts";
-import { SIGNED_IN_ROLES, storageStatePath, type Role } from "./settings.ts";
-
-const ROLES: Role[] = ["anonymous", ...SIGNED_IN_ROLES];
+import { ROLES, storageStatePath } from "./settings.ts";
 
 // Hides the Next.js dev-mode indicator so it doesn't appear in screenshots.
 const SCREENSHOT_STYLE = "nextjs-portal { display: none !important; }";
@@ -19,27 +18,7 @@ for (const role of ROLES) {
           ? { tag: "@mobile-only" }
           : {};
       test(`${entry.name} (${entry.path})`, details, async ({ page }, testInfo) => {
-        const response = await page.goto(entry.path);
-        expect(response?.status(), "page should load without an error status").toBeLessThan(400);
-        // A protected page redirects to /sign-in when the session is missing; fail instead of capturing that.
-        expect(new URL(page.url()).pathname).toBe(new URL(entry.path, page.url()).pathname);
-        if (entry.expectText) await expect(page.getByText(entry.expectText)).toBeVisible();
-
-        // Full-page screenshots don't scroll, so load lazy images up front.
-        await page.evaluate(() => {
-          for (const image of document.querySelectorAll<HTMLImageElement>("img[loading=lazy]")) {
-            image.loading = "eager";
-          }
-        });
-        await page.waitForLoadState("networkidle");
-        // Client queries can start after networkidle while the page hydrates.
-        await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0, { timeout: 30_000 });
-        await page.evaluate(() => document.fonts.ready);
-        if (entry.selectTab) {
-          const tab = page.getByRole("tab", { name: entry.selectTab, exact: true });
-          await tab.click();
-          await expect(tab).toHaveAttribute("aria-selected", "true");
-        }
+        await openPage(page, entry);
 
         await page.screenshot({
           path: `e2e/screenshots/${testInfo.project.name}/${entry.name}.png`,

@@ -32,7 +32,7 @@ The installed Next.js Jest guide notes that async Server Components are not a st
 
 ## Playwright Screenshots
 
-`npm run screenshots` captures every page at desktop (1440×900) and mobile (Pixel 7) sizes. One-time setup:
+`npm run screenshots` captures every page at desktop (1440×900) and mobile (Pixel 7 settings with a 375px-wide viewport) sizes. 375px is the narrowest phone still in common use, so it is the phone size most likely to show a layout problem. One-time setup:
 
 ```bash
 npx playwright install chromium
@@ -49,7 +49,9 @@ CI runs `npm run test:e2e` in the `Playwright E2E` job against a `homehub_auth_r
 
 Behaviour specs live next to `screenshots.spec.ts` in `e2e/` and import `test` from `e2e/fixtures.ts` so outside requests stay mocked. Run one locally with `npx playwright test e2e/<name>.spec.ts`.
 
-When you add a page under `app/`, add it to `e2e/pages.ts`. Admin screens aren't designed for mobile, so they set `desktopOnly: true` and are captured at desktop size only.
+`e2e/reflow.spec.ts` checks WCAG 2.1 AA 1.4.10 Reflow. It opens each page in `e2e/pages.ts` at 320px wide and fails if the document scrolls sideways. The failure names the page and the widest element. It runs in the `mobile` project only, takes no screenshots, and leaves out the `desktopOnly` pages. `e2e/open-page.ts` holds the loading steps it shares with the screenshot spec.
+
+When you add a page under `app/`, add it to `e2e/pages.ts` so it gets screenshots and the reflow check. Admin screens aren't designed for mobile, so they set `desktopOnly: true` and are captured at desktop size only.
 
 ## Existing Test Patterns
 

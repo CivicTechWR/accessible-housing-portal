@@ -27,7 +27,8 @@ export default defineConfig({
       name: "mobile",
       grepInvert: /@desktop-only/,
       dependencies: ["setup"],
-      use: { ...devices["Pixel 7"] },
+      // 375px is the narrowest phone still in common use. A page that fits there fits wider phones.
+      use: { ...devices["Pixel 7"], viewport: { ...devices["Pixel 7"].viewport, width: 375 } },
     },
   ],
   webServer: {
