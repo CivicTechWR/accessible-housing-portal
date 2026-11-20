@@ -75,6 +75,89 @@ describe("useListingFilters", () => {
     },
   );
 
+  describe("when the URL catches up to typing late", () => {
+    function renderWithUrl(initialLocation?: string) {
+      const setFilters = jest.fn(async (..._args: unknown[]) => new URLSearchParams());
+      let filters = createFilters({ location: initialLocation });
+      useQueryStatesMock.mockImplementation(() => [filters, setFilters]);
+      const { result, rerender } = renderHook(() => useListingFilters());
+
+      // Like a real keystroke, each change builds on whatever the input currently shows.
+      const changeInput = (value: string) =>
+        act(() => {
+          result.current.searchInputProps.onChange({
+            target: { value },
+          } as React.ChangeEvent<HTMLInputElement>);
+        });
+      const typeKeys = (keys: string) => {
+        for (const key of keys) changeInput(`${result.current.searchInputProps.value}${key}`);
+      };
+      const urlChangesTo = (location: string | undefined) => {
+        filters = createFilters({ location });
+        rerender();
+      };
+      // The URL update for the nth change sent to setFilters (1-based) lands.
+      const urlCatchesUpTo = (n: number) => {
+        const update = setFilters.mock.calls[n - 1]?.[0] as { location: string | null } | undefined;
+        if (!update) throw new Error(`Only ${setFilters.mock.calls.length} updates were sent.`);
+        urlChangesTo(update.location ?? undefined);
+      };
+      const sentCount = () => setFilters.mock.calls.length;
+
+      return { result, setFilters, typeKeys, urlChangesTo, urlCatchesUpTo, sentCount };
+    }
+
+    it("keeps every typed character when an older keystroke's URL update arrives late", () => {
+      const { result, setFilters, typeKeys, urlCatchesUpTo, sentCount } = renderWithUrl();
+
+      typeKeys("Wate");
+      urlCatchesUpTo(2);
+      typeKeys("r");
+      urlCatchesUpTo(3);
+      typeKeys("loo");
+      urlCatchesUpTo(4);
+      urlCatchesUpTo(sentCount());
+
+      expect(result.current.searchInputProps.value).toBe("Waterloo");
+      expect(setFilters).toHaveBeenLastCalledWith({ location: "Waterloo" });
+    });
+
+    it("keeps the typed text when the same URL update arrives twice out of order", () => {
+      const { result, typeKeys, urlCatchesUpTo } = renderWithUrl();
+
+      typeKeys("Wa");
+      urlCatchesUpTo(1);
+      urlCatchesUpTo(2);
+      typeKeys("t");
+      // A second, older copy of the first keystroke's update.
+      urlCatchesUpTo(1);
+      typeKeys("erloo");
+
+      expect(result.current.searchInputProps.value).toBe("Waterloo");
+    });
+
+    it("restores the URL's location on back/forward navigation", () => {
+      const { result, typeKeys, urlChangesTo } = renderWithUrl();
+
+      typeKeys("Kitchener");
+      act(() => {
+        window.history.pushState(null, "", "/listings?location=Cambridge");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      });
+      urlChangesTo("Cambridge");
+
+      expect(result.current.searchInputProps.value).toBe("Cambridge");
+
+      act(() => {
+        window.history.pushState(null, "", "/listings");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      });
+      urlChangesTo(undefined);
+
+      expect(result.current.searchInputProps.value).toBe("");
+    });
+  });
+
   it("clears the minimum price filter with null instead of leaving stale query state behind", async () => {
     const { result, setFilters } = renderFilters({ minPrice: 1800 });
 

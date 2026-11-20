@@ -45,3 +45,20 @@ for (const view of ["List", "Map", "Split"] as const) {
     }
   });
 }
+
+// Issue #594: each keystroke updates `?location=` and the URL catches up late. An older update
+// used to overwrite the box mid-word, so typing "Waterloo" at normal speed left "terloo".
+test("the search box keeps every character when typing quickly", async ({ page }) => {
+  await page.goto("/listings");
+  const searchBox = page.getByRole("searchbox", { name: /Search city, address, or building/ });
+  // Typing before hydration is lost when React takes over the input, so wait for a working box.
+  await expect(async () => {
+    await searchBox.fill("W");
+    await expect(page).toHaveURL(/location=W(&|$)/, { timeout: 1_000 });
+  }).toPass();
+
+  await searchBox.pressSequentially("aterloo", { delay: 55 });
+
+  await expect(searchBox).toHaveValue("Waterloo");
+  await expect(page).toHaveURL(/location=Waterloo/);
+});

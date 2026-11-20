@@ -16,9 +16,18 @@ export function useListingFilters() {
   const [locationInputValue, setLocationInputValue] = useState(filters.location ?? "");
   const [, startTransition] = useTransition();
 
+  // The input owns its text while the page is open. Each keystroke's URL update comes back
+  // late, sometimes more than once and after later keystrokes, so copying `filters.location`
+  // back into the input would overwrite newer typing (#594). Only back/forward changes the
+  // location without typing, so that is the one time the input re-reads the URL.
   useEffect(() => {
-    setLocationInputValue(filters.location ?? "");
-  }, [filters.location]);
+    const restoreLocationFromUrl = () => {
+      setLocationInputValue(new URLSearchParams(window.location.search).get("location") ?? "");
+    };
+
+    window.addEventListener("popstate", restoreLocationFromUrl);
+    return () => window.removeEventListener("popstate", restoreLocationFromUrl);
+  }, []);
 
   const sortOptionProps = useMemo(
     () => ({
