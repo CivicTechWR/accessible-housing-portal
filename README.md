@@ -180,3 +180,7 @@ Pull requests are opened to the `main` branch. The CI workflow currently runs:
 - `npm run build`
 
 Before opening a PR, run the relevant checks and include testing notes. The pre-commit hook runs secret scanning, `lint-staged`, and `npm run typecheck`; the pre-push hook runs `npm run build`.
+
+### License
+
+Home Hub is released under the [MIT License](LICENSE). By contributing, you agree to license your contribution under the same MIT License. You keep the copyright in your own contributions.

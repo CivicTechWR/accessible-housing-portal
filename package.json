@@ -2,6 +2,7 @@
   "name": "affordable-housing-platform-frontend",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "node scripts/copy-maplibre-worker.mjs && next dev",
     "docker:up": "docker compose up --build",
