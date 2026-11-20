@@ -16,6 +16,7 @@ import {
   DuplicateListingDialog,
   type DuplicateListingSelection,
 } from "@/app/my-listings/DuplicateListingDialog";
+import { ListingArchiveButton } from "@/app/my-listings/ListingArchiveButton";
 import type { DuplicateListingResponse } from "@/shared/schemas/listings";
 
 type MyListingItem = {
@@ -275,46 +276,23 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                         >
                           {isDuplicating ? "Duplicating..." : "Duplicate"}
                         </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={isMutating}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                "Archive this listing? It will be kept in an archived state and can be restored later.",
-                              )
-                            ) {
-                              statusMutation.mutate({
-                                listingId: listing.id,
-                                nextStatus: "archived",
-                              });
-                            }
-                          }}
-                        >
-                          {isMutating ? pendingLabel : "Archive"}
-                        </Button>
                       </>
                     ) : (
-                      <>
-                        <p className="text-sm text-muted-foreground">
-                          This listing is archived and is no longer publicly visible.
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={isMutating}
-                          onClick={() =>
-                            statusMutation.mutate({
-                              listingId: listing.id,
-                              nextStatus: "draft",
-                            })
-                          }
-                        >
-                          {isMutating ? pendingLabel : "Restore"}
-                        </Button>
-                      </>
+                      <p className="text-sm text-muted-foreground">
+                        This listing is archived and is no longer publicly visible.
+                      </p>
                     )}
+                    <ListingArchiveButton
+                      isArchived={isArchived}
+                      isMutating={isMutating}
+                      pendingLabel={pendingLabel}
+                      onArchive={() =>
+                        statusMutation.mutate({ listingId: listing.id, nextStatus: "archived" })
+                      }
+                      onRestore={() =>
+                        statusMutation.mutate({ listingId: listing.id, nextStatus: "draft" })
+                      }
+                    />
                   </CardContent>
                 </div>
               </div>
