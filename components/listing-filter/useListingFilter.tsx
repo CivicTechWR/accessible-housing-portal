@@ -1,6 +1,6 @@
-import { listingSearchParamsParsers, loadListingSearchParams } from "@/app/listings/searchParams";
+import { listingSearchParamsParsers } from "@/app/listings/searchParams";
 import { useQueryStates } from "nuqs";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FilterButtonProps } from "@/components/filter-button/FilterButton";
 
 const LISTING_LOCATION_PLACEHOLDER = "Search city, address, or building";
@@ -11,55 +11,16 @@ function normalizeLocationFilter(value: string) {
   return trimmedValue.length > 0 ? trimmedValue : null;
 }
 
-function readLocationFromUrl() {
-  return loadListingSearchParams(window.location.search).location ?? "";
-}
-
-interface UseListingFiltersOptions {
-  /**
-   * Changes whenever the server renders the page again, which happens on a real navigation
-   * (a link or router push to new search params) but never while typing, because filter
-   * updates are shallow. The search box re-reads the URL when it changes.
-   */
-  navigationKey?: unknown;
-}
-
-export function useListingFilters({ navigationKey }: UseListingFiltersOptions = {}) {
+export function useListingFilters() {
   const [filters, setFilters] = useQueryStates(listingSearchParamsParsers);
   const [locationInputValue, setLocationInputValue] = useState(filters.location ?? "");
-  const [, startTransition] = useTransition();
-  const lastNavigationKeyRef = useRef(navigationKey);
 
-  // The search box owns its text while the page is open. Each keystroke's URL update comes
-  // back late, sometimes more than once and after later keystrokes, so copying
-  // `filters.location` into the box on every change would overwrite newer typing (#594).
-  // The box re-reads the URL only after a navigation: back/forward, or `navigationKey`.
+  // Typing changes only the box. The URL's location changes on a submit, back/forward or a
+  // link, never mid-word, so the box can simply follow it. Writing the URL on every keystroke
+  // let late URL updates overwrite newer typing (#594).
   useEffect(() => {
-    const restoreLocationFromUrl = () => setLocationInputValue(readLocationFromUrl());
-
-    window.addEventListener("popstate", restoreLocationFromUrl);
-    return () => window.removeEventListener("popstate", restoreLocationFromUrl);
-  }, []);
-
-  useEffect(() => {
-    if (lastNavigationKeyRef.current === navigationKey) return;
-
-    lastNavigationKeyRef.current = navigationKey;
-    setLocationInputValue(readLocationFromUrl());
-  }, [navigationKey]);
-
-  // Any code that sets the location, such as a future "clear search" button, must use this so
-  // the box and the URL stay in step.
-  const changeLocation = useCallback(
-    (text: string) => {
-      setLocationInputValue(text);
-
-      startTransition(() => {
-        void setFilters({ location: normalizeLocationFilter(text) });
-      });
-    },
-    [setFilters, startTransition],
-  );
+    setLocationInputValue(filters.location ?? "");
+  }, [filters.location]);
 
   const sortOptionProps = useMemo(
     () => ({
@@ -81,10 +42,29 @@ export function useListingFilters({ navigationKey }: UseListingFiltersOptions = 
       autoComplete: "off" as const,
       placeholder: LISTING_LOCATION_PLACEHOLDER,
       type: "search" as const,
+      enterKeyHint: "search" as const,
+      // Before hydration the form submits natively, as `GET /listings?location=…`.
+      name: "location",
       value: locationInputValue,
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => changeLocation(e.target.value),
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setLocationInputValue(e.target.value),
     }),
-    [locationInputValue, changeLocation],
+    [locationInputValue],
+  );
+
+  const searchFormProps = useMemo(
+    () => ({
+      role: "search" as const,
+      action: "/listings",
+      onSubmit: (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const location = normalizeLocationFilter(locationInputValue);
+
+        setLocationInputValue(location ?? "");
+        // Push, so Back returns to the previous search.
+        void setFilters({ location }, { history: "push" });
+      },
+    }),
+    [locationInputValue, setFilters],
   );
 
   const priceRangeProps = useMemo(
@@ -229,6 +209,7 @@ export function useListingFilters({ navigationKey }: UseListingFiltersOptions = 
     activeFilterCount,
     sortOptionProps,
     searchInputProps,
+    searchFormProps,
     priceRangeProps,
     bedroomToggleProps,
     bathroomToggleProps,

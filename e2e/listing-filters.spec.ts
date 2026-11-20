@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures.ts";
 import { storageStatePath } from "./settings.ts";
 
@@ -46,19 +47,44 @@ for (const view of ["List", "Map", "Split"] as const) {
   });
 }
 
-// Issue #594: each keystroke updates `?location=` and the URL catches up late. An older update
-// used to overwrite the box mid-word, so typing "Waterloo" at normal speed left "terloo".
-test("the search box keeps every character when typing quickly", async ({ page }) => {
-  await page.goto("/listings");
-  const searchBox = page.getByRole("searchbox", { name: /Search city, address, or building/ });
-  // Typing before hydration is lost when React takes over the input, so wait for a working box.
-  await expect(async () => {
-    await searchBox.fill("W");
-    await expect(page).toHaveURL(/location=W(&|$)/, { timeout: 1_000 });
-  }).toPass();
+// Typing before hydration is lost when React takes over the input, so wait until React owns it.
+async function waitForSearchBox(page: Page) {
+  await page.waitForFunction(() => {
+    const input = document.querySelector('form[role="search"] input[name="location"]');
+    return !!input && Object.keys(input).some((key) => key.startsWith("__reactFiber"));
+  });
+}
 
-  await searchBox.pressSequentially("aterloo", { delay: 55 });
+// Issue #594: typing updated `?location=` on every keystroke, and late URL updates overwrote the
+// box mid-word ("Waterloo" became "aterloo"). The search now runs only when it's submitted.
+test("the search box keeps every character and searches on Enter", async ({ page }) => {
+  await page.goto("/listings");
+  await waitForSearchBox(page);
+  const searchBox = page.getByRole("searchbox", { name: /Search city, address, or building/ });
+
+  await searchBox.pressSequentially("Waterloo", { delay: 55 });
 
   await expect(searchBox).toHaveValue("Waterloo");
+  await expect(page).not.toHaveURL(/location=/);
+
+  await searchBox.press("Enter");
+
   await expect(page).toHaveURL(/location=Waterloo/);
+  await expect(searchBox).toHaveValue("Waterloo");
+});
+
+test("the Search button searches, and Back returns to the previous search", async ({ page }) => {
+  await page.goto("/listings?location=Kitchener");
+  await waitForSearchBox(page);
+  const search = page.getByRole("search");
+  const searchBox = search.getByRole("searchbox");
+
+  await searchBox.fill("Guelph");
+  await search.getByRole("button", { name: "Search" }).click();
+  await expect(page).toHaveURL(/location=Guelph/);
+
+  await page.goBack();
+
+  await expect(page).toHaveURL(/location=Kitchener/);
+  await expect(searchBox).toHaveValue("Kitchener");
 });

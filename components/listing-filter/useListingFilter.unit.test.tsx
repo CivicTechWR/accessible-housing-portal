@@ -7,9 +7,6 @@ const useQueryStatesMock = jest.fn();
 
 jest.mock("@/app/listings/searchParams", () => ({
   listingSearchParamsParsers: {},
-  loadListingSearchParams: (search: string) => ({
-    location: new URLSearchParams(search).get("location"),
-  }),
 }));
 
 jest.mock("nuqs", () => ({
@@ -49,151 +46,87 @@ describe("useListingFilters", () => {
     expect(result.current.searchInputProps.placeholder).toBe("Search city, address, or building");
   });
 
-  it("keeps typed text in the input while syncing the trimmed location query param", () => {
-    const { result, setFilters } = renderFilters();
-
-    act(() => {
-      result.current.searchInputProps.onChange({
-        target: { value: "  Kitchener  " },
-      } as React.ChangeEvent<HTMLInputElement>);
-    });
-
-    expect(result.current.searchInputProps.value).toBe("  Kitchener  ");
-    expect(setFilters).toHaveBeenCalledWith({ location: "Kitchener" });
-  });
-
-  it.each(["", "   "])(
-    "clears the location query param for %j instead of restoring a default city",
-    (value) => {
-      const { result, setFilters } = renderFilters({ location: "Waterloo, ON" });
-
-      act(() => {
-        result.current.searchInputProps.onChange({
-          target: { value },
-        } as React.ChangeEvent<HTMLInputElement>);
-      });
-
-      expect(result.current.searchInputProps.value).toBe(value);
-      expect(setFilters).toHaveBeenCalledWith({ location: null });
-    },
-  );
-
-  describe("when the URL catches up to typing late", () => {
-    function renderWithUrl(initialLocation?: string) {
+  describe("search box", () => {
+    function renderSearch(initialLocation?: string) {
       const setFilters = jest.fn(async (..._args: unknown[]) => new URLSearchParams());
       let filters = createFilters({ location: initialLocation });
       useQueryStatesMock.mockImplementation(() => [filters, setFilters]);
-      const { result, rerender } = renderHook(
-        ({ navigationKey }: { navigationKey: number }) => useListingFilters({ navigationKey }),
-        { initialProps: { navigationKey: 1 } },
-      );
-      let navigationKey = 1;
+      const { result, rerender } = renderHook(() => useListingFilters());
 
-      // Like a real keystroke, each change builds on whatever the input currently shows.
-      const changeInput = (value: string) =>
+      const type = (value: string) =>
         act(() => {
           result.current.searchInputProps.onChange({
             target: { value },
           } as React.ChangeEvent<HTMLInputElement>);
         });
-      const typeKeys = (keys: string) => {
-        for (const key of keys) changeInput(`${result.current.searchInputProps.value}${key}`);
-      };
-      const urlChangesTo = (location: string | undefined) => {
-        filters = createFilters({ location });
-        rerender({ navigationKey });
-      };
-      // A link or router push to `url`: the server renders the page again with a new key.
-      const navigateTo = (url: string) => {
+      const submit = () => {
+        const preventDefault = jest.fn();
         act(() => {
-          window.history.pushState(null, "", url);
+          result.current.searchFormProps.onSubmit({
+            preventDefault,
+          } as unknown as React.FormEvent<HTMLFormElement>);
         });
-        navigationKey += 1;
-        urlChangesTo(new URLSearchParams(url.split("?")[1]).get("location") ?? undefined);
+        return preventDefault;
       };
-      // The URL update for the nth change sent to setFilters (1-based) lands.
-      const urlCatchesUpTo = (n: number) => {
-        const update = setFilters.mock.calls[n - 1]?.[0] as { location: string | null } | undefined;
-        if (!update) throw new Error(`Only ${setFilters.mock.calls.length} updates were sent.`);
-        urlChangesTo(update.location ?? undefined);
+      // The URL's location changes: a submit landing, back/forward, or a link.
+      const urlChangesTo = (location: string | undefined, other: Record<string, unknown> = {}) => {
+        filters = createFilters({ location, ...other });
+        rerender();
       };
-      const sentCount = () => setFilters.mock.calls.length;
 
-      return { result, setFilters, typeKeys, urlChangesTo, urlCatchesUpTo, sentCount, navigateTo };
+      return { result, setFilters, type, submit, urlChangesTo };
     }
 
-    it("keeps every typed character when an older keystroke's URL update arrives late", () => {
-      const { result, setFilters, typeKeys, urlCatchesUpTo, sentCount } = renderWithUrl();
+    it("leaves the URL alone while typing", () => {
+      const { result, setFilters, type } = renderSearch();
 
-      typeKeys("Wate");
-      urlCatchesUpTo(2);
-      typeKeys("r");
-      urlCatchesUpTo(3);
-      typeKeys("loo");
-      urlCatchesUpTo(4);
-      urlCatchesUpTo(sentCount());
+      type("W");
+      type("Wat");
+      type("Waterloo");
 
       expect(result.current.searchInputProps.value).toBe("Waterloo");
-      expect(setFilters).toHaveBeenLastCalledWith({ location: "Waterloo" });
+      expect(setFilters).not.toHaveBeenCalled();
     });
 
-    it("keeps the typed text when the same URL update arrives twice out of order", () => {
-      const { result, typeKeys, urlCatchesUpTo } = renderWithUrl();
+    it("searches for the trimmed text on submit and adds a history entry", () => {
+      const { result, setFilters, type, submit } = renderSearch();
 
-      typeKeys("Wa");
-      urlCatchesUpTo(1);
-      urlCatchesUpTo(2);
-      typeKeys("t");
-      // A second, older copy of the first keystroke's update.
-      urlCatchesUpTo(1);
-      typeKeys("erloo");
+      type("  Kitchener  ");
+      const preventDefault = submit();
 
-      expect(result.current.searchInputProps.value).toBe("Waterloo");
+      expect(preventDefault).toHaveBeenCalled();
+      expect(setFilters).toHaveBeenCalledWith({ location: "Kitchener" }, { history: "push" });
+      expect(result.current.searchInputProps.value).toBe("Kitchener");
     });
 
-    it("restores the URL's location on back/forward navigation", () => {
-      const { result, typeKeys, urlChangesTo } = renderWithUrl();
+    it.each(["", "   "])("clears the location on submitting %j", (value) => {
+      const { result, setFilters, type, submit } = renderSearch("Waterloo, ON");
 
-      typeKeys("Kitchener");
-      act(() => {
-        window.history.pushState(null, "", "/listings?location=Cambridge");
-        window.dispatchEvent(new PopStateEvent("popstate"));
-      });
-      urlChangesTo("Cambridge");
+      type(value);
+      submit();
 
-      expect(result.current.searchInputProps.value).toBe("Cambridge");
-
-      act(() => {
-        window.history.pushState(null, "", "/listings");
-        window.dispatchEvent(new PopStateEvent("popstate"));
-      });
-      urlChangesTo(undefined);
-
+      expect(setFilters).toHaveBeenCalledWith({ location: null }, { history: "push" });
       expect(result.current.searchInputProps.value).toBe("");
     });
 
-    it("shows the new location after a link or router push while the page is open", () => {
-      const { result, typeKeys, urlCatchesUpTo, sentCount, navigateTo } = renderWithUrl();
+    it("follows the URL when its location changes, as on back/forward or a link", () => {
+      const { result, type, urlChangesTo } = renderSearch("Waterloo");
 
-      typeKeys("Kitchener");
-      urlCatchesUpTo(sentCount());
-      navigateTo("/listings?location=Guelph");
-
+      type("Kitch");
+      urlChangesTo("Guelph");
       expect(result.current.searchInputProps.value).toBe("Guelph");
 
-      navigateTo("/listings");
-
+      urlChangesTo(undefined);
       expect(result.current.searchInputProps.value).toBe("");
     });
 
-    it("keeps the typed text when the page re-renders without a navigation", () => {
-      const { result, typeKeys, urlCatchesUpTo } = renderWithUrl();
+    it("keeps unsubmitted text when another filter changes", () => {
+      const { result, type, urlChangesTo } = renderSearch("Waterloo");
 
-      typeKeys("Waterloo");
-      // An older update lands with the same navigation key, as it does while typing.
-      urlCatchesUpTo(3);
+      type("Waterloo Region");
+      urlChangesTo("Waterloo", { bedrooms: "2" });
 
-      expect(result.current.searchInputProps.value).toBe("Waterloo");
+      expect(result.current.searchInputProps.value).toBe("Waterloo Region");
     });
   });
 
