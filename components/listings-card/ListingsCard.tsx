@@ -2,6 +2,7 @@ import { Card, CardContent } from "../ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import Link from "next/link";
+import type { Ref } from "react";
 
 interface ListingsCardProps {
   id: string;
@@ -18,6 +19,8 @@ interface ListingsCardProps {
   variant?: "vertical" | "horizontal";
   href?: string;
   onClick?: () => void;
+  /** The card's button. Only rendered when `onClick` is set. */
+  buttonRef?: Ref<HTMLButtonElement>;
 }
 
 const variants = {
@@ -75,6 +78,7 @@ export function ListingsCard({
   variant = "vertical",
   href,
   onClick,
+  buttonRef,
 }: ListingsCardProps) {
   const v = variants[variant];
   const isHorizontal = variant === "horizontal";
@@ -177,6 +181,7 @@ export function ListingsCard({
 
       {onClick ? (
         <button
+          ref={buttonRef}
           type="button"
           aria-label={ariaLabel}
           className="absolute inset-0 z-10 cursor-pointer border-0 bg-transparent p-0"
