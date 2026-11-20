@@ -134,10 +134,9 @@ describe("ListingDetails rental features", () => {
 
     const [withDescription, emptyDescription, nameAsDescription] = screen.getAllByRole("listitem");
     expect(withDescription).toHaveTextContent("Step-free entrance");
-    expect(screen.getByText("The main entrance has no steps.")).toBeVisible();
-    expect(withDescription?.children).toHaveLength(2);
-    expect(emptyDescription?.children).toHaveLength(1);
-    expect(nameAsDescription?.children).toHaveLength(1);
+    expect(withDescription).toHaveTextContent("The main entrance has no steps.");
+    expect(emptyDescription).toHaveTextContent(/^Custom feature$/);
+    expect(nameAsDescription).toHaveTextContent(/^Braille signage$/);
   });
 });
 
