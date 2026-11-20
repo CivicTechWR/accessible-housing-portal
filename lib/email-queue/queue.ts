@@ -133,11 +133,12 @@ export type EmailEnqueueTransaction = Parameters<Parameters<typeof db.transactio
  *
  * Successful enqueue means the email is queued, not sent. Returns the job id,
  * or null when the same logical email is already enqueued (deterministic-id
- * dedupe).
+ * dedupe). `startAfter` holds the job back until that time.
  */
 export async function enqueueEmail(
   tx: EmailEnqueueTransaction,
   data: EmailJobData,
+  options: { startAfter?: Date } = {},
 ): Promise<string | null> {
   const boss = await getEmailQueue();
   const jobId = getEmailJobId(data);
@@ -165,5 +166,6 @@ export async function enqueueEmail(
     ),
     id: jobId,
     priority: EMAIL_JOB_PRIORITY[data.type],
+    ...options,
   });
 }

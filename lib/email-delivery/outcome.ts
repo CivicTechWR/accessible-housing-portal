@@ -61,26 +61,28 @@ export function shouldApplyProviderOutcome(
 export const PROVIDER_CODE = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 
 const providerCode = z.string().regex(PROVIDER_CODE).optional().catch(undefined);
-const outcomeDetail = z
-  .object({
-    bounceType: providerCode,
-    bounceSubtype: providerCode,
-    failureReason: providerCode,
-    suppressionType: providerCode,
-  })
+const providerCodes = z.object({
+  bounceType: providerCode,
+  bounceSubtype: providerCode,
+  failureReason: providerCode,
+  suppressionType: providerCode,
+});
+const outcomeDetail = providerCodes
+  // Written by the queue worker, not the provider: why it chose not to send the attempt.
+  .extend({ skipReason: providerCode })
   .catch({});
 
 /**
- * Provider codes behind an attempt's outcome. A bounce is permanent, transient or
- * undetermined according to `bounceType`.
+ * Codes behind an attempt's outcome. A bounce is permanent, transient or undetermined
+ * according to `bounceType`.
  */
 export type EmailOutcomeDetail = z.infer<typeof outcomeDetail>;
 
 /** Serializes an event's provider codes for `email_delivery_attempts.outcome_detail`. */
 export function formatOutcomeDetail(codes: {
-  [Code in keyof EmailOutcomeDetail]-?: string | null;
+  [Code in keyof z.infer<typeof providerCodes>]-?: string | null;
 }): string | null {
-  const detail = outcomeDetail.parse(codes);
+  const detail = providerCodes.parse(codes);
   return Object.values(detail).some((code) => code !== undefined) ? JSON.stringify(detail) : null;
 }
 

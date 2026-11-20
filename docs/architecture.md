@@ -30,7 +30,7 @@ invite service transaction
 
 Enqueueing the job in the same Postgres transaction as the invite prevents a committed invite from losing its email job. The worker, rather than request-handling code, is the only provider-submission path.
 
-Resend reports what happened to a submitted message through `/api/webhooks/resend`. The route stores each verified event, and `lib/email-delivery/resend-webhook-reconciliation.ts` applies it to the delivery attempt. The worker runs the same reconciliation every five minutes for events that could not be settled when they arrived.
+Resend reports what happened to a submitted message through `/api/webhooks/resend`. The route stores each verified event, and `lib/email-delivery/resend-webhook-reconciliation.ts` applies it to the delivery attempt. The worker runs the same reconciliation every five minutes for events that could not be settled when they arrived. In the same job, `lib/email-delivery/invite-retry.ts` schedules a delayed new attempt for an invitation email that bounced recoverably.
 
 | Layer                    | Owns                                                     | Examples                                                                           |
 | ------------------------ | -------------------------------------------------------- | ---------------------------------------------------------------------------------- |

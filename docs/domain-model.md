@@ -38,12 +38,12 @@ Tracks administrator invitations and their email submission state.
 
 Important behaviour:
 
-- Better Auth owns the setup token. `token_hash` identifies its invitation; `sealed_url` holds an encrypted copy for the admin copy-link action.
+- Better Auth owns the setup token. `token_hash` identifies its invitation; `sealed_url` holds an encrypted copy for the admin copy-link action and for automatic email retries. Accepting, revoking or replacing the invitation clears it.
 - New invites expire previous unaccepted invites for the same user.
 - Invites expire after seven days.
 - Better Auth sets the password in `accounts`. Acceptance activates the user and removes the copyable invitation URL.
 - `email_queued_at` records that provider submission was requested and durably enqueued.
-- the worker sets the legacy `sent_at` field after the provider accepts the request or `email_failed_at` after permanent queue failure.
+- the worker sets the legacy `sent_at` field when the provider first accepts the invitation email, or `email_failed_at` after permanent queue failure. An automatic retry leaves both as they are; its state is on its own delivery attempt.
 - those timestamps derive the admin-facing states `not_requested`, `queued`, `submitted`, and `failed`; recipient-server delivery is not currently tracked.
 
 pg-boss stores email jobs in its own `pgboss` schema, outside the Drizzle-managed application schema. Queue payloads reference the invite rather than duplicating recipient details. The one-time invite URL is encrypted under a key derived from `EMAIL_JOB_SECRET` while queued and redacted after a terminal outcome.
@@ -55,7 +55,7 @@ Application-owned records of transactional email, separate from the pg-boss job 
 Important behaviour:
 
 - `email_deliveries` is one logical email — `(email_type, source_entity_id)` is unique, so "the invite email for invite X" is a single row. `source_entity_id` is deliberately not a foreign key because the referenced table varies by email type.
-- `email_delivery_attempts` is one provider submission of that email. An ordinary queue retry reuses its attempt row and therefore its `idempotency_key`; a genuine resend inserts a new attempt and gets a new attempt number, idempotency key, queue job, and provider email id.
+- `email_delivery_attempts` is one provider submission of that email. An ordinary queue retry reuses its attempt row and therefore its `idempotency_key`; a new send of the same email inserts a new attempt and gets a new attempt number, idempotency key, queue job, and provider email id. For invitations that only happens through the automatic retry described below, because a manual resend creates a new invitation and so a new delivery.
 - `provider_email_id` holds Resend's email id and is the correlation key for delivery outcomes.
 - `outcome` uses the vocabulary Resend reports identically through webhook event names (`email.<outcome>`) and `resend.emails.get(id).last_event`, so an outcome is stored the same way however it was learned.
 - Webhook reconciliation moves `outcome` past `sent`. It finds the attempt by `provider_email_id`. When no attempt holds that id yet, because the webhook arrived before the worker saved it, it uses the event's `attempt_id` and `delivery_id` tags. Both must be UUIDs and name the same attempt, and that attempt must not have a provider email id of its own. `outcome_at` is the provider's event time.
@@ -65,8 +65,47 @@ Important behaviour:
   - When two failures disagree, the one that more firmly rules out sending again wins.
   - `complained` outranks everything, so a complaint after `delivered` is stored as a complaint.
   - An event that repeats the current outcome changes nothing. The first one applied keeps its time and detail.
-- `outcome_detail` is a JSON object holding the short provider codes of the event that set the outcome: `bounceType`, `bounceSubtype`, `failureReason`, and `suppressionType`, each present only when Resend sent one. `{"bounceType":"Permanent","bounceSubtype":"General"}` is a permanent bounce, and `Transient` and `Undetermined` bounces are told apart the same way. Read it with `parseOutcomeDetail`. Invite URLs, reset tokens, recipient addresses, free-form provider messages, and rendered message bodies are never stored here.
-- The queue worker also writes `failed` when a job is dead-lettered and `suppressed` when it skips an administrator's welcome email. Those outcomes have no `outcome_at`.
+- `outcome_detail` is a JSON object holding the short provider codes of the event that set the outcome: `bounceType`, `bounceSubtype`, `failureReason`, and `suppressionType`, each present only when Resend sent one. `{"bounceType":"Permanent","bounceSubtype":"General"}` is a permanent bounce, and `Transient` and `Undetermined` bounces are told apart the same way. The queue worker's `skipReason` is the only other key. Read the column with `parseOutcomeDetail`. Invite URLs, reset tokens, recipient addresses, free-form provider messages, and rendered message bodies are never stored here.
+- The queue worker also writes outcomes, always without an `outcome_at` and only on an attempt the provider has not accepted. A dead-lettered job leaves `failed`. An invitation job that the worker skips leaves `suppressed` with the reason in `outcome_detail`, for example `{"skipReason":"invite_accepted"}`. An administrator's skipped welcome email is `suppressed` with no detail.
+
+#### Automatic retries of bounced invitation emails
+
+An `account_invite` attempt that ends in a recoverable bounce gets one more attempt on the same delivery after a delay. Welcome and password-reset emails are never retried this way, and an administrator's manual resend is unchanged: it replaces the invitation and its link.
+
+A bounce is recoverable only when `bounceType` is `Transient` and `bounceSubtype` is on the allowlist. The subtypes are the ones [Resend documents](https://resend.com/docs/dashboard/emails/email-bounces).
+
+| `bounceType`   | `bounceSubtype`                                            | Retried | Why                                                         |
+| -------------- | ---------------------------------------------------------- | ------- | ----------------------------------------------------------- |
+| `Transient`    | `General`                                                  | Yes     | A temporary problem at the recipient's mail server.         |
+| `Transient`    | `MailboxFull`                                              | Yes     | The mailbox can be emptied.                                 |
+| `Transient`    | `MessageTooLarge`, `ContentRejected`, `AttachmentRejected` | No      | The same message would be rejected again.                   |
+| `Permanent`    | any                                                        | No      | The address does not accept mail.                           |
+| `Undetermined` | any                                                        | No      | Resend could not classify the bounce.                       |
+| anything else  |                                                            | No      | Only classifications named here are treated as recoverable. |
+
+`delivery_delayed`, `suppressed`, `complained` and `failed` attempts are never retried. They stay as they are for an administrator to act on.
+
+The attempt row is not the whole test. It keeps only its highest-ranked outcome, of two bounces it keeps the first one's detail, and a mail server can report an auto-reply to a delivered message as a transient bounce. So every stored event for the delivery's attempts must be a recoverable bounce or a `delivery_delayed`. One `delivered`, `complained`, `suppressed` or `failed` event, or one bounce off the allowlist, blocks the retry, whatever order the events arrived in.
+
+| Bounced attempt | Retry waits | Retry is attempt |
+| --------------- | ----------- | ---------------- |
+| 1               | 4 hours     | 2                |
+| 2               | 24 hours    | 3                |
+| 3               | no retry    |                  |
+
+The delays are `INVITE_RETRY_BACKOFF_HOURS` and the cap of three attempts is `INVITE_EMAIL_MAX_ATTEMPTS`, both in `lib/email-delivery/invite-retry-policy.ts` with the allowlist and the decision function. The cap is read from the bounced attempt's stored `attempt_number`.
+
+The invitation must still be usable: not accepted, not revoked, not replaced, not expired, with its user still `invited`. A retry that would be sent after the invitation expires is not scheduled.
+
+How it runs:
+
+- The email worker's `resend_webhook_reconciliation` job schedules retries every five minutes, right after it reconciles stored events. `scheduleInviteEmailRetries` in `lib/email-delivery/invite-retry.ts` reads attempt and invitation rows, not webhook deliveries, so a retry that a crash prevented is scheduled by the next run.
+- Scheduling locks the user row first, the same lock that replacing, revoking and accepting an invitation take, then decides, then inserts the new attempt and its delayed pg-boss job in that one transaction.
+- The new attempt's number is the bounced attempt's plus one. The unique `(delivery_id, attempt_number)` index therefore allows one successor per bounced attempt, however many events, replays or concurrent runs ask for it.
+- The retry is a new attempt with its own idempotency key, queue job and provider email id. It sends the link in the invitation's `sealed_url`, so no new token is issued and the earlier email's link keeps working. The welcome email is not sent again.
+- The worker checks again right before sending, because the backoff is hours long. It skips the retry if the invitation is no longer usable or if the provider has since reported delivery, a complaint or a non-recoverable bounce for an earlier attempt. The skipped attempt becomes `suppressed` with a `skipReason` such as `already_delivered`, `bounce_not_recoverable`, `invite_expired` or `invite_accepted`.
+- A retry whose job is dead-lettered becomes `failed`. Neither a `failed` nor a `suppressed` attempt is retried, and its existence stops any further retry of the attempt before it.
+- The worker's "already submitted" check is per attempt (`submitted_at` on the job's own attempt), so an earlier submission does not block a retry and a queue retry of one attempt cannot send it twice.
 
 ### `resend_webhook_events`
 

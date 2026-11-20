@@ -10,6 +10,8 @@ import {
   markInviteEmailSubmitted,
 } from "@/lib/auth/invite-store";
 import { EmailSendError } from "@/lib/email";
+import { findInviteRetrySendBlocker } from "@/lib/email-delivery/invite-retry";
+import { recordUnsentEmailDeliveryAttempt } from "@/lib/email-delivery/store";
 import { buildAccountInviteEmailJob, type EmailJobData } from "@/lib/email-queue/email-job";
 import { EMAIL_DEAD_LETTER_QUEUE, EMAIL_QUEUE } from "@/lib/email-queue/queue";
 import {
@@ -39,10 +41,21 @@ jest.mock("@/lib/auth/invite-store", () => ({
   markInviteEmailSubmitted: jest.fn(),
 }));
 
+jest.mock("@/lib/email-delivery/invite-retry", () => ({
+  findInviteRetrySendBlocker: jest.fn(),
+  scheduleInviteEmailRetries: jest.fn(),
+}));
+
+jest.mock("@/lib/email-delivery/store", () => ({
+  recordUnsentEmailDeliveryAttempt: jest.fn(),
+}));
+
 const sendInviteEmailMock = jest.mocked(sendInviteEmail);
 const findInviteEmailJobTargetMock = jest.mocked(findInviteEmailJobTarget);
 const markInviteEmailFailedMock = jest.mocked(markInviteEmailFailed);
 const markInviteEmailSubmittedMock = jest.mocked(markInviteEmailSubmitted);
+const findInviteRetrySendBlockerMock = jest.mocked(findInviteRetrySendBlocker);
+const recordUnsentAttemptMock = jest.mocked(recordUnsentEmailDeliveryAttempt);
 
 const ORIGINAL_ENV = process.env;
 const INVITE_ID = "2e42f745-44e8-4ab7-a2a2-c1f42cc8e204";
@@ -100,8 +113,8 @@ function buildInviteTarget() {
     userStatus: "invited" as const,
     expiresAt: new Date(Date.now() + 60_000),
     acceptedAt: null,
-    sentAt: null,
     revokedAt: null,
+    attemptSubmittedAt: null,
   };
 }
 
@@ -165,24 +178,47 @@ describe("processEmailJob", () => {
 
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
     expect(result).toEqual({ status: "skipped", reason });
+    expect(recordUnsentAttemptMock).toHaveBeenCalledWith(ATTEMPT.id, {
+      outcome: "suppressed",
+      skipReason: reason,
+    });
     expect(executeSqlMock).toHaveBeenCalledWith(
       expect.stringContaining("data - 'secret'"),
       expectedRedactionParams(job),
     );
   });
 
-  it("skips sending when the invite email was already submitted, even without a payload secret", async () => {
+  it("skips sending when this attempt was already submitted, even without a payload secret", async () => {
     findInviteEmailJobTargetMock.mockResolvedValue({
       ...buildInviteTarget(),
-      sentAt: new Date(),
+      attemptSubmittedAt: new Date(),
     });
     const job = buildJob();
     (job.data as { secret?: string }).secret = undefined;
 
     const result = await processEmailJob(boss, job);
 
+    expect(findInviteEmailJobTargetMock).toHaveBeenCalledWith(INVITE_ID, ATTEMPT.id);
     expect(sendInviteEmailMock).not.toHaveBeenCalled();
     expect(result).toEqual({ status: "skipped", reason: "invite_already_submitted" });
+    // The provider has the email, so the attempt keeps its outcome and the invite is marked.
+    expect(recordUnsentAttemptMock).not.toHaveBeenCalled();
+    expect(markInviteEmailSubmittedMock).toHaveBeenCalledWith(INVITE_ID);
+  });
+
+  it("checks the earlier attempts before sending an automatic retry, and only then", async () => {
+    await processEmailJob(boss, buildJob());
+    expect(findInviteRetrySendBlockerMock).not.toHaveBeenCalled();
+
+    const retry = buildJob();
+    retry.data.attempt = { ...ATTEMPT, attemptNumber: 2 };
+    findInviteRetrySendBlockerMock.mockResolvedValue("already_delivered");
+    sendInviteEmailMock.mockClear();
+
+    const result = await processEmailJob(boss, retry);
+
+    expect(sendInviteEmailMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "skipped", reason: "already_delivered" });
   });
 
   it("fails into the retry/dead-letter cycle when an unsubmitted invite has no payload secret", async () => {
@@ -327,6 +363,7 @@ describe("processDeadLetteredEmailJob", () => {
     const result = await processDeadLetteredEmailJob(boss, job);
 
     expect(markInviteEmailFailedMock).toHaveBeenCalledWith(INVITE_ID);
+    expect(recordUnsentAttemptMock).toHaveBeenCalledWith(ATTEMPT.id, { outcome: "failed" });
     // The match spans EMAIL_QUEUE too, so the failed source row and any
     // deferral ancestors are redacted along with the dead-lettered copy.
     expect(executeSqlMock).toHaveBeenCalledWith(
