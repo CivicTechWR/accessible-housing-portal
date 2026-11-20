@@ -44,7 +44,7 @@ Important behaviour:
 - Better Auth sets the password in `accounts`. Acceptance activates the user and removes the copyable invitation URL.
 - `email_queued_at` records that provider submission was requested and durably enqueued.
 - the worker sets the legacy `sent_at` field when the provider first accepts the invitation email, or `email_failed_at` after permanent queue failure. An automatic retry leaves both as they are; its state is on its own delivery attempt.
-- those timestamps derive the admin-facing states `not_requested`, `queued`, `submitted`, and `failed`; recipient-server delivery is not currently tracked.
+- the admin pages no longer read those timestamps for the email's status. They derive it from the invitation's delivery attempts and provider events, as described in [Invitation email status](auth-and-admin.md#invitation-email-status). `sent_at` still orders the recent invites list.
 
 pg-boss stores email jobs in its own `pgboss` schema, outside the Drizzle-managed application schema. Queue payloads reference the invite rather than duplicating recipient details. The one-time invite URL is encrypted under a key derived from `EMAIL_JOB_SECRET` while queued and redacted after a terminal outcome.
 

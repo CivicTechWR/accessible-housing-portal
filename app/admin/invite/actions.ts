@@ -52,8 +52,10 @@ export async function sendAdminInviteAction(
       };
     }
 
+    const status = parsed.data.sendInviteEmail ? "queued" : "not_requested";
+
     return {
-      status: parsed.data.sendInviteEmail ? "queued" : "not_requested",
+      status,
       message: result.value.message,
       inviteUrl: result.value.data.inviteUrl,
       invite: {
@@ -61,7 +63,7 @@ export async function sendAdminInviteAction(
         email: result.value.data.email.trim().toLowerCase(),
         role: result.value.data.role,
         invitedAt: new Date().toISOString(),
-        status: parsed.data.sendInviteEmail ? "queued" : "not_requested",
+        emailStatus: { state: status },
       },
     };
   } catch (error) {

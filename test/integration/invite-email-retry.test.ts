@@ -17,6 +17,7 @@ import {
   verifications,
 } from "@/db/schema";
 import { createInvite } from "@/lib/auth/invite-service";
+import { findAccountInvites } from "@/lib/auth/invite-store";
 import type { EmailDeliveryAttemptRef } from "@/lib/email-delivery/attempt";
 import {
   scheduleInviteEmailRetries,
@@ -473,6 +474,41 @@ describe("automatic invite email retries with PostgreSQL", { skip: !testDatabase
       attempts.map((attempt) => attempt.outcome),
       ["bounced", "failed"],
     );
+  });
+
+  it("lists each invitation with the status of its own email, read across attempts and events", async () => {
+    const emailStatusOf = async (invite: SentInvite) =>
+      (await findAccountInvites()).find((row) => row.id === invite.inviteId)?.emailStatus;
+
+    const retried = await sendBouncedInvite();
+    await sweep();
+    // An automatic reply: the attempt reads `bounced` and only the events show the delivery.
+    const autoReplied = await sendInvite();
+    await report(autoReplied.attempt.id, "email.delivered");
+    await report(autoReplied.attempt.id, "email.bounced");
+    // The welcome email is a delivery of its own and says nothing about the invitation email.
+    const welcomeBounced = await sendInvite();
+    await report(welcomeBounced.welcomeAttempt.id, "email.bounced", {
+      bounceType: "Permanent",
+      bounceSubtype: "General",
+    });
+
+    assert.deepEqual(await emailStatusOf(retried), { state: "retrying", attemptNumber: 2 });
+    assert.deepEqual(await emailStatusOf(autoReplied), {
+      state: "delivered",
+      bounceReported: true,
+    });
+    assert.deepEqual(await emailStatusOf(welcomeBounced), {
+      state: "submitted",
+      attemptNumber: 1,
+    });
+
+    const { job } = await latestRetry(retried.attempt.deliveryId);
+    assert.equal((await processEmailJob(queue(), job)).status, "submitted");
+    assert.deepEqual(await emailStatusOf(retried), { state: "submitted", attemptNumber: 2 });
+
+    await replaceInvite(retried);
+    assert.equal(await emailStatusOf(retried), null);
   });
 
   it("keeps the provider's outcome when a submitted password reset is dead-lettered", async () => {

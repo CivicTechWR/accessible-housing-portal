@@ -89,8 +89,13 @@ export async function getRecentAccountInvitesService(
 
   return succeed({
     data: invites.map((invite) => ({
-      ...invite,
+      id: invite.id,
+      email: invite.email,
+      name: invite.name,
+      role: invite.role,
+      organization: invite.organization,
       invitedAt: invite.invitedAt.toISOString(),
+      emailStatus: invite.emailStatus,
     })),
   });
 }

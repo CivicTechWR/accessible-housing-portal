@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { findAccountInvites, type AccountInviteRow } from "@/lib/auth/invite-store";
-import { inviteStatusLabels } from "@/components/admin-invite/types";
+import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
 import { getAccountsService } from "@/lib/accounts/account.service";
 import { cn } from "@/lib/utils";
 import type { AccountListResponse } from "@/shared/schemas/account-management";
@@ -98,9 +98,12 @@ function roleBadgeVariant(role: AccountListResponse["data"][number]["role"]) {
   }
 }
 
-function inviteEmailBadgeVariant(status: AccountInviteRow["status"]) {
-  return status === "failed" ? ("destructive" as const) : ("outline" as const);
-}
+const inviteLifecycleLabels: Record<AccountInviteRow["lifecycle"], string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  expired: "Expired",
+  revoked: "Revoked",
+};
 
 function statusBadgeVariant(status: AccountListResponse["data"][number]["status"]) {
   switch (status) {
@@ -182,7 +185,10 @@ function MobileDataList({ children }: { children: ReactNode }) {
 }
 
 function MobileDataCard({ children }: { children: ReactNode }) {
-  return <div className="rounded-xl border border-border bg-background p-4">{children}</div>;
+  // `min-w-0` lets the card shrink below a long email address instead of widening the grid.
+  return (
+    <div className="min-w-0 rounded-xl border border-border bg-background p-4">{children}</div>
+  );
 }
 
 function MobileDataHeader({
@@ -196,7 +202,7 @@ function MobileDataHeader({
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="space-y-1">
+      <div className="min-w-0 space-y-1 wrap-anywhere">
         <p className="font-medium text-foreground">{title}</p>
         <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
@@ -220,12 +226,13 @@ function MobileDetail({ label, children }: { label: string; children: ReactNode 
 
 export default async function AdminUsersPage() {
   const result = await getAllAccounts();
-  const invites = await findAccountInvites();
 
   if (!result.ok) {
     return <PageMessage title="Unable to load users">{result.error.message}</PageMessage>;
   }
 
+  // Loaded only after `getAllAccounts` has confirmed an administrator.
+  const invites = await findAccountInvites();
   const accounts = result.value.data;
 
   return (
@@ -251,7 +258,7 @@ export default async function AdminUsersPage() {
               invites.map((invite) => (
                 <DesktopDataRow key={invite.id}>
                   <DesktopDataCell>
-                    <div className="space-y-1">
+                    <div className="max-w-72 space-y-1 wrap-break-word">
                       <p className="font-medium text-foreground">{invite.name}</p>
                       <p className="text-xs text-muted-foreground">{invite.email}</p>
                     </div>
@@ -261,9 +268,12 @@ export default async function AdminUsersPage() {
                     <Badge variant={roleBadgeVariant(invite.role)}>{formatRole(invite.role)}</Badge>
                   </DesktopDataCell>
                   <DesktopDataCell>
-                    <Badge variant={inviteEmailBadgeVariant(invite.status)}>
-                      {inviteStatusLabels[invite.status]} • {invite.lifecycle}
-                    </Badge>
+                    <div className="max-w-xs min-w-44 space-y-2">
+                      <Badge variant="outline">{inviteLifecycleLabels[invite.lifecycle]}</Badge>
+                      {invite.emailStatus && (
+                        <InviteEmailStatusSummary status={invite.emailStatus} />
+                      )}
+                    </div>
                   </DesktopDataCell>
                   <DesktopDataCell muted>
                     {formatDateTime(invite.invitedAt.toISOString())}
@@ -303,12 +313,13 @@ export default async function AdminUsersPage() {
                         <Badge variant={roleBadgeVariant(invite.role)}>
                           {formatRole(invite.role)}
                         </Badge>
-                        <Badge variant={inviteEmailBadgeVariant(invite.status)}>
-                          {inviteStatusLabels[invite.status]} • {invite.lifecycle}
-                        </Badge>
+                        <Badge variant="outline">{inviteLifecycleLabels[invite.lifecycle]}</Badge>
                       </>
                     }
                   />
+                  {invite.emailStatus && (
+                    <InviteEmailStatusSummary status={invite.emailStatus} className="mt-4" />
+                  )}
                   <MobileDetails>
                     <MobileDetail label="Organization">
                       {invite.organization ?? "Not provided"}
