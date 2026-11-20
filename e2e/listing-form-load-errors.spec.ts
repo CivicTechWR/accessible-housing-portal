@@ -36,6 +36,14 @@ test("says a missing listing was not found and links to My Listings", async ({ p
   expect(notFoundResponses).toBe(1);
 });
 
+test("treats an id that isn't a UUID as not found", async ({ page }) => {
+  await page.goto("/listing-form/not-a-uuid");
+
+  await expect(page.getByRole("heading", { name: "Listing not found" })).toBeVisible({
+    timeout: FIRST_REQUEST_TIMEOUT,
+  });
+});
+
 test("offers a retry when the listing can't be loaded", async ({ page }) => {
   const editorUrl = `**/api/listings/${E2E_SEEDED_LISTING_ID}/editor`;
   await page.route(editorUrl, (route) => route.fulfill({ status: 500, json: { message: "Down" } }));
@@ -46,7 +54,15 @@ test("offers a retry when the listing can't be loaded", async ({ page }) => {
   await expect(heading).toBeVisible();
   await expect(page.getByText("Check your connection and try again.")).toBeVisible();
 
-  // Hold the retry's request, so the pending button can be seen before the form replaces it.
+  // A retry that fails keeps focus on the button and says so, which announces the alert again.
+  const tryAgain = page.getByRole("button", { name: "Try again" });
+  await tryAgain.click();
+  await expect(
+    page.getByText("That didn't work. Check your connection and try again."),
+  ).toBeVisible();
+  await expect(tryAgain).toBeFocused();
+
+  // Hold the next retry's request, so the pending button can be seen before the form replaces it.
   let release = () => {};
   const held = new Promise<void>((resolve) => {
     release = resolve;
@@ -57,8 +73,10 @@ test("offers a retry when the listing can't be loaded", async ({ page }) => {
     await route.continue();
   });
 
-  await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByRole("button", { name: "Trying again..." })).toBeDisabled();
+  await tryAgain.click();
+  const pending = page.getByRole("button", { name: "Trying again..." });
+  await expect(pending).toHaveAttribute("aria-disabled", "true");
+  await expect(pending).toBeFocused();
   await expect(heading).toBeVisible();
 
   release();

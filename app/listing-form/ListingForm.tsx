@@ -34,8 +34,6 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     prepareDraftListing,
     isLoading,
     loadError,
-    retryLoad,
-    isRetryingLoad,
     isSubmitting,
     submitFeedback,
     autosaveStatus,
@@ -150,12 +148,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       <ListingFormLayout
         formContent={
           <AlertBanner variant="error" size="lg">
-            <ListingLoadErrorMessage
-              error={loadError}
-              isEditMode={isEditMode}
-              isRetrying={isRetryingLoad}
-              onRetry={retryLoad}
-            />
+            <ListingLoadErrorMessage error={loadError} />
           </AlertBanner>
         }
       />
@@ -266,18 +259,8 @@ export default function ListingForm({ listingId }: ListingFormProps) {
   );
 }
 
-function ListingLoadErrorMessage({
-  error,
-  isEditMode,
-  isRetrying,
-  onRetry,
-}: {
-  error: ListingLoadError;
-  isEditMode: boolean;
-  isRetrying: boolean;
-  onRetry: () => void;
-}): React.JSX.Element {
-  switch (error) {
+function ListingLoadErrorMessage({ error }: { error: ListingLoadError }): React.JSX.Element {
+  switch (error.kind) {
     case "not-found":
       return (
         <>
@@ -291,16 +274,21 @@ function ListingLoadErrorMessage({
     case "unavailable":
       return (
         <>
-          <h3 className="mb-2">
-            {isEditMode ? "This listing couldn't be loaded" : "Error Loading Listing"}
-          </h3>
+          <h3 className="mb-2">This listing couldn't be loaded</h3>
+          {/* The wording changes after a failed retry so the alert is announced again. */}
           <p>
-            {isEditMode
-              ? "Check your connection and try again."
-              : "We encountered an error while preparing this form. Please refresh and try again."}
+            {error.hasRetryFailed ? "That didn't work. " : null}
+            Check your connection and try again.
           </p>
-          <Button type="button" size="lg" className="mt-4" onClick={onRetry} disabled={isRetrying}>
-            {isRetrying ? "Trying again..." : "Try again"}
+          {/* aria-disabled, not disabled: disabling the focused button drops keyboard focus. */}
+          <Button
+            type="button"
+            size="lg"
+            className="mt-4 aria-disabled:opacity-50"
+            aria-disabled={error.isRetrying}
+            onClick={error.isRetrying ? undefined : error.retry}
+          >
+            {error.isRetrying ? "Trying again..." : "Try again"}
           </Button>
         </>
       );

@@ -64,8 +64,6 @@ export function useListingForm(initialListingId?: string) {
     data: initialData,
     isLoading: isFetching,
     loadError,
-    retry: retryLoad,
-    isRetrying: isRetryingLoad,
   } = useGetListingQuery(initialListingId);
   const { createDraftListing } = useCreateDraftListingQuery();
   const { patchListing, replaceListing } = useEditListingQuery();
@@ -438,8 +436,6 @@ export function useListingForm(initialListingId?: string) {
     autosaveStatus,
     isLoading: isFetching,
     loadError,
-    retryLoad,
-    isRetryingLoad,
     // Only the person's own submit. Autosave requests leave the button usable: onSubmit waits
     // for a save that is in flight before it publishes.
     isSubmitting: isPublishing || form.formState.isSubmitting,

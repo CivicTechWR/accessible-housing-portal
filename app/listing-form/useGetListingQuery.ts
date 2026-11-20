@@ -1,15 +1,22 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { queryKeys } from "@/app/query-keys";
 import { parseListingEditorResponse } from "./api";
 
-export type ListingLoadError = "not-found" | "unavailable";
+export type ListingLoadError =
+  | { kind: "not-found" }
+  | {
+      kind: "unavailable";
+      /** A retry is in flight. The message stays on screen until it settles. */
+      isRetrying: boolean;
+      /** A retry has failed too, so the message should say more than it did the first time. */
+      hasRetryFailed: boolean;
+      retry: () => void;
+    };
 
 class ListingNotFoundError extends Error {}
 
 export function useGetListingQuery(listingId?: string) {
-  const [isRetrying, setIsRetrying] = useState(false);
   const result = useQuery({
     queryKey: queryKeys.listingEditor(listingId),
     queryFn: async ({ signal }) => {
@@ -22,8 +29,8 @@ export function useGetListingQuery(listingId?: string) {
         signal,
       });
       // The API answers 404 for a listing that doesn't exist and for one the signed-in
-      // account can't edit.
-      if (response.status === 404) {
+      // account can't edit, and 400 for an id that isn't a UUID. None of them can be retried.
+      if (response.status === 404 || response.status === 400) {
         throw new ListingNotFoundError();
       }
       const payload = await parseListingEditorResponse(response);
@@ -38,25 +45,28 @@ export function useGetListingQuery(listingId?: string) {
     gcTime: 0,
   });
 
-  const retry = () => {
-    setIsRetrying(true);
-    void result.refetch().finally(() => setIsRetrying(false));
-  };
+  // A refetch with no data puts the query back to pending and clears its error, but keeps
+  // errorUpdateCount. So a pending fetch after a failure is a retry, and the message stays on
+  // screen in place of the loading skeleton.
+  const isRetrying = result.isPending && result.isFetching && result.errorUpdateCount > 0;
 
-  // A refetch with no data puts the query back to pending and clears its error. While a retry
-  // runs, the error is held and loading is not reported, so the message stays on screen.
+  // isLoadingError, not isError: a background refetch that fails while the form is open must
+  // not replace the form.
   let loadError: ListingLoadError | null = null;
-  if (isRetrying) {
-    loadError = "unavailable";
-  } else if (result.isError) {
-    loadError = result.error instanceof ListingNotFoundError ? "not-found" : "unavailable";
+  if (result.isLoadingError && result.error instanceof ListingNotFoundError) {
+    loadError = { kind: "not-found" };
+  } else if (result.isLoadingError || isRetrying) {
+    loadError = {
+      kind: "unavailable",
+      isRetrying,
+      hasRetryFailed: result.errorUpdateCount > 1,
+      retry: () => void result.refetch(),
+    };
   }
 
   return {
     data: result.data ?? null,
     isLoading: result.isLoading && !isRetrying,
     loadError,
-    retry,
-    isRetrying,
   };
 }
