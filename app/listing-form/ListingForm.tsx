@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { SubmitErrorHandler } from "react-hook-form";
 import { useListingForm, type AutosaveStatus } from "./useListingForm";
 import { CORE_FIELD_DEFINITIONS } from "./fieldDefinitions";
 import type { ListingFormInput } from "./types";
+import type { ListingLoadError } from "./useGetListingQuery";
 import { ListingFormFields } from "@/components/listing-form-fields/ListingFormFields";
 import { ListingFormFeatures } from "@/components/listing-form-features/ListingFormFeatures";
 import { ListingFormImages } from "@/components/listing-form-images/ListingFormImages";
@@ -31,7 +33,9 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     activateDraftListing,
     prepareDraftListing,
     isLoading,
-    isError,
+    loadError,
+    retryLoad,
+    isRetryingLoad,
     isSubmitting,
     submitFeedback,
     autosaveStatus,
@@ -141,17 +145,17 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     return <ListingFormSkeleton />;
   }
 
-  if (isError) {
+  if (loadError) {
     return (
       <ListingFormLayout
         formContent={
           <AlertBanner variant="error" size="lg">
-            <h3 className="mb-2">Error Loading Listing</h3>
-            <p>
-              {isEditMode
-                ? "We encountered an error while retrieving this listing. It may have been deleted or there is a network issue."
-                : "We encountered an error while preparing this form. Please refresh and try again."}
-            </p>
+            <ListingLoadErrorMessage
+              error={loadError}
+              isEditMode={isEditMode}
+              isRetrying={isRetryingLoad}
+              onRetry={retryLoad}
+            />
           </AlertBanner>
         }
       />
@@ -260,6 +264,47 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       }
     />
   );
+}
+
+function ListingLoadErrorMessage({
+  error,
+  isEditMode,
+  isRetrying,
+  onRetry,
+}: {
+  error: ListingLoadError;
+  isEditMode: boolean;
+  isRetrying: boolean;
+  onRetry: () => void;
+}): React.JSX.Element {
+  switch (error) {
+    case "not-found":
+      return (
+        <>
+          <h3 className="mb-2">Listing not found</h3>
+          <p>This listing doesn't exist or belongs to another account.</p>
+          <Button asChild size="lg" className="mt-4">
+            <Link href="/my-listings">Back to My Listings</Link>
+          </Button>
+        </>
+      );
+    case "unavailable":
+      return (
+        <>
+          <h3 className="mb-2">
+            {isEditMode ? "This listing couldn't be loaded" : "Error Loading Listing"}
+          </h3>
+          <p>
+            {isEditMode
+              ? "Check your connection and try again."
+              : "We encountered an error while preparing this form. Please refresh and try again."}
+          </p>
+          <Button type="button" size="lg" className="mt-4" onClick={onRetry} disabled={isRetrying}>
+            {isRetrying ? "Trying again..." : "Try again"}
+          </Button>
+        </>
+      );
+  }
 }
 
 function autosaveStatusText(autosaveStatus: AutosaveStatus) {
