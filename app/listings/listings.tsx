@@ -77,6 +77,7 @@ export default function ListingsDashboard({
     bedroomToggleProps,
     priceRangeProps,
     searchInputProps,
+    searchFormProps,
     bathroomToggleProps,
     getFeatureCheckboxProps,
     datePickerProps,
@@ -113,6 +114,7 @@ export default function ListingsDashboard({
       <header className="shrink-0 border-b bg-background px-4 py-3 sm:flex sm:h-16 sm:items-center sm:gap-4 sm:py-0 lg:gap-6">
         <ListingFilterSearchBar
           searchInputProps={searchInputProps}
+          searchFormProps={searchFormProps}
           priceRangeProps={priceRangeProps}
           bedroomToggleProps={bedroomToggleProps}
           bathroomToggleProps={bathroomToggleProps}

@@ -2,6 +2,12 @@
 
 import type { ComponentProps, ReactNode } from "react";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { FieldGroup } from "@/components/ui/field";
 import { PriceRangeInput, PriceRangeInputProps } from "../price-range-input/PriceRangeInput";
 import { ToggleField, ToggleFieldProps } from "../toggle-field/ToggleField";
@@ -14,6 +20,8 @@ export enum DisplayMode {
 }
 export interface ListingFilterSearchBarProps {
   searchInputProps: ComponentProps<typeof Input>;
+  /** The search runs when this form is submitted, by Enter or the Search button. */
+  searchFormProps: ComponentProps<"form">;
   priceRangeProps: PriceRangeInputProps;
   bedroomToggleProps: ToggleFieldProps;
   bathroomToggleProps: ToggleFieldProps;
@@ -31,6 +39,7 @@ export interface ListingFilterSearchBarProps {
 
 export function ListingFilterSearchBar({
   searchInputProps,
+  searchFormProps,
   priceRangeProps,
   bedroomToggleProps,
   bathroomToggleProps,
@@ -40,13 +49,19 @@ export function ListingFilterSearchBar({
   return (
     <FieldGroup className="w-full gap-3 space-y-0 sm:flex-row sm:items-end sm:gap-4 lg:gap-6">
       <div className="flex w-full items-center gap-2 sm:max-w-sm sm:flex-1">
-        <div className="relative min-w-0 flex-1">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
-          />
-          <Input {...searchInputProps} className="h-10 pl-9" />
-        </div>
+        <form {...searchFormProps} className="min-w-0 flex-1">
+          <InputGroup className="h-10">
+            <InputGroupAddon aria-hidden>
+              <HugeiconsIcon icon={Search01Icon} className="size-4" />
+            </InputGroupAddon>
+            <InputGroupInput {...searchInputProps} />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton type="submit" variant="default" size="sm" className="h-8 px-3">
+                Search
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        </form>
         {mobileFilterButton}
       </div>
 

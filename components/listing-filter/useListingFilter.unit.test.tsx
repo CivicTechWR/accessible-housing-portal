@@ -46,34 +46,89 @@ describe("useListingFilters", () => {
     expect(result.current.searchInputProps.placeholder).toBe("Search city, address, or building");
   });
 
-  it("keeps typed text in the input while syncing the trimmed location query param", () => {
-    const { result, setFilters } = renderFilters();
+  describe("search box", () => {
+    function renderSearch(initialLocation?: string) {
+      const setFilters = jest.fn(async (..._args: unknown[]) => new URLSearchParams());
+      let filters = createFilters({ location: initialLocation });
+      useQueryStatesMock.mockImplementation(() => [filters, setFilters]);
+      const { result, rerender } = renderHook(() => useListingFilters());
 
-    act(() => {
-      result.current.searchInputProps.onChange({
-        target: { value: "  Kitchener  " },
-      } as React.ChangeEvent<HTMLInputElement>);
+      const type = (value: string) =>
+        act(() => {
+          result.current.searchInputProps.onChange({
+            target: { value },
+          } as React.ChangeEvent<HTMLInputElement>);
+        });
+      const submit = () => {
+        const preventDefault = jest.fn();
+        act(() => {
+          result.current.searchFormProps.onSubmit({
+            preventDefault,
+          } as unknown as React.FormEvent<HTMLFormElement>);
+        });
+        return preventDefault;
+      };
+      // The URL's location changes: a submit landing, back/forward, or a link.
+      const urlChangesTo = (location: string | undefined, other: Record<string, unknown> = {}) => {
+        filters = createFilters({ location, ...other });
+        rerender();
+      };
+
+      return { result, setFilters, type, submit, urlChangesTo };
+    }
+
+    it("leaves the URL alone while typing", () => {
+      const { result, setFilters, type } = renderSearch();
+
+      type("W");
+      type("Wat");
+      type("Waterloo");
+
+      expect(result.current.searchInputProps.value).toBe("Waterloo");
+      expect(setFilters).not.toHaveBeenCalled();
     });
 
-    expect(result.current.searchInputProps.value).toBe("  Kitchener  ");
-    expect(setFilters).toHaveBeenCalledWith({ location: "Kitchener" });
+    it("searches for the trimmed text on submit and adds a history entry", () => {
+      const { result, setFilters, type, submit } = renderSearch();
+
+      type("  Kitchener  ");
+      const preventDefault = submit();
+
+      expect(preventDefault).toHaveBeenCalled();
+      expect(setFilters).toHaveBeenCalledWith({ location: "Kitchener" }, { history: "push" });
+      expect(result.current.searchInputProps.value).toBe("Kitchener");
+    });
+
+    it.each(["", "   "])("clears the location on submitting %j", (value) => {
+      const { result, setFilters, type, submit } = renderSearch("Waterloo, ON");
+
+      type(value);
+      submit();
+
+      expect(setFilters).toHaveBeenCalledWith({ location: null }, { history: "push" });
+      expect(result.current.searchInputProps.value).toBe("");
+    });
+
+    it("follows the URL when its location changes, as on back/forward or a link", () => {
+      const { result, type, urlChangesTo } = renderSearch("Waterloo");
+
+      type("Kitch");
+      urlChangesTo("Guelph");
+      expect(result.current.searchInputProps.value).toBe("Guelph");
+
+      urlChangesTo(undefined);
+      expect(result.current.searchInputProps.value).toBe("");
+    });
+
+    it("keeps unsubmitted text when another filter changes", () => {
+      const { result, type, urlChangesTo } = renderSearch("Waterloo");
+
+      type("Waterloo Region");
+      urlChangesTo("Waterloo", { bedrooms: "2" });
+
+      expect(result.current.searchInputProps.value).toBe("Waterloo Region");
+    });
   });
-
-  it.each(["", "   "])(
-    "clears the location query param for %j instead of restoring a default city",
-    (value) => {
-      const { result, setFilters } = renderFilters({ location: "Waterloo, ON" });
-
-      act(() => {
-        result.current.searchInputProps.onChange({
-          target: { value },
-        } as React.ChangeEvent<HTMLInputElement>);
-      });
-
-      expect(result.current.searchInputProps.value).toBe(value);
-      expect(setFilters).toHaveBeenCalledWith({ location: null });
-    },
-  );
 
   it("clears the minimum price filter with null instead of leaving stale query state behind", async () => {
     const { result, setFilters } = renderFilters({ minPrice: 1800 });

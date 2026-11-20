@@ -1,6 +1,6 @@
 import { listingSearchParamsParsers } from "@/app/listings/searchParams";
 import { useQueryStates } from "nuqs";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FilterButtonProps } from "@/components/filter-button/FilterButton";
 
 const LISTING_LOCATION_PLACEHOLDER = "Search city, address, or building";
@@ -14,8 +14,10 @@ function normalizeLocationFilter(value: string) {
 export function useListingFilters() {
   const [filters, setFilters] = useQueryStates(listingSearchParamsParsers);
   const [locationInputValue, setLocationInputValue] = useState(filters.location ?? "");
-  const [, startTransition] = useTransition();
 
+  // Typing changes only the box. The URL's location changes on a submit, back/forward or a
+  // link, never mid-word, so the box can simply follow it. Writing the URL on every keystroke
+  // let late URL updates overwrite newer typing (#594).
   useEffect(() => {
     setLocationInputValue(filters.location ?? "");
   }, [filters.location]);
@@ -40,18 +42,29 @@ export function useListingFilters() {
       autoComplete: "off" as const,
       placeholder: LISTING_LOCATION_PLACEHOLDER,
       type: "search" as const,
+      enterKeyHint: "search" as const,
+      // Before hydration the form submits natively, as `GET /listings?location=…`.
+      name: "location",
       value: locationInputValue,
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-        const nextLocation = e.target.value;
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setLocationInputValue(e.target.value),
+    }),
+    [locationInputValue],
+  );
 
-        setLocationInputValue(nextLocation);
+  const searchFormProps = useMemo(
+    () => ({
+      role: "search" as const,
+      action: "/listings",
+      onSubmit: (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const location = normalizeLocationFilter(locationInputValue);
 
-        startTransition(() => {
-          void setFilters({ location: normalizeLocationFilter(nextLocation) });
-        });
+        setLocationInputValue(location ?? "");
+        // Push, so Back returns to the previous search.
+        void setFilters({ location }, { history: "push" });
       },
     }),
-    [locationInputValue, setFilters, startTransition],
+    [locationInputValue, setFilters],
   );
 
   const priceRangeProps = useMemo(
@@ -196,6 +209,7 @@ export function useListingFilters() {
     activeFilterCount,
     sortOptionProps,
     searchInputProps,
+    searchFormProps,
     priceRangeProps,
     bedroomToggleProps,
     bathroomToggleProps,
