@@ -299,9 +299,10 @@ describe("Resend webhooks with PostgreSQL", { skip: !testDatabaseUrl }, () => {
     assert.equal((await attemptState(attempt.id)).outcome, "delivered");
   });
 
-  it("leaves an event unmatched when its tags are malformed or name the wrong delivery", async () => {
+  it("leaves an event unmatched when its tags are malformed, name the wrong delivery, or name an attempt that holds another email id", async () => {
     const attempt = await startAttempt("account_invite", { submitted: false });
     const other = await startAttempt("account_invite", { submitted: false });
+    const submitted = await startAttempt("account_invite");
     const data = { email_id: `email_${crypto.randomUUID()}` };
 
     const events = [
@@ -313,6 +314,10 @@ describe("Resend webhooks with PostgreSQL", { skip: !testDatabaseUrl }, () => {
         ...data,
         tags: { delivery_id: other.deliveryId, attempt_id: attempt.id },
       }),
+      await receive("email.bounced", {
+        ...data,
+        tags: { delivery_id: submitted.deliveryId, attempt_id: submitted.id },
+      }),
     ];
 
     for (const event of events) {
@@ -322,6 +327,7 @@ describe("Resend webhooks with PostgreSQL", { skip: !testDatabaseUrl }, () => {
       });
     }
     assert.equal((await attemptState(attempt.id)).outcome, "queued");
+    assert.equal((await attemptState(submitted.id)).outcome, "sent");
   });
 
   it("reconciles an unmatched event once the attempt has its provider email id", async () => {
@@ -368,8 +374,9 @@ describe("Resend webhooks with PostgreSQL", { skip: !testDatabaseUrl }, () => {
 
     await db.execute(
       sql.raw(`
-        create function ahp_test_reject_attempt_update() returns trigger language plpgsql
+        create or replace function ahp_test_reject_attempt_update() returns trigger language plpgsql
           as $$ begin raise exception 'rejected by test'; end $$;
+        drop trigger if exists ahp_test_reject_attempt_update on email_delivery_attempts;
         create trigger ahp_test_reject_attempt_update before update on email_delivery_attempts
           for each row when (old.id = '${attempt.id}')
           execute function ahp_test_reject_attempt_update();
@@ -417,5 +424,28 @@ describe("Resend webhooks with PostgreSQL", { skip: !testDatabaseUrl }, () => {
 
     assert.deepEqual(results.toSorted(), ["processed", "skipped", "skipped", "skipped"]);
     assert.equal((await attemptState(attempt.id)).outcome, "delivered");
+  });
+
+  it("keeps the higher-ranked outcome when two events for one attempt are reconciled at the same time", async () => {
+    // Without the attempt row lock both transactions read `sent` and the later write wins,
+    // which is `delivered` about half the time. Several attempts make that hard to miss.
+    const attempts = await Promise.all(
+      Array.from({ length: 6 }, () => startAttempt("account_invite")),
+    );
+    const events = attempts.flatMap((attempt) =>
+      (["email.bounced", "email.delivered"] as const).map((eventType) => ({
+        svixId: svixId(crypto.randomUUID()),
+        eventType,
+        providerEmailId: attempt.providerEmailId,
+        eventCreatedAt: new Date(EVENT_CREATED_AT),
+      })),
+    );
+    await db.insert(resendWebhookEvents).values(events);
+
+    await Promise.all(events.map((event) => reconcileResendWebhookEvent(event.svixId)));
+
+    for (const attempt of attempts) {
+      assert.equal((await attemptState(attempt.id)).outcome, "bounced");
+    }
   });
 });
