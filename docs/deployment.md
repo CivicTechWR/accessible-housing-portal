@@ -1,6 +1,6 @@
 # Deployment and operations
 
-Run Home Hub on Railway as a long-lived Next.js server with PostgreSQL and the email worker enabled. Production and staging use separate databases, secrets, and public origins.
+Run the app on Railway as a long-lived Next.js server with PostgreSQL and the email worker enabled. Each environment uses its own database, secrets, and public origin.
 
 ## CI
 
@@ -20,8 +20,9 @@ Jobs:
 | Supply Chain Lockfile | `npm ci`, `npm run lockfile:check`, `git diff --exit-code -- package.json package-lock.json` |
 | Lint                  | `npm ci`, `npm run lint`                                                                     |
 | Format Check          | `npm ci`, `npm run format:check`                                                             |
-| Tests                 | `npm ci`, `npm run test`                                                                     |
+| Tests                 | `npm ci`, `npm run test`, `npm run test:integration`                                         |
 | Build                 | `npm ci`, `npm run build`                                                                    |
+| Playwright E2E        | `npm ci`, `npx playwright install --only-shell chromium`, `npm run test:e2e`                 |
 
 CI uses Node 26 with npm cache enabled.
 
@@ -86,23 +87,23 @@ The Docker Compose `app` service builds from `Dockerfile.dev` and overrides its 
 
 Run a long-lived Node.js process with PostgreSQL and `EMAIL_WORKER_ENABLED=true`. Set the build command to `npm run build` and start command to `npm run start -- --hostname 0.0.0.0 --port $PORT`. Apply `npm run db:migrate` as an explicit release step against the intended database. Do not seed mock listings in production.
 
-| Setting                          | Production                                  | Staging                              |
-| -------------------------------- | ------------------------------------------- | ------------------------------------ |
-| `BETTER_AUTH_URL`                | `https://homehub.unioncommunityhousing.org` | `https://affordablehousing.ctwr.org` |
-| Passkey RP ID, derived from URL  | `homehub.unioncommunityhousing.org`         | `affordablehousing.ctwr.org`         |
-| Trusted origin, derived from URL | `https://homehub.unioncommunityhousing.org` | `https://affordablehousing.ctwr.org` |
+| Setting                          | Production                                  |
+| -------------------------------- | ------------------------------------------- |
+| `BETTER_AUTH_URL`                | `https://homehub.unioncommunityhousing.org` |
+| Passkey RP ID, derived from URL  | `homehub.unioncommunityhousing.org`         |
+| Trusted origin, derived from URL | `https://homehub.unioncommunityhousing.org` |
 
 Use distinct `DATABASE_URL`, `BETTER_AUTH_SECRET`, `EMAIL_JOB_SECRET`, and `RESEND_WEBHOOK_SECRET` values for each environment. Authentication and job secrets need at least 32 random characters; the webhook secret is supplied by Resend. Set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY`, and an `EMAIL_FROM` address on a Resend-verified domain. Captured email is only for local development.
 
 Configure each custom domain and its TLS certificate in Railway. Add only the DNS records Railway supplies for the selected service. For email, configure the sender-domain verification records supplied by Resend, including DKIM and SPF, and choose an appropriate DMARC policy. The web domain and sender domain need not be the same.
 
-The application uses a fixed public origin and host-only cookies. Keep production and staging cookies separate. Do not add wildcard trusted origins, cross-domain cookies, or forwarded-host trust.
+The application uses a fixed public origin and host-only cookies. Keep each environment's cookies separate. Do not add wildcard trusted origins, cross-domain cookies, or forwarded-host trust.
 
 Rate limiting trusts only Railway's edge-supplied `X-Real-IP` header. It ignores `X-Forwarded-For`, `Forwarded`, and `CF-Connecting-IP`. Keep the application origin reachable only through the trusted edge. An exposed origin would let callers forge `X-Real-IP`. Any additional proxy must preserve the original Origin and overwrite the trusted client-IP header, never pass through a caller's value or append to it. See [Railway request headers](https://docs.railway.com/networking/public-networking/specs-and-limits) and [Better Auth proxy trust](https://www.better-auth.com/docs/concepts/rate-limit#connecting-ip-address).
 
 All application instances must use the same PostgreSQL database for the `auth_rate_limits` table. See [password-reset limits](auth-and-admin.md#account-security) for the request budget and recovery period.
 
-Passkeys require HTTPS outside localhost. Because these hostnames have different registrable domains, users enroll passkeys separately on each. Use `http://localhost:<port>` consistently for local development rather than alternating between localhost and 127.0.0.1.
+Passkeys require HTTPS outside localhost. A passkey is tied to the hostname it was enrolled on, so users enroll separately in each environment. Use `http://localhost:<port>` consistently for local development rather than alternating between localhost and 127.0.0.1.
 
 The Dockerfile starts Node directly and uses Railway's injected variables. The optional `*:secrets` scripts remain available for explicit Infisical workflows.
 
@@ -129,9 +130,9 @@ npm run db:migrate
 npm run db:migrate:secrets
 ```
 
-Use `db:migrate:secrets` when Infisical `dev` secrets are the intended target. For production, verify the Infisical environment and database target before running migrations.
+Use `db:migrate:secrets` when Infisical `dev` secrets are the intended target. Before migrating any deployed environment, check which database `DATABASE_URL` points at.
 
-The `user_invites.email_queued_at` and `email_failed_at` columns are managed through the committed Drizzle migration. pg-boss separately creates and migrates its own `pgboss` schema when the queue starts; do not generate a Drizzle migration for that schema.
+pg-boss creates and migrates its own `pgboss` schema when the queue starts; do not generate a Drizzle migration for that schema.
 
 ## Transactional Email Worker
 
