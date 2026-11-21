@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   distDir: process.env.HOMEHUB_REVIEW === "true" ? ".next-review" : ".next",
+  outputFileTracingIncludes: {
+    "/listings/[id]": ["./data/neighbourhood/**"],
+  },
   turbopack: {
     root: __dirname,
   },
