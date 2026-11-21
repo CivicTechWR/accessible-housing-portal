@@ -62,7 +62,7 @@ const agreementSections = [
             welcome your feedback, patience, and ideas as we co-build this tool together for our
             community.{" "}
             <a
-              href="https://docs.google.com/forms/d/e/1FAIpQLSdmgdBsahBMIuU6AQngwArIKwCn_yJHZ299YtyT2FtT_FahCQ/viewform?usp=header"
+              href={siteConfig.feedbackFormUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-primary underline underline-offset-4"

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { siteConfig } from "@/lib/site-config";
 
 export function HomeHeroSection() {
   return (
@@ -23,7 +24,7 @@ export function HomeHeroSection() {
       <div className="w-full bg-[linear-gradient(to_top,rgb(0_0_0/0.75),rgb(0_0_0/0.55)_calc(100%_-_8rem),transparent)] pt-32">
         <div className="mx-auto max-w-5xl px-6 pb-12 text-white">
           <h1 id="home-title" className="max-w-3xl text-4xl sm:text-5xl">
-            Affordable, accessible rentals in Waterloo Region
+            Affordable, accessible rentals in {siteConfig.region}
           </h1>
           <p className="mt-4 max-w-2xl text-lg">
             Connecting affordable, accessible housing navigators with values-aligned providers.

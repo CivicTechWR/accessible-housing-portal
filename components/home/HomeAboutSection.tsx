@@ -9,12 +9,12 @@ export function HomeAboutSection() {
         <strong className="text-foreground">{siteConfig.name}</strong> is a community-led rental
         listing platform connecting housing navigators from social service organizations with
         affordable and accessible units from values-aligned housing providers. Co-created by{" "}
-        <a href="https://unioncommunityhousing.org/" className={linkClass}>
-          Union Community Housing
+        <a href={siteConfig.operator.url} className={linkClass}>
+          {siteConfig.operator.name}
         </a>{" "}
         and{" "}
-        <a href="https://civictechwr.org/" className={linkClass}>
-          CivicTech
+        <a href={siteConfig.builder.url} className={linkClass}>
+          {siteConfig.builder.name}
         </a>
         , the platform offers transparent listings—including pricing, accessibility features, and
         forms of income landlords will accept.
