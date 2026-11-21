@@ -1,6 +1,6 @@
-# Home Hub
+# Accessible Housing Portal
 
-Home Hub is [Civic Tech Waterloo Region](https://github.com/CivicTechWR)'s affordable housing platform. It helps housing seekers find affordable housing listings and gives housing providers a place to publish richer, more accessible listing information.
+Accessible Housing Portal is [Civic Tech Waterloo Region](https://github.com/CivicTechWR)'s open source platform for affordable, accessible housing listings. It helps housing seekers find affordable housing listings and gives housing providers a place to publish richer, more accessible listing information. Union Community Housing runs a deployment of it called [Home Hub](https://homehub.unioncommunityhousing.org).
 
 The app is a Next.js 16 App Router application using React 19, TypeScript, Tailwind CSS 4, shadcn/ui primitives, Better Auth, Drizzle ORM, Postgres, and Zod-based API contracts.
 
@@ -183,4 +183,4 @@ Before opening a PR, run the relevant checks and include testing notes. The pre-
 
 ### License
 
-Home Hub is released under the [MIT License](LICENSE). By contributing, you agree to license your contribution under the same MIT License. You keep the copyright in your own contributions.
+Accessible Housing Portal is released under the [MIT License](LICENSE). By contributing, you agree to license your contribution under the same MIT License. You keep the copyright in your own contributions.
