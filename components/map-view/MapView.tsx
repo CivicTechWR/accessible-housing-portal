@@ -7,14 +7,14 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import type { Listing } from "@/components/listing-card-list/ListingsCardList";
 import { Button } from "@/components/ui/button";
+import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { ListingsCard } from "../listings-card/ListingsCard";
 
 const OPENFREEMAP_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const OPENFREEMAP_DARK_STYLE = "https://tiles.openfreemap.org/styles/fiord";
 
-/** Default view centred on Waterloo Region */
-const DEFAULT_VIEW = { longitude: -80.52, latitude: 43.46, zoom: 12 } as const;
+const DEFAULT_VIEW = { ...siteConfig.mapCenter, zoom: 12 } as const;
 
 type MappableListing = Listing & { lat: number; lng: number };
 

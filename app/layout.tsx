@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: `${siteConfig.name} — ${siteConfig.tagline}`,
     template: `%s | ${siteConfig.name}`,
   },
-  description: "Connecting social workers with affordable housing providers in Waterloo Region.",
+  description: `Connecting social workers with affordable housing providers in ${siteConfig.region}.`,
 };
 
 export default async function RootLayout({

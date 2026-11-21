@@ -11,9 +11,9 @@ import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: {
-    absolute: `${siteConfig.name} | Affordable & Accessible Housing Rental Listings in Waterloo Region`,
+    absolute: `${siteConfig.name} | Affordable & Accessible Housing Rental Listings in ${siteConfig.region}`,
   },
-  description: `${siteConfig.name} is a platform connecting affordable and accessible housing navigators with values-aligned providers in Waterloo Region.`,
+  description: `${siteConfig.name} is a platform connecting affordable and accessible housing navigators with values-aligned providers in ${siteConfig.region}.`,
 };
 
 export default async function Home() {

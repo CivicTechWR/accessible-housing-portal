@@ -1,7 +1,5 @@
 import { siteConfig } from "@/lib/site-config";
 
-const contactEmail = "hello@unioncommunityhousing.org";
-
 export function HomeContactSection() {
   return (
     <section aria-labelledby="join-title" className="border-t pt-12">
@@ -11,10 +9,10 @@ export function HomeContactSection() {
         providers. Please reach out if you would like to learn more about {siteConfig.name}.
       </p>
       <a
-        href={`mailto:${contactEmail}`}
+        href={`mailto:${siteConfig.contactEmail}`}
         className="mt-4 inline-block font-medium text-primary-text underline underline-offset-4"
       >
-        {contactEmail}
+        {siteConfig.contactEmail}
       </a>
     </section>
   );
