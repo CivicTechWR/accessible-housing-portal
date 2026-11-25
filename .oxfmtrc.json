@@ -13,6 +13,7 @@
     "coverage/**",
     "node_modules/**",
     "drizzle/**",
+    "data/neighbourhood/**",
     "next-env.d.ts"
   ]
 }
