@@ -22,6 +22,14 @@ it("moves from the community agreement to account setup in order", () => {
   expect(screen.getByRole("heading", { name: "Community Agreement & Terms of Use" })).toBeVisible();
   expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
 
+  const privacyNoticeLinks = screen.getAllByRole("link", { name: /Privacy Notice/i });
+  expect(privacyNoticeLinks.length).toBeGreaterThan(0);
+  for (const link of privacyNoticeLinks) {
+    expect(link).toHaveAttribute("href", "/privacy-notice");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  }
+
   const continueButton = screen.getByRole("button", { name: "Agree and continue" });
   expect(continueButton).toBeDisabled();
 

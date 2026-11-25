@@ -32,6 +32,7 @@ export const PAGES: PageEntry[] = [
   },
   { name: "invite-invalid", path: "/invite", role: "anonymous" },
   { name: "community-agreement", path: "/community-agreement", role: "anonymous" },
+  { name: "privacy-notice", path: "/privacy-notice", role: "anonymous" },
 
   { name: "listings", path: "/listings", role: "searcher" },
   { name: "listing-detail", path: `/listings/${E2E_SEEDED_LISTING_ID}`, role: "searcher" },

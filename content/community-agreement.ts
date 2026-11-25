@@ -51,6 +51,10 @@ export const communityAgreement = {
         {
           title: "Minimal Data Collection",
           body: "We respect your privacy and only collect the minimal personal information necessary to run the service.",
+          link: {
+            text: "Read our Privacy Notice for details.",
+            href: "/privacy-notice",
+          },
         },
         {
           title: "Open Connection",

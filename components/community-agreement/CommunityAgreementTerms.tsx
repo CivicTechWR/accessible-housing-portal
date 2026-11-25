@@ -1,6 +1,14 @@
+import Link from "next/link";
+
 import { communityAgreement } from "@/content/community-agreement";
 
-export function CommunityAgreementTerms() {
+const linkClassName = "font-medium text-primary-text underline underline-offset-4";
+
+export function CommunityAgreementTerms({
+  openInternalLinksInNewTab = false,
+}: {
+  openInternalLinksInNewTab?: boolean;
+}) {
   return (
     <div className="space-y-6 text-sm leading-6">
       <p>{communityAgreement.introduction}</p>
@@ -15,14 +23,26 @@ export function CommunityAgreementTerms() {
                 {item.link && (
                   <>
                     {" "}
-                    <a
-                      href={item.link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-primary underline underline-offset-4"
-                    >
-                      {item.link.text}
-                    </a>
+                    {item.link.href.startsWith("/") ? (
+                      <Link
+                        href={item.link.href}
+                        {...(openInternalLinksInNewTab
+                          ? { target: "_blank", rel: "noopener noreferrer" }
+                          : {})}
+                        className={linkClassName}
+                      >
+                        {item.link.text}
+                      </Link>
+                    ) : (
+                      <a
+                        href={item.link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={linkClassName}
+                      >
+                        {item.link.text}
+                      </a>
+                    )}
                   </>
                 )}
               </li>

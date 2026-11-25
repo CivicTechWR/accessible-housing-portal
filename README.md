@@ -103,7 +103,7 @@ Use `npm run format` and `npm run lint:fix` for mechanical fixes.
 ```text
 app/                  Pages, layouts, server actions, route handlers, and route-local UI
 components/           Shared React components and shadcn/ui primitives
-content/              Product verbiage and this deployment's terms, landing copy and welcome email text
+content/              Product verbiage and this deployment's terms, privacy notice, landing copy and welcome email text
 db/                   Drizzle schema, lazy database client, and seed scripts
 drizzle/              Generated SQL migrations and Drizzle snapshots
 docs/                 Developer documentation and ADRs

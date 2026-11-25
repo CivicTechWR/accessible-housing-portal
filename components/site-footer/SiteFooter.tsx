@@ -8,6 +8,7 @@ const siteMap = [
   { href: "/", label: "Home" },
   { href: "/listings", label: "Browse Listings" },
   { href: "/community-agreement", label: "Community Agreement & Terms of Use" },
+  { href: "/privacy-notice", label: "Privacy Notice" },
 ];
 
 export function SiteFooter({ className }: { className?: string }) {
