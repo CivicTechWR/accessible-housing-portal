@@ -21,12 +21,19 @@ interface ListingsCardProps {
   onClick?: () => void;
   /** The card's button. Only rendered when `onClick` is set. */
   buttonRef?: Ref<HTMLButtonElement>;
+  /**
+   * Set when the listing may be a draft. A draft's uploaded photo is readable only with the
+   * owner's session cookie, and Next's image optimizer fetches photos without cookies, so the
+   * browser loads the photo directly instead.
+   */
+  photoMayNeedSession?: boolean;
 }
 
 const variants = {
   vertical: {
     card: "w-full max-w-[320px] flex flex-col min-h-[300px]",
     image: "w-full h-[160px] sm:h-[175px] lg:h-[190px] shrink-0",
+    imageSizes: "(max-width: 640px) 260px, (max-width: 1024px) 290px, 320px",
     content: "p-4 flex flex-col flex-1",
     price: "text-xl",
     address: "text-sm",
@@ -40,6 +47,7 @@ const variants = {
   horizontal: {
     card: "w-full min-h-[120px] flex flex-row",
     image: "w-[100px] sm:w-[130px] shrink-0 rounded-l-lg overflow-hidden",
+    imageSizes: "(min-width: 640px) 130px, 100px",
     content: "p-3 sm:p-4 flex-1 min-w-0 flex flex-col justify-center",
     price: "text-lg",
     address: "text-xs",
@@ -79,6 +87,7 @@ export function ListingsCard({
   href,
   onClick,
   buttonRef,
+  photoMayNeedSession = false,
 }: ListingsCardProps) {
   const v = variants[variant];
   const isHorizontal = variant === "horizontal";
@@ -101,8 +110,8 @@ export function ListingsCard({
             src={imageUrl}
             alt={displayAddress}
             fill
-            sizes="(max-width: 640px) 260px, (max-width: 1024px) 290px, 320px"
-            unoptimized={imageUrl.startsWith("/api/image-uploads/")}
+            sizes={v.imageSizes}
+            unoptimized={photoMayNeedSession && imageUrl.startsWith("/api/image-uploads/")}
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (

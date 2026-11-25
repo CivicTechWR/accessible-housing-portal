@@ -143,6 +143,7 @@ export function ListingFormPreview({
         variant="vertical"
         onClick={onOpenDetails}
         buttonRef={cardButtonRef}
+        photoMayNeedSession
       />
       <p className="text-xs text-muted-foreground px-1">
         Click the listing card to preview full listing details.
