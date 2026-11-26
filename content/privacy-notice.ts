@@ -53,8 +53,8 @@ export const privacyNoticeDeployment: PrivacyDeploymentConfig = {
     authorityUrl: undefined,
   },
 
-  // Set to false if WALKSCORE_API_KEY is not configured in this deployment.
-  walkScoreEnabled: true,
+  // The server looks up Walk Score only when this key is set, so the notice follows the same switch.
+  walkScoreEnabled: Boolean(process.env.WALKSCORE_API_KEY),
 
   // Optional per-section overrides (`mode: "append"` or `mode: "replace"`).
   sectionOverrides: {},

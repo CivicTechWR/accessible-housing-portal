@@ -45,6 +45,13 @@ describe("buildPrivacyNotice", () => {
       (section) => section.id === "third-party-services",
     );
     expect(servicesSection?.items?.some((item) => item.title.includes("Walk Score"))).toBe(true);
+
+    // Without hosting details the notice must not guess where or by whom the data is hosted.
+    const hostingItem = servicesSection?.items?.find(
+      (item) => item.title === "Hosting and data-processing regions",
+    );
+    expect(hostingItem?.body).not.toContain("hosted");
+    expect(hostingItem?.body).toContain("Contact Community Housing Network");
   });
 
   it("ignores blank optional deployment fields cleanly", () => {
@@ -119,14 +126,18 @@ describe("buildPrivacyNotice", () => {
         },
         "what-we-do-not-collect": {
           mode: "replace",
-          title: "8. Out of scope",
+          title: "Out of scope",
           paragraphs: ["Custom scope statement."],
+        },
+        "privacy-contact": {
+          mode: "append",
+          extraParagraphs: ["Requests are logged by the Privacy Officer."],
         },
       },
       extraSections: [
         {
           id: "pilot-program",
-          title: "10. Pilot program feedback",
+          title: "Pilot program feedback",
           paragraphs: ["Optional feedback interviews are scheduled separately."],
         },
       ],

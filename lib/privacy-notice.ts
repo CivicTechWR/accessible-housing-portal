@@ -34,6 +34,7 @@ export type SoftwarePrivacySectionId =
 export type PrivacySectionOverride =
   | {
       mode: "replace";
+      /** Written without a number. Sections are numbered in the order they appear. */
       title?: string;
       intro?: string;
       paragraphs?: readonly string[];
@@ -86,13 +87,16 @@ export type PrivacyDeploymentConfig = {
     authorityUrl?: string;
   };
   /**
-   * Set to false when this deployment does not configure WALKSCORE_API_KEY.
-   * Defaults to true so the Walk Score integration is disclosed when enabled.
+   * Whether this deployment looks up Walk Score, which it does when WALKSCORE_API_KEY is set.
+   * Defaults to true so the integration is disclosed unless a deployment rules it out.
    */
   walkScoreEnabled?: boolean;
   /** Replace or append to individual built-in sections without editing software-level code. */
   sectionOverrides?: Partial<Record<SoftwarePrivacySectionId, PrivacySectionOverride>>;
-  /** Deployment-specific sections inserted before the final privacy contact section. */
+  /**
+   * Deployment-specific sections inserted before the final privacy contact section. Write titles
+   * without a number; sections are numbered in the order they appear.
+   */
   extraSections?: readonly PrivacyNoticeSection[];
 };
 
@@ -231,6 +235,7 @@ export function buildPrivacyNotice(
     hostingRegion,
     crossBorderRegions,
     crossBorderNote,
+    walkScoreEnabled,
   });
 
   const externalLinksDetail = buildExternalLinksDetail(site);
@@ -253,6 +258,10 @@ export function buildPrivacyNotice(
         ]
       : []),
     {
+      title: "Footer logo (Civic Tech WR)",
+      body: "The footer on every page loads the Civic Tech WR logo directly from civictechwr.org. That site receives your IP address and standard browser request headers, including the address of this site (not the page you are on) as the referrer. No account information is sent.",
+    },
+    {
       title: "Self-hosted fonts",
       body: "Application fonts are bundled and served from this site. Your browser does not contact external font CDNs at runtime.",
     },
@@ -266,11 +275,11 @@ export function buildPrivacyNotice(
   const retentionItems: PrivacyNoticeItem[] = [
     {
       title: "Automated cleanup built into the software",
-      body: "Sign-in sessions expire after 7 days (or earlier when you sign out, change or reset your password, or an administrator suspends or deactivates your account). Password-reset links expire after 1 hour and invitation links expire after 7 days; changing or resetting a password deletes outstanding reset tokens. Encrypted invitation URLs are cleared when an invitation is accepted, revoked, or replaced, and encrypted email-job secrets are redacted after queued jobs finish or fail. Verified Resend webhook receipts are automatically deleted after 90 days by a daily background job when the email worker is enabled.",
+      body: "A sign-in session stops working 7 days after it was last refreshed, and using the site refreshes it about once a day. Signing out deletes that session's record straight away. Changing or resetting your password, or an administrator suspending or deactivating your account, deletes every existing session record for the account. Password-reset links expire after 1 hour and invitation links expire after 7 days; changing or resetting a password deletes outstanding reset tokens. Encrypted invitation URLs are cleared when an invitation is accepted, revoked, or replaced, and encrypted email-job secrets are redacted after queued jobs finish or fail. Verified Resend webhook receipts are automatically deleted after 90 days by a daily background job when the email worker is enabled.",
     },
     {
       title: "Records without automated purging",
-      body: "The software does not automatically delete user accounts, properties, listings, uploaded listing photos, or email delivery attempt logs. Archiving a listing hides it from searchers while keeping the database record. Deactivating an account immediately revokes active sessions and blocks sign-in while preserving the account row and property or listing audit references. Removing a photo from a listing in the editor deletes that image row from the database.",
+      body: "The software does not automatically delete user accounts, properties, listings, uploaded listing photos, or email delivery attempt logs. No background job removes expired sign-in sessions either, so an expired session's record, including its IP address and user agent, can stay in the database until a password change, password reset, suspension, or deactivation clears the account's sessions. Archiving a listing hides it from searchers while keeping the database record. Deactivating an account immediately revokes active sessions and blocks sign-in while preserving the account row and property or listing audit references. Removing a photo from a listing in the editor deletes that image row from the database.",
     },
     {
       title: "Managing your own security settings",
@@ -335,10 +344,10 @@ export function buildPrivacyNotice(
   const softwareSections: Record<SoftwarePrivacySectionId, PrivacyNoticeSection> = {
     "operator-and-scope": {
       id: "operator-and-scope",
-      title: "1. Who operates this platform",
+      title: "Who operates this platform",
       paragraphs: [
         `${operatorSummary} Access is invitation-only and is intended for authorized housing navigators, housing providers, and platform administrators.`,
-        `${site.name} runs on Accessible Housing Portal, open-source software built by ${builderName}. The open-source contributors write the software and do not operate this deployment or have access to its database.`,
+        `${site.name} runs on Accessible Housing Portal, open-source software built by ${builderName}.`,
       ],
       ...(operatorUrl
         ? { link: { text: `Visit ${operatorDisplayName}.`, href: operatorUrl, external: true } }
@@ -346,7 +355,7 @@ export function buildPrivacyNotice(
     },
     "account-and-auth": {
       id: "account-and-auth",
-      title: "2. Account and authentication data",
+      title: "Account and authentication data",
       intro:
         "Accounts are created by invitation only. Public self-registration is disabled. When an administrator creates your account and when you sign in, the application stores the following records in PostgreSQL:",
       items: [
@@ -374,7 +383,7 @@ export function buildPrivacyNotice(
     },
     "invitations-and-email": {
       id: "invitations-and-email",
-      title: "3. Invitations and transactional email",
+      title: "Invitations and transactional email",
       items: [
         {
           title: "Account invitations",
@@ -392,7 +401,7 @@ export function buildPrivacyNotice(
     },
     "listings-and-photos": {
       id: "listings-and-photos",
-      title: "4. Properties, listings, contact details, and photos",
+      title: "Properties, listings, contact details, and photos",
       items: [
         {
           title: "Property and unit information",
@@ -404,13 +413,13 @@ export function buildPrivacyNotice(
         },
         {
           title: "Uploaded listing photos",
-          body: "Uploaded photos (JPEG, PNG, WebP, or AVIF) are converted and resized on the server to JPEG format, which removes embedded EXIF camera metadata during re-encoding. The processed image is stored in PostgreSQL along with the uploader's user ID, image dimensions, file size, alt text, display order, and the original filename. Published listing photos are served with a 24-hour public cache header so image optimization works reliably, meaning cached copies may remain available for up to 24 hours after a listing is archived. Draft and archived listing photos require an authorized owner or administrator session and use a 60-second private cache header.",
+          body: "Uploaded photos (JPEG, PNG, WebP, or AVIF) are converted and resized on the server to JPEG format, which removes embedded EXIF camera metadata during re-encoding. The processed image is stored in PostgreSQL along with the uploader's user ID, image dimensions, file size, alt text, display order, and the original filename. Anyone who has the web address of a published listing photo can load it without signing in; the address contains a random identifier. Published photos are served with a 24-hour public cache header so image optimization works reliably, meaning cached copies may remain available for up to 24 hours after a listing is archived. Draft and archived listing photos require an authorized owner or administrator session and use a 60-second private cache header.",
         },
       ],
     },
     "browsing-and-saved-activity": {
       id: "browsing-and-saved-activity",
-      title: "5. Browsing, search filters, and saved activity",
+      title: "Browsing, search filters, and saved activity",
       items: [
         {
           title: "Listing searches and filters",
@@ -418,13 +427,13 @@ export function buildPrivacyNotice(
         },
         {
           title: "Saved listings and saved searches",
-          body: "The database schema includes tables for saving listings and named search filters (including accessibility feature filters) to a user's account, though those user-facing features are not yet active in the current interface. When enabled on a housing seeker's own account, saved accessibility filters may indicate disability-related housing needs. Those records belong to the signed-in account and are deleted automatically if the account row is removed.",
+          body: "The software does not yet let users save listings or searches. The database has tables reserved for those features, and nothing in the application writes to them.",
         },
       ],
     },
     "cookies-and-storage": {
       id: "cookies-and-storage",
-      title: "6. Cookies and browser storage",
+      title: "Cookies and browser storage",
       items: [
         {
           title: "Essential authentication cookies",
@@ -442,12 +451,12 @@ export function buildPrivacyNotice(
     },
     "third-party-services": {
       id: "third-party-services",
-      title: "7. External services and hosting",
+      title: "External services and hosting",
       items: thirdPartyItems,
     },
     "what-we-do-not-collect": {
       id: "what-we-do-not-collect",
-      title: "8. What this platform does not collect or do",
+      title: "What this platform does not collect or do",
       items: [
         {
           title: "No payments or financial accounts",
@@ -469,12 +478,12 @@ export function buildPrivacyNotice(
     },
     "retention-and-requests": {
       id: "retention-and-requests",
-      title: "9. Retention, account deactivation, and privacy requests",
+      title: "Retention, account deactivation, and privacy requests",
       items: retentionItems,
     },
     "privacy-contact": {
       id: "privacy-contact",
-      title: "10. Privacy questions and contact",
+      title: "Privacy questions and contact",
       paragraphs: [
         `Questions or requests about personal information stored in ${site.name} should be directed to ${effectiveOperatorName}, not to ${builderName} or the open-source software contributors.`,
       ],
@@ -531,24 +540,18 @@ export function buildPrivacyNotice(
     deployment.sectionOverrides?.["privacy-contact"],
   );
 
-  // Keep section numbering sequential when extra sections are inserted before the final contact section.
-  const renumberedContactSection =
-    extraSections.length > 0 && !deployment.sectionOverrides?.["privacy-contact"]
-      ? {
-          ...contactSection,
-          title: contactSection.title.replace(
-            /^10\./,
-            `${mainSections.length + extraSections.length + 1}.`,
-          ),
-        }
-      : contactSection;
+  // Titles carry no numbers, so the sequence stays right whatever a deployment adds or overrides.
+  const sections = [...mainSections, ...extraSections, contactSection].map((section, index) => ({
+    ...section,
+    title: `${index + 1}. ${section.title}`,
+  }));
 
   return {
     title: "Privacy Notice",
     subtitle: `${site.name} Platform`,
     ...(lastUpdated ? { lastUpdated } : {}),
     introduction: `This notice explains what personal information ${site.name} collects, stores, sends to external services, and retains, based on how the software operates and how ${effectiveOperatorName} runs this deployment.`,
-    sections: [...mainSections, ...extraSections, renumberedContactSection],
+    sections,
   };
 }
 
@@ -558,6 +561,7 @@ function buildHostingItem(params: {
   hostingRegion?: string;
   crossBorderRegions: readonly string[];
   crossBorderNote?: string;
+  walkScoreEnabled: boolean;
 }): PrivacyNoticeItem {
   const sentences: string[] = [];
 
@@ -573,19 +577,18 @@ function buildHostingItem(params: {
     sentences.push(
       `This deployment's application server and PostgreSQL database are hosted in ${params.hostingRegion}.`,
     );
-  } else {
-    sentences.push(
-      `This deployment's application server and PostgreSQL database are hosted on infrastructure managed by ${params.operatorName}.`,
-    );
   }
+  // With neither set, the notice says nothing about where the deployment is hosted. The software
+  // cannot know, so it leaves the question to the operator contact sentence below.
 
   if (params.crossBorderRegions.length > 0) {
     sentences.push(
       `External service providers used by the platform may process data in ${formatList(params.crossBorderRegions)}.`,
     );
   } else {
+    const providers = ["Resend", "OpenFreeMap", ...(params.walkScoreEnabled ? ["Walk Score"] : [])];
     sentences.push(
-      "External service providers used by the platform (such as Resend, OpenFreeMap, and Walk Score when enabled) may process data outside your region.",
+      `External service providers used by the platform (such as ${formatList(providers)}) may process data outside your region.`,
     );
   }
 
