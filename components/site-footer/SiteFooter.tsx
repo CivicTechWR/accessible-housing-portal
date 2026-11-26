@@ -8,6 +8,7 @@ const siteMap = [
   { href: "/", label: "Home" },
   { href: "/listings", label: "Browse Listings" },
   { href: "/community-agreement", label: "Community Agreement & Terms of Use" },
+  { href: "/privacy-notice", label: "Privacy Notice" },
 ];
 
 export function SiteFooter({ className }: { className?: string }) {
@@ -16,6 +17,8 @@ export function SiteFooter({ className }: { className?: string }) {
       <div className="mx-auto flex max-w-7xl justify-center px-6 py-10">
         <div className="grid w-full max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-3">
+            {/* The privacy notice discloses this request to civictechwr.org. Update the
+                "Footer logo" item in lib/privacy-notice.ts if the logo moves. */}
             <img
               src="https://civictechwr.org/images/logos/civictechwr_logo_black.webp"
               alt="Civic Tech WR Region"
