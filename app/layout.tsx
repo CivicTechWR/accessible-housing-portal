@@ -60,9 +60,9 @@ export default async function RootLayout({
                 {children}
               </div>
             </div>
-            {/* Pages can render a [data-hide-site-footer-mobile] element to hide the footer below md.
-                Pure CSS, so the footer never flashes in before hydration. */}
-            <SiteFooter className="max-md:peer-has-[[data-hide-site-footer-mobile]]/shell:hidden" />
+            {/* Pages can render a [data-hide-site-footer] element to hide the footer, such as the
+                full-screen map. Pure CSS, so the footer never flashes in before hydration. */}
+            <SiteFooter className="peer-has-[[data-hide-site-footer]]/shell:hidden" />
           </QueryProvider>
         </ThemeProvider>
       </body>
