@@ -1,8 +1,9 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, ReactNode, Ref } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  WheelchairIcon,
   ArrowDown01Icon,
   LayoutTwoColumnIcon,
   ListViewIcon,
@@ -48,15 +49,22 @@ function roomSummary(value: string | null | undefined, noun: string) {
   return `${value} ${noun}${value === "1" ? "" : "s"}`;
 }
 
+const activeFilterClassName = "border-primary-text/60 bg-primary/5 font-medium dark:bg-primary/15";
+
+/** The phone quick-filter chips: shorter and fully rounded, so the row reads as chips. */
+const chipClassName = "h-10 shrink-0 rounded-full px-3.5";
+
 /** A compact filter button that opens one filter in a popover, like "Price" or "Beds". */
 function FilterPopover({
   label,
   value,
+  chip = false,
   children,
 }: {
   label: string;
   /** What the filter is set to, shown in place of the label. */
   value?: string;
+  chip?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -67,7 +75,8 @@ function FilterPopover({
           aria-label={value ? `${label}: ${value}` : undefined}
           className={cn(
             "gap-1.5 font-normal",
-            value && "border-primary-text/60 bg-primary/5 font-medium dark:bg-primary/15",
+            chip && chipClassName,
+            value && activeFilterClassName,
           )}
         >
           {value ?? label}
@@ -79,7 +88,7 @@ function FilterPopover({
           />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto min-w-64 p-4">
+      <PopoverContent align="start" collisionPadding={16} className="w-auto min-w-64 p-4">
         {children}
       </PopoverContent>
     </Popover>
@@ -109,8 +118,8 @@ export function ListingFilterSearchBar({
         />
       </div>
 
-      {/* Phones and small tablets reach these through the Filters button. */}
-      <div className="hidden items-center gap-2 md:flex">
+      {/* Phones get these as a row of chips under the search field instead. */}
+      <div className="hidden items-center gap-2 sm:flex">
         <FilterPopover label="Price" value={priceSummary(priceRangeProps.min, priceRangeProps.max)}>
           <PriceRangeInput {...priceRangeProps} className="w-72 gap-3" />
         </FilterPopover>
@@ -124,6 +133,111 @@ export function ListingFilterSearchBar({
 
       {filterButton}
     </div>
+  );
+}
+
+/**
+ * The phone filter row under the search field: one chip per common filter, scrolling sideways.
+ * Price, Beds and Baths open their own popover; Accessibility opens the filter sheet at the
+ * accessibility features, because they are too many for a popover.
+ */
+export function QuickFilterChips({
+  priceRangeProps,
+  bedroomToggleProps,
+  bathroomToggleProps,
+  accessibilityCount,
+  onAccessibilityClick,
+  accessibilityRef,
+  className,
+}: Omit<ListingFilterSearchBarProps, "searchInputProps" | "filterButton"> & {
+  /** How many accessibility features are selected. */
+  accessibilityCount: number;
+  onAccessibilityClick: () => void;
+  /** Lets the filter sheet return focus to this chip when it closes. */
+  accessibilityRef?: Ref<HTMLButtonElement>;
+  className?: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Quick filters"
+      className={cn(
+        "flex gap-2 overflow-x-auto overflow-y-hidden px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        className,
+      )}
+    >
+      <FilterPopover
+        chip
+        label="Price"
+        value={priceSummary(priceRangeProps.min, priceRangeProps.max)}
+      >
+        <PriceRangeInput {...priceRangeProps} className="w-72 max-w-full gap-3" />
+      </FilterPopover>
+      <FilterPopover chip label="Beds" value={roomSummary(bedroomToggleProps.value, "bed")}>
+        <ToggleField {...bedroomToggleProps} allowEmpty />
+      </FilterPopover>
+      <FilterPopover chip label="Baths" value={roomSummary(bathroomToggleProps.value, "bath")}>
+        <ToggleField {...bathroomToggleProps} allowEmpty />
+      </FilterPopover>
+      <Button
+        ref={accessibilityRef}
+        variant="outline"
+        onClick={onAccessibilityClick}
+        aria-label={
+          accessibilityCount > 0 ? `Accessibility, ${accessibilityCount} selected` : "Accessibility"
+        }
+        className={cn(
+          "gap-1.5 font-normal",
+          chipClassName,
+          accessibilityCount > 0 && activeFilterClassName,
+        )}
+      >
+        <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-4" aria-hidden />
+        Accessibility
+        {accessibilityCount > 0 && (
+          <span
+            aria-hidden
+            className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
+          >
+            {accessibilityCount}
+          </span>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * The phone List / Map switch: one pill floating at the bottom centre that names the other view,
+ * so the whole screen goes to listings or the map.
+ */
+export function FloatingViewToggle({
+  value,
+  onChange,
+  className,
+}: {
+  value: DisplayMode;
+  onChange: (value: DisplayMode) => void;
+  className?: string;
+}) {
+  const showsMap = value === DisplayMode.MAP;
+  return (
+    <Button
+      onClick={() => onChange(showsMap ? DisplayMode.LIST : DisplayMode.MAP)}
+      aria-label={showsMap ? "Show list" : "Show map"}
+      className={cn(
+        "h-11 gap-2 rounded-full bg-[#1f262c] px-5 text-white shadow-[0_4px_12px_rgba(0,0,0,0.3)] hover:bg-[#1f262c]/90 dark:bg-white dark:text-[#1f262c] dark:hover:bg-white/90",
+        className,
+      )}
+    >
+      <HugeiconsIcon
+        icon={showsMap ? ListViewIcon : MapsIcon}
+        strokeWidth={2}
+        className="size-4"
+        aria-hidden
+      />
+      {showsMap ? "List" : "Map"}
+    </Button>
   );
 }
 

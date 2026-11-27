@@ -10,6 +10,7 @@ import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fi
 import { BulkEditDialog } from "./components/BulkEditDialog";
 import { CustomListingFieldsTable } from "./components/CustomListingFieldsTable";
 import { DeleteFieldDialog } from "./components/DeleteFieldDialog";
+import { FieldEditSheet } from "./components/FieldEditSheet";
 import { FieldEditorDialog } from "./components/FieldEditorDialog";
 import { useCustomListingFieldsDashboard } from "./useCustomListingFieldsDashboard";
 
@@ -25,7 +26,7 @@ export function CustomListingFieldsDashboard({
       <div className={cn("mx-auto space-y-6", pageWidths.content)}>
         <PageHeader
           title="Custom listing fields"
-          description="Fields that appear on listings and in search filters. Navigators and housing providers see them in the order shown here. Drag a row to reorder it, or select rows to change their category."
+          description="Fields that appear on listings and in search filters. Navigators and housing providers see them in the order shown here. Select a row to edit it. Drag the handle to reorder, or click it to select rows for bulk edit."
           actions={
             <Button
               type="button"
@@ -68,6 +69,17 @@ export function CustomListingFieldsDashboard({
           isSaving={dashboard.isCreating}
           onClose={dashboard.closeFieldDialog}
           onCreate={dashboard.handleCreateField}
+        />
+      ) : null}
+
+      {dashboard.editTarget ? (
+        <FieldEditSheet
+          key={dashboard.editTarget.id}
+          field={dashboard.editTarget}
+          categories={dashboard.categoryOptions}
+          isSaving={dashboard.pendingFieldId === dashboard.editTarget.id}
+          onClose={dashboard.closeEditSheet}
+          onSave={dashboard.handleSaveField}
         />
       ) : null}
 

@@ -378,17 +378,17 @@ export function FieldEditorDialog({
       >
         <DialogPanel onCloseAutoFocus={restoreFocusToDiscardRequester}>
           <DialogHeader>
-            <DialogTitle>Discard Custom Field?</DialogTitle>
+            <DialogTitle>Discard this field?</DialogTitle>
             <DialogDescription className="mt-2">
               You have unsaved changes. Discard this custom field and lose the entered values?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="outline" size="lg" onClick={closeDiscardConfirm}>
-              Keep Editing
+              Keep editing
             </Button>
             <Button type="button" variant="destructive" size="lg" onClick={onClose}>
-              Discard Changes
+              Discard changes
             </Button>
           </DialogFooter>
         </DialogPanel>

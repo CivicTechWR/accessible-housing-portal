@@ -107,9 +107,6 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
           </button>
         </div>
       )}
-      {showsGrid && images[0]?.caption && (
-        <p className="mt-2 hidden text-sm text-muted-foreground md:block">{images[0].caption}</p>
-      )}
       <Carousel
         className={cn("w-full", showsGrid && "md:hidden")}
         opts={{ loop: true }}

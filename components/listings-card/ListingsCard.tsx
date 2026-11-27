@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Image01Icon, UniversalAccessIcon } from "@hugeicons/core-free-icons";
+import { Image01Icon, WheelchairIcon } from "@hugeicons/core-free-icons";
 import { featureIcon } from "@/components/listing-details/featureIcon";
 import {
   RENT_PERIOD,
@@ -102,16 +102,15 @@ function FeatureChips({ features, className }: { features: string[]; className?:
       ) : features.length > 0 ? (
         <li className="flex min-w-0">
           <Badge className={chipClassName}>
-            <HugeiconsIcon
-              icon={UniversalAccessIcon}
-              strokeWidth={2}
-              className="shrink-0"
-              aria-hidden
-            />
+            <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="shrink-0" aria-hidden />
             <span className="truncate">{features.length} accessibility features</span>
           </Badge>
         </li>
-      ) : null}
+      ) : (
+        <li className="truncate text-[13px] text-muted-foreground">
+          No accessibility features listed
+        </li>
+      )}
     </ul>
   );
 }

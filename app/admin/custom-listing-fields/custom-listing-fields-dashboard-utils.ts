@@ -20,13 +20,12 @@ export type SortKey =
   | "required";
 export type SortDirection = "asc" | "desc";
 
-// Drag handle, order, field (label and key), applies to, description and help text, visibility,
-// filterable, required, actions. The minimum fits inside the wide page width at 1440px.
-// Fits the 1024px page width: the drag handle and position share the first column.
+// Drag handle, field, applies to, description, status (visibility, filterable, required), menu.
+// Fits the 1024px page width without scrolling; narrower screens scroll sideways.
 export const TABLE_COLUMNS =
-  "grid-cols-[72px_minmax(176px,1fr)_124px_minmax(240px,1.7fr)_140px_88px_80px_52px]";
+  "grid-cols-[48px_minmax(180px,1.1fr)_112px_minmax(240px,2fr)_148px_56px]";
 
-export const TABLE_MIN_WIDTH = "min-w-[972px]";
+export const TABLE_MIN_WIDTH = "min-w-[840px]";
 
 export const FIELD_HELP_TEXT = {
   label: "Human-readable field name shown to housing providers and renters.",
@@ -153,18 +152,6 @@ export function sortFields(fields: AdminCustomListingField[]) {
     (a, b) =>
       compareCustomListingFieldCategories(a.category, b.category) || compareCategoryFields(a, b),
   );
-}
-
-/** Each field's place within its category, counting from 1, regardless of filters or sorting. */
-export function getCategoryPositions(fields: AdminCustomListingField[]) {
-  const positions = new Map<string, number>();
-  const counts = new Map<string, number>();
-  for (const field of sortFields(fields)) {
-    const position = (counts.get(field.category) ?? 0) + 1;
-    counts.set(field.category, position);
-    positions.set(field.id, position);
-  }
-  return positions;
 }
 
 export function sortCategoryFields(fields: AdminCustomListingField[]) {

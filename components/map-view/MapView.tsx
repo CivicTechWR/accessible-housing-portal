@@ -11,7 +11,7 @@ import { formatRent } from "@/lib/listing-format";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { ListingsCard } from "../listings-card/ListingsCard";
-import { MAP_STYLE_URLS, applyMapStyleOverrides } from "./mapStyle";
+import { MAP_STYLE_URLS, applyMapStyleOverrides, foldAttribution } from "./mapStyle";
 
 const DEFAULT_VIEW = { ...siteConfig.mapCenter, zoom: 12 } as const;
 
@@ -78,18 +78,28 @@ export function groupOverlappingPins(
 }
 
 /**
- * Price pins and cluster pills share one look, so a cluster doesn't outrank a single home. Light
- * mode uses white pills on the grey basemap; dark mode uses a raised dark pill, because white
- * glares on the near-black map. The hovered, highlighted or selected pin takes the accent: brand
- * blue in light mode, white in dark mode.
+ * Price pins are white with near-black text in both themes, so they read the same on either
+ * basemap. The hovered, highlighted or selected pin flips to a dark fill in light mode and to
+ * brand blue in dark mode, where a near-black pill would sink into the map.
  */
 const pillClassName =
-  "flex h-7.5 items-center rounded-full px-3 text-sm font-semibold whitespace-nowrap tabular-nums shadow-[0_1px_4px_rgba(0,0,0,0.25)] ring-1 transition-[transform,background-color,color] group-hover:scale-105 group-focus-visible:ring-3 group-focus-visible:ring-ring dark:shadow-[0_2px_6px_rgba(0,0,0,0.6)]";
+  "flex h-7.5 items-center rounded-full px-3 text-sm font-semibold whitespace-nowrap tabular-nums shadow-[0_1px_4px_rgba(0,0,0,0.28)] ring-1 transition-[transform,background-color,color] group-hover:scale-110 group-focus-visible:ring-3 group-focus-visible:ring-ring dark:shadow-[0_2px_6px_rgba(0,0,0,0.6)]";
+
+const emphasisedPill =
+  "bg-[#1f262c] text-white ring-[#1f262c] dark:bg-primary dark:text-primary-foreground dark:ring-primary";
 
 function pillTone(emphasised: boolean) {
   return emphasised
-    ? "scale-105 bg-primary text-primary-foreground ring-primary dark:bg-white dark:text-neutral-900 dark:ring-white"
-    : "bg-white text-neutral-900 ring-black/10 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary dark:bg-[#1f262c] dark:text-white dark:ring-[#3d4852] dark:group-hover:bg-white dark:group-hover:text-neutral-900 dark:group-hover:ring-white";
+    ? cn("scale-110", emphasisedPill)
+    : "bg-white text-[#1f262c] ring-black/10 group-hover:bg-[#1f262c] group-hover:text-white group-hover:ring-[#1f262c] dark:ring-black/30 dark:group-hover:bg-primary dark:group-hover:text-primary-foreground dark:group-hover:ring-primary";
+}
+
+/**
+ * A cluster is a brand-blue circle with its count, so it reads as a group rather than one more
+ * price. It grows a little with the count, up to 44px.
+ */
+function clusterSize(count: number) {
+  return Math.min(44, 32 + Math.round(Math.log2(count) * 3));
 }
 
 function displayAddress(listing: Listing) {
@@ -219,6 +229,7 @@ export const MapView = memo(function MapView({
     const map = mapRef.current?.getMap();
     if (map) {
       applyMapStyleOverrides(map, isDarkRef.current);
+      foldAttribution(map);
       // Switching theme swaps the whole style, which drops the overrides.
       map.on("style.load", () => applyMapStyleOverrides(map, isDarkRef.current));
     }
@@ -302,6 +313,7 @@ export const MapView = memo(function MapView({
           initialViewState={DEFAULT_VIEW}
           style={{ width: "100%", height: "100%" }}
           scrollZoom={true}
+          attributionControl={{ compact: true }}
           onClick={() => setSelectedId(null)}
           onLoad={handleLoad}
           onMoveEnd={regroupPins}
@@ -336,8 +348,15 @@ export const MapView = memo(function MapView({
                     aria-label={`${count} listings here. Zoom in to see them.`}
                     className="group flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full outline-none"
                   >
-                    <span className={cn(pillClassName, pillTone(containsHighlighted))}>
-                      {count} homes
+                    <span
+                      style={{ width: clusterSize(count), height: clusterSize(count) }}
+                      className={cn(
+                        "flex items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground tabular-nums shadow-[0_1px_4px_rgba(0,0,0,0.3)] ring-2 ring-white transition-transform group-hover:scale-110 group-focus-visible:ring-3 group-focus-visible:ring-ring dark:shadow-[0_2px_6px_rgba(0,0,0,0.6)]",
+                        containsHighlighted &&
+                          "scale-110 bg-[#1f262c] dark:bg-white dark:text-[#1f262c]",
+                      )}
+                    >
+                      {count}
                     </span>
                   </button>
                 </Marker>
@@ -418,7 +437,8 @@ export const MapView = memo(function MapView({
           listing={selectedListing}
           variant="horizontal"
           onClose={closeSelected}
-          className="absolute inset-x-3 bottom-10 z-10 @lg:hidden"
+          // Clears the floating List / Map button on phones.
+          className="absolute inset-x-3 bottom-20 z-10 @lg:hidden"
         />
       )}
     </div>

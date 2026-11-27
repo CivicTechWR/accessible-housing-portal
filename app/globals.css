@@ -133,7 +133,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.925 0.005 214.3);
   /* Form control borders: dark enough for 3:1 against the page (WCAG 1.4.11). */
-  --input: oklch(0.66 0.012 214);
+  --input: oklch(0.6 0.012 214);
   --ring: oklch(0.5 0.134 242.749);
   --chart-1: oklch(0.828 0.111 230.318);
   --chart-2: oklch(0.685 0.169 237.323);
@@ -169,7 +169,7 @@
   --accent-foreground: oklch(0.987 0.002 197.1);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 14%);
-  --input: oklch(1 0 0 / 34%);
+  --input: oklch(1 0 0 / 45%);
   --ring: oklch(0.685 0.169 237.323);
   --chart-1: oklch(0.828 0.111 230.318);
   --chart-2: oklch(0.685 0.169 237.323);
@@ -247,8 +247,7 @@
 
 /* Unlayered: Tailwind v4 drops plain class rules inside @layer components.
    The header and footer line their content up with the page's 64rem content column (whose
-   padding is 1rem, then 1.5rem from sm), and go full width on the full-screen map and on pages
-   that mark themselves [data-wide-page], such as the listing editor. */
+   padding is 1rem, then 1.5rem from sm), and go full width on the full-screen map. */
 .site-container {
   margin-inline: auto;
   width: 100%;
@@ -260,7 +259,7 @@
     padding-inline: 1.5rem;
   }
 }
-html:has([data-fullscreen], [data-wide-page]) .site-container {
+html:has([data-fullscreen]) .site-container {
   max-width: none;
 }
 

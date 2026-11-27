@@ -25,6 +25,18 @@ interface ListingsPanelHeaderProps {
   className?: string;
 }
 
+/** "61 listings found", or progress while loading. Phones show it above the first card. */
+export function listingsSummary({
+  shown,
+  total,
+  isPartial,
+  isLoading,
+}: Pick<ListingsPanelHeaderProps, "shown" | "total" | "isPartial" | "isLoading">) {
+  if (isLoading) return "Updating listings...";
+  if (isPartial) return `Showing ${shown} of ${total} listings`;
+  return `${total} listing${total !== 1 ? "s" : ""} found`;
+}
+
 /** The results bar: match count on the left, sort and view controls on the right. */
 export function ListingsPanelHeader({
   shown,
@@ -35,18 +47,6 @@ export function ListingsPanelHeader({
   viewSwitch,
   className,
 }: ListingsPanelHeaderProps) {
-  const summary = isLoading ? (
-    "Updating listings..."
-  ) : isPartial ? (
-    `Showing ${shown} of ${total} listings`
-  ) : (
-    <>
-      {total} listing{total !== 1 ? "s" : ""}
-      {/* Phones drop "found" to leave room for the sort and view controls. */}
-      <span className="max-sm:hidden"> found</span>
-    </>
-  );
-
   return (
     <div
       className={cn(
@@ -54,8 +54,8 @@ export function ListingsPanelHeader({
         className,
       )}
     >
-      <p className="mr-auto min-w-0 truncate whitespace-nowrap text-sm font-medium text-foreground sm:text-[15px]">
-        {summary}
+      <p className="mr-auto min-w-0 truncate text-sm whitespace-nowrap text-muted-foreground">
+        {listingsSummary({ shown, total, isPartial, isLoading })}
       </p>
       <SortOptionsComponent {...sortOptionProps} />
       {viewSwitch}

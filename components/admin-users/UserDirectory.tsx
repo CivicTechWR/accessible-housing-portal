@@ -2,9 +2,9 @@
 
 import { useDeferredValue, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Search01Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 
-import { AdminAccountActions } from "@/components/admin-users/AdminAccountActions";
+import { ManageAccountDialog } from "@/components/admin-users/ManageAccountDialog";
 import {
   accountStatusLabels,
   accountStatusTones,
@@ -38,9 +38,43 @@ function DateText({ value }: { value: string | null }) {
   );
 }
 
+/** Active is the normal state, so it shows nothing and the exceptions stand out. */
 function AccountStatusText({ status }: { status: AccountStatus | null }) {
   if (!status) return <span className="text-sm text-muted-foreground">Unknown</span>;
+  if (status === "active") return <span className="sr-only">Active</span>;
   return <StatusBadge tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusBadge>;
+}
+
+function accountName(account: AccountListItem) {
+  return account.name ?? account.email ?? "Unnamed user";
+}
+
+/** The name opens the manage dialog for keyboard and screen reader users; the row does for pointers. */
+function ManageButton({ account, onManage }: { account: AccountListItem; onManage: () => void }) {
+  return (
+    <button
+      type="button"
+      className="max-w-full truncate rounded-sm text-left font-medium text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+      onClick={(event) => {
+        event.stopPropagation();
+        onManage();
+      }}
+    >
+      <span className="sr-only">Manage </span>
+      {accountName(account)}
+    </button>
+  );
+}
+
+function RowChevron() {
+  return (
+    <HugeiconsIcon
+      icon={ArrowRight01Icon}
+      strokeWidth={2}
+      className="size-4 shrink-0 text-muted-foreground"
+      aria-hidden
+    />
+  );
 }
 
 function matchesSearch(account: AccountListItem, query: string) {
@@ -56,6 +90,9 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
   const [role, setRole] = useState<InviteRole | "all">("all");
   const [status, setStatus] = useState<AccountStatus | "all">("all");
   const [page, setPage] = useState(0);
+  // Kept as an id so the open dialog picks up the refreshed account after a save.
+  const [managingId, setManagingId] = useState<string | null>(null);
+  const managing = accounts.find((account) => account.id === managingId);
   const query = useDeferredValue(search.trim().toLowerCase());
 
   const filtered = accounts.filter(
@@ -148,11 +185,11 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
               <caption className="sr-only">Users</caption>
               <colgroup>
                 <col />
-                <col className="w-48" />
-                <col className="w-32" />
-                <col className="w-32" />
+                <col className="w-56" />
                 <col className="w-32" />
                 <col className="w-28" />
+                <col className="w-28" />
+                <col className="w-12" />
               </colgroup>
               <thead className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
                 <tr>
@@ -162,42 +199,57 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                   <th className="px-4 py-3">Created</th>
                   <th className="px-4 py-3">Last sign-in</th>
                   <th className="px-4 py-3">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">Manage</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {visible.map((account) => (
-                  <tr key={account.id} className="align-top hover:bg-muted/30">
-                    <td className="px-4 py-3.5">
-                      <p className="font-medium break-words text-foreground">
-                        {account.name ?? account.email ?? "Unnamed user"}
-                      </p>
-                      {/* Emails wrap at any character instead of truncating, so the whole
-                          address stays readable. */}
-                      <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
-                        {account.email ?? "No email"}
-                      </p>
-                      {account.organization ? (
-                        <p className="text-sm break-words text-muted-foreground">
-                          {account.organization}
-                        </p>
-                      ) : null}
+                  <tr
+                    key={account.id}
+                    className="h-14 cursor-pointer hover:bg-muted/40"
+                    onClick={() => setManagingId(account.id)}
+                  >
+                    <td className="px-4 py-2">
+                      <div className="flex min-w-0 flex-col">
+                        <ManageButton
+                          account={account}
+                          onManage={() => setManagingId(account.id)}
+                        />
+                        <span
+                          className="truncate text-sm text-muted-foreground"
+                          title={account.email ?? undefined}
+                        >
+                          {account.email ?? "No email"}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      {account.role ? <RoleLabel role={account.role} /> : "—"}
+                    <td className="px-4 py-2">
+                      <div className="flex min-w-0 flex-col">
+                        {account.role ? <RoleLabel role={account.role} /> : "—"}
+                        {account.organization ? (
+                          <span
+                            className="truncate text-sm text-muted-foreground"
+                            title={account.organization}
+                          >
+                            {account.organization}
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-2">
                       <AccountStatusText status={account.status} />
                     </td>
-                    <td className="px-4 py-3.5 text-muted-foreground">
+                    <td className="px-4 py-2 text-muted-foreground">
                       <DateText value={account.createdAt} />
                     </td>
-                    <td className="px-4 py-3.5 text-muted-foreground">
+                    <td className="px-4 py-2 text-muted-foreground">
                       <DateText value={account.lastLoginAt} />
                     </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <AdminAccountActions account={account} />
+                    <td className="py-2 pr-4">
+                      <div className="flex justify-end">
+                        <RowChevron />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -207,24 +259,31 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
 
           <ul className="divide-y lg:hidden">
             {visible.map((account) => (
-              <li key={account.id} className="flex min-w-0 items-start gap-3 p-4">
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <p className="truncate font-medium text-foreground">
-                    {account.name ?? account.email ?? "Unnamed user"}
-                  </p>
-                  <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
+              <li
+                key={account.id}
+                className="flex min-w-0 cursor-pointer items-center gap-3 px-4 py-3 hover:bg-muted/40"
+                onClick={() => setManagingId(account.id)}
+              >
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <ManageButton account={account} onManage={() => setManagingId(account.id)} />
+                  <span
+                    className="truncate text-sm text-muted-foreground"
+                    title={account.email ?? undefined}
+                  >
                     {account.email ?? "No email"}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-3 pt-0.5">
+                  </span>
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-sm text-muted-foreground">
                     {account.role ? <RoleLabel role={account.role} /> : null}
+                    {account.organization ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span className="min-w-0 truncate">{account.organization}</span>
+                      </>
+                    ) : null}
                     <AccountStatusText status={account.status} />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {account.organization ? `${account.organization} · ` : null}
-                    Last sign-in <DateText value={account.lastLoginAt} />
                   </p>
                 </div>
-                <AdminAccountActions account={account} />
+                <RowChevron />
               </li>
             ))}
           </ul>
@@ -258,6 +317,13 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
           </div>
         ) : null}
       </div>
+      {managing ? (
+        <ManageAccountDialog
+          key={managing.id}
+          account={managing}
+          onClose={() => setManagingId(null)}
+        />
+      ) : null}
     </Card>
   );
 }

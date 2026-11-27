@@ -5,7 +5,11 @@ import { Map, Marker, type MapRef } from "@vis.gl/react-maplibre";
 import { useTheme } from "next-themes";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Home01Icon } from "@hugeicons/core-free-icons";
-import { MAP_STYLE_URLS, applyMapStyleOverrides } from "@/components/map-view/mapStyle";
+import {
+  MAP_STYLE_URLS,
+  applyMapStyleOverrides,
+  foldAttribution,
+} from "@/components/map-view/mapStyle";
 
 /** A still map of the building's position, in the same restyled basemap as search. */
 export function LocationMap({ lat, lng }: { lat: number; lng: number }) {
@@ -21,14 +25,11 @@ export function LocationMap({ lat, lng }: { lat: number; lng: number }) {
   const handleLoad = useCallback(() => {
     const map = mapRef.current?.getMap();
     if (!map) return;
-    applyMapStyleOverrides(map, isDarkRef.current);
-    // The compact attribution starts expanded and only folds away when the map is moved, which
-    // never happens on this still map. Fold it now; its button still opens it.
-    map
-      .getContainer()
-      .querySelector(".maplibregl-compact-show")
-      ?.classList.remove("maplibregl-compact-show");
-    map.on("style.load", () => applyMapStyleOverrides(map, isDarkRef.current));
+    applyMapStyleOverrides(map, isDarkRef.current, { hidePlaceLabels: true });
+    foldAttribution(map);
+    map.on("style.load", () =>
+      applyMapStyleOverrides(map, isDarkRef.current, { hidePlaceLabels: true }),
+    );
   }, []);
 
   return (

@@ -1,17 +1,19 @@
 "use client";
 
 import { type DragEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { ArrowDown01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Search01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
-import type {
-  AdminCustomListingField,
-  UpdateCustomListingFieldInput,
-} from "@/shared/schemas/custom-listing-fields";
+import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fields";
 import {
   FIELD_HELP_TEXT,
   TABLE_COLUMNS,
@@ -40,7 +42,6 @@ export function CustomListingFieldsTable({
   selectedFieldIds,
   selectedFieldCount,
   displayGroups,
-  categoryPositions,
   dropIndicator,
   pendingFieldId,
   onSearchChange,
@@ -56,12 +57,8 @@ export function CustomListingFieldsTable({
   onRowDragEnd,
   onRowDragOver,
   onRowDrop,
+  onEditField,
   onDeleteField,
-  onTextChange,
-  onApplicabilityChange,
-  onVisibilityChange,
-  onFilterableChange,
-  onRequiredChange,
 }: {
   categories: CategoryStat[];
   categoryFilter: string;
@@ -72,7 +69,6 @@ export function CustomListingFieldsTable({
   selectedFieldIds: Set<string>;
   selectedFieldCount: number;
   displayGroups: DisplayGroup[];
-  categoryPositions: Map<string, number>;
   dropIndicator: DropIndicator | null;
   pendingFieldId: string | null;
   onSearchChange: (search: string) => void;
@@ -92,12 +88,8 @@ export function CustomListingFieldsTable({
   onRowDragEnd: () => void;
   onRowDragOver: (event: DragEvent<HTMLDivElement>, field: AdminCustomListingField) => void;
   onRowDrop: (event: DragEvent<HTMLDivElement>, field: AdminCustomListingField) => void;
+  onEditField: (field: AdminCustomListingField) => void;
   onDeleteField: (field: AdminCustomListingField) => void;
-  onTextChange: (fieldId: string, payload: UpdateCustomListingFieldInput) => Promise<void>;
-  onApplicabilityChange: (fieldId: string, appliesTo: AdminCustomListingField["appliesTo"]) => void;
-  onVisibilityChange: (fieldId: string, publicOnly: boolean) => void;
-  onFilterableChange: (fieldId: string, filterableOnly: boolean) => void;
-  onRequiredChange: (fieldId: string, required: boolean) => void;
 }) {
   const hasFilters = search !== "" || categoryFilter !== "all" || visibilityFilter !== "all";
 
@@ -205,7 +197,9 @@ export function CustomListingFieldsTable({
               TABLE_COLUMNS,
             )}
           >
-            <div className="py-3 pl-4 text-xs font-semibold text-muted-foreground">Order</div>
+            <div>
+              <span className="sr-only">Reorder</span>
+            </div>
             <SortHeader
               label="Field"
               sortKey="label"
@@ -225,36 +219,22 @@ export function CustomListingFieldsTable({
             <SortHeader
               label="Description"
               sortKey="description"
-              helperText={`${FIELD_HELP_TEXT.description} Help text: ${FIELD_HELP_TEXT.helpText}`}
+              helperText={FIELD_HELP_TEXT.description}
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
             />
             <SortHeader
-              label="Visibility"
+              label="Status"
               sortKey="visibility"
-              helperText={FIELD_HELP_TEXT.visibility}
+              helperText="Visibility, whether renters can filter by it, and whether it's required."
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
             />
-            <SortHeader
-              label="Filterable"
-              sortKey="filterable"
-              helperText={FIELD_HELP_TEXT.filterable}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Required"
-              sortKey="required"
-              helperText={FIELD_HELP_TEXT.required}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <div className="sr-only">Actions</div>
+            <div>
+              <span className="sr-only">Actions</span>
+            </div>
           </div>
 
           <div className={TABLE_MIN_WIDTH}>
@@ -282,7 +262,6 @@ export function CustomListingFieldsTable({
                         ) : null}
                         <FieldRow
                           field={field}
-                          position={categoryPositions.get(field.id) ?? index + 1}
                           isPending={pendingFieldId === field.id}
                           isSelected={selectedFieldIds.has(field.id)}
                           onSelectToggle={(event) => onRowSelectToggle(field.id, event.shiftKey)}
@@ -292,18 +271,8 @@ export function CustomListingFieldsTable({
                           onDragEnd={onRowDragEnd}
                           onDragOver={(event) => onRowDragOver(event, field)}
                           onDrop={(event) => onRowDrop(event, field)}
+                          onEdit={() => onEditField(field)}
                           onDelete={() => onDeleteField(field)}
-                          onTextChange={(payload) => onTextChange(field.id, payload)}
-                          onApplicabilityChange={(appliesTo) =>
-                            onApplicabilityChange(field.id, appliesTo)
-                          }
-                          onVisibilityChange={(publicOnly) =>
-                            onVisibilityChange(field.id, publicOnly)
-                          }
-                          onFilterableChange={(filterableOnly) =>
-                            onFilterableChange(field.id, filterableOnly)
-                          }
-                          onRequiredChange={(required) => onRequiredChange(field.id, required)}
                         />
                       </div>
                     ))}
@@ -338,8 +307,8 @@ export function CustomListingFieldsTable({
 }
 
 /**
- * A row that scrolls sideways, fading whichever edge has more content past it so a clipped tab
- * reads as "there's more" instead of looking cut off.
+ * A row that scrolls sideways. Whichever edge has more content past it fades and gets a chevron
+ * button, so a clipped tab reads as "there's more" and stays reachable without a trackpad.
  */
 function ScrollFadeRow({ className, children }: { className?: string; children: ReactNode }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -361,11 +330,17 @@ function ScrollFadeRow({ className, children }: { className?: string; children: 
     return () => observer.disconnect();
   }, [updateEdges]);
 
-  const fade = "2.5rem";
+  const scrollBy = (direction: 1 | -1) => {
+    const element = scrollRef.current;
+    if (!element) return;
+    element.scrollBy({ left: direction * element.clientWidth * 0.6, behavior: "smooth" });
+  };
+
+  const fade = "4rem";
   const maskImage = `linear-gradient(to right, ${edges.start ? "transparent" : "black"}, black ${fade}, black calc(100% - ${fade}), ${edges.end ? "transparent" : "black"})`;
 
   return (
-    <div className={className}>
+    <div className={cn("relative", className)}>
       <div
         ref={scrollRef}
         className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -374,6 +349,44 @@ function ScrollFadeRow({ className, children }: { className?: string; children: 
       >
         {children}
       </div>
+      {edges.start ? (
+        <ScrollButton direction={-1} label="Show earlier categories" onClick={scrollBy} />
+      ) : null}
+      {edges.end ? (
+        <ScrollButton direction={1} label="Show more categories" onClick={scrollBy} />
+      ) : null}
     </div>
+  );
+}
+
+function ScrollButton({
+  direction,
+  label,
+  onClick,
+}: {
+  direction: 1 | -1;
+  label: string;
+  onClick: (direction: 1 | -1) => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon-sm"
+      aria-label={label}
+      // Mouse and touch users need it; keyboard users already reach every tab with Tab.
+      tabIndex={-1}
+      className={cn(
+        "absolute top-1/2 -translate-y-1/2 rounded-full bg-background shadow-sm",
+        direction === 1 ? "right-0" : "left-0",
+      )}
+      onClick={() => onClick(direction)}
+    >
+      <HugeiconsIcon
+        icon={direction === 1 ? ArrowRight01Icon : ArrowLeft01Icon}
+        strokeWidth={2}
+        aria-hidden
+      />
+    </Button>
   );
 }

@@ -17,7 +17,7 @@ import { listingFormSectionId } from "@/app/listing-form/fieldDefinitions";
 import { FormSection } from "@/components/listing-form-layout/ListingFormLayout";
 import { Badge } from "@/components/ui/badge";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { trimmedAbsoluteOrRootRelativeUrlString } from "@/shared/schemas/string-normalizers";
@@ -211,10 +211,7 @@ export function ListingFormImages({
               )}
 
               {images.length > 0 && (
-                <ul
-                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                  aria-label="Uploaded photos"
-                >
+                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Uploaded photos">
                   {images.map((image, index) => {
                     const position = `Photo ${index + 1} of ${images.length}`;
                     return (
@@ -277,11 +274,17 @@ export function ListingFormImages({
                           </div>
                         </div>
                         <div className="p-3">
-                          <Input
-                            type="text"
+                          {/* The caption is the photo's alt text, so it wraps and grows instead of
+                              cutting off. It stays one paragraph: Enter doesn't add a line. */}
+                          <Textarea
+                            rows={2}
+                            className="min-h-[calc(2lh+1.25rem+2px)] resize-none [field-sizing:content]"
                             aria-label={`Caption for ${position.toLowerCase()}`}
                             placeholder="Add a caption"
                             value={image.caption}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") event.preventDefault();
+                            }}
                             onChange={(event) => {
                               field.onChange(
                                 images.map((currentImage, imageIndex) =>

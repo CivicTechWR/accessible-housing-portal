@@ -42,19 +42,19 @@ function ActivationStep({ step, children }: { step: AccountActivationStep; child
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <div className="flex w-full max-w-md flex-col items-center gap-2">
-        <div className="flex w-32 gap-1.5" aria-hidden="true">
+        <div className="flex w-48 gap-2" aria-hidden="true">
           {[1, 2].map((n) => (
             <span
               key={n}
               className={
                 n <= number
-                  ? "h-1.5 flex-1 rounded-full bg-primary"
-                  : "h-1.5 flex-1 rounded-full bg-border"
+                  ? "h-2 flex-1 rounded-full bg-primary"
+                  : "h-2 flex-1 rounded-full bg-border"
               }
             />
           ))}
         </div>
-        <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
+        <p className="text-base font-medium" aria-live="polite">
           Step {number} of 2: {label}
         </p>
       </div>

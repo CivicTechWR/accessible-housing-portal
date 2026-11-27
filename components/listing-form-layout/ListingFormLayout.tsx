@@ -59,6 +59,8 @@ export interface ListingFormLayoutProps {
 
 type Pane = "form" | "preview";
 
+const PAGE_COLUMN = "mx-auto w-full max-w-5xl";
+
 const PANES: { value: Pane; label: string }[] = [
   { value: "form", label: "Form" },
   { value: "preview", label: "Preview" },
@@ -218,17 +220,19 @@ export function ListingFormLayout({
   // picker takes its place: in the tab bar below lg, above the form from lg up.
   const showsRail = Boolean(sectionNav) && !isExpandedWithPreview;
 
+  // The same 1024px column as every other page, so the header, footer and page edges line up.
   const gridClassName = cn(
-    "mx-auto grid max-w-[1440px] grid-cols-1 gap-6 xl:gap-8",
+    PAGE_COLUMN,
+    "grid grid-cols-1 gap-6",
     !hasPreview
-      ? showsRail && "xl:grid-cols-[13rem_minmax(0,1fr)]"
+      ? showsRail && "xl:grid-cols-[12.5rem_minmax(0,1fr)]"
       : isExpandedWithPreview
-        ? "lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(0,1fr)]"
+        ? "lg:grid-cols-[20rem_minmax(0,1fr)]"
         : cn(
-            "lg:grid-cols-[minmax(0,1fr)_22rem]",
+            "lg:grid-cols-[minmax(0,1fr)_18.75rem]",
             showsRail
-              ? "xl:grid-cols-[13rem_minmax(0,1fr)_24rem]"
-              : "xl:grid-cols-[minmax(0,1fr)_24rem]",
+              ? "xl:grid-cols-[12.5rem_minmax(0,1fr)_18.75rem]"
+              : "xl:grid-cols-[minmax(0,1fr)_18.75rem]",
           ),
   );
   const footerBar = footer ? (
@@ -268,7 +272,7 @@ export function ListingFormLayout({
 
   const body = (
     <>
-      {header ? <div className="mx-auto mb-6 max-w-[1440px]">{header}</div> : null}
+      {header ? <div className={cn(PAGE_COLUMN, "mb-6")}>{header}</div> : null}
       {panes}
       {footerBar}
     </>
@@ -303,7 +307,7 @@ export function ListingFormLayout({
       }}
       className="block w-full"
     >
-      {header ? <div className="mx-auto mb-4 max-w-[1440px] lg:mb-6">{header}</div> : null}
+      {header ? <div className={cn(PAGE_COLUMN, "mb-4 lg:mb-6")}>{header}</div> : null}
       <PaneTabs ref={tabBarRef} sectionJump={sectionJump} isFormActive={activePane === "form"} />
       <div className="pt-4 lg:pt-0">{panes}</div>
       {footerBar}

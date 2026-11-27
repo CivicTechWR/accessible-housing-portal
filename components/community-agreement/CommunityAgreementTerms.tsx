@@ -10,10 +10,7 @@ export function CommunityAgreementTerms() {
           <h2 className="text-xl font-semibold text-foreground">{section.title}</h2>
           <ul role="list" className="space-y-4">
             {section.items.map((item) => (
-              <li
-                key={item.title}
-                className="border-l-2 border-primary/40 pl-4 dark:border-primary-text/50"
-              >
+              <li key={item.title}>
                 <span className="block font-semibold text-foreground">{item.title}</span>
                 {item.body}
                 {item.link && (

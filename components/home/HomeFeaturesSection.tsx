@@ -1,8 +1,8 @@
 import {
+  WheelchairIcon,
   CheckmarkCircle02Icon,
   DollarCircleIcon,
   MapsLocation01Icon,
-  WheelchairIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";

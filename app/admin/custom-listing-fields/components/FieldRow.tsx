@@ -1,20 +1,24 @@
 "use client";
 
-import { type DragEvent, type KeyboardEvent, type MouseEvent, useRef, useState } from "react";
+import { type DragEvent, type MouseEvent, useRef } from "react";
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
+  AsteriskIcon,
   Delete02Icon,
   DragDropVerticalIcon,
   EyeIcon,
+  FilterIcon,
+  FilterRemoveIcon,
   MoreHorizontalIcon,
+  PencilEdit02Icon,
   Tick02Icon,
   ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,19 +32,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { formatCustomListingFieldCategoryLabel } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
+import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
-import type {
-  AdminCustomListingField,
-  UpdateCustomListingFieldInput,
-} from "@/shared/schemas/custom-listing-fields";
+import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fields";
 import {
   TABLE_COLUMNS,
   type SortDirection,
   type SortKey,
-  nullableTrim,
 } from "../custom-listing-fields-dashboard-utils";
 
 export function CategoryTab({
@@ -132,7 +131,7 @@ export function SortHeader({
       type="button"
       title={helperText}
       aria-label={`${label}: ${helperText}`}
-      className="flex items-center gap-1 px-4 py-3 text-left text-xs font-semibold text-muted-foreground hover:text-foreground"
+      className="flex items-center gap-1 px-3 py-3 text-left text-xs font-semibold text-muted-foreground hover:text-foreground"
       onClick={() => onSort(sortKey)}
     >
       {label}
@@ -160,7 +159,6 @@ export function DropIndicatorLine() {
 
 export function FieldRow({
   field,
-  position,
   isPending,
   isSelected,
   onSelectToggle,
@@ -168,16 +166,10 @@ export function FieldRow({
   onDragEnd,
   onDragOver,
   onDrop,
+  onEdit,
   onDelete,
-  onTextChange,
-  onApplicabilityChange,
-  onVisibilityChange,
-  onFilterableChange,
-  onRequiredChange,
 }: {
   field: AdminCustomListingField;
-  /** The field's place within its category, counting from 1. */
-  position: number;
   isPending: boolean;
   isSelected: boolean;
   onSelectToggle: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -185,44 +177,49 @@ export function FieldRow({
   onDragEnd: () => void;
   onDragOver: (event: DragEvent<HTMLDivElement>) => void;
   onDrop: (event: DragEvent<HTMLDivElement>) => void;
+  onEdit: () => void;
   onDelete: () => void;
-  onTextChange: (payload: UpdateCustomListingFieldInput) => Promise<void>;
-  onApplicabilityChange: (appliesTo: AdminCustomListingField["appliesTo"]) => void;
-  onVisibilityChange: (publicOnly: boolean) => void;
-  onFilterableChange: (filterableOnly: boolean) => void;
-  onRequiredChange: (required: boolean) => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const label = toSentenceCase(field.label);
 
   return (
+    // The whole row opens the editor for pointer users; the name button is the keyboard and screen
+    // reader entry point, so the row itself needs no role.
     <div
       ref={rowRef}
       className={cn(
-        "grid min-h-16 items-start border-b border-border text-sm transition-colors last:border-b-0 hover:bg-muted/20",
+        "grid min-h-16 cursor-pointer items-start border-b border-border text-sm transition-colors last:border-b-0 hover:bg-muted/40",
         TABLE_COLUMNS,
-        isSelected && "bg-primary/5",
-        isPending && "opacity-60",
+        isSelected && "bg-primary/5 hover:bg-primary/10",
+        isPending && "pointer-events-none opacity-60",
       )}
+      onClick={() => {
+        if (!isPending) onEdit();
+      }}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      <div className="flex items-center gap-1 pt-3 pl-2">
+      <div className="flex justify-center pt-3.5">
         <button
           type="button"
           draggable={!isPending}
           className={cn(
-            "flex size-7 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors active:cursor-grabbing",
-            "hover:border-border hover:bg-muted hover:text-foreground",
+            "flex size-8 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors active:cursor-grabbing",
+            "hover:border-border hover:bg-background hover:text-foreground",
             isSelected && "border-primary/30 bg-primary/10 text-primary-text",
           )}
-          aria-label={`Select or drag ${field.label} to reorder`}
+          aria-label={`Select or drag ${label} to reorder`}
           aria-pressed={isSelected}
-          title={`Drag ${field.label} to reorder within ${formatCustomListingFieldCategoryLabel(
-            field.category,
+          title={`Drag to reorder within ${toSentenceCase(
+            formatCustomListingFieldCategoryLabel(field.category),
           )}, or click to select`}
           disabled={isPending}
-          onClick={onSelectToggle}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelectToggle(event);
+          }}
           onDragStart={(event) => onDragStart(event, rowRef.current)}
           onDragEnd={onDragEnd}
         >
@@ -230,130 +227,78 @@ export function FieldRow({
             icon={isSelected ? Tick02Icon : DragDropVerticalIcon}
             strokeWidth={2}
             className="size-4"
+            aria-hidden
           />
         </button>
-        <span className="text-sm text-muted-foreground tabular-nums">{position}</span>
       </div>
-      <div className="flex min-w-0 flex-col">
-        <EditableTextCell
-          value={field.label}
-          className="pb-0.5 font-medium text-foreground"
+      <div className="min-w-0 px-3 py-4">
+        <button
+          type="button"
+          className="rounded-sm text-left font-medium text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
           disabled={isPending}
-          required
-          ariaLabel={`Edit label for ${field.label}`}
-          onCommit={(label) => onTextChange({ label })}
-        />
-        <p
-          className="cursor-default truncate px-4 pb-3 font-mono text-xs text-muted-foreground"
-          title={`${field.key} (field keys are fixed after creation)`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit();
+          }}
         >
-          {field.key}
-        </p>
+          <span className="sr-only">Edit </span>
+          {label}
+        </button>
       </div>
-      <div className="px-2 py-3">
-        <Select
-          value={field.appliesTo}
-          onValueChange={(value) =>
-            onApplicabilityChange(value as AdminCustomListingField["appliesTo"])
-          }
-          disabled={isPending}
-        >
-          <SelectTrigger
-            size="sm"
-            aria-label={`Edit applicability for ${field.label}`}
-            title="Changing applicability affects future duplications; existing duplicated listings are unaffected."
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            <SelectItem value="building">Building</SelectItem>
-            <SelectItem value="unit">Unit</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="px-3 py-4">
+        <Badge variant="secondary" className="-my-0.5">
+          {field.appliesTo === "building" ? "Building" : "Unit"}
+        </Badge>
       </div>
-      <div className="min-w-0 py-1.5">
-        <EditableTextCell
-          label="Description"
-          value={field.description ?? ""}
-          displayValue={field.description || "No description"}
-          className={cn(
-            "pt-1.5 pb-0.5",
-            field.description ? "text-foreground" : "text-muted-foreground",
-          )}
-          disabled={isPending}
-          ariaLabel={`Edit description for ${field.label}`}
-          multiline
-          onCommit={(description) => onTextChange({ description: nullableTrim(description) })}
+      <div className="min-w-0 px-3 py-4">
+        {field.description ? (
+          <p className="line-clamp-2 text-foreground" title={field.description}>
+            {field.description}
+          </p>
+        ) : (
+          <p className="text-muted-foreground">No description</p>
+        )}
+      </div>
+      <ul className="flex flex-col gap-1 px-3 py-4 text-sm">
+        <StatusIndicator
+          icon={field.publicOnly ? EyeIcon : ViewOffSlashIcon}
+          label={field.publicOnly ? "Public" : "Internal"}
+          muted={!field.publicOnly}
         />
-        <EditableTextCell
-          label="Help text"
-          value={field.helpText ?? ""}
-          displayValue={field.helpText || "No help text"}
-          className="pt-0.5 pb-1.5 text-muted-foreground"
-          disabled={isPending}
-          ariaLabel={`Edit help text for ${field.label}`}
-          multiline
-          onCommit={(helpText) => onTextChange({ helpText: nullableTrim(helpText) })}
+        <StatusIndicator
+          icon={field.filterableOnly ? FilterIcon : FilterRemoveIcon}
+          label={field.filterableOnly ? "Filterable" : "Not filterable"}
+          muted={!field.filterableOnly}
         />
-      </div>
-      <div className="px-2 py-3">
-        <Select
-          value={field.publicOnly ? "public" : "internal"}
-          onValueChange={(value) => onVisibilityChange(value === "public")}
-          disabled={isPending}
-        >
-          <SelectTrigger size="sm" aria-label={`Visibility for ${field.label}`}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            <SelectItem value="public">
-              <HugeiconsIcon icon={EyeIcon} strokeWidth={2} className="size-4" aria-hidden />
-              Public
-            </SelectItem>
-            <SelectItem value="internal">
-              <HugeiconsIcon
-                icon={ViewOffSlashIcon}
-                strokeWidth={2}
-                className="size-4 text-muted-foreground"
-                aria-hidden
-              />
-              Internal
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="px-4 pt-4 pb-3">
-        <Checkbox
-          aria-label={`Toggle filterable for ${field.label}`}
-          checked={field.filterableOnly}
-          disabled={isPending}
-          onCheckedChange={(checked) => onFilterableChange(checked === true)}
-        />
-      </div>
-      <div className="px-4 pt-4 pb-3">
-        <Checkbox
-          aria-label={`Toggle required for ${field.label}`}
-          checked={field.required}
-          disabled={isPending}
-          onCheckedChange={(checked) => onRequiredChange(checked === true)}
-        />
-      </div>
-      <div className="flex justify-center py-2">
+        {field.required ? <StatusIndicator icon={AsteriskIcon} label="Required" /> : null}
+      </ul>
+      <div className="flex justify-center pt-3">
         {/* Not modal, so the delete dialog opened from it doesn't leave the page inert. */}
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
               ref={menuButtonRef}
               type="button"
-              variant="outline"
+              variant="ghost"
               size="icon"
-              aria-label={`More actions for ${field.label}`}
+              aria-label={`More actions for ${label}`}
               disabled={isPending}
+              onClick={(event) => event.stopPropagation()}
             >
               <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={2} aria-hidden />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+            <DropdownMenuItem
+              onSelect={() => {
+                // Gives the sheet a live element to return focus to when it closes.
+                menuButtonRef.current?.focus();
+                onEdit();
+              }}
+            >
+              <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} aria-hidden />
+              Edit field
+            </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
               onSelect={() => {
@@ -373,127 +318,24 @@ export function FieldRow({
   );
 }
 
-function EditableTextCell({
+function StatusIndicator({
+  icon,
   label,
-  value,
-  displayValue,
-  className,
-  disabled,
-  required,
-  multiline,
-  ariaLabel,
-  onCommit,
+  muted = false,
 }: {
-  /** Names the value for screen readers and above the box while editing, for cells that stack
-   * several fields. */
-  label?: string;
-  value: string;
-  displayValue?: string;
-  className?: string;
-  disabled?: boolean;
-  required?: boolean;
-  multiline?: boolean;
-  ariaLabel: string;
-  onCommit: (value: string) => Promise<void>;
+  icon: IconSvgElement;
+  label: string;
+  muted?: boolean;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const [error, setError] = useState("");
-  const shownValue = displayValue ?? value;
-
-  const beginEditing = () => {
-    if (disabled) {
-      return;
-    }
-
-    setDraft(value);
-    setError("");
-    setIsEditing(true);
-  };
-
-  const commit = async (nextValue = draft) => {
-    const trimmed = nextValue.trim();
-
-    if (required && !trimmed) {
-      setError("Required");
-      return;
-    }
-
-    if (trimmed === value.trim()) {
-      setIsEditing(false);
-      return;
-    }
-
-    try {
-      await onCommit(required ? trimmed : nextValue);
-      setIsEditing(false);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to save.");
-    }
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setDraft(value);
-      setError("");
-      setIsEditing(false);
-      return;
-    }
-
-    if (event.key === "Enter" && !multiline) {
-      event.preventDefault();
-      void commit();
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <div className="px-3 py-2">
-        {label ? (
-          <span className="mb-1 block px-1 text-sm font-medium text-muted-foreground">{label}</span>
-        ) : null}
-        {multiline ? (
-          <Textarea
-            aria-label={ariaLabel}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={() => void commit()}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            rows={3}
-            className="min-h-20 bg-background text-sm"
-          />
-        ) : (
-          <Input
-            aria-label={ariaLabel}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={() => void commit()}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            className="bg-background text-sm"
-          />
-        )}
-        {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
-      </div>
-    );
-  }
-
   return (
-    <button
-      type="button"
+    <li
       className={cn(
-        "w-full cursor-text rounded-md px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
-        className,
+        "flex items-center gap-1.5 whitespace-nowrap",
+        muted ? "text-muted-foreground" : "text-foreground",
       )}
-      disabled={disabled}
-      onClick={beginEditing}
     >
-      {label ? <span className="sr-only">{label}: </span> : null}
-      <span className="line-clamp-2" title={shownValue}>
-        {shownValue}
-      </span>
-    </button>
+      <HugeiconsIcon icon={icon} strokeWidth={2} className="size-4 shrink-0" aria-hidden />
+      {label}
+    </li>
   );
 }

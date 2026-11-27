@@ -13,6 +13,7 @@ interface ListingsPanelProps {
   isCapped: boolean;
   displayMode: DisplayMode;
   onHighlightChange?: (id: string | null) => void;
+  summary?: string;
 }
 
 export function ListingsPanel({
@@ -21,6 +22,7 @@ export function ListingsPanel({
   isCapped,
   displayMode,
   onHighlightChange,
+  summary,
 }: ListingsPanelProps) {
   return (
     <div
@@ -33,6 +35,7 @@ export function ListingsPanel({
         isLoadingMore={isLoadingMore}
         isCapped={isCapped}
         onHighlightChange={onHighlightChange}
+        summary={summary}
         mode={
           [DisplayMode.LIST, DisplayMode.MAP_LIST].includes(displayMode)
             ? ListingsDisplayMode.FULLSCREEN

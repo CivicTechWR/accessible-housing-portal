@@ -27,8 +27,8 @@ export function HomeHeroSection() {
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-black/65 sm:bg-transparent sm:bg-[linear-gradient(90deg,rgb(0_0_0/0.85),rgb(0_0_0/0.7)_45%,rgb(0_0_0/0.3)),linear-gradient(to_top,rgb(0_0_0/0.6),transparent_60%)]"
       />
-      <div className="w-full pt-28">
-        <div className="mx-auto max-w-5xl px-4 pb-12 text-white sm:px-6 sm:pb-16">
+      <div className="w-full px-4 pt-28 sm:px-6">
+        <div className="mx-auto max-w-5xl pb-12 text-white sm:pb-16">
           <p className="mb-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-sm font-medium backdrop-blur-sm">
             Invitation-only pilot in {siteConfig.region}
           </p>

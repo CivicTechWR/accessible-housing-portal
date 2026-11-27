@@ -8,12 +8,12 @@ import {
   KitchenUtensilsIcon,
   ParkingAreaSquareIcon,
   Stairs01Icon,
-  UniversalAccessIcon,
+  WheelchairIcon,
   WalkingIcon,
   WashingMachineIcon,
 } from "@hugeicons/core-free-icons";
 
-type Icon = typeof UniversalAccessIcon;
+type Icon = typeof WheelchairIcon;
 
 /**
  * Keyword rules, checked in order, so a more specific word wins: "Lowered bathroom counters" is a
@@ -39,5 +39,5 @@ const RULES: Array<[pattern: RegExp, icon: Icon]> = [
  */
 export function featureIcon(name: string): Icon {
   const text = name.toLowerCase();
-  return RULES.find(([pattern]) => pattern.test(text))?.[1] ?? UniversalAccessIcon;
+  return RULES.find(([pattern]) => pattern.test(text))?.[1] ?? WheelchairIcon;
 }

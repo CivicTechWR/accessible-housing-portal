@@ -4,7 +4,7 @@ import { DatePicker, DatePickerProps } from "../date-picker/DatePicker";
 import { PriceRangeInput, PriceRangeInputProps } from "../price-range-input/PriceRangeInput";
 import { ToggleField, ToggleFieldProps } from "../toggle-field/ToggleField";
 import { FeatureAccordion, DynamicFilterGroup } from "../feature-accordian/FeatureAccordian";
-import { ComponentProps } from "react";
+import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,10 @@ export interface ListingFiltersProps {
   clearFilters: () => Promise<void>;
   /** False when the container renders its own pinned actions, as the mobile sheet does. */
   showActions?: boolean;
+  /** The sort menu, for phones, whose search bar has no room for it. */
+  sort?: ReactNode;
+  /** Opens on this section, scrolled into view, with its groups expanded. */
+  initialSection?: "accessibility";
   className?: string;
 }
 
@@ -36,11 +40,27 @@ export function ListingFilters({
   clearFilters,
   dynamicGroups,
   showActions = true,
+  sort,
+  initialSection,
   className,
 }: ListingFiltersProps) {
+  const accessibilityRef = useRef<HTMLDivElement>(null);
+  const opensOnAccessibility = initialSection === "accessibility";
+
+  useEffect(() => {
+    if (opensOnAccessibility) accessibilityRef.current?.scrollIntoView({ block: "start" });
+  }, [opensOnAccessibility]);
+
   return (
     <div className={cn("w-full max-w-sm border p-4 space-y-6", className)}>
       <h2 className="text-xl font-semibold">Filters</h2>
+
+      {sort && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Sort by</h3>
+          {sort}
+        </div>
+      )}
 
       <PriceRangeInput {...priceRangeProps} />
 
@@ -49,7 +69,16 @@ export function ListingFilters({
 
       <DatePicker {...datePickerProps} />
 
-      <FeatureAccordion groups={dynamicGroups} getCheckboxProps={getFeatureCheckboxProps} />
+      {dynamicGroups.length > 0 && (
+        <div ref={accessibilityRef} className="scroll-mt-4 space-y-1">
+          <h3 className="text-sm font-medium">Accessibility features</h3>
+          <FeatureAccordion
+            groups={dynamicGroups}
+            getCheckboxProps={getFeatureCheckboxProps}
+            defaultOpen={opensOnAccessibility}
+          />
+        </div>
+      )}
 
       {showActions && (
         <div className="flex items-center gap-4 pt-4 border-t">

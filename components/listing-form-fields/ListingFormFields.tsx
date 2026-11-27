@@ -36,7 +36,10 @@ export interface ListingFormFieldsProps {
 
 /** The field's columns in its section's two-column grid. */
 function fieldSpan(def: CoreFieldDefinition) {
-  if (def.colSpan === 2) return "col-span-2";
+  // Emails and links are too long to read in half of the form column beside the preview.
+  if (def.colSpan === 2 || def.fieldType === "email" || def.fieldType === "url") {
+    return "col-span-2";
+  }
   return def.pairOnMobile ? "col-span-1" : "col-span-2 md:col-span-1";
 }
 

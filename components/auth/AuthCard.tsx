@@ -15,7 +15,7 @@ export function AuthCard({ title, description, children, footer, className }: Au
   return (
     <div
       className={cn(
-        "flex h-fit w-full max-w-[400px] flex-col gap-6 rounded-xl border bg-card p-6 text-card-foreground shadow-sm sm:p-8",
+        "flex h-fit w-full max-w-[400px] flex-col gap-6 text-card-foreground sm:rounded-xl sm:border sm:bg-card sm:p-8 sm:shadow-sm",
         className,
       )}
     >

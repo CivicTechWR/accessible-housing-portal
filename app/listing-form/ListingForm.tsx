@@ -207,11 +207,10 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       sectionNav={<ListingFormSectionNav sections={sections} />}
       sectionJump={<ListingFormSectionJump sections={sections} />}
       previewPaneHeader={
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold">Live preview</h2>
-            <p className="text-sm text-muted-foreground">How navigators will see this listing.</p>
-          </div>
+        // The description sits under the title and button so the narrow preview column doesn't
+        // squeeze it into a tall stack.
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <h2 className="text-base font-semibold">Live preview</h2>
           {/* Below lg the preview's own Back button returns to the card. */}
           <Button
             ref={previewToggleRef}
@@ -229,6 +228,9 @@ export default function ListingForm({ listingId }: ListingFormProps) {
             />
             {isPreviewExpanded ? "Show card preview" : "Show full page"}
           </Button>
+          <p className="w-full text-sm text-muted-foreground">
+            How navigators will see this listing.
+          </p>
         </div>
       }
       formContent={

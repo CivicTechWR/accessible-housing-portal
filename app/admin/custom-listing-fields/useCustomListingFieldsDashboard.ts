@@ -16,7 +16,6 @@ import {
   type SortDirection,
   type SortKey,
   type VisibilityFilter,
-  getCategoryPositions,
   getCategoryStats,
   getDisplayGroups,
   getInsertionIndexForPointer,
@@ -62,6 +61,7 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
   const [fieldDialog, setFieldDialog] = useState<FieldDialogState | null>(null);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminCustomListingField | null>(null);
+  const [editTarget, setEditTarget] = useState<AdminCustomListingField | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const rowHandleDragRef = useRef(false);
 
@@ -104,7 +104,6 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
   }, [categoryFilter, fields, search, sortDirection, sortKey, visibilityFilter]);
 
   const groupedFields = useMemo(() => groupFields(filteredFields), [filteredFields]);
-  const categoryPositions = useMemo(() => getCategoryPositions(fields), [fields]);
   const displayGroups = useMemo(
     () =>
       getDisplayGroups({
@@ -132,6 +131,7 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
         fieldDialog ||
         bulkEditOpen ||
         deleteTarget ||
+        editTarget ||
         isFormControlTarget(event.target)
       ) {
         return;
@@ -142,7 +142,7 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
 
     window.addEventListener("keydown", handleEscapeSelection);
     return () => window.removeEventListener("keydown", handleEscapeSelection);
-  }, [bulkEditOpen, deleteTarget, fieldDialog, selectedFieldIds.size]);
+  }, [bulkEditOpen, deleteTarget, editTarget, fieldDialog, selectedFieldIds.size]);
 
   const openCreateDialog = (category?: string) => {
     const resolvedCategory =
@@ -431,34 +431,24 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
     }
   };
 
-  const handleUpdateField = async (
-    fieldId: string,
-    payload: UpdateCustomListingFieldInput,
-    closeDialog = true,
-    throwOnError = closeDialog,
-  ) => {
+  const handleSaveField = async (payload: UpdateCustomListingFieldInput) => {
+    if (!editTarget) {
+      return;
+    }
+
+    const fieldId = editTarget.id;
     setFeedback(null);
     setPendingFieldId(fieldId);
-    const normalizedPayload = normalizeCategoryPayload(payload);
 
     try {
-      const updatedField = normalizeFieldCategory(await updateField(fieldId, normalizedPayload));
+      const updatedField = normalizeFieldCategory(
+        await updateField(fieldId, normalizeCategoryPayload(payload)),
+      );
       setFields((current) =>
         sortFields(current.map((field) => (field.id === fieldId ? updatedField : field))),
       );
-      if (closeDialog) {
-        setFieldDialog(null);
-        setFeedback({ status: "success", message: "Custom field updated." });
-      }
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "Unable to update custom field.";
-      if (closeDialog) {
-        throw caught;
-      }
-      setFeedback({ status: "error", message });
-      if (throwOnError) {
-        throw caught;
-      }
+      setEditTarget(null);
+      setFeedback({ status: "success", message: "Custom field updated." });
     } finally {
       setPendingFieldId(null);
     }
@@ -492,6 +482,7 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
     fieldDialog,
     bulkEditOpen,
     deleteTarget,
+    editTarget,
     categoryOptions,
     isCreating,
     isBulkSaving,
@@ -501,9 +492,11 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
     closeFieldDialog: () => setFieldDialog(null),
     closeBulkEditDialog: () => setBulkEditOpen(false),
     closeDeleteDialog: () => setDeleteTarget(null),
+    closeEditSheet: () => setEditTarget(null),
     handleCreateField,
     handleBulkEdit,
     handleDeleteField,
+    handleSaveField,
     tableProps: {
       categories,
       categoryFilter,
@@ -514,7 +507,6 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
       selectedFieldIds,
       selectedFieldCount: selectedFields.length,
       displayGroups,
-      categoryPositions,
       dropIndicator,
       pendingFieldId,
       onSearchChange: setSearch,
@@ -536,17 +528,8 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
       onRowDragOver: handleRowDragOver,
       onRowDrop: (event: DragEvent<HTMLDivElement>, field: AdminCustomListingField) =>
         void handleRowDrop(event, field),
+      onEditField: setEditTarget,
       onDeleteField: setDeleteTarget,
-      onTextChange: (fieldId: string, payload: UpdateCustomListingFieldInput) =>
-        handleUpdateField(fieldId, payload, false, true),
-      onApplicabilityChange: (fieldId: string, appliesTo: AdminCustomListingField["appliesTo"]) =>
-        void handleUpdateField(fieldId, { appliesTo }, false),
-      onVisibilityChange: (fieldId: string, publicOnly: boolean) =>
-        void handleUpdateField(fieldId, { publicOnly }, false),
-      onFilterableChange: (fieldId: string, filterableOnly: boolean) =>
-        void handleUpdateField(fieldId, { filterableOnly }, false),
-      onRequiredChange: (fieldId: string, required: boolean) =>
-        void handleUpdateField(fieldId, { required }, false),
     },
   };
 }

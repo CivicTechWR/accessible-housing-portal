@@ -10,7 +10,7 @@ import {
   Mail01Icon,
   PencilEdit01Icon,
   Tick02Icon,
-  UniversalAccessIcon,
+  WheelchairIcon,
 } from "@hugeicons/core-free-icons";
 
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
@@ -97,9 +97,6 @@ export interface ListingDetailProps {
 
 const CONTACT_SECTION_ID = "listing-contact";
 
-/** Deposit text up to this long shares a row with another detail; longer text gets its own. */
-const SHORT_DETAIL_LENGTH = 60;
-
 function Price({ price, className }: { price: number; className?: string }) {
   return (
     <span className={cn("font-semibold tracking-tight text-foreground", className)}>
@@ -109,12 +106,48 @@ function Price({ price, className }: { price: number; className?: string }) {
   );
 }
 
+/** Below this many features, grouping by category adds more headings than it saves. */
+const MIN_FEATURES_TO_GROUP = 5;
+
+function FeatureItem({ feature, category }: { feature: ListingFeature; category?: string }) {
+  // The listings API sends a feature's name as its description when it has none.
+  const featureDescription = feature.description.trim();
+  const hasDescription = featureDescription !== "" && featureDescription !== feature.name;
+  return (
+    <li className="flex gap-3 wrap-anywhere">
+      <HugeiconsIcon
+        icon={Tick02Icon}
+        strokeWidth={2}
+        className="mt-0.5 size-5 shrink-0 text-primary-text"
+        aria-hidden
+      />
+      <div className="min-w-0">
+        <p className="text-base font-semibold text-foreground">{toSentenceCase(feature.name)}</p>
+        {hasDescription && (
+          <p className="mt-0.5 max-w-prose text-[15px] leading-6 text-foreground/80">
+            {featureDescription}
+          </p>
+        )}
+        {category && (
+          <p className="mt-1 text-[13px] font-medium text-muted-foreground">
+            {toSentenceCase(category)}
+          </p>
+        )}
+      </div>
+    </li>
+  );
+}
+
 /**
- * The most important block after the photos, so it sits on its own panel. Each category is a
- * heading with its icon over full-width rows, so descriptions run at a readable width.
+ * The most important block after the photos, so it sits on its own panel. With enough features,
+ * each category gets a small muted label over its rows; with only a few, one flat list reads
+ * better, and the category shows under each feature instead.
  */
 function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
   const count = categories.reduce((total, category) => total + category.features.length, 0);
+  const grouped = count >= MIN_FEATURES_TO_GROUP;
+  // In the flat list, each feature names its category, unless they all share one.
+  const labelCategories = categories.filter((category) => category.features.length > 0).length > 1;
   const headingId = "listing-accessibility";
 
   return (
@@ -124,12 +157,7 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
       <div className="rounded-xl border border-primary/15 bg-primary/4 p-5 sm:p-7 dark:border-primary-text/35 dark:bg-card">
         <div className="mb-6 flex items-center gap-3.5">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <HugeiconsIcon
-              icon={UniversalAccessIcon}
-              strokeWidth={2}
-              className="size-5"
-              aria-hidden
-            />
+            <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-5" aria-hidden />
           </span>
           <div className="min-w-0">
             <h2 id={headingId} className="text-xl font-semibold tracking-tight">
@@ -144,51 +172,40 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
         </div>
         {count === 0 ? (
           <p className="text-base text-foreground">No accessibility features listed.</p>
-        ) : (
+        ) : grouped ? (
           <div className="space-y-7">
             {categories.map((category) => (
               <div key={category.categoryName}>
-                <h3 className="mb-3 flex items-center gap-3 text-base font-semibold tracking-normal">
+                <h3 className="mb-3 flex items-center gap-2 text-[13px] font-medium tracking-normal text-muted-foreground">
                   <HugeiconsIcon
                     icon={featureIcon(category.categoryName)}
                     strokeWidth={2}
-                    className="size-5 shrink-0 text-foreground/70"
+                    className="size-4 shrink-0"
                     aria-hidden
                   />
                   {toSentenceCase(category.categoryName)}
                 </h3>
                 {/* Safari drops list semantics from a list without markers unless the role is set. */}
-                <ul role="list" className="space-y-3">
-                  {category.features.map((feature) => {
-                    // The listings API sends a feature's name as its description when it has none.
-                    const featureDescription = feature.description.trim();
-                    const hasDescription =
-                      featureDescription !== "" && featureDescription !== feature.name;
-                    return (
-                      <li key={feature.name} className="flex gap-3 wrap-anywhere">
-                        <HugeiconsIcon
-                          icon={Tick02Icon}
-                          strokeWidth={2}
-                          className="mt-0.5 size-5 shrink-0 text-primary-text"
-                          aria-hidden
-                        />
-                        <div className="min-w-0">
-                          <p className="text-base font-medium text-foreground">
-                            {toSentenceCase(feature.name)}
-                          </p>
-                          {hasDescription && (
-                            <p className="max-w-prose text-base text-foreground/75">
-                              {featureDescription}
-                            </p>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
+                <ul role="list" className="space-y-4">
+                  {category.features.map((feature) => (
+                    <FeatureItem key={feature.name} feature={feature} />
+                  ))}
                 </ul>
               </div>
             ))}
           </div>
+        ) : (
+          <ul role="list" className="space-y-5">
+            {categories.flatMap((category) =>
+              category.features.map((feature) => (
+                <FeatureItem
+                  key={`${category.categoryName}-${feature.name}`}
+                  feature={feature}
+                  category={labelCategories ? category.categoryName : undefined}
+                />
+              )),
+            )}
+          </ul>
         )}
       </div>
     </section>
@@ -294,7 +311,6 @@ export function ListingDetails({
     label: string;
     value: string;
     info?: { label: string; description: string };
-    fullWidth?: boolean;
     preserveWhitespace?: boolean;
   }> = [
     ...(trimmedDeposit
@@ -302,7 +318,6 @@ export function ListingDetails({
           {
             label: "Deposit",
             value: trimmedDeposit,
-            fullWidth: trimmedDeposit.length > SHORT_DETAIL_LENGTH || trimmedDeposit.includes("\n"),
             preserveWhitespace: true,
           },
         ]
@@ -393,10 +408,11 @@ export function ListingDetails({
         title={<span className="wrap-anywhere">{heading}</span>}
         description={
           title || posted ? (
+            // Phones put the posting date on its own line, so it never wraps mid-phrase.
             <span className="wrap-anywhere">
-              {[title ? address : undefined, posted ? `Posted ${posted}` : undefined]
-                .filter(Boolean)
-                .join(" · ")}
+              {title && address}
+              {title && posted && <span className="max-sm:hidden"> · </span>}
+              {posted && <span className="whitespace-nowrap max-sm:block">Posted {posted}</span>}
             </span>
           ) : undefined
         }
@@ -485,27 +501,34 @@ export function ListingDetails({
       )}
 
       <Section id="listing-rental-details" title="Rental details" className="order-4">
-        {/* Columns follow the section's width, which differs in the form preview. */}
-        <div className="@container">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 pt-1 @lg:grid-cols-3">
-            {rentalDetailRows.map((row) => (
-              <div key={row.label} className={cn("min-w-0", row.fullWidth && "col-span-full")}>
-                <dt className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
-                  {row.label}
-                  {row.info && <InfoPopover {...row.info} />}
-                </dt>
-                <dd
-                  className={cn(
-                    "mt-0.5 text-base font-medium wrap-anywhere text-foreground",
-                    row.preserveWhitespace && "whitespace-pre-line",
-                  )}
-                >
-                  {row.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+        {/* One label and value per row, so any number of details looks complete and long values
+            like the deposit wrap in place. */}
+        <dl className="divide-y border-y">
+          {rentalDetailRows.map((row) => (
+            <div
+              key={row.label}
+              className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-baseline gap-4 py-3"
+            >
+              <dt className="text-[15px] text-muted-foreground">
+                {row.label}
+                {row.info && (
+                  // Inline, so it follows the label's last word when the label wraps.
+                  <span className="ml-1 inline-flex align-middle">
+                    <InfoPopover {...row.info} />
+                  </span>
+                )}
+              </dt>
+              <dd
+                className={cn(
+                  "text-base font-medium wrap-anywhere text-foreground",
+                  row.preserveWhitespace && "whitespace-pre-line",
+                )}
+              >
+                {row.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </Section>
 
       {instructions && (
@@ -561,7 +584,14 @@ export function ListingDetails({
           <div className="space-y-5 border-t pt-5">
             {hasContactDetails && (
               <section className="min-w-0 space-y-3">
-                <h3 className="text-sm font-semibold tracking-normal">
+                {/* When one contact covers everything, this repeats the card's heading wherever that
+                    heading shows (phones and the form preview), so it's hidden there. */}
+                <h3
+                  className={cn(
+                    "text-sm font-semibold tracking-normal",
+                    allContactMethodsShared && (embedded ? "sr-only" : "max-lg:sr-only"),
+                  )}
+                >
                   {allContactMethodsShared ? "For questions and applications" : "General enquiries"}
                 </h3>
                 {(contactName?.trim() || contactRole?.trim()) && (
@@ -586,7 +616,7 @@ export function ListingDetails({
                             {row.value}
                           </ContactLink>
                           {row.shared && !allContactMethodsShared && (
-                            <span className="block pl-6 text-[13px] text-muted-foreground">
+                            <span className="block pl-6 text-sm text-muted-foreground">
                               Also for applications
                             </span>
                           )}

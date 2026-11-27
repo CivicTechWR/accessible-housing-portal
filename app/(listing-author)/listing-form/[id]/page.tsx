@@ -16,8 +16,6 @@ export default async function EditListingFormPage({ params }: { params: Promise<
 
   return (
     <AppPageShell className="pb-0 sm:pb-0">
-      {/* Tells the site header and footer to go full width with the editor. */}
-      <div data-wide-page hidden />
       <Suspense fallback={<ListingFormSkeleton />}>
         <ListingForm listingId={id} />
       </Suspense>

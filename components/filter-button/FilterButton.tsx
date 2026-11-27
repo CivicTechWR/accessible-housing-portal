@@ -14,7 +14,10 @@ export interface FilterButtonProps {
   buttonRef?: Ref<HTMLButtonElement>;
 }
 
-/** Opens every filter. Labelled at every width, with a count of the filters in use. */
+/**
+ * Opens every filter, with a count of the filters in use. Phones show the icon only, beside the
+ * search field; the accessible name stays "Filters".
+ */
 export function FilterButton({
   activeFilterCount,
   isFilterOpen,
@@ -31,16 +34,16 @@ export function FilterButton({
       aria-label={isActive ? `Filters, ${activeFilterCount} applied` : "Filters"}
       aria-expanded={isFilterOpen}
       className={cn(
-        "shrink-0 gap-2 max-md:h-11 max-sm:gap-1.5 max-sm:px-3",
+        "relative shrink-0 gap-2 max-md:h-11 max-sm:w-11 max-sm:px-0",
         isActive && "border-primary-text/60 bg-primary/5 dark:bg-primary/15",
       )}
     >
       <HugeiconsIcon icon={FilterHorizontalIcon} strokeWidth={2} className="size-5" aria-hidden />
-      Filters
+      <span className="max-sm:sr-only">Filters</span>
       {isActive && (
         <span
           aria-hidden
-          className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
+          className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground max-sm:absolute max-sm:-top-1.5 max-sm:-right-1.5 max-sm:ring-2 max-sm:ring-background"
         >
           {activeFilterCount}
         </span>

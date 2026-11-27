@@ -25,7 +25,7 @@ export function CommunityAgreement({ onAccept }: CommunityAgreementProps) {
 
       {/* Stays at the bottom of the screen while the terms scroll past, so the next step is
           always in view. */}
-      <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col gap-4 rounded-b-xl border-t bg-card px-6 py-5 sm:-mx-8 sm:-mb-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div className="sticky bottom-0 -mx-4 flex flex-col gap-4 border-t bg-background px-4 py-5 sm:-mx-8 sm:-mb-8 sm:flex-row sm:items-center sm:justify-between sm:rounded-b-xl sm:bg-card sm:px-8">
         <div className="flex items-start gap-3">
           <Checkbox
             id="community-agreement"
@@ -36,15 +36,23 @@ export function CommunityAgreement({ onAccept }: CommunityAgreementProps) {
             I have read and agree to the Community Agreement & Terms of Use.
           </label>
         </div>
-        <Button
-          type="button"
-          size="lg"
-          className="w-full shrink-0 sm:w-auto"
-          disabled={!agreed}
-          onClick={onAccept}
-        >
-          Agree and continue
-        </Button>
+        <div className="flex shrink-0 flex-col gap-1.5 sm:items-end">
+          <Button
+            type="button"
+            size="lg"
+            className="w-full sm:w-auto"
+            disabled={!agreed}
+            aria-describedby={agreed ? undefined : "community-agreement-hint"}
+            onClick={onAccept}
+          >
+            Agree and continue
+          </Button>
+          {!agreed ? (
+            <p id="community-agreement-hint" className="text-sm text-muted-foreground">
+              Tick the box to continue.
+            </p>
+          ) : null}
+        </div>
       </div>
     </AuthCard>
   );

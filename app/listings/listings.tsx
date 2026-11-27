@@ -5,13 +5,19 @@ import type { ListingFiltersProps } from "@/components/listing-filter/ListingFil
 import { useListingFilters } from "@/components/listing-filter/useListingFilter";
 import {
   DisplayMode,
+  FloatingViewToggle,
   ListingFilterSearchBar,
+  QuickFilterChips,
   ViewSwitch,
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
 import { useMemo, useRef, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
-import { ListingsPanelHeader } from "@/components/listings-panel-header/ListingsPanelHeader";
+import {
+  ListingsPanelHeader,
+  listingsSummary,
+} from "@/components/listings-panel-header/ListingsPanelHeader";
+import { SortOptions } from "@/components/sort-options/SortOptions";
 import type { ListingListResponse, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
 import { toListingSearchFilters } from "./query";
@@ -61,7 +67,10 @@ export default function ListingsDashboard({
   dynamicGroups,
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  // Set when the phone Accessibility chip opens the filter sheet, so it opens at that section.
+  const [filterSection, setFilterSection] = useState<"accessibility">();
   const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const accessibilityChipRef = useRef<HTMLButtonElement>(null);
   const mobileFilterSheetRef = useRef<HTMLDivElement>(null);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   // Split view only fits at `lg` (1024px) and up, so phones and tablets get List and Map only.
@@ -89,7 +98,10 @@ export default function ListingsDashboard({
     filters,
   } = useListingFilters();
   const filterButtonProps = {
-    ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
+    ...getFilterButtonProps(isFilterOpen, () => {
+      setFilterSection(undefined);
+      setIsFilterOpen(!isFilterOpen);
+    }),
     buttonRef: filterButtonRef,
   };
   const query = useMemo(() => toListingSearchFilters(filters), [filters]);
@@ -116,8 +128,9 @@ export default function ListingsDashboard({
     <div data-fullscreen className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <h1 className="sr-only">Search listings</h1>
       {/* Two rows (filters, then results) until `xl`, where both fit on one row and leave more
-          room for listings. On phones the rows share one block with no divider, to keep the
-          first listing photo high on the screen. */}
+          room for listings. Phones get the search field and a row of quick-filter chips; the
+          count moves above the first card, sort into the filter sheet, and the view switch to
+          a floating button, to keep the first listing photo high on the screen. */}
       <header className="flex shrink-0 flex-col border-b bg-background xl:h-16 xl:flex-row xl:items-center xl:gap-6 xl:px-6">
         <div className="flex items-center px-4 pt-3 pb-2 sm:h-16 sm:px-6 sm:py-0 xl:min-w-0 xl:flex-1 xl:px-0">
           <ListingFilterSearchBar
@@ -128,13 +141,25 @@ export default function ListingsDashboard({
             filterButton={<FilterButton {...filterButtonProps} />}
           />
         </div>
+        <QuickFilterChips
+          priceRangeProps={priceRangeProps}
+          bedroomToggleProps={bedroomToggleProps}
+          bathroomToggleProps={bathroomToggleProps}
+          accessibilityCount={filters.features.length}
+          accessibilityRef={accessibilityChipRef}
+          onAccessibilityClick={() => {
+            setFilterSection("accessibility");
+            setIsFilterOpen(true);
+          }}
+          className="pb-2 sm:hidden"
+        />
         <ListingsPanelHeader
           shown={listings.length}
           total={total}
           isPartial={isPartial}
           sortOptionProps={sortOptionProps}
           isLoading={isLoading}
-          className="pt-0 pb-3 sm:border-t sm:py-2 xl:border-0 xl:p-0"
+          className="max-sm:hidden sm:border-t sm:py-2 xl:border-0 xl:p-0"
           viewSwitch={
             <ViewSwitch
               displayModes={displayModes}
@@ -164,6 +189,7 @@ export default function ListingsDashboard({
             isCapped={isCapped}
             displayMode={displayMode}
             onHighlightChange={setHighlightedId}
+            summary={listingsSummary({ shown: listings.length, total, isPartial, isLoading })}
           />
         ) : null}
         {[DisplayMode.MAP, DisplayMode.MAP_LIST].includes(displayMode) && (
@@ -182,6 +208,11 @@ export default function ListingsDashboard({
             )}
           </div>
         )}
+        <FloatingViewToggle
+          value={effectiveDisplayMode}
+          onChange={setDisplayMode}
+          className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 sm:hidden"
+        />
         {/* Rendered outside the list panel so phones can filter in Map view too. */}
         {isMobileViewport ? (
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
@@ -194,10 +225,13 @@ export default function ListingsDashboard({
                 event.preventDefault();
                 mobileFilterSheetRef.current?.focus();
               }}
-              // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
+              // The sheet has no SheetTrigger, so Radix has nowhere to return focus on close.
               onCloseAutoFocus={(event) => {
                 event.preventDefault();
-                filterButtonRef.current?.focus();
+                (filterSection === "accessibility"
+                  ? accessibilityChipRef
+                  : filterButtonRef
+                ).current?.focus();
               }}
               className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
             >
@@ -220,6 +254,8 @@ export default function ListingsDashboard({
                   clearFilters={clearFilters}
                   dynamicGroups={dynamicGroups}
                   showActions={false}
+                  initialSection={filterSection}
+                  sort={<SortOptions {...sortOptionProps} className="w-full justify-between" />}
                   className="max-w-none border-0"
                 />
               </div>

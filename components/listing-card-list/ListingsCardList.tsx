@@ -21,6 +21,8 @@ interface ListingCardGalleryProps {
   isCapped: boolean;
   /** Called with a listing's id while its card is hovered or focused, and null after. */
   onHighlightChange?: (id: string | null) => void;
+  /** The result count, shown above the first card on phones, where the results bar is hidden. */
+  summary?: string;
 }
 
 // Memoized because the search page re-renders on every keystroke in its filters, and this can
@@ -31,6 +33,7 @@ export const ListingCardGallery = memo(function ListingCardGallery({
   isLoadingMore,
   isCapped,
   onHighlightChange,
+  summary,
 }: ListingCardGalleryProps) {
   const isFullscreen = mode === ListingsDisplayMode.FULLSCREEN;
   const footer = isLoadingMore
@@ -41,6 +44,7 @@ export const ListingCardGallery = memo(function ListingCardGallery({
 
   return (
     <ScrollArea className="min-h-0 flex-1 w-full">
+      {summary && <p className="px-4 pt-3 text-sm text-muted-foreground sm:hidden">{summary}</p>}
       {listings.length === 0 && !isLoadingMore && (
         <div className="mx-4 mt-6 rounded-xl border border-dashed px-6 py-12 text-center sm:mx-6">
           <HugeiconsIcon
@@ -56,7 +60,8 @@ export const ListingCardGallery = memo(function ListingCardGallery({
         </div>
       )}
       <div
-        className={`grid gap-x-5 gap-y-6 p-4 sm:px-6 ${
+        // Phones leave room at the end for the floating List / Map button.
+        className={`grid gap-x-5 gap-y-6 p-4 max-sm:pb-20 sm:px-6 ${
           isFullscreen ? "grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))]" : "grid-cols-1"
         }`}
       >
