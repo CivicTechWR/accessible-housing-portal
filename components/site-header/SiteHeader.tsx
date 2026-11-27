@@ -5,7 +5,6 @@ import { HeaderAccountMenu } from "@/components/site-header/HeaderAccountMenu";
 import { HeaderMobileMenu } from "@/components/site-header/HeaderMobileMenu";
 import { HeaderNavLink } from "@/components/site-header/HeaderNavLink";
 import { HeaderSignInButton } from "@/components/site-header/HeaderSignInButton";
-import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
 import { getOptionalSession } from "@/lib/auth/session";
 import { siteConfig } from "@/lib/site-config";
 
@@ -18,7 +17,7 @@ export async function SiteHeader() {
 
   return (
     <header className="shrink-0 border-b bg-background">
-      <div className="flex h-16 w-full items-center gap-6 px-4 sm:px-6">
+      <div className="site-container flex h-16 items-center gap-6">
         <Link
           href="/"
           className="-mx-1 flex items-center gap-2.5 rounded-lg px-1 text-lg font-semibold tracking-tight text-foreground"
@@ -27,18 +26,22 @@ export async function SiteHeader() {
           {siteConfig.name}
         </Link>
 
-        <nav aria-label="Main" className="hidden flex-1 items-center gap-1 lg:flex">
-          {isSignedIn ? <HeaderNavLink href="/listings">Browse listings</HeaderNavLink> : null}
-          {canCreateListing ? <HeaderNavLink href="/my-listings">My listings</HeaderNavLink> : null}
-          {role === "admin" ? (
-            <>
-              <HeaderNavLink href="/admin/users" alsoActiveFor={["/admin/invite"]}>
-                Users
-              </HeaderNavLink>
-              <HeaderNavLink href="/admin/custom-listing-fields">Custom fields</HeaderNavLink>
-            </>
-          ) : null}
-        </nav>
+        {/* Searchers only have the listings, which the logo already leads to, so the nav starts
+            with a second destination. */}
+        {canCreateListing ? (
+          <nav aria-label="Main" className="hidden flex-1 items-center gap-1 lg:flex">
+            <HeaderNavLink href="/listings">Browse listings</HeaderNavLink>
+            <HeaderNavLink href="/my-listings">My listings</HeaderNavLink>
+            {role === "admin" ? (
+              <>
+                <HeaderNavLink href="/admin/users" alsoActiveFor={["/admin/invite"]}>
+                  Users
+                </HeaderNavLink>
+                <HeaderNavLink href="/admin/custom-listing-fields">Custom fields</HeaderNavLink>
+              </>
+            ) : null}
+          </nav>
+        ) : null}
 
         <div className="ml-auto hidden items-center gap-3 lg:flex">
           {isSignedIn ? (
@@ -46,11 +49,7 @@ export async function SiteHeader() {
               <HeaderAccountMenu user={session.user} />
             ) : null
           ) : (
-            <>
-              {/* Signed-in users find the theme control in the account menu. */}
-              <ThemeToggle />
-              <HeaderSignInButton />
-            </>
+            <HeaderSignInButton />
           )}
         </div>
 

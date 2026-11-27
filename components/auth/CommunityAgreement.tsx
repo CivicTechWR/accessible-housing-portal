@@ -25,7 +25,7 @@ export function CommunityAgreement({ onAccept }: CommunityAgreementProps) {
 
       {/* Stays at the bottom of the screen while the terms scroll past, so the next step is
           always in view. */}
-      <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col gap-4 rounded-b-2xl border-t bg-card px-6 py-5 sm:-mx-8 sm:-mb-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col gap-4 rounded-b-xl border-t bg-card px-6 py-5 sm:-mx-8 sm:-mb-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div className="flex items-start gap-3">
           <Checkbox
             id="community-agreement"

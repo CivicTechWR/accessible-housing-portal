@@ -127,7 +127,7 @@
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
-  --muted-foreground: oklch(0.46 0.02 213.5);
+  --muted-foreground: oklch(0.43 0.02 213.5);
   --accent: oklch(0.963 0.002 197.1);
   --accent-foreground: oklch(0.218 0.008 223.9);
   --destructive: oklch(0.577 0.245 27.325);
@@ -168,7 +168,7 @@
   --accent: oklch(0.275 0.011 216.9);
   --accent-foreground: oklch(0.987 0.002 197.1);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 14%);
   --input: oklch(1 0 0 / 34%);
   --ring: oklch(0.685 0.169 237.323);
   --chart-1: oklch(0.828 0.111 230.318);
@@ -243,6 +243,25 @@
 
 .dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
   border-left-color: var(--card);
+}
+
+/* Unlayered: Tailwind v4 drops plain class rules inside @layer components.
+   The header and footer line their content up with the page's 64rem content column (whose
+   padding is 1rem, then 1.5rem from sm), and go full width on the full-screen map and on pages
+   that mark themselves [data-wide-page], such as the listing editor. */
+.site-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: calc(64rem + 3rem);
+  padding-inline: 1rem;
+}
+@media (width >= 40rem) {
+  .site-container {
+    padding-inline: 1.5rem;
+  }
+}
+html:has([data-fullscreen], [data-wide-page]) .site-container {
+  max-width: none;
 }
 
 @layer base {

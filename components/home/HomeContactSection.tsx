@@ -9,7 +9,7 @@ export function HomeContactSection() {
   return (
     <section
       aria-labelledby="join-title"
-      className="flex flex-col gap-6 rounded-2xl bg-primary px-6 py-10 text-primary-foreground sm:px-10 md:flex-row md:items-center md:justify-between"
+      className="flex flex-col gap-6 rounded-2xl bg-primary px-6 py-10 text-primary-foreground sm:px-10 md:flex-row md:items-center md:justify-between dark:bg-[oklch(0.36_0.08_242)]"
     >
       <div className="max-w-2xl">
         <h2 id="join-title" className="text-2xl sm:text-3xl">
@@ -24,7 +24,7 @@ export function HomeContactSection() {
             Request access
           </a>
         </Button>
-        <p className="text-sm text-primary-foreground/85">{siteConfig.contactEmail}</p>
+        <p className="text-base text-primary-foreground/90">{siteConfig.contactEmail}</p>
       </div>
     </section>
   );

@@ -25,7 +25,7 @@ export function HomeHeroSection() {
           AA over any part of the photo however it wraps. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(0_0_0/0.85),rgb(0_0_0/0.7)_45%,rgb(0_0_0/0.3)),linear-gradient(to_top,rgb(0_0_0/0.6),transparent_60%)]"
+        className="absolute inset-0 -z-10 bg-black/65 sm:bg-transparent sm:bg-[linear-gradient(90deg,rgb(0_0_0/0.85),rgb(0_0_0/0.7)_45%,rgb(0_0_0/0.3)),linear-gradient(to_top,rgb(0_0_0/0.6),transparent_60%)]"
       />
       <div className="w-full pt-28">
         <div className="mx-auto max-w-5xl px-4 pb-12 text-white sm:px-6 sm:pb-16">

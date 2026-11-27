@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { siteConfig } from "@/lib/site-config";
 
 import { BrandMark } from "@/components/brand/BrandMark";
+import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
 import { WALK_SCORE_ATTRIBUTION_URL } from "@/components/listing-details/WalkScore";
 
 const siteMap = [
@@ -17,7 +18,7 @@ const linkClass =
 export function SiteFooter({ className }: { className?: string }) {
   return (
     <footer className={cn("border-t bg-muted/50 text-sm", className)}>
-      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-x-6 gap-y-8 px-4 py-8 sm:grid-cols-2 sm:px-6 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="site-container grid grid-cols-1 gap-x-6 gap-y-8 py-8 sm:grid-cols-2 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="space-y-3 sm:col-span-2 md:col-span-1">
           <p className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-foreground">
             <BrandMark className="size-7" />
@@ -84,10 +85,13 @@ export function SiteFooter({ className }: { className?: string }) {
         </div>
       </div>
       <div className="border-t">
-        <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-4 text-sm text-muted-foreground sm:flex-row sm:justify-between sm:px-6">
-          <p>
-            © {new Date().getFullYear()} {siteConfig.operator.name}
-          </p>
+        <div className="site-container flex flex-col gap-3 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <p>
+              © {new Date().getFullYear()} {siteConfig.operator.name}
+            </p>
+            <ThemeToggle />
+          </div>
           <p>
             Location scores:{" "}
             <a

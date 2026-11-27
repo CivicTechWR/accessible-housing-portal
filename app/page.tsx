@@ -5,7 +5,7 @@ import { HomeFeaturesSection } from "@/components/home/HomeFeaturesSection";
 import { HomeAboutSection } from "@/components/home/HomeAboutSection";
 import { HomeContactSection } from "@/components/home/HomeContactSection";
 import { HomeHeroSection } from "@/components/home/HomeHeroSection";
-import { HomeInfoSection } from "@/components/home/HomeInfoSection";
+import { HomeBand } from "@/components/home/HomeBand";
 import { HomeScopeSection } from "@/components/home/HomeScopeSection";
 import { getOptionalSession } from "@/lib/auth/session";
 import { siteConfig } from "@/lib/site-config";
@@ -27,13 +27,19 @@ export default async function Home() {
   return (
     <main>
       <HomeHeroSection />
-      <div className="mx-auto max-w-5xl space-y-16 px-4 py-16 sm:space-y-20 sm:px-6 sm:py-20">
-        <HomeAboutSection />
+      {/* Bands alternate between the page and muted backgrounds so each section reads as its own. */}
+      <HomeBand muted>
         <HomeFeaturesSection />
-        <HomeInfoSection />
+      </HomeBand>
+      <HomeBand>
+        <HomeAboutSection />
+      </HomeBand>
+      <HomeBand muted>
         <HomeScopeSection />
+      </HomeBand>
+      <HomeBand>
         <HomeContactSection />
-      </div>
+      </HomeBand>
     </main>
   );
 }
