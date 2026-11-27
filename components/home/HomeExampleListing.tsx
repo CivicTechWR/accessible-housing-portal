@@ -14,11 +14,13 @@ export function HomeExampleListing() {
   return (
     <figure className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xl shadow-black/8 dark:shadow-black/40">
       <div className="relative aspect-[3/2]">
+        {/* An AI-generated photo of a step-free entrance, matching the example's first feature. */}
         <Image
-          src="https://images.pexels.com/photos/7746646/pexels-photo-7746646.jpeg?cs=srgb&fm=jpg"
-          alt=""
+          src="/home-hero-entrance.webp"
+          alt="A brick apartment building with a ramp and handrail leading to wide automatic doors"
           fill
-          sizes="(min-width: 1024px) 420px, 100vw"
+          preload
+          sizes="(min-width: 1024px) 28rem, 100vw"
           className="object-cover"
         />
         <span className="absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-medium text-white">

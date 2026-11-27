@@ -68,10 +68,11 @@ export const activeFilterClassName =
   "border-transparent bg-primary/10 font-medium text-primary-text hover:bg-primary/15 hover:text-primary-text aria-expanded:bg-primary/15 aria-expanded:text-primary-text dark:border-transparent dark:bg-primary-text/15 dark:hover:bg-primary-text/20";
 
 /**
- * The Accessibility filter is the one this portal exists for, so it always wears the soft
- * accessibility yellow with a darker yellow edge. The other filters stay neutral until used.
+ * The Accessibility filter looks like the other filters until features are selected, then wears
+ * the soft accessibility yellow (the other filters use the blue tint), so yellow always means
+ * "results are filtered by accessibility".
  */
-const accessibilityTriggerClassName =
+const accessibilityActiveClassName =
   "border-signal bg-signal-soft text-signal-soft-foreground hover:bg-signal/40 hover:text-signal-soft-foreground aria-expanded:bg-signal/40 aria-expanded:text-signal-soft-foreground dark:border-signal/45 dark:bg-signal-soft dark:hover:bg-signal/25 dark:aria-expanded:bg-signal/25";
 
 /** The phone quick-filter chips: the desktop filter buttons' shape, 40px tall, in a scrolling row. */
@@ -194,7 +195,7 @@ function AccessibilityPopover({ groups, getCheckboxProps, count }: Accessibility
         <Button
           variant="outline"
           aria-label={accessibilityLabel(count)}
-          className={cn("gap-1.5 max-lg:hidden", accessibilityTriggerClassName)}
+          className={cn("gap-1.5 max-lg:hidden", count > 0 && accessibilityActiveClassName)}
         >
           <AccessibilityTriggerContent count={count} />
         </Button>
@@ -271,7 +272,11 @@ export function QuickFilterChips({
         variant="outline"
         onClick={onAccessibilityClick}
         aria-label={accessibilityLabel(accessibilityCount)}
-        className={cn("gap-1.5", chipClassName, accessibilityTriggerClassName)}
+        className={cn(
+          "gap-1.5",
+          chipClassName,
+          accessibilityCount > 0 && accessibilityActiveClassName,
+        )}
       >
         <AccessibilityTriggerContent count={accessibilityCount} />
       </Button>

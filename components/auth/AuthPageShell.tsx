@@ -1,5 +1,4 @@
-import { Tick02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -39,33 +38,25 @@ export function AuthPageShell({ children, withPanel = true, className }: AuthPag
   );
 }
 
-/** The home page's sign panel, smaller, so signing in looks like the same product. Decorative
- * on top of the card's own heading, so it is hidden from assistive technology. */
+/** A photo and the product line beside the sign-in card, so signing in looks like the same
+ * product. Decorative on top of the card's own heading, so it is hidden from assistive technology. */
 function AuthSignPanel() {
   return (
     <div
       aria-hidden="true"
-      className="hidden w-[420px] shrink-0 flex-col justify-center bg-primary text-primary-foreground lg:flex dark:bg-[#17478f]"
+      className="hidden w-[420px] shrink-0 flex-col bg-primary text-primary-foreground lg:flex dark:bg-[#123f86]"
     >
-      <div className="px-10 pt-10 pb-12">
-        <p className="text-[2rem] leading-[1.1] font-bold tracking-[-0.02em] text-balance">
+      {/* An AI-generated photo of an accessible kitchen: lowered counter, roll-under sink. */}
+      <div className="relative min-h-56 flex-1">
+        <Image src="/sign-in-kitchen.webp" alt="" fill sizes="420px" className="object-cover" />
+      </div>
+      <div className="px-10 pt-8 pb-10">
+        <p className="text-[1.75rem] leading-[1.1] font-bold tracking-[-0.02em] text-balance">
           Affordable, accessible rentals in {siteConfig.region}
         </p>
-        <p className="mt-5 text-lg leading-relaxed text-white/90">
+        <p className="mt-3 text-base leading-relaxed text-white/90">
           For housing navigators and the providers who list with them. Invitation only.
         </p>
-        <ul className="mt-8 space-y-3 border-t border-white/25 pt-6 text-base text-white">
-          {[
-            "Accessibility features, item by item",
-            "Rent and terms up front",
-            "Every unit on one map",
-          ].map((item) => (
-            <li key={item} className="flex items-center gap-3">
-              <HugeiconsIcon icon={Tick02Icon} strokeWidth={2.5} size={18} className="shrink-0" />
-              {item}
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ export function HomeHeroSection() {
       aria-labelledby="home-title"
       className="bg-primary px-4 pt-8 pb-10 text-primary-foreground sm:px-6 sm:py-16 lg:py-20 dark:bg-[#123f86]"
     >
-      <div className="mx-auto grid max-w-5xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
+      <div className="mx-auto grid max-w-5xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_28rem] lg:gap-12">
         <div>
           <h1
             id="home-title"
