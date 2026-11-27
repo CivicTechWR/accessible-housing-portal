@@ -173,11 +173,26 @@ function usePaneSwitcher() {
   return { activePane, switchPane, containerRef };
 }
 
-/** The bar pinned to the bottom of the screen. It spans the page shell's side padding. */
-function StickyFooter({ children }: { children: ReactNode }) {
+/**
+ * The bar pinned to the bottom of the screen. The bar spans the page, but its contents sit on the
+ * same grid as the panes, so the save state and button line up with the form column.
+ */
+function StickyFooter({
+  gridClassName,
+  showsRail,
+  children,
+}: {
+  gridClassName: string;
+  showsRail: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-foreground/10 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6">
-      <div className="mx-auto flex max-w-[1440px] items-center justify-end gap-4">{children}</div>
+    <div className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-border bg-background px-4 py-3 sm:-mx-6 sm:px-6">
+      <div className={gridClassName}>
+        {/* Holds the rail's column so the contents start where the form does. */}
+        {showsRail ? <div aria-hidden className="hidden xl:block" /> : null}
+        <div className="flex min-w-0 items-center justify-end gap-4">{children}</div>
+      </div>
     </div>
   );
 }
@@ -200,22 +215,27 @@ export function ListingFormLayout({
   // picker takes its place: in the tab bar below lg, above the form from lg up.
   const showsRail = Boolean(sectionNav) && !isExpandedWithPreview;
 
+  const gridClassName = cn(
+    "mx-auto grid max-w-[1440px] grid-cols-1 gap-6 xl:gap-8",
+    !hasPreview
+      ? showsRail && "xl:grid-cols-[13rem_minmax(0,1fr)]"
+      : isExpandedWithPreview
+        ? "lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(0,1fr)]"
+        : cn(
+            "lg:grid-cols-[minmax(0,1fr)_22rem]",
+            showsRail
+              ? "xl:grid-cols-[13rem_minmax(0,1fr)_24rem]"
+              : "xl:grid-cols-[minmax(0,1fr)_24rem]",
+          ),
+  );
+  const footerBar = footer ? (
+    <StickyFooter gridClassName={gridClassName} showsRail={showsRail}>
+      {footer}
+    </StickyFooter>
+  ) : null;
+
   const panes = (
-    <div
-      className={cn(
-        "mx-auto grid max-w-[1440px] grid-cols-1 gap-6 lg:items-start xl:gap-8",
-        !hasPreview
-          ? showsRail && "xl:grid-cols-[13rem_minmax(0,1fr)]"
-          : isExpandedWithPreview
-            ? "lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(0,1fr)]"
-            : cn(
-                "lg:grid-cols-[minmax(0,1fr)_22rem]",
-                showsRail
-                  ? "xl:grid-cols-[13rem_minmax(0,1fr)_24rem]"
-                  : "xl:grid-cols-[minmax(0,1fr)_24rem]",
-              ),
-      )}
-    >
+    <div className={cn(gridClassName, "lg:items-start")}>
       {showsRail ? (
         <aside className="sticky top-6 hidden self-start xl:block">{sectionNav}</aside>
       ) : null}
@@ -247,7 +267,7 @@ export function ListingFormLayout({
     <>
       {header ? <div className="mx-auto mb-6 max-w-[1440px]">{header}</div> : null}
       {panes}
-      {footer ? <StickyFooter>{footer}</StickyFooter> : null}
+      {footerBar}
     </>
   );
 
@@ -283,7 +303,7 @@ export function ListingFormLayout({
       {header ? <div className="mx-auto mb-4 max-w-[1440px] lg:mb-6">{header}</div> : null}
       <PaneTabs ref={tabBarRef} sectionJump={sectionJump} isFormActive={activePane === "form"} />
       <div className="pt-4 lg:pt-0">{panes}</div>
-      {footer ? <StickyFooter>{footer}</StickyFooter> : null}
+      {footerBar}
     </Tabs>
   );
 }

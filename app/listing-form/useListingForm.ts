@@ -24,7 +24,7 @@ const AUTOSAVE_RETRY_DELAY_MS = 5000;
 
 export type AutosaveStatus =
   | { status: "saving" }
-  | { status: "saved" }
+  | { status: "saved"; savedAt: number }
   | { status: "error"; message: string };
 
 export function useListingForm(initialListingId?: string) {
@@ -47,7 +47,9 @@ export function useListingForm(initialListingId?: string) {
   // on, so the message can be read; a different payload saves at once, and the same one is
   // tried again after AUTOSAVE_RETRY_DELAY_MS, when heldPayloadKey is cleared.
   const [lastAutosave, setLastAutosave] = useState<
-    { status: "saved" } | { status: "error"; message: string; heldPayloadKey: string | null } | null
+    | { status: "saved"; savedAt: number }
+    | { status: "error"; message: string; heldPayloadKey: string | null }
+    | null
   >(null);
   const form = useForm<ListingFormInput, ListingFormContext, ListingFormData>({
     resolver: zodResolver(listingFormSchema) as Resolver<
@@ -262,7 +264,7 @@ export function useListingForm(initialListingId?: string) {
         )
         .then(() => {
           lastAutosavedPayloadRef.current = autosavePayload;
-          setLastAutosave({ status: "saved" });
+          setLastAutosave({ status: "saved", savedAt: Date.now() });
         })
         .catch((error) => {
           setLastAutosave({

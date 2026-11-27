@@ -107,6 +107,8 @@ describe("ListingForm hydration", () => {
       name: "Housing Provider Open to Accessibility Modifications",
       description: "The housing provider is willing to discuss accessibility modifications.",
     };
+    // The form shows feature names in sentence case.
+    const switchName = "Housing provider open to accessibility modifications";
     let selected = false;
     const savedSelections: boolean[] = [];
     global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
@@ -144,19 +146,19 @@ describe("ListingForm hydration", () => {
     }) as unknown as typeof fetch;
 
     const firstRender = render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
-    await screen.findByText(feature.name);
-    fireEvent.click(screen.getByRole("switch", { name: feature.name }));
+    await screen.findByText(switchName);
+    fireEvent.click(screen.getByRole("switch", { name: switchName }));
     await waitFor(() => expect(savedSelections).toContain(true), { timeout: 3000 });
     firstRender.unmount();
 
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
     await waitFor(() =>
-      expect(screen.getByRole("switch", { name: feature.name })).toHaveAttribute(
+      expect(screen.getByRole("switch", { name: switchName })).toHaveAttribute(
         "aria-checked",
         "true",
       ),
     );
-    fireEvent.click(screen.getByRole("switch", { name: feature.name }));
+    fireEvent.click(screen.getByRole("switch", { name: switchName }));
     await waitFor(() => expect(savedSelections).toEqual([true, false]), { timeout: 3000 });
   });
 
@@ -299,7 +301,7 @@ describe("ListingForm autosave status", () => {
     fireEvent.change(title, { target: { value } });
   }
 
-  it("keeps showing Saved after an autosave until the next edit", async () => {
+  it("keeps showing Draft saved after an autosave until the next edit", async () => {
     const patches = mockDraftApi(() => ({
       ok: true,
       status: 200,
@@ -309,12 +311,12 @@ describe("ListingForm autosave status", () => {
     await editTitle("Renamed");
 
     expect(screen.getByRole("status")).toHaveTextContent("Saving...");
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"), {
       timeout: 3000,
     });
     // Well past the save and the refetch it triggers.
     await new Promise((resolve) => setTimeout(resolve, 500));
-    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    expect(screen.getByRole("status")).toHaveTextContent("Draft saved");
 
     fireEvent.change(screen.getByRole("textbox", { name: (name) => name.startsWith("Title") }), {
       target: { value: "Renamed again" },
@@ -326,7 +328,7 @@ describe("ListingForm autosave status", () => {
         timeout: 3000,
       },
     );
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"));
   });
 
   it("keeps a failed autosave's error on screen, then tries the same change again", async () => {
@@ -349,7 +351,7 @@ describe("ListingForm autosave status", () => {
     expect(patches).toHaveLength(1);
 
     serverUp = true;
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"), {
       timeout: 8000,
     });
     expect(patches.map((patch) => patch.title)).toEqual(["Renamed", "Renamed"]);
@@ -389,7 +391,7 @@ describe("ListingForm autosave status", () => {
         expect(patches.map((patch) => patch.title)).toEqual(["Renamed", "123 Main St Apartments"]),
       { timeout: 3000 },
     );
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"));
   });
 });
 
@@ -426,7 +428,7 @@ describe("ListingForm new listing autosave", () => {
 
     // A different change saves without waiting for the retry delay.
     fireEvent.change(title, { target: { value: "New home on Main" } });
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"), {
       timeout: 3000,
     });
 

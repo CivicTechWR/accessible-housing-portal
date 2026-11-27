@@ -16,6 +16,7 @@ import {
   type SortDirection,
   type SortKey,
   type VisibilityFilter,
+  getCategoryPositions,
   getCategoryStats,
   getDisplayGroups,
   getInsertionIndexForPointer,
@@ -103,6 +104,7 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
   }, [categoryFilter, fields, search, sortDirection, sortKey, visibilityFilter]);
 
   const groupedFields = useMemo(() => groupFields(filteredFields), [filteredFields]);
+  const categoryPositions = useMemo(() => getCategoryPositions(fields), [fields]);
   const displayGroups = useMemo(
     () =>
       getDisplayGroups({
@@ -512,6 +514,7 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
       selectedFieldIds,
       selectedFieldCount: selectedFields.length,
       displayGroups,
+      categoryPositions,
       dropIndicator,
       pendingFieldId,
       onSearchChange: setSearch,

@@ -154,6 +154,18 @@ export function sortFields(fields: AdminCustomListingField[]) {
   );
 }
 
+/** Each field's place within its category, counting from 1, regardless of filters or sorting. */
+export function getCategoryPositions(fields: AdminCustomListingField[]) {
+  const positions = new Map<string, number>();
+  const counts = new Map<string, number>();
+  for (const field of sortFields(fields)) {
+    const position = (counts.get(field.category) ?? 0) + 1;
+    counts.set(field.category, position);
+    positions.set(field.id, position);
+  }
+  return positions;
+}
+
 export function sortCategoryFields(fields: AdminCustomListingField[]) {
   return [...fields].sort(compareCategoryFields);
 }

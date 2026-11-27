@@ -1,12 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { UniversalAccessIcon, Image01Icon } from "@hugeicons/core-free-icons";
 import {
-  Bathtub01Icon,
-  BedDoubleIcon,
-  Image01Icon,
-  SquareArrowExpand01Icon,
-} from "@hugeicons/core-free-icons";
+  RENT_PERIOD,
+  formatListingDate,
+  formatRent,
+  formatRooms,
+  toSentenceCase,
+} from "@/lib/listing-format";
 import Image from "next/image";
 import Link from "next/link";
 import type { Ref } from "react";
@@ -36,7 +38,11 @@ interface ListingsCardProps {
   photoMayNeedSession?: boolean;
 }
 
-const MAX_FEATURES = 3;
+/**
+ * One named chip and a "+N more" count. A second named chip would be cut off on the narrowest
+ * cards, and the chips stay on one row so every card in a grid row lines up.
+ */
+const MAX_FEATURES = 1;
 
 const TIME_UNITS: Record<string, string> = {
   second: "s",
@@ -48,11 +54,14 @@ const TIME_UNITS: Record<string, string> = {
 };
 
 /**
- * Shortens date-fns' "about 6 hours ago" to "Posted 6h ago". Text it doesn't recognise, such as
- * the listing form preview's availability date, is returned unchanged.
+ * Shortens date-fns' "about 6 hours ago" to "Posted 6h ago". The listing form preview passes the
+ * move-in date ("2026-05-15", or "Now") instead, because a draft hasn't been posted yet; that shows
+ * as "Available May 15, 2026". Any other text is returned unchanged.
  */
 export function formatPostedLabel(timeAgo: string) {
   if (/^less than a minute ago$/.test(timeAgo)) return "Posted just now";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(timeAgo)) return `Available ${formatListingDate(timeAgo)}`;
+  if (timeAgo === "Now") return "Available now";
   const match =
     /^(?:about |over |almost )?(\d+|an?) (second|minute|hour|day|month|year)s? ago$/.exec(timeAgo);
   if (!match) return timeAgo;
@@ -61,68 +70,33 @@ export function formatPostedLabel(timeAgo: string) {
   return `Posted ${count}${TIME_UNITS[unit as keyof typeof TIME_UNITS]} ago`;
 }
 
-function plural(count: number, singular: string) {
-  return `${count.toLocaleString()} ${singular}${count === 1 ? "" : "s"}`;
-}
-
-function ListingStats({
-  beds,
-  baths,
-  sqft,
-  className,
-}: Pick<ListingsCardProps, "beds" | "baths" | "sqft"> & { className?: string }) {
-  const stats = [
-    { icon: BedDoubleIcon, label: plural(beds, "bed") },
-    { icon: Bathtub01Icon, label: plural(baths, "bath") },
-    ...(sqft !== null
-      ? [{ icon: SquareArrowExpand01Icon, label: `${sqft.toLocaleString()} sq ft` }]
-      : []),
-  ];
-
-  return (
-    <ul
-      role="list"
-      className={cn(
-        "flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-foreground",
-        className,
-      )}
-    >
-      {stats.map((stat) => (
-        <li key={stat.label} className="flex items-center gap-1.5">
-          <HugeiconsIcon
-            icon={stat.icon}
-            strokeWidth={2}
-            className="size-4 text-muted-foreground"
-            aria-hidden
-          />
-          {stat.label}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function FeatureChips({ features, className }: { features: string[]; className?: string }) {
-  if (features.length === 0) return null;
   const shown = features.slice(0, MAX_FEATURES);
   const hiddenCount = features.length - shown.length;
 
   return (
+    // A fixed-height row, kept even when empty, so cards in one grid row line up.
     <ul
       role="list"
-      aria-label="Accessibility features"
-      className={cn("flex flex-wrap gap-1.5", className)}
+      aria-label={features.length > 0 ? "Accessibility features" : undefined}
+      className={cn("flex h-7 min-w-0 items-center gap-1.5 overflow-hidden", className)}
     >
       {shown.map((feature, index) => (
-        <li key={`${feature}-${index}`} className="max-w-full">
-          <Badge variant="secondary" className="max-w-full font-normal text-foreground">
-            <span className="truncate">{feature}</span>
+        <li key={`${feature}-${index}`} className="flex min-w-0">
+          <Badge className="h-7 max-w-full gap-1 px-2.5 [&>svg]:size-4!">
+            <HugeiconsIcon
+              icon={UniversalAccessIcon}
+              strokeWidth={2}
+              className="shrink-0"
+              aria-hidden
+            />
+            <span className="truncate">{toSentenceCase(feature)}</span>
           </Badge>
         </li>
       ))}
       {hiddenCount > 0 && (
-        <li>
-          <Badge variant="outline" className="font-normal text-muted-foreground">
+        <li className="shrink-0">
+          <Badge variant="outline" className="h-7 px-2.5 text-muted-foreground">
             +{hiddenCount} more
           </Badge>
         </li>
@@ -174,12 +148,10 @@ export function ListingsCard({
     </div>
   );
 
-  const priceLabel = (
-    <p className="text-lg font-semibold tracking-tight text-foreground">
-      ${price.toLocaleString()}
-      <span className="text-sm font-normal text-muted-foreground"> /mo</span>
-    </p>
-  );
+  // The building name leads, as on the detail page and My listings. Without one, the street
+  // address takes its place and the city goes underneath, so every card has two lines here.
+  const heading = title || address;
+  const subheading = title ? displayAddress : city;
 
   return (
     <article
@@ -201,24 +173,22 @@ export function ListingsCard({
 
       <div
         className={cn(
-          "flex min-w-0 flex-col gap-1",
-          isHorizontal ? "flex-1 justify-center p-3" : "px-0.5",
+          "flex min-w-0 flex-col",
+          isHorizontal ? "flex-1 justify-center gap-0.5 p-3" : "gap-0.5 px-0.5",
         )}
       >
         <div className="flex items-baseline justify-between gap-3">
-          {priceLabel}
-          {!isHorizontal && <p className="shrink-0 text-[13px] text-muted-foreground">{posted}</p>}
+          <h3 className="min-w-0 truncate text-base font-semibold tracking-normal text-foreground">
+            {heading}
+          </h3>
+          {!isHorizontal && <p className="shrink-0 text-xs text-muted-foreground">{posted}</p>}
         </div>
-        <h3 className="truncate text-[15px] font-medium tracking-normal text-foreground">
-          {displayAddress}
-        </h3>
-        {title && <p className="truncate text-sm text-muted-foreground">{title}</p>}
-        <ListingStats
-          beds={beds}
-          baths={baths}
-          sqft={sqft}
-          className={isHorizontal ? "mt-0.5" : "mt-1"}
-        />
+        {subheading && <p className="truncate text-sm text-muted-foreground">{subheading}</p>}
+        <p className="truncate text-sm text-foreground">{formatRooms(beds, baths, sqft)}</p>
+        <p className="mt-1 text-base font-semibold tracking-tight text-foreground">
+          {formatRent(price)}
+          <span className="text-sm font-normal text-muted-foreground"> {RENT_PERIOD}</span>
+        </p>
         <FeatureChips
           features={features}
           className={isHorizontal ? "mt-1.5 hidden sm:flex" : "mt-2"}

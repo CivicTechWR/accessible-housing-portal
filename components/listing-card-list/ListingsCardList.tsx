@@ -63,7 +63,8 @@ export const ListingCardGallery = memo(function ListingCardGallery({
         {listings.map((listing) => (
           <div
             key={listing.id}
-            className="flex"
+            // min-w-0 lets the card's truncated lines shrink instead of widening the grid at 320px.
+            className="flex min-w-0"
             onPointerEnter={() => onHighlightChange?.(listing.id)}
             onPointerLeave={() => onHighlightChange?.(null)}
             onFocus={() => onHighlightChange?.(listing.id)}

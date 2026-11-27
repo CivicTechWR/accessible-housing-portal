@@ -7,6 +7,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ComponentProps } from "react";
 import { LabelledCheckbox } from "../labelled-checkbox/LabelledCheckbox";
+import { toSentenceCase } from "@/lib/listing-format";
 
 export interface FilterOption {
   id: string;
@@ -33,14 +34,14 @@ export function FeatureAccordion({ groups, getCheckboxProps }: FeatureAccordionP
       {groups.map((group) => (
         <AccordionItem key={group.groupId} value={group.groupId}>
           <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-            {group.groupLabel}
+            {toSentenceCase(group.groupLabel)}
           </AccordionTrigger>
           <AccordionContent>
             <div className="grid grid-cols-2 gap-4 pt-2">
               {group.options.map((option) => (
                 <LabelledCheckbox
                   key={option.id}
-                  label={option.label}
+                  label={toSentenceCase(option.label)}
                   {...getCheckboxProps(option.id)}
                 />
               ))}

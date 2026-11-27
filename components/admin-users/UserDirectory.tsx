@@ -7,19 +7,25 @@ import { Search01Icon } from "@hugeicons/core-free-icons";
 import { AdminAccountActions } from "@/components/admin-users/AdminAccountActions";
 import {
   accountStatusLabels,
-  accountStatusVariants,
+  accountStatusTones,
   formatAccountDate,
   type AccountListItem,
   type AccountStatus,
 } from "@/components/admin-users/account-display";
 import { RoleBadge } from "@/components/admin-invite/RoleBadge";
 import { inviteRoleOptions, type InviteRole } from "@/components/admin-invite/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { StatusDot } from "@/components/admin-users/StatusDot";
 
 const PAGE_SIZE = 25;
 
@@ -34,7 +40,7 @@ function DateText({ value }: { value: string | null }) {
 
 function StatusBadge({ status }: { status: AccountStatus | null }) {
   if (!status) return <span className="text-muted-foreground">Unknown</span>;
-  return <Badge variant={accountStatusVariants[status]}>{accountStatusLabels[status]}</Badge>;
+  return <StatusDot tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusDot>;
 }
 
 function matchesSearch(account: AccountListItem, query: string) {
@@ -88,38 +94,44 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
           />
         </div>
         <div className="grid grid-cols-2 gap-3 md:flex">
-          <NativeSelect
-            aria-label="Filter by role"
-            className="md:w-44"
+          <Select
             value={role}
-            onChange={(event) => {
-              setRole(event.target.value as InviteRole | "all");
+            onValueChange={(value) => {
+              setRole(value as InviteRole | "all");
               setPage(0);
             }}
           >
-            <option value="all">All roles</option>
-            {inviteRoleOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </NativeSelect>
-          <NativeSelect
-            aria-label="Filter by status"
-            className="md:w-40"
+            <SelectTrigger aria-label="Filter by role" className="md:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="all">All roles</SelectItem>
+              {inviteRoleOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
             value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as AccountStatus | "all");
+            onValueChange={(value) => {
+              setStatus(value as AccountStatus | "all");
               setPage(0);
             }}
           >
-            <option value="all">All statuses</option>
-            {(Object.keys(accountStatusLabels) as AccountStatus[]).map((value) => (
-              <option key={value} value={value}>
-                {accountStatusLabels[value]}
-              </option>
-            ))}
-          </NativeSelect>
+            <SelectTrigger aria-label="Filter by status" className="md:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="all">All statuses</SelectItem>
+              {(Object.keys(accountStatusLabels) as AccountStatus[]).map((value) => (
+                <SelectItem key={value} value={value}>
+                  {accountStatusLabels[value]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -207,7 +219,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                   <p className="truncate text-sm text-muted-foreground">
                     {account.email ?? "No email"}
                   </p>
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  <div className="flex flex-wrap items-center gap-3 pt-0.5">
                     {account.role ? <RoleBadge role={account.role} /> : null}
                     <StatusBadge status={account.status} />
                   </div>

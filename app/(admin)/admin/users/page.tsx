@@ -5,6 +5,7 @@ import { Add01Icon } from "@hugeicons/core-free-icons";
 
 import { AdminInviteActions } from "@/components/admin-users/AdminInviteActions";
 import { UserDirectory } from "@/components/admin-users/UserDirectory";
+import { StatusDot, type StatusTone } from "@/components/admin-users/StatusDot";
 import { formatAccountDate } from "@/components/admin-users/account-display";
 import { RoleBadge } from "@/components/admin-invite/RoleBadge";
 import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
@@ -82,12 +83,18 @@ async function getAllAccounts() {
   };
 }
 
-const inviteLifecycleLabels: Record<AccountInviteRow["lifecycle"], string> = {
-  pending: "Pending",
-  accepted: "Accepted",
-  expired: "Expired",
-  revoked: "Revoked",
-};
+const inviteLifecycle: Record<AccountInviteRow["lifecycle"], { label: string; tone: StatusTone }> =
+  {
+    pending: { label: "Pending", tone: "warning" },
+    accepted: { label: "Accepted", tone: "success" },
+    expired: { label: "Expired", tone: "neutral" },
+    revoked: { label: "Revoked", tone: "neutral" },
+  };
+
+function InviteStatus({ lifecycle }: { lifecycle: AccountInviteRow["lifecycle"] }) {
+  const { label, tone } = inviteLifecycle[lifecycle];
+  return <StatusDot tone={tone}>{label}</StatusDot>;
+}
 
 function DateText({ value }: { value: Date }) {
   const date = formatAccountDate(value);
@@ -157,7 +164,9 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
                   <RoleBadge role={invite.role} />
                 </td>
                 <td className="space-y-2 px-4 py-3">
-                  <Badge variant="outline">{inviteLifecycleLabels[invite.lifecycle]}</Badge>
+                  <div>
+                    <InviteStatus lifecycle={invite.lifecycle} />
+                  </div>
                   {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
@@ -186,9 +195,9 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
             <div className="min-w-0 flex-1 space-y-1.5">
               <p className="truncate font-medium text-foreground">{invite.name}</p>
               <p className="truncate text-sm text-muted-foreground">{invite.email}</p>
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
+              <div className="flex flex-wrap items-center gap-3 pt-0.5">
                 <RoleBadge role={invite.role} />
-                <Badge variant="outline">{inviteLifecycleLabels[invite.lifecycle]}</Badge>
+                <InviteStatus lifecycle={invite.lifecycle} />
               </div>
               {invite.emailStatus && (
                 <InviteEmailStatusSummary status={invite.emailStatus} className="pt-1" />

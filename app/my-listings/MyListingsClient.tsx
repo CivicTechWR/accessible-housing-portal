@@ -19,6 +19,7 @@ import {
   type DuplicateListingSelection,
 } from "@/app/my-listings/DuplicateListingDialog";
 import { ListingActionsMenu } from "@/app/my-listings/ListingActionsMenu";
+import { formatArea, formatBaths, formatBeds, formatRent, RENT_PERIOD } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
 import type { DuplicateListingResponse } from "@/shared/schemas/listings";
 
@@ -89,19 +90,16 @@ function listingLocation(listing: MyListingItem) {
 /** Rent and rooms as display text, or null for each one a draft hasn't filled in (stored as 0). */
 function listingFacts(listing: MyListingItem) {
   const isUnsetDraft = (value: number) => listing.status !== "published" && value === 0;
-  const rent = isUnsetDraft(listing.price)
-    ? null
-    : `$${listing.price.toLocaleString("en-CA")}/month`;
+  const rent = isUnsetDraft(listing.price) ? null : formatRent(listing.price);
   // A real listing always has a bathroom, so 0 baths means the rooms haven't been entered.
+  // The parts of formatRooms, kept apart so a unit never wraps away from its number.
   const rooms = isUnsetDraft(listing.baths)
     ? null
     : [
-        listing.beds === 0 ? "Studio" : `${listing.beds} bd`,
-        `${listing.baths} ba`,
-        listing.sqft !== null ? `${listing.sqft.toLocaleString("en-CA")} sqft` : null,
-      ]
-        .filter(Boolean)
-        .join(" · ");
+        formatBeds(listing.beds),
+        formatBaths(listing.baths),
+        listing.sqft !== null ? formatArea(listing.sqft) : null,
+      ].filter((fact) => fact !== null);
   return { rent, rooms };
 }
 
@@ -282,8 +280,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                 </div>
 
                 <div className="min-w-0 space-y-1">
-                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                    <h2 className="min-w-0 truncate text-base font-semibold" title={listing.title}>
+                  <div className="flex min-w-0 items-start justify-between gap-2 sm:justify-start">
+                    <h2 className="min-w-0 text-base font-semibold text-pretty break-words">
                       {listing.title}
                     </h2>
                     <StatusBadge status={listing.status} />
@@ -291,21 +289,36 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   <p className="truncate text-sm text-muted-foreground">
                     {listingLocation(listing) ?? "Address not set"}
                   </p>
-                  <p className="text-sm text-foreground">
-                    <span
-                      className={cn(
-                        "font-semibold",
-                        facts.rent === null && "font-normal text-muted-foreground",
-                      )}
-                    >
-                      {facts.rent ?? "Rent not set"}
-                    </span>
-                    <span aria-hidden className="text-muted-foreground">
-                      {" · "}
-                    </span>
-                    <span className={cn(facts.rooms === null && "text-muted-foreground")}>
-                      {facts.rooms ?? "Rooms not set"}
-                    </span>
+                  <p className="flex flex-wrap gap-x-1.5 text-sm text-foreground">
+                    {[
+                      facts.rent === null ? (
+                        <span key="rent" className="text-muted-foreground">
+                          Rent not set
+                        </span>
+                      ) : (
+                        <span key="rent">
+                          <span className="font-semibold">{facts.rent}</span>
+                          <span className="text-muted-foreground">{RENT_PERIOD}</span>
+                        </span>
+                      ),
+                      ...(facts.rooms ?? [
+                        <span key="rooms" className="text-muted-foreground">
+                          Rooms not set
+                        </span>,
+                      ]),
+                    ].map((fact, index, all) => (
+                      // Each fact keeps its trailing dot and never splits, so a wrapped line
+                      // starts with a fact rather than a dot or an orphaned unit.
+                      <span key={index} className="whitespace-nowrap">
+                        {fact}
+                        {index < all.length - 1 ? (
+                          <span className="text-muted-foreground">
+                            <span aria-hidden> ·</span>
+                            <span className="sr-only">,</span>
+                          </span>
+                        ) : null}
+                      </span>
+                    ))}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Updated {formatDistance(new Date(listing.updatedAt), now, { addSuffix: true })}

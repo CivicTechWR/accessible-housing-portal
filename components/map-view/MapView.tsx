@@ -2,11 +2,13 @@
 
 import { memo, useState, useCallback, useEffect, useMemo, useRef, type Ref } from "react";
 import { Map, Marker, Popup, type ErrorEvent, type MapRef } from "@vis.gl/react-maplibre";
+import type { Map as MaplibreMap } from "maplibre-gl";
 import { useTheme } from "next-themes";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import type { Listing } from "@/components/listing-card-list/ListingsCardList";
 import { Button } from "@/components/ui/button";
+import { formatRent } from "@/lib/listing-format";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { ListingsCard } from "../listings-card/ListingsCard";
@@ -15,6 +17,54 @@ const OPENFREEMAP_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const OPENFREEMAP_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark";
 
 const DEFAULT_VIEW = { ...siteConfig.mapCenter, zoom: 12 } as const;
+
+type PaintProperty = Parameters<MaplibreMap["setPaintProperty"]>[1];
+
+const MINOR_LABELS = [
+  "highway_name_other",
+  "highway_name_motorway",
+  "place_other",
+  "place_suburb",
+  "place_village",
+];
+const MAJOR_LABELS = ["place_town", "place_city", "place_city_large"];
+
+/**
+ * OpenFreeMap's dark style draws roads, water, parks and labels in near-black on black, so only
+ * the motorways read. These paint overrides, by layer id, lift each layer to a colour that does.
+ */
+const DARK_STYLE_PAINT: Array<[layerIds: string[], property: PaintProperty, value: string]> = [
+  [["background"], "background-color", "#14181c"],
+  [["water"], "fill-color", "#1d2d3a"],
+  [["waterway"], "line-color", "#1d2d3a"],
+  [["landuse_residential"], "fill-color", "#171b1f"],
+  [["landcover_wood", "landuse_park"], "fill-color", "#18241e"],
+  [["building"], "fill-color", "#1b2025"],
+  [["building"], "fill-outline-color", "#232a30"],
+  [["highway_path"], "line-color", "#262c32"],
+  [["highway_minor"], "line-color", "#2c333a"],
+  [
+    ["highway_major_inner", "highway_major_subtle", "highway_motorway_subtle"],
+    "line-color",
+    "#3a424a",
+  ],
+  [["highway_major_casing", "highway_motorway_inner"], "line-color", "#46505a"],
+  [["highway_motorway_casing"], "line-color", "#56616c"],
+  [["railway", "railway_minor", "railway_transit"], "line-color", "#30373e"],
+  [["water_name"], "text-color", "#7f9bb3"],
+  [["water_name"], "text-halo-color", "#14181c"],
+  [MINOR_LABELS, "text-color", "#9aa4ae"],
+  [MAJOR_LABELS, "text-color", "#c4ccd3"],
+  [[...MINOR_LABELS, ...MAJOR_LABELS], "text-halo-color", "rgba(20,24,28,0.85)"],
+];
+
+function applyDarkStylePaint(map: MaplibreMap) {
+  for (const [layerIds, property, value] of DARK_STYLE_PAINT) {
+    for (const layerId of layerIds) {
+      if (map.getLayer(layerId)) map.setPaintProperty(layerId, property, value);
+    }
+  }
+}
 
 type MappableListing = Listing & { lat: number; lng: number };
 
@@ -72,7 +122,7 @@ function displayAddress(listing: Listing) {
 }
 
 function pinLabel(listing: Listing) {
-  return `$${listing.price.toLocaleString()} per month, ${displayAddress(listing)}`;
+  return `${formatRent(listing.price)} per month, ${displayAddress(listing)}`;
 }
 
 /**
@@ -147,6 +197,12 @@ export const MapView = memo(function MapView({
   highlightedId?: string | null;
 }) {
   const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  // Read when a new style finishes loading, which happens after the theme changes.
+  const isDarkRef = useRef(isDark);
+  useEffect(() => {
+    isDarkRef.current = isDark;
+  }, [isDark]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   const pinRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -181,6 +237,18 @@ export const MapView = memo(function MapView({
   }, [mappableListings, selectedId]);
 
   useEffect(() => {
+    regroupPins();
+  }, [regroupPins]);
+
+  const handleLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (map) {
+      if (isDarkRef.current) applyDarkStylePaint(map);
+      // Switching theme swaps the whole style, which drops the overrides.
+      map.on("style.load", () => {
+        if (isDarkRef.current) applyDarkStylePaint(map);
+      });
+    }
     regroupPins();
   }, [regroupPins]);
 
@@ -257,12 +325,12 @@ export const MapView = memo(function MapView({
         <Map
           ref={mapRef}
           workerUrl="/maplibre/maplibre-gl-worker.mjs"
-          mapStyle={resolvedTheme === "dark" ? OPENFREEMAP_DARK_STYLE : OPENFREEMAP_LIGHT_STYLE}
+          mapStyle={isDark ? OPENFREEMAP_DARK_STYLE : OPENFREEMAP_LIGHT_STYLE}
           initialViewState={DEFAULT_VIEW}
           style={{ width: "100%", height: "100%" }}
           scrollZoom={true}
           onClick={() => setSelectedId(null)}
-          onLoad={regroupPins}
+          onLoad={handleLoad}
           onMoveEnd={regroupPins}
           onError={({ error }: ErrorEvent) => {
             if (error.name === "GPUInitializationError") {
@@ -297,8 +365,8 @@ export const MapView = memo(function MapView({
                   >
                     <span
                       className={cn(
-                        "flex size-9 items-center justify-center rounded-full text-sm font-semibold text-white shadow-lg ring-2 ring-white transition-[transform,background-color] group-hover:scale-110 group-hover:bg-primary group-focus-visible:ring-4 group-focus-visible:ring-ring",
-                        containsHighlighted ? "scale-110 bg-primary" : "bg-neutral-900",
+                        "flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-lg ring-2 ring-white transition-transform group-hover:scale-110 group-focus-visible:ring-4 group-focus-visible:ring-ring",
+                        containsHighlighted && "scale-125 shadow-xl",
                       )}
                     >
                       {count}
@@ -342,17 +410,17 @@ export const MapView = memo(function MapView({
                   }}
                   className="group flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full outline-none"
                 >
-                  {/* White with dark text reads on both the light and dark map styles; the
-                        selected or highlighted pin inverts to the brand colour. */}
+                  {/* Pills match the map: white on the light style, dark grey on the dark one.
+                      The selected or highlighted pin turns brand blue. */}
                   <span
                     className={cn(
-                      "rounded-full px-2.5 py-1 text-[13px] font-semibold shadow-md ring-1 transition-[transform,background-color,color] group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary group-focus-visible:ring-3 group-focus-visible:ring-ring",
+                      "rounded-full px-2.5 py-1 text-xs font-semibold shadow-md ring-1 transition-[transform,background-color,color] group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary group-focus-visible:ring-3 group-focus-visible:ring-ring",
                       emphasised
                         ? "scale-110 bg-primary text-primary-foreground ring-primary"
-                        : "bg-white text-neutral-900 ring-black/15",
+                        : "bg-white text-neutral-900 ring-black/15 dark:bg-[#1f262c] dark:text-white dark:ring-[#3a424a]",
                     )}
                   >
-                    ${listing.price.toLocaleString()}
+                    {formatRent(listing.price)}
                   </span>
                 </button>
               </Marker>

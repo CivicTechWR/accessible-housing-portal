@@ -158,6 +158,7 @@ export async function getListingsService(
       );
       const listingSummary = {
         id: row.id,
+        title: row.title.trim() || undefined,
         price: centsToDollars(row.monthlyRentCents),
         address: formatListingAddress(row.street1, row.unitNumber),
         city: row.city,

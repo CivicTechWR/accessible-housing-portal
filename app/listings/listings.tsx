@@ -61,7 +61,7 @@ export default function ListingsDashboard({
   dynamicGroups,
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
   const mobileFilterSheetRef = useRef<HTMLDivElement>(null);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   // Split view only fits at `lg` (1024px) and up, so phones and tablets get List and Map only.
@@ -90,7 +90,7 @@ export default function ListingsDashboard({
   } = useListingFilters();
   const filterButtonProps = {
     ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
-    mobileButtonRef: mobileFilterButtonRef,
+    buttonRef: filterButtonRef,
   };
   const query = useMemo(() => toListingSearchFilters(filters), [filters]);
   const { listings, total, error, retry, isLoading, isLoadingMore, isPartial, isCapped } =
@@ -116,9 +116,10 @@ export default function ListingsDashboard({
     <div data-fullscreen className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <h1 className="sr-only">Search listings</h1>
       {/* Two rows (filters, then results) until `xl`, where both fit on one row and leave more
-          room for listings. */}
+          room for listings. On phones the rows share one block with no divider, to keep the
+          first listing photo high on the screen. */}
       <header className="flex shrink-0 flex-col border-b bg-background xl:h-16 xl:flex-row xl:items-center xl:gap-6 xl:px-6">
-        <div className="flex items-center px-4 py-3 sm:h-16 sm:px-6 sm:py-0 xl:min-w-0 xl:flex-1 xl:px-0">
+        <div className="flex items-center px-4 pt-3 pb-2 sm:h-16 sm:px-6 sm:py-0 xl:min-w-0 xl:flex-1 xl:px-0">
           <ListingFilterSearchBar
             searchInputProps={searchInputProps}
             priceRangeProps={priceRangeProps}
@@ -133,7 +134,7 @@ export default function ListingsDashboard({
           isPartial={isPartial}
           sortOptionProps={sortOptionProps}
           isLoading={isLoading}
-          className="border-t xl:border-0 xl:p-0"
+          className="pt-0 pb-3 sm:border-t sm:py-2 xl:border-0 xl:p-0"
           viewSwitch={
             <ViewSwitch
               displayModes={displayModes}
@@ -196,7 +197,7 @@ export default function ListingsDashboard({
               // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
               onCloseAutoFocus={(event) => {
                 event.preventDefault();
-                mobileFilterButtonRef.current?.focus();
+                filterButtonRef.current?.focus();
               }}
               className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
             >

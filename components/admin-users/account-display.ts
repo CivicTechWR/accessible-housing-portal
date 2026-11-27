@@ -1,3 +1,4 @@
+import type { StatusTone } from "@/components/admin-users/StatusDot";
 import type { AccountListResponse } from "@/shared/schemas/account-management";
 
 export type AccountListItem = AccountListResponse["data"][number];
@@ -31,9 +32,9 @@ export const accountStatusLabels: Record<AccountStatus, string> = {
   deactivated: "Deactivated",
 };
 
-export const accountStatusVariants = {
-  active: "secondary",
-  invited: "outline",
-  suspended: "destructive",
-  deactivated: "ghost",
-} as const satisfies Record<AccountStatus, string>;
+export const accountStatusTones = {
+  active: "success",
+  invited: "warning",
+  suspended: "danger",
+  deactivated: "neutral",
+} as const satisfies Record<AccountStatus, StatusTone>;

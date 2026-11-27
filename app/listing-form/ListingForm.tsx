@@ -254,25 +254,12 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       }
       footer={
         <>
-          {/* Always rendered so screen readers pick up the first change. Two lines of text at
-              most, so a long error never makes the sticky bar taller than its button. */}
-          <p
-            className={cn(
-              "mr-auto flex min-w-0 items-center gap-2 text-sm",
-              autosaveStatus?.status === "error" ? "text-destructive" : "text-muted-foreground",
-            )}
-            role="status"
-            aria-live="polite"
-          >
-            <SaveStateIcon status={autosaveStatus?.status ?? (isDirty ? "dirty" : null)} />
-            <span className="line-clamp-2">
-              {autosaveStatus
-                ? autosaveStatusText(autosaveStatus)
-                : isDirty && !isDraft
-                  ? "Unsaved changes"
-                  : null}
-            </span>
-          </p>
+          <SaveState
+            autosaveStatus={autosaveStatus}
+            isDirty={isDirty}
+            isDraft={isDraft}
+            isSaved={isEditMode || activeListingId !== undefined}
+          />
           {submitFeedback && (
             <p
               className={cn(
@@ -417,15 +404,86 @@ function ListingLoadErrorMessage({ error }: { error: ListingLoadError }): React.
   }
 }
 
-function autosaveStatusText(autosaveStatus: AutosaveStatus) {
-  switch (autosaveStatus.status) {
+/** Re-renders every half minute so relative times such as "2 min ago" stay current. */
+function useNow(isActive: boolean) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isActive) return;
+    setNow(Date.now());
+    const interval = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, [isActive]);
+  return now;
+}
+
+function formatSavedAgo(savedAt: number, now: number) {
+  const minutes = Math.floor((now - savedAt) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  return `at ${new Date(savedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+}
+
+/** The save state on the left of the sticky bar. */
+function SaveState({
+  autosaveStatus,
+  isDirty,
+  isDraft,
+  isSaved,
+}: {
+  autosaveStatus: AutosaveStatus | null;
+  isDirty: boolean;
+  isDraft: boolean;
+  /** Whether the listing exists on the server yet. */
+  isSaved: boolean;
+}) {
+  const savedAt = autosaveStatus?.status === "saved" ? autosaveStatus.savedAt : null;
+  const now = useNow(savedAt !== null);
+  const status =
+    autosaveStatus?.status ?? (isDirty ? (isDraft ? null : "dirty") : isSaved ? "saved" : null);
+
+  let text: string | null;
+  switch (autosaveStatus?.status) {
     case "saving":
-      return "Saving...";
+      text = "Saving...";
+      break;
     case "saved":
-      return "Saved";
+      text = "Draft saved";
+      break;
     case "error":
-      return `Not saved. ${autosaveStatus.message}`;
+      text = `Not saved. ${autosaveStatus.message}`;
+      break;
+    default:
+      text = isDirty
+        ? isDraft
+          ? null
+          : "Unsaved changes"
+        : isSaved
+          ? "All changes saved"
+          : "Your draft saves as you type";
   }
+
+  return (
+    <div
+      className={cn(
+        "mr-auto flex min-w-0 items-center gap-2 text-sm",
+        status === "error" ? "text-destructive" : "text-muted-foreground",
+      )}
+    >
+      <SaveStateIcon status={status} />
+      {/* Always rendered so screen readers pick up the first change. Two lines of text at most,
+          so a long error never makes the sticky bar taller than its button. The relative time
+          sits outside the live region so its updates aren't announced every half minute. */}
+      <p className="line-clamp-2" role="status" aria-live="polite">
+        {text}
+        {savedAt !== null ? (
+          <span aria-hidden className="hidden sm:inline">
+            {" "}
+            {formatSavedAgo(savedAt, now)}
+          </span>
+        ) : null}
+      </p>
+    </div>
+  );
 }
 
 function escapeAttributeValue(value: string) {

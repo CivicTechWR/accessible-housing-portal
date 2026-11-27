@@ -5,10 +5,11 @@ import {
   BedDoubleIcon,
   Calendar03Icon,
   Call02Icon,
-  CheckmarkCircle02Icon,
+  FloorPlanIcon,
   Mail01Icon,
   PencilEdit01Icon,
-  SquareArrowExpand01Icon,
+  Tick02Icon,
+  UniversalAccessIcon,
 } from "@hugeicons/core-free-icons";
 
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
@@ -26,7 +27,15 @@ import {
   type UtilityIncluded,
 } from "@/shared/schemas/listings";
 import { HEATING_TYPE_LABELS, type HeatingType } from "@/shared/heating-type";
-import { format, parseISO } from "date-fns";
+import {
+  RENT_PERIOD,
+  formatArea,
+  formatBaths,
+  formatBeds,
+  formatListingDate,
+  formatRent,
+  toSentenceCase,
+} from "@/lib/listing-format";
 import Link from "next/link";
 import { ListingApplyButton } from "./ListingApplyButton";
 
@@ -83,28 +92,95 @@ export interface ListingDetailProps {
 
 const CONTACT_SECTION_ID = "listing-contact";
 
-function formatAvailableDate(isoDate: string) {
-  const parsed = parseISO(isoDate);
-  return Number.isNaN(parsed.getTime()) ? isoDate : format(parsed, "MMMM d, yyyy");
-}
-
-/** Feature categories are stored in capitals ("ENTRY & EXTERIOR"); show them in sentence case. */
-function formatCategoryName(name: string) {
-  if (name !== name.toUpperCase()) return name;
-  const lower = name.toLowerCase();
-  return lower.charAt(0).toUpperCase() + lower.slice(1);
-}
-
-function plural(count: number, singular: string) {
-  return `${count.toLocaleString()} ${singular}${count === 1 ? "" : "s"}`;
-}
+/** Deposit text up to this long shares a row with another detail; longer text gets its own. */
+const SHORT_DETAIL_LENGTH = 60;
 
 function Price({ price, className }: { price: number; className?: string }) {
   return (
     <span className={cn("font-semibold tracking-tight text-foreground", className)}>
-      ${price.toLocaleString()}
-      <span className="text-[0.7em] font-normal text-muted-foreground"> /mo</span>
+      {formatRent(price)}
+      <span className="text-[0.7em] font-normal text-muted-foreground"> {RENT_PERIOD}</span>
     </span>
+  );
+}
+
+/**
+ * The most important block after the photos, so it sits on a tinted panel with the features in
+ * two columns. Categories flow down the columns whole, so a short category never leaves a gap.
+ */
+function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
+  const count = categories.reduce((total, category) => total + category.features.length, 0);
+  const headingId = "listing-accessibility";
+
+  return (
+    <section aria-labelledby={headingId} className="py-8 first:pt-0">
+      <div className="rounded-xl border border-primary/15 bg-primary/4 p-5 sm:p-7 dark:bg-primary-text/6">
+        <div className="mb-6 flex items-center gap-3.5">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <HugeiconsIcon
+              icon={UniversalAccessIcon}
+              strokeWidth={2}
+              className="size-5"
+              aria-hidden
+            />
+          </span>
+          <div className="min-w-0">
+            <h2 id={headingId} className="text-xl font-semibold tracking-tight">
+              Accessibility features
+            </h2>
+            {count > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {count} {count === 1 ? "feature" : "features"}
+              </p>
+            )}
+          </div>
+        </div>
+        {count === 0 ? (
+          <p className="text-[15px] text-foreground/75">No accessibility features listed.</p>
+        ) : (
+          <div className="gap-x-10 md:columns-2">
+            {categories.map((category) => (
+              <div key={category.categoryName} className="mb-7 break-inside-avoid last:mb-0">
+                <h3 className="mb-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  {toSentenceCase(category.categoryName)}
+                </h3>
+                {/* Safari drops list semantics from a list without markers unless the role is set. */}
+                <ul role="list" className="space-y-4">
+                  {category.features.map((feature) => {
+                    // The listings API sends a feature's name as its description when it has none.
+                    const featureDescription = feature.description.trim();
+                    const hasDescription =
+                      featureDescription !== "" && featureDescription !== feature.name;
+                    return (
+                      <li key={feature.name} className="flex gap-3.5 wrap-anywhere">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-background text-primary-text ring-1 ring-primary/15">
+                          <HugeiconsIcon
+                            icon={Tick02Icon}
+                            strokeWidth={2}
+                            className="size-5"
+                            aria-hidden
+                          />
+                        </span>
+                        <div className="min-w-0 pt-1.5">
+                          <p className="text-base font-medium text-foreground">
+                            {toSentenceCase(feature.name)}
+                          </p>
+                          {hasDescription && (
+                            <p className="mt-1 text-[15px] leading-relaxed text-foreground/75">
+                              {featureDescription}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -174,17 +250,20 @@ export function ListingDetails({
 }: ListingDetailProps) {
   const address = buildAddress({ unitNumber, street1, street2, city, postalCode });
   const heading = title || address;
-  const availableDate = availableOn ? formatAvailableDate(availableOn) : undefined;
+  const availableDate = availableOn ? formatListingDate(availableOn) : undefined;
   const trimmedDescription = description?.trim();
 
+  // Rent leads the contact card on desktop and the bottom bar on phones, so the key facts stay
+  // with the home itself. The embedded preview has neither, so rent joins the facts there.
   const keyFacts = [
-    { icon: BedDoubleIcon, label: plural(beds, "bed") },
-    { icon: Bathtub01Icon, label: plural(baths, "bath") },
-    ...(sqft !== null
-      ? [{ icon: SquareArrowExpand01Icon, label: `${sqft.toLocaleString()} sq ft` }]
-      : []),
+    { icon: BedDoubleIcon, label: formatBeds(beds) },
+    { icon: Bathtub01Icon, label: formatBaths(baths) },
+    ...(sqft !== null ? [{ icon: FloorPlanIcon, label: formatArea(sqft) }] : []),
     ...(availableDate ? [{ icon: Calendar03Icon, label: `Available ${availableDate}` }] : []),
   ];
+  const trimmedDeposit = depositInfo?.trim();
+  // The form preview passes the move-in date here, because a draft hasn't been posted.
+  const posted = timeAgo.endsWith(" ago") ? timeAgo : undefined;
 
   // Rent, size and availability are in the key facts above, and the address is under the title,
   // so the details list only holds what isn't shown elsewhere.
@@ -195,12 +274,12 @@ export function ListingDetails({
     fullWidth?: boolean;
     preserveWhitespace?: boolean;
   }> = [
-    ...(depositInfo?.trim()
+    ...(trimmedDeposit
       ? [
           {
             label: "Deposit",
-            value: depositInfo.trim(),
-            fullWidth: true,
+            value: trimmedDeposit,
+            fullWidth: trimmedDeposit.length > SHORT_DETAIL_LENGTH || trimmedDeposit.includes("\n"),
             preserveWhitespace: true,
           },
         ]
@@ -232,7 +311,7 @@ export function ListingDetails({
           },
         ]
       : []),
-    { label: "Posted", value: timeAgo },
+    ...(posted ? [{ label: "Posted", value: posted }] : []),
   ];
 
   const generalEmail = contactEmail?.trim();
@@ -307,9 +386,11 @@ export function ListingDetails({
         aria-label="Key facts"
         className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[15px] text-foreground"
       >
-        <li>
-          <Price price={price} className="text-2xl" />
-        </li>
+        {embedded && (
+          <li>
+            <Price price={price} className="text-2xl" />
+          </li>
+        )}
         {keyFacts.map((fact) => (
           <li key={fact.label} className="flex items-center gap-2">
             <HugeiconsIcon
@@ -327,48 +408,7 @@ export function ListingDetails({
 
   const mainColumn = (
     <div className="min-w-0 divide-y">
-      <Section id="listing-accessibility" title="Accessibility features">
-        {features.length === 0 ? (
-          <p className="text-[15px] text-muted-foreground">No accessibility features listed.</p>
-        ) : (
-          <div className="space-y-7">
-            {features.map((category) => (
-              <div key={category.categoryName}>
-                <h3 className="mb-3 text-base font-semibold tracking-normal">
-                  {formatCategoryName(category.categoryName)}
-                </h3>
-                {/* Safari drops list semantics from a list without markers unless the role is set. */}
-                <ul role="list" className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                  {category.features.map((feature) => {
-                    // The listings API sends a feature's name as its description when it has none.
-                    const featureDescription = feature.description.trim();
-                    const hasDescription =
-                      featureDescription !== "" && featureDescription !== feature.name;
-                    return (
-                      <li key={feature.name} className="flex gap-3 wrap-anywhere">
-                        <HugeiconsIcon
-                          icon={CheckmarkCircle02Icon}
-                          strokeWidth={2}
-                          className="mt-px size-5 shrink-0 text-primary-text"
-                          aria-hidden
-                        />
-                        <div className="min-w-0">
-                          <p className="text-[15px] font-medium text-foreground">{feature.name}</p>
-                          {hasDescription && (
-                            <p className="mt-0.5 text-sm text-muted-foreground">
-                              {featureDescription}
-                            </p>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+      <AccessibilityFeatures categories={features} />
 
       {trimmedDescription && (
         <Section id="listing-description" title="Description">
@@ -426,13 +466,10 @@ export function ListingDetails({
       className={cn("min-w-0 scroll-mt-24", !embedded && "lg:sticky lg:top-24 lg:self-start")}
     >
       <div className="space-y-5 rounded-xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6">
-        {/* Phones get the price from the key facts and the bottom bar, so it shows here on desktop only. */}
+        {/* Phones get the price from the bottom bar, so it shows here on desktop only. */}
         {!embedded && (
           <div className="hidden lg:block">
-            <Price price={price} className="text-2xl" />
-            {availableDate && (
-              <p className="mt-1 text-sm text-muted-foreground">Available {availableDate}</p>
-            )}
+            <Price price={price} className="text-[1.75rem]" />
           </div>
         )}
         <h2
@@ -546,17 +583,11 @@ export function ListingDetails({
     <AppPageShell className="bg-background">
       {body}
       {/* Keeps the price and the main action in reach while scrolling on phones. Sticky rather than
-          fixed, so it stops above the site footer. */}
-      <div className="sticky bottom-0 z-20 -mx-4 mt-10 -mb-8 border-t bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:-mb-10 sm:px-6 lg:hidden">
+          fixed, so it takes its own space at the end of the page (nothing is left hidden under it)
+          and stops above the site footer. Solid, so text scrolling underneath doesn't show through. */}
+      <div className="sticky bottom-0 z-20 -mx-4 mt-10 -mb-8 border-t bg-background px-4 py-3 sm:-mx-6 sm:-mb-10 sm:px-6 lg:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <div className="min-w-0">
-            <Price price={price} className="text-lg" />
-            {availableDate && (
-              <p className="truncate text-[13px] text-muted-foreground">
-                Available {availableDate}
-              </p>
-            )}
-          </div>
+          <Price price={price} className="min-w-0 text-xl" />
           {applyUrl ? (
             <ListingApplyButton applicationUrl={applyUrl} className="px-8" />
           ) : canReachLister ? (

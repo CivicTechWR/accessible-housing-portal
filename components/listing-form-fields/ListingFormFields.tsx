@@ -66,7 +66,7 @@ function FieldRenderer({
               value={field.value ?? ""}
             >
               <FormControl>
-                <SelectTrigger className="max-w-full min-w-0">
+                <SelectTrigger>
                   <SelectValue placeholder={`Select ${def.displayName.toLowerCase()}`} />
                 </SelectTrigger>
               </FormControl>

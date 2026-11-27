@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export type ListingFormSectionLink = {
@@ -111,22 +117,25 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
 /** A compact section picker for screens without room for the rail. */
 export function ListingFormSectionJump({ sections }: { sections: ListingFormSectionLink[] }) {
   return (
-    <NativeSelect
-      aria-label="Jump to section"
-      value=""
-      onChange={(event) => {
-        if (event.target.value) scrollToSection(event.target.value);
-      }}
-    >
-      <option value="" disabled>
-        Sections
-      </option>
-      {sections.map((section) => (
-        <option key={section.id} value={section.id}>
-          {section.label}
-          {section.isComplete ? " (done)" : section.meta ? ` (${section.meta})` : ""}
-        </option>
-      ))}
-    </NativeSelect>
+    // Always empty, so it reads "Sections" and choosing the current section again still jumps.
+    <Select value="" onValueChange={(id) => id && scrollToSection(id)}>
+      <SelectTrigger aria-label="Jump to section">
+        <SelectValue placeholder="Sections" />
+      </SelectTrigger>
+      <SelectContent position="popper">
+        {sections.map((section) => (
+          <SelectItem key={section.id} value={section.id} className="pr-8">
+            <span className="flex flex-col">
+              <span>{section.label}</span>
+              {section.meta ? (
+                <span className="text-xs text-muted-foreground">
+                  {section.isComplete ? "Done" : section.meta}
+                </span>
+              ) : null}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

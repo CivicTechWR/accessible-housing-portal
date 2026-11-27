@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  type DragEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-  useRef,
-  useState,
-} from "react";
+import { type DragEvent, type KeyboardEvent, type MouseEvent, useRef, useState } from "react";
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
@@ -21,7 +14,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCustomListingFieldCategoryLabel } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
@@ -36,9 +35,6 @@ import {
   type SortKey,
   nullableTrim,
 } from "../custom-listing-fields-dashboard-utils";
-
-const compactSelectClass =
-  "h-9 rounded-md border border-input bg-background text-sm font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60 dark:bg-input/10";
 
 export function CategoryTab({
   isActive,
@@ -80,26 +76,30 @@ export function CategoryTab({
 
 export function FilterSelect({
   ariaLabel,
-  children,
+  options,
   value,
   onChange,
   className,
 }: {
   ariaLabel: string;
-  children: ReactNode;
+  options: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
   className?: string;
 }) {
   return (
-    <NativeSelect
-      aria-label={ariaLabel}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={cn("md:w-44", className)}
-    >
-      {children}
-    </NativeSelect>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger aria-label={ariaLabel} className={cn("md:w-44", className)}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent position="popper">
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -153,6 +153,7 @@ export function DropIndicatorLine() {
 
 export function FieldRow({
   field,
+  position,
   isPending,
   isSelected,
   onSelectToggle,
@@ -168,6 +169,8 @@ export function FieldRow({
   onRequiredChange,
 }: {
   field: AdminCustomListingField;
+  /** The field's place within its category, counting from 1. */
+  position: number;
   isPending: boolean;
   isSelected: boolean;
   onSelectToggle: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -183,10 +186,6 @@ export function FieldRow({
   onRequiredChange: (required: boolean) => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
-  const visibilityIcon = field.publicOnly ? EyeIcon : ViewOffSlashIcon;
-  const visibilityToneClass = field.publicOnly
-    ? "text-emerald-700 dark:text-emerald-400"
-    : "text-muted-foreground";
 
   return (
     <div
@@ -226,9 +225,7 @@ export function FieldRow({
           />
         </button>
       </div>
-      <div className="py-3 pr-3 font-mono text-xs tabular-nums text-muted-foreground">
-        {field.sortOrder}
-      </div>
+      <div className="py-3 pr-3 text-sm tabular-nums text-muted-foreground">{position}</div>
       <div className="flex min-w-0 flex-col">
         <EditableTextCell
           value={field.label}
@@ -246,19 +243,25 @@ export function FieldRow({
         </p>
       </div>
       <div className="px-4 py-3">
-        <select
-          aria-label={`Edit applicability for ${field.label}`}
-          title="Changing applicability affects future duplications; existing duplicated listings are unaffected."
+        <Select
           value={field.appliesTo}
-          onChange={(event) =>
-            onApplicabilityChange(event.target.value as AdminCustomListingField["appliesTo"])
+          onValueChange={(value) =>
+            onApplicabilityChange(value as AdminCustomListingField["appliesTo"])
           }
           disabled={isPending}
-          className={cn(compactSelectClass, "w-26 px-2.5 text-foreground")}
         >
-          <option value="building">Building</option>
-          <option value="unit">Unit</option>
-        </select>
+          <SelectTrigger
+            size="sm"
+            aria-label={`Edit applicability for ${field.label}`}
+            title="Changing applicability affects future duplications; existing duplicated listings are unaffected."
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectItem value="building">Building</SelectItem>
+            <SelectItem value="unit">Unit</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="min-w-0 py-1.5">
         <EditableTextCell
@@ -283,26 +286,30 @@ export function FieldRow({
         />
       </div>
       <div className="px-3 py-3">
-        <label className="relative inline-flex">
-          <span className="sr-only">Visibility for {field.label}</span>
-          <HugeiconsIcon
-            icon={visibilityIcon}
-            strokeWidth={2}
-            className={cn(
-              "pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2",
-              visibilityToneClass,
-            )}
-          />
-          <select
-            value={field.publicOnly ? "public" : "internal"}
-            onChange={(event) => onVisibilityChange(event.target.value === "public")}
-            disabled={isPending}
-            className={cn(compactSelectClass, "w-28 pl-8 pr-2", visibilityToneClass)}
-          >
-            <option value="public">Public</option>
-            <option value="internal">Internal</option>
-          </select>
-        </label>
+        <Select
+          value={field.publicOnly ? "public" : "internal"}
+          onValueChange={(value) => onVisibilityChange(value === "public")}
+          disabled={isPending}
+        >
+          <SelectTrigger size="sm" aria-label={`Visibility for ${field.label}`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectItem value="public">
+              <HugeiconsIcon icon={EyeIcon} strokeWidth={2} className="size-4" aria-hidden />
+              Public
+            </SelectItem>
+            <SelectItem value="internal">
+              <HugeiconsIcon
+                icon={ViewOffSlashIcon}
+                strokeWidth={2}
+                className="size-4 text-muted-foreground"
+                aria-hidden
+              />
+              Internal
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="px-4 pt-4 pb-3">
         <Checkbox

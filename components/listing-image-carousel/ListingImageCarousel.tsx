@@ -149,11 +149,11 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
             </span>
             <CarouselPrevious
               size="icon"
-              className="pointer-events-auto left-3 size-10 border-0 bg-white/95 text-neutral-900 shadow-md hover:bg-white"
+              className="pointer-events-auto left-3 size-10 border-0 bg-white/95 text-neutral-900 shadow-md hover:bg-white hover:text-neutral-900 dark:bg-white/95 dark:hover:bg-white"
             />
             <CarouselNext
               size="icon"
-              className="pointer-events-auto right-3 size-10 border-0 bg-white/95 text-neutral-900 shadow-md hover:bg-white"
+              className="pointer-events-auto right-3 size-10 border-0 bg-white/95 text-neutral-900 shadow-md hover:bg-white hover:text-neutral-900 dark:bg-white/95 dark:hover:bg-white"
             />
           </div>
         )}

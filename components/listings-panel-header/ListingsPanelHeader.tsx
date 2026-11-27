@@ -35,11 +35,17 @@ export function ListingsPanelHeader({
   viewSwitch,
   className,
 }: ListingsPanelHeaderProps) {
-  const summary = isLoading
-    ? "Updating listings..."
-    : isPartial
-      ? `Showing ${shown} of ${total} listings`
-      : `${total} listing${total !== 1 ? "s" : ""} found`;
+  const summary = isLoading ? (
+    "Updating listings..."
+  ) : isPartial ? (
+    `Showing ${shown} of ${total} listings`
+  ) : (
+    <>
+      {total} listing{total !== 1 ? "s" : ""}
+      {/* Phones drop "found" to leave room for the sort and view controls. */}
+      <span className="max-sm:hidden"> found</span>
+    </>
+  );
 
   return (
     <div

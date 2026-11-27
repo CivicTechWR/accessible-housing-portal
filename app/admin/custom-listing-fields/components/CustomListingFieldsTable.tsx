@@ -6,6 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
 import type {
   AdminCustomListingField,
@@ -39,6 +40,7 @@ export function CustomListingFieldsTable({
   selectedFieldIds,
   selectedFieldCount,
   displayGroups,
+  categoryPositions,
   dropIndicator,
   pendingFieldId,
   onSearchChange,
@@ -70,6 +72,7 @@ export function CustomListingFieldsTable({
   selectedFieldIds: Set<string>;
   selectedFieldCount: number;
   displayGroups: DisplayGroup[];
+  categoryPositions: Map<string, number>;
   dropIndicator: DropIndicator | null;
   pendingFieldId: string | null;
   onSearchChange: (search: string) => void;
@@ -111,7 +114,7 @@ export function CustomListingFieldsTable({
             <CategoryTab
               key={category.category}
               isActive={categoryFilter === category.category}
-              label={category.label}
+              label={toSentenceCase(category.label)}
               count={category.count}
               onClick={() => onCategoryFilterChange(category.category)}
             />
@@ -145,24 +148,25 @@ export function CustomListingFieldsTable({
               className="md:hidden"
               value={categoryFilter}
               onChange={onCategoryFilterChange}
-            >
-              <option value="all">All categories</option>
-              {categories.map((category) => (
-                <option key={category.category} value={category.category}>
-                  {category.label} ({category.count})
-                </option>
-              ))}
-            </FilterSelect>
+              options={[
+                { value: "all", label: "All categories" },
+                ...categories.map((category) => ({
+                  value: category.category,
+                  label: `${toSentenceCase(category.label)} (${category.count})`,
+                })),
+              ]}
+            />
 
             <FilterSelect
               ariaLabel="Filter by visibility"
               value={visibilityFilter}
               onChange={(value) => onVisibilityFilterChange(value as VisibilityFilter)}
-            >
-              <option value="all">Any visibility</option>
-              <option value="public">Public</option>
-              <option value="internal">Internal</option>
-            </FilterSelect>
+              options={[
+                { value: "all", label: "Any visibility" },
+                { value: "public", label: "Public" },
+                { value: "internal", label: "Internal" },
+              ]}
+            />
           </div>
 
           {hasFilters ? (
@@ -264,7 +268,9 @@ export function CustomListingFieldsTable({
                 return (
                   <div key={group.category}>
                     <div className="flex h-10 items-center gap-2 border-b border-border bg-muted/30 pr-4 pl-[104px]">
-                      <h2 className="text-sm font-semibold text-foreground">{group.label}</h2>
+                      <h2 className="text-sm font-semibold text-foreground">
+                        {toSentenceCase(group.label)}
+                      </h2>
                       <span className="text-xs text-muted-foreground">
                         {group.fields.length} {group.fields.length === 1 ? "field" : "fields"}
                       </span>
@@ -277,6 +283,7 @@ export function CustomListingFieldsTable({
                         ) : null}
                         <FieldRow
                           field={field}
+                          position={categoryPositions.get(field.id) ?? index + 1}
                           isPending={pendingFieldId === field.id}
                           isSelected={selectedFieldIds.has(field.id)}
                           onSelectToggle={(event) => onRowSelectToggle(field.id, event.shiftKey)}
