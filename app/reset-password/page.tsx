@@ -25,7 +25,7 @@ export default async function ResetPasswordPage({
               <Button asChild size="lg" className="w-full">
                 <Link href="/forgot-password">Request a new link</Link>
               </Button>
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Still having trouble?{" "}
                 <a
                   href={`mailto:${siteConfig.contactEmail}`}

@@ -46,7 +46,7 @@ function InvalidInviteState() {
             <Button asChild size="lg" className="w-full">
               <Link href="/sign-in">Go to sign in</Link>
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Need a new invite?{" "}
               <a
                 href={`mailto:${siteConfig.contactEmail}`}

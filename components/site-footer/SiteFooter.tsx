@@ -22,6 +22,8 @@ export function SiteFooter({ className }: { className?: string }) {
         "border-t bg-muted/50 text-sm dark:bg-background",
         // Short pages such as sign-in render [data-compact-footer]; they keep only the bottom line.
         "peer-has-[[data-compact-footer]]/shell:[&>.footer-main]:hidden",
+        // Signed-in pages keep only the bottom line on phones, where the full footer is a screen long.
+        "max-sm:peer-has-[[data-compact-footer-mobile]]/shell:[&>.footer-main]:hidden",
         className,
       )}
     >

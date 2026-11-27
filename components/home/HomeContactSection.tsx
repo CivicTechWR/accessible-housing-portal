@@ -24,7 +24,12 @@ export function HomeContactSection() {
             Request access
           </a>
         </Button>
-        <p className="text-base text-primary-foreground/90">{siteConfig.contactEmail}</p>
+        <a
+          href={`mailto:${siteConfig.contactEmail}`}
+          className="text-base text-white underline underline-offset-2"
+        >
+          {siteConfig.contactEmail}
+        </a>
       </div>
     </section>
   );

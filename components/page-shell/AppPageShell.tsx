@@ -12,6 +12,7 @@ export function AppPageShell({ children, className }: AppPageShellProps) {
     <main
       className={cn("min-h-[calc(100vh-7rem)] bg-background px-4 py-8 sm:px-6 sm:py-10", className)}
     >
+      <div data-compact-footer-mobile hidden />
       {children}
     </main>
   );
