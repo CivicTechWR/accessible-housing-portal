@@ -31,7 +31,7 @@ export function FilterButton({
       aria-label={isActive ? `Filters, ${activeFilterCount} applied` : "Filters"}
       aria-expanded={isFilterOpen}
       className={cn(
-        "shrink-0 gap-2 max-md:h-11",
+        "shrink-0 gap-2 max-md:h-11 max-sm:gap-1.5 max-sm:px-3",
         isActive && "border-primary-text/60 bg-primary/5 dark:bg-primary/15",
       )}
     >

@@ -42,8 +42,9 @@ it("shows a rejected current password beside its input and clears it on retry", 
     .mockResolvedValueOnce({ data: { token: null, user: {} }, error: null });
   render(<AccountSecurity />);
   const current = document.getElementById("current-password")!;
-  const password = screen.getByLabelText("New password, 12 to 128 characters");
+  const password = screen.getByLabelText("New password");
   const confirmation = screen.getByLabelText("Confirm new password");
+  expect(password).toHaveAccessibleDescription("Use 12 to 128 characters.");
   fireEvent.change(current, { target: { value: "Incorrect-password" } });
   fireEvent.change(password, { target: { value: "Replacement-password" } });
   fireEvent.change(confirmation, { target: { value: "Replacement-password" } });

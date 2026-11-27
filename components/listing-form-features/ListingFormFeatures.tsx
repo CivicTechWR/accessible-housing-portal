@@ -1,4 +1,6 @@
-import { useId } from "react";
+import { useId, useState } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
 
 import { ListingFormControl, type ListingFormInput } from "@/app/listing-form/types";
 import { listingFormSectionId } from "@/app/listing-form/fieldDefinitions";
@@ -7,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { FormField, FormItem } from "@/components/ui/form";
 import {
   Accordion,
@@ -26,7 +29,7 @@ type SelectedFeature = NonNullable<ListingFormInput["customFeatures"]>[number];
 
 const SECTION_TITLE = "Features and accessibility";
 const SECTION_DESCRIPTION =
-  "Turn on each feature or rental condition that applies. Everything starts off.";
+  "Turn on each feature or rental condition that applies. Use the info button to see what a feature means.";
 
 function FeatureSwitch({
   label,
@@ -43,38 +46,64 @@ function FeatureSwitch({
   onCheckedChange: (checked: boolean) => void;
 }) {
   const id = useId();
-  const helpId = `${id}-help`;
+  const detailsId = `${id}-details`;
+  const [isExpanded, setIsExpanded] = useState(false);
   // The listings API falls back to the feature's name when it has no description.
   const showPublicText = Boolean(
     publicText?.trim() && publicText.trim().toLowerCase() !== label.toLowerCase(),
   );
+  const hasDetails = Boolean(helpText) || showPublicText;
+  // Details stay out of the way until a feature is on, so a category reads as a short list of
+  // names. Providers can still open them on any row to decide whether a feature applies.
+  const showDetails = hasDetails && (checked || isExpanded);
 
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border px-3 py-3 transition-colors",
+        "rounded-lg border px-3 transition-colors",
+        // An open row takes the full width so its details don't leave a tall gap beside it.
+        showDetails && "md:col-span-2",
         // A tinted row makes the few features that are on easy to find among the many that are off.
         checked ? "border-primary/30 bg-primary/5" : "border-transparent",
       )}
     >
-      <div className="min-w-0 flex-1 space-y-0.5">
-        <Label htmlFor={id} className="cursor-pointer text-[0.9375rem] font-medium">
+      <div className="flex min-h-11 items-center gap-1">
+        <Label htmlFor={id} className="min-w-0 flex-1 cursor-pointer py-2.5 text-base font-medium">
           {label}
         </Label>
-        {helpText || showPublicText ? (
-          <div id={helpId} className="space-y-0.5 text-sm text-muted-foreground">
-            {helpText ? <p>{helpText}</p> : null}
-            {showPublicText ? <p>Renters see: &ldquo;{publicText}&rdquo;</p> : null}
-          </div>
+        {hasDetails && !checked ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground max-md:size-10"
+            aria-label={`${label} details`}
+            aria-expanded={isExpanded}
+            aria-controls={isExpanded ? detailsId : undefined}
+            onClick={() => setIsExpanded((value) => !value)}
+          >
+            <HugeiconsIcon icon={InformationCircleIcon} strokeWidth={2} aria-hidden />
+          </Button>
         ) : null}
+        <Switch
+          id={id}
+          className="ml-2"
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          aria-describedby={showDetails ? detailsId : undefined}
+        />
       </div>
-      <Switch
-        id={id}
-        className="mt-0.5"
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        aria-describedby={helpText || showPublicText ? helpId : undefined}
-      />
+      {showDetails ? (
+        <div id={detailsId} className="space-y-1 pb-3 text-sm text-muted-foreground">
+          {helpText ? <p>{helpText}</p> : null}
+          {showPublicText ? (
+            <p>
+              <span className="font-medium text-foreground">Renters see:</span> &ldquo;{publicText}
+              &rdquo;
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -151,12 +180,9 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
             <FormItem className="md:col-span-2">
               <Accordion
                 type="multiple"
-                // Opens the first category and any with features already on.
+                // Only categories with features already on start open.
                 defaultValue={featureGroups
-                  .filter(
-                    (group, index) =>
-                      index === 0 || group.options.some((option) => selectedIds.has(option.id)),
-                  )
+                  .filter((group) => group.options.some((option) => selectedIds.has(option.id)))
                   .map((group) => group.groupId)}
                 className="overflow-visible rounded-none border-t"
               >
@@ -185,7 +211,7 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="-mx-2 pb-4">
-                        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <div className="grid grid-cols-1 items-start gap-x-4 gap-y-1 md:grid-cols-2">
                           {group.options.map((option) => (
                             <FeatureSwitch
                               key={option.id}

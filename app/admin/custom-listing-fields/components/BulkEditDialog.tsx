@@ -122,7 +122,7 @@ export function BulkEditDialog({
                       onValueChange={field.onChange}
                       disabled={!categoryEnabled || isSaving}
                     />
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -154,7 +154,7 @@ export function BulkEditDialog({
                         <SelectItem value="unit">Unit — specific to one unit</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -186,7 +186,7 @@ export function BulkEditDialog({
                         <SelectItem value="internal">Internal</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -218,7 +218,7 @@ export function BulkEditDialog({
                         <SelectItem value="no">Not filterable</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -250,7 +250,7 @@ export function BulkEditDialog({
                         <SelectItem value="no">Not required</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />

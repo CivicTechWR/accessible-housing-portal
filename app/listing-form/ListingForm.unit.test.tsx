@@ -146,7 +146,8 @@ describe("ListingForm hydration", () => {
     }) as unknown as typeof fetch;
 
     const firstRender = render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
-    await screen.findByText(switchName);
+    // Categories with nothing selected start collapsed.
+    fireEvent.click(await screen.findByRole("button", { name: /^Other/ }));
     fireEvent.click(screen.getByRole("switch", { name: switchName }));
     await waitFor(() => expect(savedSelections).toContain(true), { timeout: 3000 });
     firstRender.unmount();

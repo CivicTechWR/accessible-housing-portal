@@ -446,7 +446,7 @@ function EditableTextCell({
             className="bg-background text-sm"
           />
         )}
-        {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+        {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
       </div>
     );
   }

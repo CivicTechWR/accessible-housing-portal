@@ -3,6 +3,8 @@
 import { useState, useId } from "react";
 import { useRouter } from "next/navigation";
 import { saveAccountAction, manageAccountAction } from "@/app/admin/users/actions";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +49,7 @@ export function AdminAccountActions({ account }: { account: AccountListResponse[
       <Button
         variant="ghost"
         size="sm"
+        className="text-primary-text hover:text-primary-text"
         aria-label={`Manage ${account.name ?? account.email ?? "user"}`}
         onClick={() => {
           setOpen(true);
@@ -54,6 +57,7 @@ export function AdminAccountActions({ account }: { account: AccountListResponse[
         }}
       >
         Manage
+        <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} data-icon="inline-end" aria-hidden />
       </Button>
       {open && (
         <DialogOverlay open={open} onOpenChange={setOpen}>

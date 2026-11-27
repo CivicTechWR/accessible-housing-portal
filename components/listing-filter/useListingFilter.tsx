@@ -3,7 +3,7 @@ import { useQueryStates } from "nuqs";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FilterButtonProps } from "@/components/filter-button/FilterButton";
 
-const LISTING_LOCATION_PLACEHOLDER = "Search city, address, or building";
+const LISTING_LOCATION_PLACEHOLDER = "City, address or building";
 
 function normalizeLocationFilter(value: string) {
   const trimmedValue = value.trim();

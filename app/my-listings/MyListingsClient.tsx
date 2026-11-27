@@ -7,7 +7,6 @@ import { formatDistance } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/app/query-keys";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Image01Icon } from "@hugeicons/core-free-icons";
@@ -19,6 +18,7 @@ import {
   type DuplicateListingSelection,
 } from "@/app/my-listings/DuplicateListingDialog";
 import { ListingActionsMenu } from "@/app/my-listings/ListingActionsMenu";
+import { ListingStatusBadge } from "@/app/my-listings/ListingStatusBadge";
 import { formatArea, formatBaths, formatBeds, formatRent, RENT_PERIOD } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
 import type { DuplicateListingResponse } from "@/shared/schemas/listings";
@@ -46,35 +46,6 @@ type MyListingsClientProps = {
   initialListings: MyListingItem[];
   renderedAt: string;
 };
-
-const statusLabelByValue = {
-  draft: "Draft",
-  published: "Published",
-  archived: "Archived",
-} as const;
-
-// Published is tinted with a dot, drafts are amber and archived listings are plain outline, so
-// each status reads at a glance without relying on color alone.
-const statusClassByValue = {
-  draft:
-    "border-amber-600/30 bg-amber-50 text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200",
-  published: "",
-  archived: "text-muted-foreground",
-} as const;
-
-function StatusBadge({ status }: { status: MyListingItem["status"] }) {
-  return (
-    <Badge
-      variant={status === "published" ? "default" : "outline"}
-      className={statusClassByValue[status]}
-    >
-      {status === "published" ? (
-        <span aria-hidden className="size-1.5 rounded-full bg-current" />
-      ) : null}
-      {statusLabelByValue[status]}
-    </Badge>
-  );
-}
 
 // The listings service fills these in when a draft has no address yet.
 const PENDING_ADDRESS = "Address pending";
@@ -280,12 +251,11 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                 </div>
 
                 <div className="min-w-0 space-y-1">
-                  <div className="flex min-w-0 items-start justify-between gap-2 sm:justify-start">
-                    <h2 className="min-w-0 text-base font-semibold text-pretty break-words">
-                      {listing.title}
-                    </h2>
-                    <StatusBadge status={listing.status} />
-                  </div>
+                  {/* The chip gets its own line so the title can use the full width to wrap. */}
+                  <ListingStatusBadge status={listing.status} className="mb-1.5" />
+                  <h2 className="text-base font-semibold text-pretty break-words">
+                    {listing.title}
+                  </h2>
                   <p className="truncate text-sm text-muted-foreground">
                     {listingLocation(listing) ?? "Address not set"}
                   </p>

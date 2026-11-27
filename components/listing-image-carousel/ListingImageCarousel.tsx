@@ -12,7 +12,7 @@ import {
 import { Lightbox } from "@/components/lightbox/Lightbox";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { GridViewIcon } from "@hugeicons/core-free-icons";
+import { GridViewIcon, Image01Icon } from "@hugeicons/core-free-icons";
 
 /** From this many photos, wide screens show a grid (one large, up to four small) instead of the carousel. */
 const GRID_MIN_PHOTOS = 3;
@@ -97,15 +97,22 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
               />
             </button>
           ))}
+          <span className="pointer-events-none absolute top-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-[13px] font-medium text-white tabular-nums">
+            <HugeiconsIcon icon={Image01Icon} strokeWidth={2} className="size-4" aria-hidden />
+            {images.length} photos
+          </span>
           <button
             type="button"
             onClick={() => openLightbox(0)}
             className="absolute right-4 bottom-4 inline-flex h-10 items-center gap-2 rounded-lg border border-foreground/15 bg-background px-3.5 text-sm font-medium text-foreground shadow-md hover:bg-muted"
           >
             <HugeiconsIcon icon={GridViewIcon} strokeWidth={2} className="size-4" aria-hidden />
-            Show all {images.length} photos
+            Show all photos
           </button>
         </div>
+      )}
+      {showsGrid && images[0]?.caption && (
+        <p className="mt-2 hidden text-sm text-muted-foreground md:block">{images[0].caption}</p>
       )}
       <Carousel
         className={cn("w-full", showsGrid && "md:hidden")}

@@ -140,6 +140,9 @@ export const listingDetailsSchema = z.object({
   beds: z.number().int().min(0),
   baths: z.number().min(0),
   sqft: nullableListingSquareFeetSchema,
+  /** The building's geocoded position, when it has one. */
+  lat: z.number().optional(),
+  lng: z.number().optional(),
   heatingType: heatingTypeSchema.optional(),
   utilitiesIncluded: z.array(utilityIncludedSchema).optional(),
   depositInfo: optionalTrimmedString(),

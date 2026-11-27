@@ -733,6 +733,8 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
     beds: listing.bedrooms,
     baths: listing.bathrooms,
     sqft: listing.squareFeet,
+    lat: listing.property.latitude ?? undefined,
+    lng: listing.property.longitude ?? undefined,
     heatingType: listing.heatingType ?? undefined,
     utilitiesIncluded: [...listing.utilitiesIncluded],
     depositInfo: getOptionalListingText(listing.depositInfo),

@@ -2,7 +2,7 @@ import verbiage from "@/content/verbiage.json";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
-import { RoleBadge } from "@/components/admin-invite/RoleBadge";
+import { RoleLabel } from "@/components/admin-invite/RoleLabel";
 import type { InviteRecord } from "@/components/admin-invite/types";
 
 type RecentInvitesListProps = {
@@ -43,7 +43,7 @@ export function RecentInvitesList({ invites }: RecentInvitesListProps) {
                       {inviteDateFormatter.format(new Date(invite.invitedAt))}
                     </p>
                   </div>
-                  <RoleBadge role={invite.role} />
+                  <RoleLabel role={invite.role} />
                 </div>
                 {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
               </li>

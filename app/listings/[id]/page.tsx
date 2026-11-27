@@ -62,6 +62,11 @@ export default async function ListingDetailsPage({ params }: Readonly<PageProps>
       applicationEmail={details.applicationEmail}
       applicationPhone={details.applicationPhone}
       applicationInstructions={details.applicationInstructions}
+      coordinates={
+        details.lat !== undefined && details.lng !== undefined
+          ? { lat: details.lat, lng: details.lng }
+          : undefined
+      }
       walkScore={
         <Suspense fallback={<WalkScore score={null} address={walkScoreAddress} />}>
           <ListingWalkScore listingId={id} address={walkScoreAddress} />

@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { UniversalAccessIcon, Image01Icon } from "@hugeicons/core-free-icons";
+import { Image01Icon } from "@hugeicons/core-free-icons";
+import { featureIcon } from "@/components/listing-details/featureIcon";
 import {
   RENT_PERIOD,
   formatListingDate,
@@ -39,10 +40,10 @@ interface ListingsCardProps {
 }
 
 /**
- * One named chip and a "+N more" count. A second named chip would be cut off on the narrowest
- * cards, and the chips stay on one row so every card in a grid row lines up.
+ * Two named chips and a "+N more" count. Long names truncate inside their chip rather than
+ * dropping a chip, and the chips stay on one row so every card in a grid row lines up.
  */
-const MAX_FEATURES = 1;
+const MAX_FEATURES = 2;
 
 const TIME_UNITS: Record<string, string> = {
   second: "s",
@@ -73,6 +74,7 @@ export function formatPostedLabel(timeAgo: string) {
 function FeatureChips({ features, className }: { features: string[]; className?: string }) {
   const shown = features.slice(0, MAX_FEATURES);
   const hiddenCount = features.length - shown.length;
+  const chipClassName = "h-7 max-w-full gap-1.5 px-2.5 text-[13px] [&>svg]:size-4!";
 
   return (
     // A fixed-height row, kept even when empty, so cards in one grid row line up.
@@ -83,9 +85,9 @@ function FeatureChips({ features, className }: { features: string[]; className?:
     >
       {shown.map((feature, index) => (
         <li key={`${feature}-${index}`} className="flex min-w-0">
-          <Badge className="h-7 max-w-full gap-1 px-2.5 [&>svg]:size-4!">
+          <Badge className={chipClassName}>
             <HugeiconsIcon
-              icon={UniversalAccessIcon}
+              icon={featureIcon(feature)}
               strokeWidth={2}
               className="shrink-0"
               aria-hidden
@@ -95,8 +97,8 @@ function FeatureChips({ features, className }: { features: string[]; className?:
         </li>
       ))}
       {hiddenCount > 0 && (
-        <li className="shrink-0">
-          <Badge variant="outline" className="h-7 px-2.5 text-muted-foreground">
+        <li className="flex shrink-0">
+          <Badge variant="secondary" className={chipClassName}>
             +{hiddenCount} more
           </Badge>
         </li>
@@ -173,21 +175,25 @@ export function ListingsCard({
 
       <div
         className={cn(
-          "flex min-w-0 flex-col",
-          isHorizontal ? "flex-1 justify-center gap-0.5 p-3" : "gap-0.5 px-0.5",
+          "flex min-w-0 flex-1 flex-col",
+          isHorizontal ? "justify-center gap-0.5 p-3" : "gap-0.5 px-0.5",
         )}
       >
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="min-w-0 truncate text-base font-semibold tracking-normal text-foreground">
+        {/* Rent is the strongest text on the card, so it holds the right of the first row and
+            the name wraps to a second line instead of pushing it out. */}
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="line-clamp-2 min-w-0 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground">
             {heading}
           </h3>
-          {!isHorizontal && <p className="shrink-0 text-xs text-muted-foreground">{posted}</p>}
+          <p className="shrink-0 text-lg leading-snug font-semibold tracking-tight whitespace-nowrap text-foreground">
+            {formatRent(price)}
+            <span className="text-sm font-normal text-muted-foreground">{RENT_PERIOD}</span>
+          </p>
         </div>
         {subheading && <p className="truncate text-sm text-muted-foreground">{subheading}</p>}
-        <p className="truncate text-sm text-foreground">{formatRooms(beds, baths, sqft)}</p>
-        <p className="mt-1 text-base font-semibold tracking-tight text-foreground">
-          {formatRent(price)}
-          <span className="text-sm font-normal text-muted-foreground"> {RENT_PERIOD}</span>
+        <p className="text-sm text-foreground">
+          {formatRooms(beds, baths, sqft)}
+          {posted && <span className="text-muted-foreground"> · {posted}</span>}
         </p>
         <FeatureChips
           features={features}

@@ -12,8 +12,9 @@ import {
   type AccountListItem,
   type AccountStatus,
 } from "@/components/admin-users/account-display";
-import { RoleBadge } from "@/components/admin-invite/RoleBadge";
+import { RoleLabel } from "@/components/admin-invite/RoleLabel";
 import { inviteRoleOptions, type InviteRole } from "@/components/admin-invite/types";
+import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -25,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StatusDot } from "@/components/admin-users/StatusDot";
 
 const PAGE_SIZE = 25;
 
@@ -38,9 +38,13 @@ function DateText({ value }: { value: string | null }) {
   );
 }
 
-function StatusBadge({ status }: { status: AccountStatus | null }) {
-  if (!status) return <span className="text-muted-foreground">Unknown</span>;
-  return <StatusDot tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusDot>;
+/** Active is the normal state, so it reads as plain text and only the exceptions get a chip. */
+function AccountStatusText({ status }: { status: AccountStatus | null }) {
+  if (!status) return <span className="text-sm text-muted-foreground">Unknown</span>;
+  if (status === "active") {
+    return <span className="text-sm text-foreground">{accountStatusLabels[status]}</span>;
+  }
+  return <StatusBadge tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusBadge>;
 }
 
 function matchesSearch(account: AccountListItem, query: string) {
@@ -149,7 +153,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
               <colgroup>
                 <col />
                 <col className="w-[18%]" />
-                <col className="w-44" />
+                <col className="w-36" />
                 <col className="w-32" />
                 <col className="w-32" />
                 <col className="w-32" />
@@ -157,13 +161,13 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
               </colgroup>
               <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2.5 font-medium">User</th>
-                  <th className="px-4 py-2.5 font-medium">Organization</th>
-                  <th className="px-4 py-2.5 font-medium">Role</th>
-                  <th className="px-4 py-2.5 font-medium">Status</th>
-                  <th className="px-4 py-2.5 font-medium">Created</th>
-                  <th className="px-4 py-2.5 font-medium">Last sign-in</th>
-                  <th className="px-4 py-2.5 font-medium">
+                  <th className="px-4 py-3 font-medium">User</th>
+                  <th className="px-4 py-3 font-medium">Organization</th>
+                  <th className="px-4 py-3 font-medium">Role</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Created</th>
+                  <th className="px-4 py-3 font-medium">Last sign-in</th>
+                  <th className="px-4 py-3 font-medium">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
@@ -171,36 +175,32 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
               <tbody className="divide-y">
                 {visible.map((account) => (
                   <tr key={account.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-3">
-                      <p className="truncate font-medium text-foreground">
+                    <td className="px-4 py-3.5">
+                      <p className="font-medium break-words text-foreground">
                         {account.name ?? account.email ?? "Unnamed user"}
                       </p>
-                      <p
-                        className="truncate text-xs text-muted-foreground"
-                        title={account.email ?? undefined}
-                      >
+                      {/* Emails wrap at any character instead of truncating, so the whole
+                          address stays readable. */}
+                      <p className="text-xs [overflow-wrap:anywhere] text-muted-foreground">
                         {account.email ?? "No email"}
                       </p>
                     </td>
-                    <td
-                      className="truncate px-4 py-3 text-muted-foreground"
-                      title={account.organization ?? undefined}
-                    >
-                      {account.organization ?? "—"}
+                    <td className="px-4 py-3.5 break-words text-foreground">
+                      {account.organization ?? <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      {account.role ? <RoleBadge role={account.role} /> : "—"}
+                    <td className="px-4 py-3.5">
+                      {account.role ? <RoleLabel role={account.role} /> : "—"}
                     </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={account.status} />
+                    <td className="px-4 py-3.5">
+                      <AccountStatusText status={account.status} />
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="px-4 py-3.5 text-muted-foreground">
                       <DateText value={account.createdAt} />
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="px-4 py-3.5 text-muted-foreground">
                       <DateText value={account.lastLoginAt} />
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3.5 text-right">
                       <AdminAccountActions account={account} />
                     </td>
                   </tr>
@@ -216,14 +216,14 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                   <p className="truncate font-medium text-foreground">
                     {account.name ?? account.email ?? "Unnamed user"}
                   </p>
-                  <p className="truncate text-sm text-muted-foreground">
+                  <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
                     {account.email ?? "No email"}
                   </p>
                   <div className="flex flex-wrap items-center gap-3 pt-0.5">
-                    {account.role ? <RoleBadge role={account.role} /> : null}
-                    <StatusBadge status={account.status} />
+                    {account.role ? <RoleLabel role={account.role} /> : null}
+                    <AccountStatusText status={account.status} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {account.organization ? `${account.organization} · ` : null}
                     Last sign-in <DateText value={account.lastLoginAt} />
                   </p>

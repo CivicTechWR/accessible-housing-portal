@@ -22,9 +22,9 @@ describe("ListingFormPreview card", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe(
-      "88 Courtland Ave E #4, Kitchener",
-    );
+    // Without a building name, the street is the card's heading and the city sits under it.
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("88 Courtland Ave E #4");
+    expect(screen.getAllByText("Kitchener")).toHaveLength(1);
   });
 
   it("loads an uploaded photo directly, since the listing may be a draft only the owner can see", () => {

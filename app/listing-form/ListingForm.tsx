@@ -37,7 +37,7 @@ import {
 import { ListingFormSkeleton } from "@/components/listing-form-skeleton/ListingFormSkeleton";
 import { PageHeader } from "@/components/page-shell/AppPageShell";
 import { AlertBanner } from "@/components/ui/alert-banner";
-import { Badge } from "@/components/ui/badge";
+import { ListingStatusBadge } from "@/app/my-listings/ListingStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
@@ -189,7 +189,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
             title={
               <span className="flex flex-wrap items-center gap-3">
                 {formHeading}
-                {isEditMode ? <ListingStatusBadge status={liveFormData.status} /> : null}
+                {isEditMode ? <ListingStatusBadge status={liveFormData.status ?? "draft"} /> : null}
               </span>
             }
             description={formDescription}
@@ -322,26 +322,6 @@ function hasValue(value: unknown) {
   if (typeof value === "string") return value.trim() !== "";
   if (Array.isArray(value)) return value.length > 0;
   return true;
-}
-
-function ListingStatusBadge({ status }: { status: ListingFormInput["status"] }) {
-  if (status === "published") {
-    return (
-      <Badge className="text-sm">
-        <span aria-hidden className="size-1.5 rounded-full bg-current" />
-        Published
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge
-      variant="outline"
-      className="border-amber-600/30 bg-amber-50 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200"
-    >
-      {status === "archived" ? "Archived" : "Draft"}
-    </Badge>
-  );
 }
 
 function SaveStateIcon({ status }: { status: AutosaveStatus["status"] | "dirty" | null }) {

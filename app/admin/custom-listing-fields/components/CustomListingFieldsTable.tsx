@@ -267,7 +267,7 @@ export function CustomListingFieldsTable({
               displayGroups.map((group) => {
                 return (
                   <div key={group.category}>
-                    <div className="flex h-10 items-center gap-2 border-b border-border bg-muted/30 pr-4 pl-[104px]">
+                    <div className="flex h-10 items-center gap-2 border-b border-border bg-muted/30 px-4">
                       <h2 className="text-sm font-semibold text-foreground">
                         {toSentenceCase(group.label)}
                       </h2>

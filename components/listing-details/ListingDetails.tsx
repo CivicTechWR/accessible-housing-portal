@@ -6,6 +6,7 @@ import {
   Calendar03Icon,
   Call02Icon,
   FloorPlanIcon,
+  Location01Icon,
   Mail01Icon,
   PencilEdit01Icon,
   Tick02Icon,
@@ -38,6 +39,8 @@ import {
 } from "@/lib/listing-format";
 import Link from "next/link";
 import { ListingApplyButton } from "./ListingApplyButton";
+import { ListingLocationMap } from "./ListingLocationMap";
+import { featureIcon } from "./featureIcon";
 
 type ListingFeature = {
   name: string;
@@ -87,6 +90,8 @@ export interface ListingDetailProps {
   features: ListingFeatureCategory[];
   /** Rendered inside another page, such as the listing form preview: no page shell, no sticky parts. */
   embedded?: boolean;
+  /** Where the building is, for the map in the Location section. */
+  coordinates?: { lat: number; lng: number };
   walkScore?: ReactNode;
 }
 
@@ -105,8 +110,8 @@ function Price({ price, className }: { price: number; className?: string }) {
 }
 
 /**
- * The most important block after the photos, so it sits on a tinted panel with the features in
- * two columns. Categories flow down the columns whole, so a short category never leaves a gap.
+ * The most important block after the photos, so it sits on its own panel. Each category is a
+ * heading with its icon over full-width rows, so descriptions run at a readable width.
  */
 function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
   const count = categories.reduce((total, category) => total + category.features.length, 0);
@@ -114,7 +119,9 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
 
   return (
     <section aria-labelledby={headingId} className="py-8 first:pt-0">
-      <div className="rounded-xl border border-primary/15 bg-primary/4 p-5 sm:p-7 dark:bg-primary-text/6">
+      {/* Light mode tints the panel; dark mode keeps the shared card surface and carries the
+          brand colour in the border only, so it matches the contact card beside it. */}
+      <div className="rounded-xl border border-primary/15 bg-primary/4 p-5 sm:p-7 dark:border-primary-text/35 dark:bg-card">
         <div className="mb-6 flex items-center gap-3.5">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <HugeiconsIcon
@@ -136,37 +143,41 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
           </div>
         </div>
         {count === 0 ? (
-          <p className="text-[15px] text-foreground/75">No accessibility features listed.</p>
+          <p className="text-base text-foreground">No accessibility features listed.</p>
         ) : (
-          <div className="gap-x-10 md:columns-2">
+          <div className="space-y-7">
             {categories.map((category) => (
-              <div key={category.categoryName} className="mb-7 break-inside-avoid last:mb-0">
-                <h3 className="mb-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              <div key={category.categoryName}>
+                <h3 className="mb-3 flex items-center gap-3 text-base font-semibold tracking-normal">
+                  <HugeiconsIcon
+                    icon={featureIcon(category.categoryName)}
+                    strokeWidth={2}
+                    className="size-5 shrink-0 text-foreground/70"
+                    aria-hidden
+                  />
                   {toSentenceCase(category.categoryName)}
                 </h3>
                 {/* Safari drops list semantics from a list without markers unless the role is set. */}
-                <ul role="list" className="space-y-4">
+                <ul role="list" className="space-y-3">
                   {category.features.map((feature) => {
                     // The listings API sends a feature's name as its description when it has none.
                     const featureDescription = feature.description.trim();
                     const hasDescription =
                       featureDescription !== "" && featureDescription !== feature.name;
                     return (
-                      <li key={feature.name} className="flex gap-3.5 wrap-anywhere">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-background text-primary-text ring-1 ring-primary/15">
-                          <HugeiconsIcon
-                            icon={Tick02Icon}
-                            strokeWidth={2}
-                            className="size-5"
-                            aria-hidden
-                          />
-                        </span>
-                        <div className="min-w-0 pt-1.5">
+                      <li key={feature.name} className="flex gap-3 wrap-anywhere">
+                        <HugeiconsIcon
+                          icon={Tick02Icon}
+                          strokeWidth={2}
+                          className="mt-0.5 size-5 shrink-0 text-primary-text"
+                          aria-hidden
+                        />
+                        <div className="min-w-0">
                           <p className="text-base font-medium text-foreground">
                             {toSentenceCase(feature.name)}
                           </p>
                           {hasDescription && (
-                            <p className="mt-1 text-[15px] leading-relaxed text-foreground/75">
+                            <p className="max-w-prose text-base text-foreground/75">
                               {featureDescription}
                             </p>
                           )}
@@ -207,7 +218,7 @@ function ContactLink({
   return (
     <a
       href={href}
-      className="inline-flex min-h-6 items-start gap-2 text-sm text-primary-text underline-offset-4 hover:underline"
+      className="inline-flex min-h-6 items-start gap-2 text-[15px] text-primary-text underline-offset-4 hover:underline"
     >
       <HugeiconsIcon icon={icon} strokeWidth={2} className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span className="wrap-anywhere">{children}</span>
@@ -246,6 +257,7 @@ export function ListingDetails({
   street2,
   postalCode,
   embedded = false,
+  coordinates,
   walkScore,
 }: ListingDetailProps) {
   const address = buildAddress({ unitNumber, street1, street2, city, postalCode });
@@ -384,7 +396,7 @@ export function ListingDetails({
       <ul
         role="list"
         aria-label="Key facts"
-        className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[15px] text-foreground"
+        className="flex flex-wrap items-center gap-x-5 gap-y-2 text-base text-foreground"
       >
         {embedded && (
           <li>
@@ -396,7 +408,7 @@ export function ListingDetails({
             <HugeiconsIcon
               icon={fact.icon}
               strokeWidth={2}
-              className="size-5 text-muted-foreground"
+              className="size-4.5 text-foreground/70"
               aria-hidden
             />
             {fact.label}
@@ -412,7 +424,7 @@ export function ListingDetails({
 
       {trimmedDescription && (
         <Section id="listing-description" title="Description">
-          <p className="max-w-prose text-[15px] leading-relaxed whitespace-pre-line wrap-anywhere text-foreground">
+          <p className="max-w-prose text-base whitespace-pre-line wrap-anywhere text-foreground">
             {trimmedDescription}
           </p>
         </Section>
@@ -431,7 +443,7 @@ export function ListingDetails({
               </dt>
               <dd
                 className={cn(
-                  "mt-1 text-[15px] font-medium wrap-anywhere text-foreground",
+                  "mt-1 text-base font-medium wrap-anywhere text-foreground",
                   row.preserveWhitespace && "whitespace-pre-line",
                 )}
               >
@@ -442,7 +454,23 @@ export function ListingDetails({
         </dl>
       </Section>
 
-      {walkScore ? <div className="py-8">{walkScore}</div> : null}
+      {(coordinates || walkScore) && (
+        <Section id="listing-location" title="Location">
+          <div className="space-y-4">
+            <p className="flex items-start gap-2.5 text-base wrap-anywhere text-foreground">
+              <HugeiconsIcon
+                icon={Location01Icon}
+                strokeWidth={2}
+                className="mt-0.5 size-5 shrink-0 text-foreground/70"
+                aria-hidden
+              />
+              {address}
+            </p>
+            {coordinates && <ListingLocationMap lat={coordinates.lat} lng={coordinates.lng} />}
+            {walkScore}
+          </div>
+        </Section>
+      )}
 
       {instructions && (
         <Section id="listing-how-to-apply" title="How to apply">
@@ -450,7 +478,7 @@ export function ListingDetails({
             <figcaption className="text-sm text-muted-foreground">
               From the housing lister
             </figcaption>
-            <blockquote className="rounded-r-lg border-l-2 border-primary/40 bg-muted/50 px-4 py-3 text-[15px] leading-relaxed whitespace-pre-line wrap-anywhere">
+            <blockquote className="rounded-r-lg border-l-2 border-primary/40 bg-muted/50 px-4 py-3 text-base whitespace-pre-line wrap-anywhere">
               {instructions}
             </blockquote>
           </figure>
@@ -463,9 +491,10 @@ export function ListingDetails({
     <aside
       id={CONTACT_SECTION_ID}
       aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
-      className={cn("min-w-0 scroll-mt-24", !embedded && "lg:sticky lg:top-24 lg:self-start")}
+      // Sticky on desktop, so rent and Apply follow the reader down the page.
+      className={cn("min-w-0 scroll-mt-24", !embedded && "lg:sticky lg:top-22 lg:self-start")}
     >
-      <div className="space-y-5 rounded-xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6">
+      <div className="space-y-5 rounded-xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6 dark:border-white/12">
         {/* Phones get the price from the bottom bar, so it shows here on desktop only. */}
         {!embedded && (
           <div className="hidden lg:block">
@@ -480,7 +509,13 @@ export function ListingDetails({
         </h2>
         {(applyUrl || hasContactMethod || hasApplicationMethod || instructions) && (
           <div className="space-y-2">
-            {applyUrl && <ListingApplyButton applicationUrl={applyUrl} className="w-full" />}
+            {/* Phones have Apply in the bottom bar, so the card keeps only the contacts there. */}
+            {applyUrl && (
+              <ListingApplyButton
+                applicationUrl={applyUrl}
+                className={cn("w-full", !embedded && "max-lg:hidden")}
+              />
+            )}
             <p className="text-sm text-muted-foreground">
               Apply directly with the housing lister, outside this portal.
             </p>
@@ -497,7 +532,7 @@ export function ListingDetails({
                 {(contactName?.trim() || contactRole?.trim()) && (
                   <div>
                     {contactName?.trim() && (
-                      <p className="text-[15px] font-medium wrap-anywhere">{contactName.trim()}</p>
+                      <p className="text-base font-medium wrap-anywhere">{contactName.trim()}</p>
                     )}
                     {contactRole?.trim() && (
                       <p className="text-sm wrap-anywhere text-muted-foreground">
@@ -591,7 +626,7 @@ export function ListingDetails({
           {applyUrl ? (
             <ListingApplyButton applicationUrl={applyUrl} className="px-8" />
           ) : canReachLister ? (
-            <Button asChild size="lg" className="h-11 px-8 text-sm">
+            <Button asChild size="lg" className="px-8">
               <a href={`#${CONTACT_SECTION_ID}`}>Contact</a>
             </Button>
           ) : null}

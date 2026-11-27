@@ -5,9 +5,8 @@ import { Add01Icon } from "@hugeicons/core-free-icons";
 
 import { AdminInviteActions } from "@/components/admin-users/AdminInviteActions";
 import { UserDirectory } from "@/components/admin-users/UserDirectory";
-import { StatusDot, type StatusTone } from "@/components/admin-users/StatusDot";
 import { formatAccountDate } from "@/components/admin-users/account-display";
-import { RoleBadge } from "@/components/admin-invite/RoleBadge";
+import { RoleLabel } from "@/components/admin-invite/RoleLabel";
 import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
 import {
   AppPageShell,
@@ -16,7 +15,7 @@ import {
   pageWidths,
 } from "@/components/page-shell/AppPageShell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Badge, StatusBadge, type StatusTone } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { findAccountInvites, type AccountInviteRow } from "@/lib/auth/invite-store";
@@ -93,7 +92,7 @@ const inviteLifecycle: Record<AccountInviteRow["lifecycle"], { label: string; to
 
 function InviteStatus({ lifecycle }: { lifecycle: AccountInviteRow["lifecycle"] }) {
   const { label, tone } = inviteLifecycle[lifecycle];
-  return <StatusDot tone={tone}>{label}</StatusDot>;
+  return <StatusBadge tone={tone}>{label}</StatusBadge>;
 }
 
 function DateText({ value }: { value: Date }) {
@@ -130,7 +129,7 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
           <caption className="sr-only">Invitations</caption>
           <colgroup>
             <col />
-            <col className="w-44" />
+            <col className="w-36" />
             <col className="w-[30%]" />
             <col className="w-32" />
             <col className="w-32" />
@@ -138,12 +137,12 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
           </colgroup>
           <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
             <tr>
-              <th className="px-4 py-2.5 font-medium">Invitee</th>
-              <th className="px-4 py-2.5 font-medium">Role</th>
-              <th className="px-4 py-2.5 font-medium">Status</th>
-              <th className="px-4 py-2.5 font-medium">Invited</th>
-              <th className="px-4 py-2.5 font-medium">Expires</th>
-              <th className="px-4 py-2.5 font-medium">
+              <th className="px-4 py-3 font-medium">Invitee</th>
+              <th className="px-4 py-3 font-medium">Role</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Invited</th>
+              <th className="px-4 py-3 font-medium">Expires</th>
+              <th className="px-4 py-3 font-medium">
                 <span className="sr-only">Actions</span>
               </th>
             </tr>
@@ -151,31 +150,33 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
           <tbody className="divide-y">
             {invites.map((invite) => (
               <tr key={invite.id} className="align-top">
-                <td className="px-4 py-3">
-                  <p className="truncate font-medium text-foreground">{invite.name}</p>
-                  <p className="truncate text-xs text-muted-foreground" title={invite.email}>
+                <td className="px-4 py-3.5">
+                  <p className="font-medium break-words text-foreground">{invite.name}</p>
+                  <p className="text-xs [overflow-wrap:anywhere] text-muted-foreground">
                     {invite.email}
                   </p>
                   {invite.organization ? (
-                    <p className="truncate text-xs text-muted-foreground">{invite.organization}</p>
+                    <p className="text-xs break-words text-muted-foreground">
+                      {invite.organization}
+                    </p>
                   ) : null}
                 </td>
-                <td className="px-4 py-3">
-                  <RoleBadge role={invite.role} />
+                <td className="px-4 py-3.5">
+                  <RoleLabel role={invite.role} />
                 </td>
-                <td className="space-y-2 px-4 py-3">
+                <td className="space-y-2 px-4 py-3.5">
                   <div>
                     <InviteStatus lifecycle={invite.lifecycle} />
                   </div>
                   {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">
+                <td className="px-4 py-3.5 text-muted-foreground">
                   <DateText value={invite.invitedAt} />
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">
+                <td className="px-4 py-3.5 text-muted-foreground">
                   <DateText value={invite.expiresAt} />
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   <AdminInviteActions
                     inviteId={invite.id}
                     inviteeLabel={invite.name || invite.email}
@@ -194,15 +195,17 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
           <li key={invite.id} className="flex min-w-0 items-start gap-3 p-4">
             <div className="min-w-0 flex-1 space-y-1.5">
               <p className="truncate font-medium text-foreground">{invite.name}</p>
-              <p className="truncate text-sm text-muted-foreground">{invite.email}</p>
+              <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
+                {invite.email}
+              </p>
               <div className="flex flex-wrap items-center gap-3 pt-0.5">
-                <RoleBadge role={invite.role} />
+                <RoleLabel role={invite.role} />
                 <InviteStatus lifecycle={invite.lifecycle} />
               </div>
               {invite.emailStatus && (
                 <InviteEmailStatusSummary status={invite.emailStatus} className="pt-1" />
               )}
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Invited <DateText value={invite.invitedAt} /> · Expires{" "}
                 <DateText value={invite.expiresAt} />
               </p>

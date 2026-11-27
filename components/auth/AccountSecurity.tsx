@@ -198,7 +198,9 @@ export function AccountSecurity() {
               placeholder="Passkey name, e.g. laptop"
               className="sm:flex-1"
             />
-            <Button disabled={pending}>Add passkey</Button>
+            <Button variant="outline" disabled={pending}>
+              Add passkey
+            </Button>
           </form>
           {passkeyMessage && (
             <p role="status" className="text-sm">
@@ -230,10 +232,7 @@ export function AccountSecurity() {
                 required
               />
             </div>
-            <Button
-              variant={session?.user.twoFactorEnabled ? "outline" : "default"}
-              disabled={pending || !!setup}
-            >
+            <Button variant="outline" disabled={pending || !!setup}>
               {session?.user.twoFactorEnabled ? "Disable authenticator" : "Set up authenticator"}
             </Button>
           </form>
@@ -364,7 +363,7 @@ export function AccountSecurity() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="new-password">New password, 12 to 128 characters</Label>
+              <Label htmlFor="new-password">New password</Label>
               <Input
                 id="new-password"
                 name="newPassword"
@@ -374,11 +373,17 @@ export function AccountSecurity() {
                 maxLength={128}
                 required
                 aria-invalid={!!passwordErrors.newPassword}
-                aria-describedby={passwordErrors.newPassword ? "new-password-error" : undefined}
+                aria-describedby={
+                  passwordErrors.newPassword ? "new-password-error" : "new-password-hint"
+                }
               />
-              {passwordErrors.newPassword && (
+              {passwordErrors.newPassword ? (
                 <p id="new-password-error" role="alert" className="text-sm text-destructive">
                   {passwordErrors.newPassword}
+                </p>
+              ) : (
+                <p id="new-password-hint" className="text-sm text-muted-foreground">
+                  Use 12 to 128 characters.
                 </p>
               )}
             </div>

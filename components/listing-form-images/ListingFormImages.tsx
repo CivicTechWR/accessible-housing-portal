@@ -180,7 +180,7 @@ export function ListingFormImages({
                     </>
                   )}
                 </p>
-                <p id={hintId} className="text-xs text-muted-foreground">
+                <p id={hintId} className="text-sm text-muted-foreground">
                   JPG, PNG, WebP or AVIF, up to 25 MB each.
                   {!listingId ? " Adding a photo saves this listing as a draft." : null}
                 </p>

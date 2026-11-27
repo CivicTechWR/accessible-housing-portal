@@ -42,4 +42,34 @@ function Badge({
   );
 }
 
-export { Badge, badgeVariants };
+const statusToneClasses = {
+  success: "bg-emerald-600/10 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300",
+  warning: "bg-amber-500/15 text-amber-900 dark:bg-amber-400/15 dark:text-amber-200",
+  danger: "bg-destructive/10 text-destructive dark:bg-destructive/20",
+  neutral: "bg-muted text-muted-foreground",
+} as const;
+
+export type StatusTone = keyof typeof statusToneClasses;
+
+/**
+ * The one chip for any status (listings, accounts, invitations): a tinted fill and a dot, with
+ * only the hue changing, so the word carries the meaning and colour only reinforces it.
+ */
+function StatusBadge({
+  tone,
+  className,
+  children,
+}: {
+  tone: StatusTone;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Badge className={cn(statusToneClasses[tone], className)}>
+      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
+      {children}
+    </Badge>
+  );
+}
+
+export { Badge, badgeVariants, StatusBadge };

@@ -1,4 +1,4 @@
-import type { StatusTone } from "@/components/admin-users/StatusDot";
+import type { StatusTone } from "@/components/ui/badge";
 import type { AccountListResponse } from "@/shared/schemas/account-management";
 
 export type AccountListItem = AccountListResponse["data"][number];

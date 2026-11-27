@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog-shell";
 import { siteConfig } from "@/lib/site-config";
-import { cn } from "@/lib/utils";
 
 export function ListingApplyButton({
   applicationUrl,
@@ -29,12 +28,7 @@ export function ListingApplyButton({
 
   return (
     <>
-      <Button
-        type="button"
-        size="lg"
-        className={cn("h-11 text-sm", className)}
-        onClick={() => setIsConfirmOpen(true)}
-      >
+      <Button type="button" size="lg" className={className} onClick={() => setIsConfirmOpen(true)}>
         Apply
       </Button>
 
