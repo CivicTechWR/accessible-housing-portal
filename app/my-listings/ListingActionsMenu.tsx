@@ -114,7 +114,15 @@ export function ListingActionsMenu({
         </DropdownMenuContent>
       </DropdownMenu>
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent
+          onCloseAutoFocus={(event) => {
+            // The dialog opened from a menu item that no longer exists, so Radix would send focus
+            // to <body>. Cancel and Escape return it to the menu button; confirming is handled by
+            // the effect above once the request settles.
+            event.preventDefault();
+            if (!focusWhenSettled.current) buttonRef.current?.focus();
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Archive this listing?</AlertDialogTitle>
             <AlertDialogDescription>
