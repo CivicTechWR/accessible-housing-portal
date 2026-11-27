@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ComputerIcon, Moon02Icon, SmartPhone01Icon, Sun03Icon } from "@hugeicons/core-free-icons";
+import { DarkModeIcon, Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useTheme } from "next-themes";
 
@@ -64,22 +64,12 @@ export function ThemeToggle({ surface = "default" }: ThemeToggleProps) {
       </ToggleGroupItem>
       <ToggleGroupItem
         value="system"
-        title="System theme"
-        aria-label="System theme"
+        title="Match device theme"
+        aria-label="Match device theme"
         className={itemClass}
       >
-        <HugeiconsIcon
-          icon={ComputerIcon}
-          strokeWidth={2}
-          size={16}
-          className="pointer-coarse:hidden"
-        />
-        <HugeiconsIcon
-          icon={SmartPhone01Icon}
-          strokeWidth={2}
-          size={16}
-          className="hidden pointer-coarse:block"
-        />
+        {/* A half-filled circle: follows the device's light or dark setting. */}
+        <HugeiconsIcon icon={DarkModeIcon} strokeWidth={2} size={16} />
       </ToggleGroupItem>
     </ToggleGroup>
   );

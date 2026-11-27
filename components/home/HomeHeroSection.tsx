@@ -8,7 +8,7 @@ export function HomeHeroSection() {
   return (
     <section
       aria-labelledby="home-title"
-      className="relative isolate flex min-h-[560px] items-end overflow-hidden bg-muted sm:min-h-[620px]"
+      className="relative isolate flex min-h-[480px] items-end overflow-hidden bg-muted sm:min-h-[520px]"
     >
       {/* object-cover stretches this 3069x1722 photo to the hero's height, making it wider than
           a phone screen, so 100vw alone would fetch a copy too small and blurry. Update if the
@@ -25,10 +25,10 @@ export function HomeHeroSection() {
           AA over any part of the photo however it wraps. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(0_0_0/0.82),rgb(0_0_0/0.62)_55%,rgb(0_0_0/0.25)),linear-gradient(to_top,rgb(0_0_0/0.55),transparent_55%)]"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(0_0_0/0.85),rgb(0_0_0/0.7)_45%,rgb(0_0_0/0.3)),linear-gradient(to_top,rgb(0_0_0/0.6),transparent_60%)]"
       />
-      <div className="w-full pt-40">
-        <div className="mx-auto max-w-6xl px-4 pb-14 text-white sm:px-6 sm:pb-20">
+      <div className="w-full pt-28">
+        <div className="mx-auto max-w-5xl px-4 pb-12 text-white sm:px-6 sm:pb-16">
           <p className="mb-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-sm font-medium backdrop-blur-sm">
             Invitation-only pilot in {siteConfig.region}
           </p>

@@ -63,7 +63,7 @@ export function AcceptInviteForm({ token, email }: AcceptInviteFormProps) {
     );
 
   return (
-    <form onSubmit={submit} noValidate>
+    <form className="w-full max-w-[400px]" onSubmit={submit} noValidate>
       <AuthCard
         title={email ? "Activate your account" : "Reset your password"}
         description={email}

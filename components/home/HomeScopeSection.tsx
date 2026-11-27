@@ -12,17 +12,17 @@ const lists = [
 
 export function HomeScopeSection() {
   return (
-    <section className="grid gap-6 md:grid-cols-2">
+    <section className="grid gap-10 border-t pt-16 md:grid-cols-2 md:gap-16">
       {lists.map((list) => (
-        <div key={list.title} className="rounded-xl border bg-card p-6 shadow-xs sm:p-8">
-          <h2 className="text-xl">{list.title}</h2>
+        <div key={list.title}>
+          <h2 className="text-2xl">{list.title}</h2>
           <ul role="list" className="mt-5 space-y-4">
             {list.items.map((item) => (
-              <li key={item} className="flex gap-3 leading-relaxed">
+              <li key={item} className="flex gap-3 text-base leading-7">
                 <HugeiconsIcon
                   icon={list.included ? CheckmarkCircle02Icon : CancelCircleIcon}
                   strokeWidth={2}
-                  size={20}
+                  size={22}
                   aria-hidden="true"
                   className={cn(
                     "mt-0.5 shrink-0",

@@ -69,7 +69,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
   }
 
   return (
-    <form onSubmit={submit}>
+    <form className="w-full max-w-[400px]" onSubmit={submit}>
       <AuthCard
         title={secondFactor ? "Verify your sign-in" : "Sign in"}
         description={

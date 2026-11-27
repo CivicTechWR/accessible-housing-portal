@@ -9,7 +9,12 @@ type AuthPageShellProps = {
 
 export function AuthPageShell({ children, className }: AuthPageShellProps) {
   return (
-    <main className={cn("flex justify-center bg-background px-4 py-10 sm:py-20", className)}>
+    <main
+      className={cn(
+        "flex min-h-[calc(100dvh-4rem)] items-start justify-center bg-background px-4 py-10 sm:items-center sm:py-16",
+        className,
+      )}
+    >
       {children}
     </main>
   );

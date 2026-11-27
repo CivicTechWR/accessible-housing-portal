@@ -17,8 +17,8 @@ const linkClass =
 export function SiteFooter({ className }: { className?: string }) {
   return (
     <footer className={cn("border-t bg-muted/50 text-sm", className)}>
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
-        <div className="col-span-2 space-y-3 md:col-span-1">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-x-6 gap-y-8 px-4 py-8 sm:grid-cols-2 sm:px-6 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="space-y-3 sm:col-span-2 md:col-span-1">
           <p className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-foreground">
             <BrandMark className="size-7" />
             {siteConfig.name}
@@ -84,7 +84,7 @@ export function SiteFooter({ className }: { className?: string }) {
         </div>
       </div>
       <div className="border-t">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-4 text-xs text-muted-foreground sm:flex-row sm:justify-between sm:px-6">
+        <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-4 text-sm text-muted-foreground sm:flex-row sm:justify-between sm:px-6">
           <p>
             © {new Date().getFullYear()} {siteConfig.operator.name}
           </p>

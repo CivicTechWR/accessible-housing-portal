@@ -27,7 +27,7 @@ export function ForgotPasswordForm() {
     }
   }
   return (
-    <form onSubmit={submit}>
+    <form className="w-full max-w-[400px]" onSubmit={submit}>
       <AuthCard
         title="Forgot password?"
         description="We'll email you a link that expires in one hour."
@@ -36,9 +36,12 @@ export function ForgotPasswordForm() {
             <Button className="w-full" size="lg" disabled={pending}>
               {pending ? "Please wait..." : "Send reset link"}
             </Button>
-            <Button asChild variant="ghost" className="w-full">
-              <Link href="/sign-in">Back to sign in</Link>
-            </Button>
+            <Link
+              href="/sign-in"
+              className="block text-center text-sm font-medium text-primary-text underline-offset-4 hover:underline"
+            >
+              Back to sign in
+            </Link>
           </>
         }
       >
