@@ -69,7 +69,7 @@ describe("ListingFormFields", () => {
   it("renders a described checkbox for each utility", () => {
     renderForm();
 
-    const description = screen.getByText("Select all utilities included in the monthly rent.");
+    const description = screen.getByText("Included in the monthly rent.");
     for (const label of ["Heat", "Water", "Electricity", "Gas", "Internet"]) {
       const checkbox = screen.getByRole("checkbox", { name: label });
       expect(checkbox).not.toBeChecked();

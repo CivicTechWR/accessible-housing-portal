@@ -45,7 +45,7 @@ export function FilterButton({
       {isActive && (
         <span
           aria-hidden
-          className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground max-sm:absolute max-sm:-top-1.5 max-sm:-right-1.5 max-sm:ring-2 max-sm:ring-background"
+          className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground max-sm:absolute max-sm:-top-1.5 max-sm:-right-1.5 max-sm:ring-2 max-sm:ring-background"
         >
           {activeFilterCount}
         </span>

@@ -27,17 +27,18 @@ export default async function Home() {
   return (
     <main>
       <HomeHeroSection />
-      {/* Bands alternate between the page and muted backgrounds so each section reads as its own. */}
-      <HomeBand muted>
+      {/* Bands alternate between the page and muted backgrounds so each section reads as its own. The
+          last band is blue, like the hero's sign. */}
+      <HomeBand tone="muted">
         <HomeFeaturesSection />
       </HomeBand>
       <HomeBand>
         <HomeAboutSection />
       </HomeBand>
-      <HomeBand muted>
+      <HomeBand tone="muted">
         <HomeScopeSection />
       </HomeBand>
-      <HomeBand>
+      <HomeBand tone="sign">
         <HomeContactSection />
       </HomeBand>
     </main>

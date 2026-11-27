@@ -1,7 +1,7 @@
-import { Badge } from "@/components/ui/badge";
+import { AccessibilityBadge } from "@/components/ui/accessibility-mark";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Image01Icon, WheelchairIcon } from "@hugeicons/core-free-icons";
+import { Image01Icon } from "@hugeicons/core-free-icons";
 import {
   RENT_PERIOD,
   formatArea,
@@ -9,6 +9,7 @@ import {
   formatBeds,
   formatListingDate,
   formatRent,
+  toSentenceCase,
 } from "@/lib/listing-format";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,7 +26,15 @@ interface ListingsCardProps {
   baths: number;
   sqft: number | null;
   imageUrl?: string;
-  timeAgo: string;
+  /** How many photos the listing has. The desktop card shows "1/3" on the photo when it has more than one. */
+  photoCount?: number;
+  /** The move-in date (YYYY-MM-DD), shown as "Available May 15" after the address. */
+  availableOn?: string;
+  /**
+   * Shown after the address when there is no `availableOn`. The listing form preview passes the
+   * move-in date here ("2026-05-15", or "Now").
+   */
+  timeAgo?: string;
   variant?: "vertical" | "horizontal";
   href?: string;
   onClick?: () => void;
@@ -65,6 +74,31 @@ export function formatPostedLabel(timeAgo: string) {
   return `${count}${TIME_UNITS[unit as keyof typeof TIME_UNITS]} ago`;
 }
 
+/** Today's date as YYYY-MM-DD in the reader's time zone, to compare with ISO move-in dates. */
+function todayIso() {
+  const now = new Date();
+  return [now.getFullYear(), now.getMonth() + 1, now.getDate()]
+    .map((part) => String(part).padStart(2, "0"))
+    .join("-");
+}
+
+/**
+ * "Available May 15", or "Available now" once the date is today or past. The year shows only when
+ * it is neither this year nor next.
+ */
+export function formatAvailability(isoDate: string, today = todayIso()) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return `Available ${isoDate}`;
+  if (isoDate <= today) return "Available now";
+  const thisYear = Number(today.slice(0, 4));
+  return `Available ${new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-CA", {
+    month: "long",
+    day: "numeric",
+    ...(year === thisYear || year === thisYear + 1 ? {} : { year: "numeric" }),
+    timeZone: "UTC",
+  })}`;
+}
+
 /** A thin inner edge over a photo, so a bright photo keeps its shape on a white or dark page. */
 export function PhotoEdge() {
   return (
@@ -76,26 +110,25 @@ export function PhotoEdge() {
 }
 
 /**
- * Always the count, never feature names, so every card's pill reads the same way. Cards with no
- * features get a muted pill of the same size, so every card has the same structure.
+ * The first accessibility feature by name and a count of the rest, such as "Barrier-free entrance
+ * +2", on one line. The name truncates; the count never does. Cards with none get the muted pill
+ * of the same size, so every card has the same structure.
  */
-function AccessibilitySummary({ count, className }: { count: number; className?: string }) {
+function AccessibilitySummary({ features, className }: { features: string[]; className?: string }) {
+  const [first] = features;
+  const rest = features.length - 1;
   return (
     <div className={cn("flex min-w-0", className)}>
-      <Badge
-        variant={count > 0 ? "default" : "secondary"}
-        className={cn(
-          "h-7 max-w-full gap-1.5 px-2.5 text-xs md:text-sm [&>svg]:size-4!",
-          count === 0 && "bg-muted text-muted-foreground",
-        )}
-      >
-        <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="shrink-0" aria-hidden />
-        <span className="truncate">
-          {count === 0
-            ? "No accessibility info"
-            : `${count} accessibility ${count === 1 ? "feature" : "features"}`}
-        </span>
-      </Badge>
+      {first ? (
+        <AccessibilityBadge>
+          <span className="flex min-w-0">
+            <span className="truncate">{toSentenceCase(first)}</span>
+            {rest > 0 && <span className="shrink-0">&nbsp;+{rest}</span>}
+          </span>
+        </AccessibilityBadge>
+      ) : (
+        <AccessibilityBadge empty>No accessibility info</AccessibilityBadge>
+      )}
     </div>
   );
 }
@@ -117,8 +150,8 @@ function DotSeparated({ items }: { items: ReactNode[] }) {
 }
 
 /**
- * "90 Queen St S, Kitchener · 6h ago". The place's last word, the dot and the time never break
- * apart, so a wrapped line neither starts with the dot nor leaves the time on its own.
+ * "90 Queen St S, Kitchener · Available May 15". The place's last word, the dot and the
+ * availability never break apart, so a wrapped line never starts with the dot.
  */
 function PlaceAndPosted({ place, posted }: { place: string; posted: string }) {
   if (!place) return posted;
@@ -145,6 +178,8 @@ export function ListingsCard({
   baths,
   sqft,
   imageUrl,
+  photoCount = 0,
+  availableOn,
   timeAgo,
   variant = "vertical",
   href,
@@ -153,11 +188,14 @@ export function ListingsCard({
   photoMayNeedSession = false,
 }: ListingsCardProps) {
   const isHorizontal = variant === "horizontal";
-  const featureCount = accessibilityFeatures?.length ?? 0;
   const listingHref = href ?? `/listings/${id}`;
   const displayAddress = city ? `${address}, ${city}` : address;
   const ariaLabel = `View listing: ${title ? `${title} at ${displayAddress}` : displayAddress}`;
-  const posted = formatPostedLabel(timeAgo);
+  const posted = availableOn
+    ? formatAvailability(availableOn)
+    : timeAgo
+      ? formatPostedLabel(timeAgo)
+      : "";
   const overlayClassName =
     "absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/60";
 
@@ -187,7 +225,8 @@ export function ListingsCard({
       className={cn(
         "group relative w-full",
         isHorizontal
-          ? "flex min-h-28 overflow-hidden rounded-xl bg-card text-card-foreground shadow-lg ring-1 ring-foreground/10"
+          ? // Shown floating over the map, so it keeps a shadow under its border.
+            "flex min-h-28 overflow-hidden rounded-xl border bg-card text-card-foreground shadow-lg dark:border-white/15"
           : "flex flex-col gap-3",
       )}
     >
@@ -199,6 +238,14 @@ export function ListingsCard({
       >
         {photo}
         {imageUrl && <PhotoEdge />}
+        {!isHorizontal && photoCount > 1 && (
+          <span
+            aria-hidden
+            className="absolute right-2.5 bottom-2.5 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white max-md:hidden"
+          >
+            1/{photoCount}
+          </span>
+        )}
       </div>
 
       <div
@@ -208,7 +255,7 @@ export function ListingsCard({
         )}
       >
         {/* The name gets its own lines, so it is never cut short by the rent. */}
-        <h3 className="line-clamp-2 text-[17px] leading-snug font-semibold tracking-normal wrap-anywhere text-foreground">
+        <h3 className="line-clamp-2 text-[17px] leading-snug font-bold tracking-[-0.01em] wrap-anywhere text-foreground">
           {heading}
         </h3>
         <p className="mt-0.5 text-xl leading-snug font-bold whitespace-nowrap text-foreground">
@@ -230,7 +277,7 @@ export function ListingsCard({
           </p>
         )}
         <AccessibilitySummary
-          count={featureCount}
+          features={accessibilityFeatures ?? []}
           className={isHorizontal ? "mt-2 hidden sm:flex" : "mt-2.5"}
         />
       </div>

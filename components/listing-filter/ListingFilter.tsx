@@ -1,4 +1,5 @@
 "use client";
+import { AccessibilityMark } from "@/components/ui/accessibility-mark";
 import { Button } from "@/components/ui/button";
 import { DatePicker, DatePickerProps } from "../date-picker/DatePicker";
 import { PriceRangeInput, PriceRangeInputProps } from "../price-range-input/PriceRangeInput";
@@ -50,7 +51,7 @@ export function ListingFilters({
 
   return (
     <div className={cn("w-full max-w-sm border p-4 space-y-6", className)}>
-      <h2 className="text-xl font-semibold">Filters</h2>
+      <h2 className="text-xl font-bold">Filters</h2>
 
       <PriceRangeInput {...priceRangeProps} />
 
@@ -61,7 +62,10 @@ export function ListingFilters({
 
       {dynamicGroups.length > 0 && (
         <div ref={accessibilityRef} className="scroll-mt-4 space-y-1">
-          <h3 className="text-sm font-medium">Accessibility features</h3>
+          <h3 className="flex items-center gap-2 text-sm font-medium">
+            <AccessibilityMark size="sm" />
+            Accessibility features
+          </h3>
           <FeatureAccordion
             groups={dynamicGroups}
             getCheckboxProps={getFeatureCheckboxProps}

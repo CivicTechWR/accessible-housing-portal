@@ -1,7 +1,7 @@
 "use client";
 
 import type { DragEvent } from "react";
-import { ArrowDown01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,6 @@ export function CustomListingFieldsTable({
   onClearSelection,
   onOpenBulkEdit,
   onSort,
-  onExpandCategory,
   onRowSelectToggle,
   onRowDragStart,
   onRowDragEnd,
@@ -73,7 +72,6 @@ export function CustomListingFieldsTable({
   onClearSelection: () => void;
   onOpenBulkEdit: () => void;
   onSort: (sortKey: SortKey) => void;
-  onExpandCategory: (category: string) => void;
   onRowSelectToggle: (fieldId: string, shiftKey: boolean) => void;
   onRowDragStart: (
     event: DragEvent<HTMLButtonElement>,
@@ -163,7 +161,7 @@ export function CustomListingFieldsTable({
         ) : null}
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="overflow-x-auto">
           <div
             className={cn(
@@ -213,15 +211,17 @@ export function CustomListingFieldsTable({
               displayGroups.map((group) => {
                 return (
                   <div key={group.category}>
-                    <div className="flex h-11 items-center gap-2 border-b border-border bg-muted/60 px-4">
-                      <h2 className="text-[15px] font-semibold text-foreground">
+                    {/* A heading with space above, rather than a shaded band, so each group
+                        reads as a section of one list. The first group needs no top rule. */}
+                    <div className="flex items-baseline gap-2 border-b border-border px-4 pt-8 pb-2.5 [:not(:first-child)>&]:border-t">
+                      <h2 className="text-[15px] font-bold text-foreground">
                         {toSentenceCase(group.label)}
                       </h2>
                       <span className="text-sm text-muted-foreground">
                         {group.fields.length} {group.fields.length === 1 ? "field" : "fields"}
                       </span>
                     </div>
-                    {group.visibleFields.map((field, index) => (
+                    {group.fields.map((field, index) => (
                       <div key={field.id}>
                         {dropIndicator?.category === group.category &&
                         dropIndicator.insertionIndex === index ? (
@@ -244,25 +244,8 @@ export function CustomListingFieldsTable({
                       </div>
                     ))}
                     {dropIndicator?.category === group.category &&
-                    dropIndicator.insertionIndex === group.visibleFields.length ? (
+                    dropIndicator.insertionIndex === group.fields.length ? (
                       <DropIndicatorLine />
-                    ) : null}
-                    {group.hiddenCount > 0 ? (
-                      <button
-                        type="button"
-                        // pl-15 lines the text up with the Field column: the 48px handle
-                        // column plus the cells' 12px padding.
-                        className="flex h-10 w-full items-center gap-2 border-b border-border pl-15 text-sm font-medium text-primary-text transition-colors hover:bg-muted/30"
-                        onClick={() => onExpandCategory(group.category)}
-                      >
-                        Show more in this category ({group.hiddenCount} more)
-                        <HugeiconsIcon
-                          icon={ArrowDown01Icon}
-                          strokeWidth={2}
-                          className="size-4"
-                          aria-hidden
-                        />
-                      </button>
                     ) : null}
                   </div>
                 );

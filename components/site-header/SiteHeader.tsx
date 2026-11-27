@@ -20,14 +20,14 @@ export async function SiteHeader() {
       <div className="site-container flex h-16 items-center gap-6">
         <Link
           href="/"
-          className="-mx-1 flex items-center gap-2.5 rounded-lg px-1 text-lg font-semibold tracking-tight text-foreground"
+          className="-mx-1 flex items-center gap-2.5 rounded-lg px-1 text-lg font-bold tracking-[-0.02em] text-foreground"
         >
           <BrandMark />
           {siteConfig.name}
         </Link>
 
         {isSignedIn ? (
-          <nav aria-label="Main" className="hidden flex-1 items-center gap-1 lg:flex">
+          <nav aria-label="Main" className="hidden flex-1 items-center gap-1 self-stretch lg:flex">
             <HeaderNavLink href="/listings">Browse listings</HeaderNavLink>
             {canCreateListing ? (
               <HeaderNavLink href="/my-listings" alsoActiveFor={["/listing-form"]}>

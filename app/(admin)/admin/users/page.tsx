@@ -23,6 +23,7 @@ import { findAccountInvites, type AccountInviteRow } from "@/lib/auth/invite-sto
 import { getAccountsService } from "@/lib/accounts/account.service";
 import { cn } from "@/lib/utils";
 import type { AccountListResponse } from "@/shared/schemas/account-management";
+import { OrganizationLine } from "@/components/admin-users/OrganizationLine";
 
 export const metadata: Metadata = {
   title: "Users",
@@ -130,7 +131,7 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
         <table className="w-full table-fixed border-collapse text-left text-sm">
           <caption className="sr-only">Invitations</caption>
           <AccountTableColumns />
-          <thead className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
+          <thead className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Invitee</th>
               <th className="px-4 py-3">Role</th>
@@ -154,12 +155,7 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
                     {invite.email}
                   </p>
                   {invite.organization ? (
-                    <p
-                      className="truncate text-sm text-muted-foreground"
-                      title={invite.organization}
-                    >
-                      {invite.organization}
-                    </p>
+                    <OrganizationLine organization={invite.organization} className="mt-0.5" />
                   ) : null}
                 </td>
                 <td className="px-4 py-3.5">

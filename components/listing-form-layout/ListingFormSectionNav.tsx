@@ -6,8 +6,10 @@ import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 
 import { cn } from "@/lib/utils";
 import { useEdgeFade } from "@/lib/useEdgeFade";
+import { AccessibilityMark } from "@/components/ui/accessibility-mark";
 
-export type ListingFormSectionStatus = "complete" | "incomplete" | "optional";
+/** "recommended" is an empty section that listings should still fill in: accessibility. */
+export type ListingFormSectionStatus = "complete" | "incomplete" | "optional" | "recommended";
 
 export type ListingFormSectionLink = {
   id: string;
@@ -65,6 +67,7 @@ function useActiveSection(ids: string[]) {
  * scrolls sideways with faded edges. From sm every tab has the same 20px status slot, a green
  * check once the section is done and its step number until then, with progress in words
  * underneath. Optional sections that are still empty keep their number; the text says "Optional".
+ * An empty accessibility section shows the yellow accessibility mark instead, at every width.
  */
 export function ListingFormSectionNav({ sections }: { sections: ListingFormSectionLink[] }) {
   const [activeId, setActiveId] = useActiveSection(sections.map((section) => section.id));
@@ -116,10 +119,12 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                     className="size-5 shrink-0 text-emerald-700 max-sm:hidden dark:text-emerald-400"
                     aria-hidden
                   />
+                ) : section.status === "recommended" ? (
+                  <AccessibilityMark size="sm" />
                 ) : (
                   <span
                     aria-hidden
-                    className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground tabular-nums max-sm:hidden"
+                    className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground tabular-nums max-sm:hidden"
                   >
                     {index + 1}
                   </span>

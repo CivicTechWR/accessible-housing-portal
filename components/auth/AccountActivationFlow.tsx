@@ -54,7 +54,7 @@ function ActivationStep({ step, children }: { step: AccountActivationStep; child
             />
           ))}
         </div>
-        <p className="text-base font-medium" aria-live="polite">
+        <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
           Step {number} of 2: {label}
         </p>
       </div>

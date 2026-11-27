@@ -103,9 +103,7 @@ export function FieldEditSheet({
             noValidate
           >
             <SheetHeader className="gap-1 border-b border-border pr-14">
-              <SheetTitle className="text-lg font-semibold">
-                {toSentenceCase(field.label)}
-              </SheetTitle>
+              <SheetTitle className="text-lg font-bold">{toSentenceCase(field.label)}</SheetTitle>
               <SheetDescription>
                 Edit how this field appears on listings and filters.
               </SheetDescription>

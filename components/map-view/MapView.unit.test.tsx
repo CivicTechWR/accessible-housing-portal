@@ -66,6 +66,7 @@ const LISTING: Listing = {
   sqft: 800,
   lat: 43.46,
   lng: -80.52,
+  photoCount: 0,
   timeAgo: "2 days ago",
 };
 

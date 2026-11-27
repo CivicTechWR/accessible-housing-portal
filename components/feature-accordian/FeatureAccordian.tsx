@@ -43,7 +43,7 @@ export function FeatureAccordion({
     >
       {groups.map((group) => (
         <AccordionItem key={group.groupId} value={group.groupId}>
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+          <AccordionTrigger className="text-sm font-medium hover:no-underline">
             {toSentenceCase(group.groupLabel)}
           </AccordionTrigger>
           <AccordionContent>

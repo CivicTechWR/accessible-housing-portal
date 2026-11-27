@@ -17,9 +17,9 @@ async function openListingForm(page: Page) {
 test("below lg, focus moves from the preview card to the preview toggle", async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile", "The Preview tab only shows below lg.");
+  test.skip(testInfo.project.name !== "mobile", "The Preview button only shows below lg.");
   await openListingForm(page);
-  await page.getByRole("tab", { name: "Preview", exact: true }).click();
+  await page.getByRole("button", { name: "Preview", exact: true }).click();
 
   const card = page.getByRole("button", { name: /^View listing:/ });
   const toggle = page.getByRole("button", { name: "Show card preview" });

@@ -81,8 +81,9 @@ export const ListingCardGallery = memo(function ListingCardGallery({
               beds={listing.beds}
               baths={listing.baths}
               sqft={listing.sqft}
-              timeAgo={listing.timeAgo}
+              availableOn={listing.availableOn}
               imageUrl={listing.imageUrl}
+              photoCount={listing.photoCount}
               variant={isFullscreen ? "vertical" : "horizontal"}
             />
           </div>

@@ -255,9 +255,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                 <div className="min-w-0 space-y-1 sm:self-end">
                   {/* The chip gets its own line so the title can use the full width to wrap. */}
                   <ListingStatusBadge status={listing.status} className="mb-1.5" />
-                  <h2 className="text-base font-semibold text-pretty break-words">
-                    {listing.title}
-                  </h2>
+                  <h2 className="text-base text-pretty break-words">{listing.title}</h2>
                   <p className="truncate text-sm text-muted-foreground">
                     {listingLocation(listing) ?? "Address not set"}
                   </p>
@@ -272,7 +270,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                         </span>
                       ) : (
                         <span key="rent">
-                          <span className="font-semibold">{facts.rent}</span>
+                          <span className="font-bold">{facts.rent}</span>
                           <span className="text-muted-foreground">{RENT_PERIOD}</span>
                         </span>
                       ),
@@ -311,13 +309,12 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   ) : (
                     <>
                       {listing.status === "published" ? (
-                        // "New listing" holds the page's one filled button, so Edit is tinted and
-                        // View is outlined.
                         <Button asChild variant="outline" className="max-sm:h-11 max-sm:flex-1">
                           <Link href={listing.viewUrl}>View</Link>
                         </Button>
                       ) : null}
-                      <Button asChild variant="tinted" className="max-sm:h-11 max-sm:flex-1">
+                      {/* Edit is each listing's main action, so it's the solid button. */}
+                      <Button asChild className="max-sm:h-11 max-sm:flex-1">
                         <Link href={listing.editUrl}>
                           {listing.status === "draft" ? "Resume draft" : "Edit"}
                         </Link>

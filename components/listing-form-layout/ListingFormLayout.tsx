@@ -2,7 +2,7 @@
 
 import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 export interface FormSectionProps {
   /** The section's anchor, used by the section nav. */
@@ -29,17 +29,13 @@ export function FormSection({ id, title, description, headerAside, children }: F
       // to the page's scroll padding in globals.css (5rem below lg, 1rem from lg).
       className={cn(
         "text-card-foreground",
-        "border-b border-border pt-9 pb-8 last-of-type:border-b-0 sm:rounded-xl sm:border-0 sm:bg-card sm:p-6 sm:shadow-xs sm:ring-1 sm:ring-foreground/10",
+        "border-b border-border pt-7 pb-8 last-of-type:border-b-0 sm:rounded-xl sm:border sm:bg-card sm:p-6 sm:last-of-type:border-b",
       )}
     >
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1 space-y-2 sm:space-y-1">
           {/* tabIndex lets the section nav move focus here after scrolling. */}
-          <h2
-            id={headingId}
-            tabIndex={-1}
-            className="text-xl font-semibold outline-none sm:text-lg"
-          >
+          <h2 id={headingId} tabIndex={-1} className="text-xl outline-none sm:text-lg">
             {title}
           </h2>
           {description && (
@@ -64,82 +60,16 @@ export interface ListingFormLayoutProps {
   previewPaneHeader?: ReactNode;
   formContent: ReactNode;
   previewContent?: ReactNode;
-  /** The sticky bar at the bottom of the screen with save state and the primary action. */
+  /** The left of the sticky bar at the bottom of the screen, such as the save state. */
   footer?: ReactNode;
+  /** The sticky bar's main action, at its right edge. Below lg the Preview button sits before it. */
+  footerAction?: ReactNode;
   isPreviewExpanded?: boolean;
 }
 
 type Pane = "form" | "preview";
 
 const PAGE_COLUMN = "mx-auto w-full max-w-5xl";
-
-const PANES: { value: Pane; label: string }[] = [
-  { value: "form", label: "Form" },
-  { value: "preview", label: "Preview" },
-];
-
-/** The Form/Preview switch shown below lg, where only one pane fits. */
-function PaneTabs() {
-  return (
-    <div className="py-2 lg:hidden">
-      <TabsList
-        aria-label="Listing editor view"
-        className="grid h-11 w-full grid-cols-2 gap-1 rounded-lg p-1 group-data-horizontal/tabs:h-11"
-      >
-        {PANES.map(({ value, label }) => (
-          <TabsTrigger key={value} value={value} className="h-9 rounded-md px-4 text-sm">
-            {label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </div>
-  );
-}
-
-/**
- * Below lg the inactive pane is hidden with CSS only. At lg and up both panes show side by side.
- * Panes are force-mounted, so form state and the live preview survive switching tabs.
- */
-function PaneSection({
-  value,
-  hasTabs,
-  className,
-  children,
-}: {
-  value: Pane;
-  hasTabs: boolean;
-  className: string;
-  children: ReactNode;
-}) {
-  if (!hasTabs) {
-    return (
-      <section aria-label={value === "form" ? "Form" : "Preview"} className={className}>
-        {children}
-      </section>
-    );
-  }
-
-  return (
-    // Classes go on TabsContent, not the section: asChild joins class lists without merging them,
-    // so TabsContent's own text-xs would otherwise win over the override.
-    <TabsContent
-      value={value}
-      forceMount
-      asChild
-      // Radix makes panels a tab stop by default. Both panes start with focusable controls, so
-      // the panel itself doesn't need to be one (the ARIA tabs pattern allows this). It also
-      // avoids two invisible tab stops at lg+, where the tab list is hidden.
-      tabIndex={-1}
-      className={cn(
-        className,
-        // Keep the page's base text size instead of TabsContent's text-xs.
-        "text-base/normal data-[state=inactive]:hidden lg:data-[state=inactive]:block",
-      )}
-    >
-      <section>{children}</section>
-    </TabsContent>
-  );
-}
 
 /**
  * Below lg only one pane shows at a time. Both stay mounted, so form state and the live
@@ -154,7 +84,7 @@ function usePaneSwitcher() {
   const switchPane = (pane: Pane) => {
     if (pane === activePane) return;
     scrollPositions.current[activePane] = window.scrollY;
-    // A pane opened for the first time starts at its top, just under the switcher.
+    // A pane opened for the first time starts at the top of the panes.
     const containerTop = (containerRef.current?.getBoundingClientRect().top ?? 0) + window.scrollY;
     pendingScroll.current = scrollPositions.current[pane] ?? Math.min(window.scrollY, containerTop);
     setActivePane(pane);
@@ -190,66 +120,28 @@ export function ListingFormLayout({
   formContent,
   previewContent,
   footer,
+  footerAction,
   isPreviewExpanded = false,
 }: ListingFormLayoutProps) {
   const hasPreview = Boolean(previewContent);
   const { activePane, switchPane, containerRef } = usePaneSwitcher();
+  const isPreviewing = hasPreview && activePane === "preview";
 
   // The same 1024px column as every other page, so the header, footer and page edges line up.
   // The form gets about 670px and the preview 320px, or the other way round when the preview
   // shows the full listing page.
   const gridClassName = cn(
     PAGE_COLUMN,
-    "grid grid-cols-1 gap-8",
+    "grid grid-cols-1 gap-8 lg:items-start",
     hasPreview &&
       (isPreviewExpanded
         ? "lg:grid-cols-[20rem_minmax(0,1fr)]"
         : "lg:grid-cols-[minmax(0,1fr)_20rem]"),
   );
-  const footerBar = footer ? <StickyFooter>{footer}</StickyFooter> : null;
-
-  const panes = (
-    <div className={cn(gridClassName, "lg:items-start")}>
-      <PaneSection value="form" hasTabs={hasPreview} className="min-w-0">
-        <div className="space-y-6">{formContent}</div>
-      </PaneSection>
-
-      {previewContent && (
-        // Sits below the sticky section strip at lg.
-        <PaneSection value="preview" hasTabs className="min-w-0 lg:sticky lg:top-20">
-          {/* On phones the pane is the whole screen, so it drops the card frame. At lg the card
-              ends 16px above the sticky save bar (65px tall): 5rem top + 65px + 1rem. */}
-          <div className="sm:overflow-hidden sm:rounded-xl sm:bg-card sm:shadow-xs sm:ring-1 sm:ring-foreground/10 lg:flex lg:max-h-[calc(100vh-10rem-1px)] lg:flex-col">
-            {previewPaneHeader && (
-              <div className="shrink-0 border-b border-foreground/10 pt-4 pb-3 sm:px-4 sm:pt-3">
-                {previewPaneHeader}
-              </div>
-            )}
-            {/* Scrolls on its own at lg, so the preview stays beside the field being edited. */}
-            <div className="pt-4 sm:p-4 lg:min-h-0 lg:overflow-y-auto">{previewContent}</div>
-          </div>
-        </PaneSection>
-      )}
-    </div>
-  );
-
-  if (!hasPreview) {
-    return (
-      <div className="w-full">
-        {header ? <div className={cn(PAGE_COLUMN, "mb-6")}>{header}</div> : null}
-        {panes}
-        {footerBar}
-      </div>
-    );
-  }
 
   return (
-    <Tabs
+    <div
       ref={containerRef}
-      value={activePane}
-      onValueChange={(value) => {
-        if (value) switchPane(value as Pane);
-      }}
       // globals.css keys the page's scroll padding off this attribute.
       data-listing-form-tabs=""
       // Chrome scrolls a focused textarea only far enough to show the caret, which can leave
@@ -260,21 +152,65 @@ export function ListingFormLayout({
           event.target.scrollIntoView({ block: "nearest" });
         }
       }}
-      className="block w-full"
+      className="w-full"
     >
       {header ? <div className={cn(PAGE_COLUMN, "mb-4 lg:mb-6")}>{header}</div> : null}
-      {/* Pinned to the top: the Form/Preview switch below lg, then the section strip while the
-          form shows. Full bleed, like the site header, with its contents in the page column. */}
-      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background px-4 sm:-mx-6 sm:px-6">
-        <div className={PAGE_COLUMN}>
-          <PaneTabs />
-          {sectionNav ? (
-            <div className={cn(activePane !== "form" && "max-lg:hidden")}>{sectionNav}</div>
-          ) : null}
+      {/* The section strip, pinned to the top while the form shows. Full bleed, like the site
+          header, with its contents in the page column. */}
+      {sectionNav ? (
+        <div
+          className={cn(
+            "sticky top-0 z-20 -mx-4 border-b border-border bg-background px-4 sm:-mx-6 sm:px-6",
+            isPreviewing && "max-lg:hidden",
+          )}
+        >
+          <div className={PAGE_COLUMN}>{sectionNav}</div>
         </div>
+      ) : null}
+      <div className={cn(gridClassName, sectionNav && "sm:pt-6")}>
+        {/* Below lg the inactive pane is hidden with CSS only, so both stay mounted. */}
+        <section aria-label="Form" className={cn("min-w-0", isPreviewing && "max-lg:hidden")}>
+          <div className="space-y-6">{formContent}</div>
+        </section>
+
+        {previewContent && (
+          // Sits below the sticky section strip at lg.
+          <section
+            aria-label="Preview"
+            className={cn("min-w-0 lg:sticky lg:top-20", !isPreviewing && "max-lg:hidden")}
+          >
+            {/* On phones the pane is the whole screen, so it drops the card frame. At lg the card
+                ends 16px above the sticky save bar (65px tall): 5rem top + 65px + 1rem. */}
+            <div className="sm:overflow-hidden sm:rounded-xl sm:border sm:border-border sm:bg-card lg:flex lg:max-h-[calc(100vh-10rem-1px)] lg:flex-col">
+              {previewPaneHeader && (
+                <div className="shrink-0 border-b border-border pt-4 pb-3 sm:px-4 sm:pt-3">
+                  {previewPaneHeader}
+                </div>
+              )}
+              {/* Scrolls on its own at lg, so the preview stays beside the field being edited. */}
+              <div className="pt-4 sm:p-4 lg:min-h-0 lg:overflow-y-auto">{previewContent}</div>
+            </div>
+          </section>
+        )}
       </div>
-      <div className="sm:pt-6">{panes}</div>
-      {footerBar}
-    </Tabs>
+      {footer || footerAction ? (
+        <StickyFooter>
+          {footer}
+          {hasPreview ? (
+            // Below lg only one pane fits, so this button swaps them. Its label names the pane it
+            // opens; a pressed state would contradict the changing label, so it has none.
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 max-sm:h-11 lg:hidden"
+              onClick={() => switchPane(isPreviewing ? "form" : "preview")}
+            >
+              {isPreviewing ? "Edit" : "Preview"}
+            </Button>
+          ) : null}
+          {footerAction}
+        </StickyFooter>
+      ) : null}
+    </div>
   );
 }

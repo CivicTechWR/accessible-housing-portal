@@ -115,7 +115,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: true,
     sortOrder: 1,
     colSpan: 2,
-    helpText: 'Shown first on search results. For example, "Sunny 2-bedroom apartment".',
+    helpText: 'For example, "Sunny 2-bedroom apartment".',
   },
   {
     key: "description",
@@ -184,7 +184,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 8,
-    helpText: "Enter the monthly rent in dollars.",
   },
   {
     key: "depositInfo",
@@ -194,8 +193,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: false,
     sortOrder: 10,
     colSpan: 2,
-    helpText:
-      "Describe any deposits required so tenants know what to expect, such as first and last month's rent.",
+    helpText: "For example, first and last month's rent.",
   },
   {
     key: "leaseTerm",
@@ -215,7 +213,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     sortOrder: 11,
     colSpan: 2,
     helpText:
-      "Select the system that provides most of the unit's heat. Electric resistance includes electric baseboards and electric furnaces.",
+      "The system that heats most of the unit. Electric baseboards and furnaces count as electric resistance.",
     options: HEATING_TYPE_VALUES.map((value) => ({
       label: HEATING_TYPE_LABELS[value],
       value,
@@ -229,7 +227,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: false,
     sortOrder: 12,
     colSpan: 2,
-    helpText: "Select all utilities included in the monthly rent.",
+    helpText: "Included in the monthly rent.",
     options: UTILITY_INCLUDED_VALUES.map((value) => ({
       label: UTILITY_INCLUDED_LABELS[value],
       value,
@@ -327,7 +325,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "application",
     isRequired: false,
     sortOrder: 20,
-    helpText: "A link to your online application form, starting with https://.",
+    helpText: "Starts with https://.",
   },
   {
     key: "applicationEmail",
@@ -336,7 +334,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "application",
     isRequired: false,
     sortOrder: 21,
-    helpText: "Where navigators should email to apply or arrange a viewing.",
   },
   {
     key: "applicationPhone",
@@ -345,7 +342,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "application",
     isRequired: false,
     sortOrder: 22,
-    helpText: "Where navigators should call to apply or arrange a viewing. Format: 519-555-0100.",
+    helpText: "Format: 519-555-0100.",
   },
   {
     key: "applicationInstructions",
@@ -356,6 +353,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     sortOrder: 23,
     colSpan: 2,
     helpText:
-      "Share anything else applicants should know, such as required documents, viewing arrangements, or response times. This appears on the listing as a note from you.",
+      "Such as required documents, viewings or when you reply. Shows on the listing as a note from you.",
   },
 ];

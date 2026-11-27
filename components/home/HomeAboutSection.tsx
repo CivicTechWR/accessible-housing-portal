@@ -1,6 +1,3 @@
-import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-
 import { WALK_SCORE_ATTRIBUTION_URL } from "@/components/listing-details/WalkScore";
 import { homeContent } from "@/content/home";
 import { siteConfig } from "@/lib/site-config";
@@ -11,7 +8,7 @@ const { about } = homeContent;
 export function HomeAboutSection() {
   return (
     <section aria-labelledby="about-title">
-      <h2 id="about-title" className="text-2xl sm:text-3xl">
+      <h2 id="about-title" className="text-[1.75rem] sm:text-4xl">
         Who it&apos;s for
       </h2>
       <p className="mt-5 max-w-3xl text-lg leading-relaxed">
@@ -25,23 +22,15 @@ export function HomeAboutSection() {
         </a>
         {about.rest}
       </p>
-      <p className="mt-6 font-semibold">{about.aimsIntro}</p>
-      <ul role="list" className="mt-3 grid gap-3 md:grid-cols-2 md:gap-16">
+      <p className="mt-6 font-medium">{about.aimsIntro}</p>
+      <ul className="mt-2 max-w-3xl list-disc space-y-1.5 pl-5 text-base leading-relaxed marker:text-muted-foreground">
         {about.aims.map((aim) => (
-          <li key={aim} className="flex gap-3 text-base leading-relaxed">
-            <HugeiconsIcon
-              icon={CheckmarkCircle02Icon}
-              strokeWidth={2}
-              size={22}
-              aria-hidden="true"
-              className="mt-0.5 shrink-0 text-primary-text"
-            />
-            <span>{aim}</span>
-          </li>
+          <li key={aim}>{aim}</li>
         ))}
       </ul>
-      <div className="mt-10 grid gap-6 md:grid-cols-2">
-        <div className="rounded-xl border bg-card p-6 shadow-xs">
+      {/* Two audiences side by side, each under a heavy rule like a sign's header bar. */}
+      <div className="mt-12 grid gap-10 md:grid-cols-2 md:gap-12">
+        <div className="border-t-4 border-primary pt-5">
           <h3 className="text-xl">Housing navigators and case workers</h3>
           <p className="mt-3 text-base leading-relaxed">
             Find units from values-aligned providers in one place, on a map, with filters for
@@ -57,7 +46,7 @@ export function HomeAboutSection() {
             and transit ratings where available, and saved filters and alerts are coming soon.
           </p>
         </div>
-        <div className="rounded-xl border bg-card p-6 shadow-xs">
+        <div className="border-t-4 border-primary pt-5">
           <h3 className="text-xl">Housing providers and developers</h3>
           <p className="mt-3 text-base leading-relaxed">
             Put accessible and affordable units in front of navigators and case workers from trusted

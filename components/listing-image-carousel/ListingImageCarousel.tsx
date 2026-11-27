@@ -177,7 +177,7 @@ export function ListingImageCarousel({
         {images.length > 1 && (
           // Phones swipe between photos, so they get only the counter.
           <div className="pointer-events-none absolute inset-0">
-            <span className="absolute top-3 right-3 rounded-full bg-black/65 px-2.5 py-1 text-[13px] font-medium text-white tabular-nums">
+            <span className="absolute top-3 right-3 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
               {current + 1} / {images.length}
             </span>
             <CarouselPrevious size="icon" className={cn("left-3 max-sm:hidden", arrowClassName)} />

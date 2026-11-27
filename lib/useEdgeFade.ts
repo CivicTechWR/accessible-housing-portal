@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
-const FADE = "2rem";
+const FADE = "3.5rem";
 
 /**
  * Fades the left and right edges of a horizontally scrolling row while there is more content

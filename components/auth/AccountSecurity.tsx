@@ -7,14 +7,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertBanner } from "@/components/ui/alert-banner";
-import { Badge } from "@/components/ui/badge";
+import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Key01Icon } from "@hugeicons/core-free-icons";
 
-/** A card from sm up. On phones, a full-width block with a divider underneath. */
+/**
+ * A card from sm up. On phones, a full-width block with a divider underneath, except the last,
+ * where the footer's top border already divides.
+ */
 const SECTION_CARD =
-  "max-sm:gap-4 max-sm:rounded-none max-sm:border-b max-sm:border-border max-sm:bg-transparent max-sm:py-6 max-sm:shadow-none max-sm:ring-0";
+  "max-sm:gap-4 max-sm:rounded-none max-sm:border-b max-sm:border-border max-sm:bg-transparent max-sm:py-6 max-sm:shadow-none max-sm:ring-0 max-sm:last:border-b-0";
+
+/** Whether a sign-in method is set up, beside its section title. Nothing while it loads. */
+function SetupStatus({ isOn }: { isOn: boolean | undefined }) {
+  if (isOn === undefined) return null;
+  return isOn ? (
+    <StatusBadge tone="success">On</StatusBadge>
+  ) : (
+    <StatusBadge tone="neutral">Not set up</StatusBadge>
+  );
+}
 
 export function AccountSecurity() {
   const { data: session } = authClient.useSession();
@@ -154,8 +167,9 @@ export function AccountSecurity() {
       )}
       <Card className={SECTION_CARD}>
         <CardHeader className="max-sm:px-0">
-          <CardTitle>
+          <CardTitle className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h2 className="text-lg">Passkeys</h2>
+            <SetupStatus isOn={passkeys ? passkeys.length > 0 : undefined} />
           </CardTitle>
           <CardDescription>
             Sign in with your device's screen lock, biometrics, or a security key. Passkeys work
@@ -196,7 +210,9 @@ export function AccountSecurity() {
             </ul>
           ) : null}
           {passkeys?.length === 0 && (
-            <p className="text-sm text-muted-foreground">No passkeys added yet.</p>
+            <p className="flex min-h-14 items-center rounded-lg border border-dashed border-input px-4 text-sm text-muted-foreground">
+              No passkeys yet
+            </p>
           )}
           <form className="space-y-4" onSubmit={addPasskey}>
             <div className="space-y-2">
@@ -206,7 +222,9 @@ export function AccountSecurity() {
                 Name it after the device, such as "Work laptop".
               </p>
             </div>
-            <Button disabled={pending}>Add passkey</Button>
+            <Button variant="outline" disabled={pending}>
+              Add passkey
+            </Button>
           </form>
           {passkeyMessage && (
             <p role="status" className="text-sm">
@@ -217,12 +235,13 @@ export function AccountSecurity() {
       </Card>
       <Card className={SECTION_CARD}>
         <CardHeader className="max-sm:px-0">
-          <CardTitle>
+          <CardTitle className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h2 className="text-lg">Authenticator app</h2>
+            <SetupStatus isOn={session ? Boolean(session.user.twoFactorEnabled) : undefined} />
           </CardTitle>
           <CardDescription>
             {session?.user.twoFactorEnabled
-              ? "Enabled. Password sign-in requires an authenticator or recovery code. Passkey sign-in uses your device's verification."
+              ? "Password sign-in requires an authenticator or recovery code. Passkey sign-in uses your device's verification."
               : "Use an authenticator app to verify password sign-ins."}
           </CardDescription>
         </CardHeader>
@@ -260,7 +279,7 @@ export function AccountSecurity() {
           ) : (
             <Button
               type="button"
-              variant={session?.user.twoFactorEnabled ? "outline" : "default"}
+              variant="outline"
               disabled={pending || !!setup}
               onClick={() => setTwoFactorPasswordOpen(true)}
             >
@@ -311,7 +330,7 @@ export function AccountSecurity() {
           )}
           {backupCodes.length > 0 && (
             <div className="space-y-3 border-t pt-6">
-              <h3 className="text-base font-semibold">Save your recovery codes</h3>
+              <h3 className="text-base">Save your recovery codes</h3>
               <p className="text-sm">
                 Each code works once. Store them somewhere private, separate from your
                 authenticator.

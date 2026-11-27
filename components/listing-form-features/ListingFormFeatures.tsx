@@ -5,7 +5,7 @@ import { listingFormSectionId } from "@/app/listing-form/fieldDefinitions";
 import { useAccessibilityFeaturesQuery } from "@/app/listing-form/useAccessibilityFeaturesQuery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+import { AccessibilityMark } from "@/components/ui/accessibility-mark";
 import { FormField, FormItem } from "@/components/ui/form";
 import {
   Accordion,
@@ -24,7 +24,8 @@ export interface ListingFormFeaturesProps {
 type SelectedFeature = NonNullable<ListingFormInput["customFeatures"]>[number];
 
 const SECTION_TITLE = "Features and accessibility";
-const SECTION_DESCRIPTION = "Turn on each feature or rental condition that applies.";
+const SECTION_DESCRIPTION =
+  "Navigators use these to find homes that fit. Turn on each one that applies.";
 
 function FeatureSwitch({
   label,
@@ -58,16 +59,14 @@ function FeatureSwitch({
     <label
       htmlFor={id}
       className={cn(
-        "flex min-h-11 cursor-pointer items-start gap-3 rounded-r-lg border-l-2 px-3 py-3 transition-colors",
-        // A tinted row with a blue edge makes the few features that are on easy to find among
-        // the many that are off.
-        checked
-          ? "border-primary bg-primary/5 dark:border-primary-text dark:bg-primary-text/10"
-          : "border-transparent hover:bg-muted/50",
+        "flex min-h-11 cursor-pointer items-start gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-muted/50",
       )}
     >
       <span className="min-w-0 flex-1 space-y-0.5">
-        <span id={labelId} className="block text-base font-medium">
+        <span id={labelId} className="flex items-start gap-2 text-base font-medium">
+          {/* The accessibility mark makes the few features that are on easy to find among the
+              many that are off. The switch stays blue because it's the control. */}
+          {checked ? <AccessibilityMark size="sm" className="mt-0.5" /> : null}
           {label}
         </span>
         {definition || quotesPublicText ? (
@@ -111,7 +110,7 @@ function SelectedChips({ names }: { names: string[] }) {
         <span
           key={name}
           title={name}
-          className="min-w-0 truncate rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground"
+          className="min-w-0 truncate rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
         >
           {name}
         </span>
@@ -123,20 +122,18 @@ function SelectedChips({ names }: { names: string[] }) {
   );
 }
 
-/** "N of M selected": plain muted text, or a tinted pill once anything is selected. */
+/** "N of M selected": muted while nothing is selected, then in the text colour. */
 function SelectedCount({ count, total }: { count: number; total?: number }) {
   const text = total === undefined ? `${count} selected` : `${count} of ${total} selected`;
-  if (count === 0) {
-    return (
-      <span className="shrink-0 text-sm font-normal whitespace-nowrap text-muted-foreground">
-        {text}
-      </span>
-    );
-  }
   return (
-    <Badge variant="default" className="shrink-0 font-medium">
+    <span
+      className={cn(
+        "shrink-0 text-sm whitespace-nowrap",
+        count === 0 ? "font-normal text-muted-foreground" : "font-medium text-foreground",
+      )}
+    >
       {text}
-    </Badge>
+    </span>
   );
 }
 
@@ -212,7 +209,9 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
             <FormItem className="col-span-2">
               <Accordion
                 type="multiple"
-                // Every category starts closed; each closed row lists what's on in it.
+                // The first category starts open so the switches are in view; each closed row
+                // lists what's on in it.
+                defaultValue={featureGroups[0] ? [featureGroups[0].groupId] : []}
                 className="overflow-visible rounded-none border-t"
               >
                 {featureGroups.map((group) => {
@@ -226,7 +225,7 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
                       value={group.groupId}
                       className="mb-0 rounded-none border-0 border-b data-[state=open]:bg-transparent"
                     >
-                      <AccordionTrigger className="-mx-2 min-w-0 gap-3 rounded-lg px-2 py-4 text-left text-base font-semibold hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30">
+                      <AccordionTrigger className="-mx-2 min-w-0 gap-3 rounded-lg px-2 py-4 text-left text-base font-medium hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30">
                         <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                           {toSentenceCase(group.groupLabel)}
                           <SelectedChips names={groupSelectedNames} />

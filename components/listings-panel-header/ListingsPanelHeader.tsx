@@ -54,7 +54,7 @@ export function ListingsPanelHeader({
         className,
       )}
     >
-      <p className="min-w-0 truncate text-[15px] font-semibold text-foreground sm:text-lg">
+      <p className="min-w-0 truncate text-[15px] font-bold text-foreground sm:text-lg">
         {listingsSummary({ shown, total, isPartial, isLoading })}
       </p>
       <SortOptionsComponent

@@ -199,7 +199,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
         // The description sits under the title and button so the narrow preview column doesn't
         // squeeze it into a tall stack.
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <h2 className="text-base font-semibold">Live preview</h2>
+          <h2 className="text-base">Live preview</h2>
           <Button
             ref={previewToggleRef}
             type="button"
@@ -230,14 +230,19 @@ export default function ListingForm({ listingId }: ListingFormProps) {
           >
             {/* Sighted users read the asterisks and the section strip's counts. */}
             <p className="sr-only">Fields marked with an asterisk are required.</p>
-            <ListingFormFields control={form.control} />
+            {/* Accessibility comes second, right after the unit itself, so it isn't skipped. */}
+            <ListingFormFields control={form.control} categories={["listing_details"]} />
+            <ListingFormFeatures control={form.control} />
+            <ListingFormFields
+              control={form.control}
+              categories={["property_info", "application"]}
+            />
             <ListingFormImages
               control={form.control}
               listingId={activeListingId}
               activateDraftListing={activateDraftListing}
               prepareDraftListing={prepareDraftListing}
             />
-            <ListingFormFeatures control={form.control} />
           </form>
         </Form>
       }
@@ -274,6 +279,10 @@ export default function ListingForm({ listingId }: ListingFormProps) {
               {submitFeedback.message}
             </p>
           )}
+        </>
+      }
+      footerAction={
+        <>
           {isUpToDate && activeListingId ? (
             <Button asChild variant="outline" className="shrink-0 max-sm:h-11">
               <Link ref={viewListingRef} href={`/listings/${activeListingId}`}>
@@ -324,9 +333,19 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
   });
   const photoCount = values.images?.length ?? 0;
   const featureCount = values.customFeatures?.length ?? 0;
+  const [detailsSection, ...otherCoreSections] = coreSections;
 
   return [
-    ...coreSections,
+    ...(detailsSection ? [detailsSection] : []),
+    {
+      id: listingFormSectionId("features"),
+      label: "Features and accessibility",
+      shortLabel: "Features",
+      meta: featureCount === 0 ? "Recommended" : `${featureCount} selected`,
+      count: featureCount === 0 ? undefined : String(featureCount),
+      status: featureCount === 0 ? "recommended" : "complete",
+    },
+    ...otherCoreSections,
     {
       id: listingFormSectionId("images"),
       label: "Photos",
@@ -334,14 +353,6 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
         photoCount === 0 ? "None yet" : `${photoCount} ${photoCount === 1 ? "photo" : "photos"}`,
       count: String(photoCount),
       status: photoCount > 0 ? "complete" : "incomplete",
-    },
-    {
-      id: listingFormSectionId("features"),
-      label: "Features and accessibility",
-      shortLabel: "Features",
-      meta: featureCount === 0 ? "Optional" : `${featureCount} selected`,
-      count: featureCount === 0 ? undefined : String(featureCount),
-      status: featureCount === 0 ? "optional" : "complete",
     },
   ];
 }
@@ -476,7 +487,7 @@ function SaveState({
       text = `Not saved. ${autosaveStatus.message}`;
       break;
     default:
-      text = isDirty ? null : isSaved ? "All changes saved" : "Your draft saves as you type";
+      text = isDirty ? null : isSaved ? "All changes saved" : "Draft saves as you type";
   }
 
   return (

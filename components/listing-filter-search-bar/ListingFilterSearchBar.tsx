@@ -10,6 +10,7 @@ import {
   MapsIcon,
   Search01Icon,
 } from "@hugeicons/core-free-icons";
+import { AccessibilityMark } from "@/components/ui/accessibility-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -67,18 +68,33 @@ function roomSummary(value: string | null | undefined, noun: string) {
 export const activeFilterClassName =
   "border-transparent bg-primary/10 font-medium text-primary-text hover:bg-primary/15 hover:text-primary-text aria-expanded:bg-primary/15 aria-expanded:text-primary-text dark:border-transparent dark:bg-primary-text/15 dark:hover:bg-primary-text/20";
 
+/**
+ * The Accessibility filter in use keeps its outline and shows the yellow accessibility mark and the
+ * count instead, because yellow marks accessibility information and blue is for the other filters.
+ */
+const activeAccessibilityClassName = "border-foreground/60 dark:border-white/50";
+
 /** The phone quick-filter chips: fully rounded, so the row reads as chips, and 40px tall. */
 const chipClassName = "h-10 shrink-0 rounded-full px-3.5 text-sm";
 
-/** The number of selected options, on a filter button. */
+/** The number of selected accessibility features, beside the yellow mark. */
 function CountBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden
-      className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
+      className="flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-xs font-medium text-background"
     >
       {count}
     </span>
+  );
+}
+
+/** The wheelchair icon, which turns into the yellow mark once features are selected. */
+function AccessibilityIcon({ active }: { active: boolean }) {
+  return active ? (
+    <AccessibilityMark size="sm" />
+  ) : (
+    <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-4" aria-hidden />
   );
 }
 
@@ -105,11 +121,7 @@ function FilterPopover({
         <Button
           variant="outline"
           aria-label={value ? `${label}: ${value}` : undefined}
-          className={cn(
-            "gap-1.5 font-normal",
-            chip && chipClassName,
-            value && activeFilterClassName,
-          )}
+          className={cn("gap-1.5", chip && chipClassName, value && activeFilterClassName)}
         >
           {value ?? label}
           <HugeiconsIcon
@@ -182,9 +194,9 @@ function AccessibilityPopover({ groups, getCheckboxProps, count }: Accessibility
         <Button
           variant="outline"
           aria-label={accessibilityLabel(count)}
-          className={cn("gap-1.5 font-normal max-lg:hidden", count > 0 && activeFilterClassName)}
+          className={cn("gap-1.5 max-lg:hidden", count > 0 && activeAccessibilityClassName)}
         >
-          <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-4" aria-hidden />
+          <AccessibilityIcon active={count > 0} />
           Accessibility
           {count > 0 ? (
             <CountBadge count={count} />
@@ -206,7 +218,7 @@ function AccessibilityPopover({ groups, getCheckboxProps, count }: Accessibility
         <div className="space-y-5 p-4">
           {groups.map((group) => (
             <fieldset key={group.groupId} className="space-y-3">
-              <legend className="mb-3 text-sm font-semibold">
+              <legend className="mb-3 text-sm font-medium text-muted-foreground">
                 {toSentenceCase(group.groupLabel)}
               </legend>
               {group.options.map((option) => {
@@ -271,12 +283,12 @@ export function QuickFilterChips({
         onClick={onAccessibilityClick}
         aria-label={accessibilityLabel(accessibilityCount)}
         className={cn(
-          "gap-1.5 font-normal",
+          "gap-1.5",
           chipClassName,
-          accessibilityCount > 0 && activeFilterClassName,
+          accessibilityCount > 0 && activeAccessibilityClassName,
         )}
       >
-        <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-4" aria-hidden />
+        <AccessibilityIcon active={accessibilityCount > 0} />
         Accessibility
         {accessibilityCount > 0 && <CountBadge count={accessibilityCount} />}
       </Button>

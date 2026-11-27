@@ -53,7 +53,7 @@ describe("ListingDetails rental details", () => {
         heatingType="heat_pump"
         utilitiesIncluded={["water"]}
         leaseTermMonths={12}
-        availableOn="2019-09-01"
+        availableOn={`${new Date().getFullYear() + 3}-09-01`}
         depositInfo="First and last month's rent, refundable"
       />,
     );
@@ -73,7 +73,7 @@ describe("ListingDetails rental details", () => {
     }
     // A date in a year other than this one or next keeps its year.
     within(screen.getByRole("list", { name: "Key facts" })).getByText(
-      "Available September 1, 2019",
+      `Available September 1, ${new Date().getFullYear() + 3}`,
     );
     // The lease term's info button sits inside its label; leave it out to read the label text.
     const labels = screen.getAllByRole("term").map((node) => {
@@ -86,7 +86,7 @@ describe("ListingDetails rental details", () => {
       "Building type",
       "Primary heating type",
       "Utilities included",
-      "Initial lease term",
+      "Lease term",
     ]);
     screen.getByText("Posted 2 days ago");
   });
@@ -96,6 +96,12 @@ describe("ListingDetails rental details", () => {
     render(<ListingDetails {...baseProps} availableOn={`${nextYear}-05-15`} />);
 
     within(screen.getByRole("list", { name: "Key facts" })).getByText("Available May 15");
+  });
+
+  it("shows a move-in date that has passed as available now", () => {
+    render(<ListingDetails {...baseProps} availableOn="2019-09-01" />);
+
+    within(screen.getByRole("list", { name: "Key facts" })).getByText("Available now");
   });
 
   it("explains the initial lease term with the shared definition and a note for searchers", () => {
@@ -115,7 +121,7 @@ describe("ListingDetails rental details", () => {
       /sq ft/,
       "Building type",
       "Primary heating type",
-      "Initial lease term",
+      "Lease term",
       /^Available/,
       "Deposit",
     ]) {

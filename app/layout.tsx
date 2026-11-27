@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Lexend } from "next/font/google";
 import { headers } from "next/headers";
 import { SiteHeader } from "@/components/site-header/SiteHeader";
 import { SiteFooter } from "@/components/site-footer/SiteFooter";
@@ -8,9 +8,10 @@ import { siteConfig } from "@/lib/site-config";
 import { QueryProvider } from "./query-provider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Lexend was drawn to make reading easier: wide letters with open shapes and generous spacing.
+const lexend = Lexend({
+  variable: "--font-lexend",
+  subsets: ["latin", "latin-ext"],
 });
 
 const geistMono = Geist_Mono({
@@ -38,7 +39,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${lexend.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">

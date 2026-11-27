@@ -156,17 +156,15 @@ export function ListingFormImages({
                   void uploadImages(files, images, field.onChange);
                 }}
               >
-                <span className="flex size-11 items-center justify-center rounded-full bg-background shadow-xs ring-1 ring-foreground/10">
-                  <HugeiconsIcon
-                    icon={uploadMutation.isPending ? Loading03Icon : ImageUploadIcon}
-                    strokeWidth={2}
-                    className={cn(
-                      "size-5 text-muted-foreground",
-                      uploadMutation.isPending && "animate-spin",
-                    )}
-                    aria-hidden
-                  />
-                </span>
+                <HugeiconsIcon
+                  icon={uploadMutation.isPending ? Loading03Icon : ImageUploadIcon}
+                  strokeWidth={2}
+                  className={cn(
+                    "size-5 text-muted-foreground",
+                    uploadMutation.isPending && "animate-spin",
+                  )}
+                  aria-hidden
+                />
                 <p className="text-sm font-medium text-foreground">
                   {uploadMutation.isPending ? (
                     "Uploading photos..."
@@ -175,7 +173,7 @@ export function ListingFormImages({
                       Drag photos here or{" "}
                       <button
                         type="button"
-                        className="rounded-sm font-semibold text-primary-text underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none"
+                        className="rounded-sm font-medium text-primary-text underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none"
                         aria-describedby={hintId}
                         onClick={() => inputRef.current?.click()}
                       >
@@ -221,7 +219,7 @@ export function ListingFormImages({
                     return (
                       <li
                         key={`${image.url}-${index}`}
-                        className="overflow-hidden rounded-lg bg-background ring-1 ring-foreground/10"
+                        className="overflow-hidden rounded-xl border border-border bg-background"
                       >
                         <div className="relative aspect-[3/2] bg-muted">
                           <img

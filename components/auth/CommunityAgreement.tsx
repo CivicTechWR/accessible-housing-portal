@@ -21,7 +21,7 @@ export function CommunityAgreement({ onAccept }: CommunityAgreementProps) {
       description={`Read the agreement below, then confirm to continue setting up your ${siteConfig.name} account.`}
       className="max-w-3xl"
     >
-      <CommunityAgreementTerms />
+      <CommunityAgreementTerms showClosing={false} />
 
       {/* Stays at the bottom of the screen while the terms scroll past, so the next step is
           always in view. */}

@@ -13,9 +13,7 @@ export default function CommunityAgreementPage() {
     <main className="bg-background px-4 py-12 sm:px-6 sm:py-16">
       <article className="mx-auto max-w-2xl space-y-10">
         <header className="space-y-3 border-b pb-8">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Community agreement and terms of use
-          </h1>
+          <h1 className="text-3xl sm:text-4xl">Community agreement and terms of use</h1>
         </header>
         <CommunityAgreementTerms />
       </article>

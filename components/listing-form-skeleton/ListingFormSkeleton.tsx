@@ -13,9 +13,9 @@ export function ListingFormSkeleton() {
         </div>
       }
       sectionNav={
-        <div className="space-y-2">
+        <div className="flex gap-2 overflow-hidden py-1.5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
+            <Skeleton key={i} className="h-8 w-32 shrink-0" />
           ))}
         </div>
       }
@@ -33,8 +33,8 @@ export function ListingFormSkeleton() {
           ))}
         </>
       }
-      previewContent={<Skeleton className="h-[520px] w-full rounded-lg" />}
-      footer={<Skeleton className="h-10 w-32" />}
+      previewContent={<Skeleton className="h-[520px] w-full rounded-xl" />}
+      footerAction={<Skeleton className="h-10 w-32" />}
     />
   );
 }

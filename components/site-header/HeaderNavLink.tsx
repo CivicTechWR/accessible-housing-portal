@@ -24,8 +24,11 @@ export function HeaderNavLink({ href, children, alsoActiveFor = [] }: HeaderNavL
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-        isActive && "bg-muted text-foreground",
+        // The link fills the header's height so the current page's bar sits on the header's bottom edge.
+        "relative inline-flex h-16 items-center px-3 text-[0.9375rem] font-medium text-muted-foreground transition-colors hover:text-foreground",
+        "after:absolute after:inset-x-3 after:-bottom-px after:h-[3px] after:rounded-t-sm after:bg-transparent hover:after:bg-border",
+        isActive &&
+          "text-foreground after:bg-primary hover:after:bg-primary dark:after:bg-primary-text",
       )}
     >
       {children}

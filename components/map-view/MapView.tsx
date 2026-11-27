@@ -88,29 +88,44 @@ export function groupOverlappingPins(
 }
 
 /**
- * Price pins are light in both themes, so they read the same way on the pale and the dark basemap.
- * In light mode a dark hairline keeps a white pin visible on the near-white ground.
- * Clusters are brand blue with white text, so "3 homes" never looks like a price. The hovered,
- * highlighted or selected price turns brand blue in light mode, and gets a white ring in dark mode,
- * where a blue pill would sink into the dark ground.
+ * Price pins are light in both themes, so they read the same way on the pale and the dark basemap,
+ * with a hairline edge and a shadow, since they float over the map. Clusters are signage blue with
+ * white text, so "3 homes" never looks like a price. The hovered or selected price turns blue in
+ * light mode and gets a ring in dark mode, where a blue pill would sink into the dark ground. The
+ * pin of the card being hovered in the list keeps its colours and gains a 2px blue ring.
  */
 const pillClassName =
-  "flex h-8 items-center rounded-full border px-3 text-sm font-semibold whitespace-nowrap transition-[transform,background-color,color,border-color,box-shadow] group-focus-visible:ring-3 group-focus-visible:ring-ring";
+  "flex h-8 items-center rounded-full border px-3 text-sm font-medium whitespace-nowrap transition-[transform,background-color,color,border-color,box-shadow] group-focus-visible:ring-3 group-focus-visible:ring-ring";
 
 const restingPrice =
-  "border-[rgba(17,24,39,0.35)] bg-white text-[#09090B] shadow-[0_2px_8px_rgba(0,0,0,0.18)] dark:border-transparent dark:bg-[#F4F4F5] dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
+  "border-black/10 bg-white text-[#15171b] shadow-[0_2px_8px_rgba(0,0,0,0.18)] dark:border-white/15 dark:bg-[#F4F4F5] dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
 
-const emphasisedPrice =
-  "scale-105 border-primary bg-primary text-white dark:scale-110 dark:border-transparent dark:bg-[#F4F4F5] dark:text-[#09090B] dark:ring-2 dark:ring-white";
+const selectedPrice =
+  "scale-105 border-primary bg-primary text-white dark:scale-110 dark:border-white/15 dark:bg-[#F4F4F5] dark:text-[#15171b] dark:ring-2 dark:ring-white";
+
+const highlightedPrice = "scale-105 ring-2 ring-primary dark:ring-primary-text";
 
 const hoverPrice =
-  "group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-white dark:group-hover:scale-110 dark:group-hover:border-transparent dark:group-hover:bg-[#F4F4F5] dark:group-hover:text-[#09090B] dark:group-hover:ring-2 dark:group-hover:ring-white";
+  "group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-white dark:group-hover:scale-110 dark:group-hover:border-white/15 dark:group-hover:bg-[#F4F4F5] dark:group-hover:text-[#15171b] dark:group-hover:ring-2 dark:group-hover:ring-white";
 
 const clusterPill =
-  "border-primary bg-primary text-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] group-hover:scale-105 dark:border-transparent dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
+  "border-black/10 bg-primary text-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] group-hover:scale-105 dark:border-white/15 dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
 
 /** A cluster holding the hovered card's listing grows and gets a ring in the text colour. */
 const emphasisedCluster = "scale-110 ring-2 ring-foreground";
+
+/** Room around the outermost pins when the map fits the results, and how close it may zoom. */
+const FIT_OPTIONS = { padding: 64, maxZoom: 14 } as const;
+
+function resultBounds(listings: MappableListing[]): [[number, number], [number, number]] | null {
+  if (listings.length === 0) return null;
+  const lngs = listings.map((l) => l.lng);
+  const lats = listings.map((l) => l.lat);
+  return [
+    [Math.min(...lngs), Math.min(...lats)],
+    [Math.max(...lngs), Math.max(...lats)],
+  ];
+}
 
 /** Zooms the map in or out by one step. 40px, in the map's top-right corner. */
 function ZoomControls({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -191,8 +206,9 @@ function SelectedListing({
         beds={listing.beds}
         baths={listing.baths}
         sqft={listing.sqft}
-        timeAgo={listing.timeAgo}
+        availableOn={listing.availableOn}
         imageUrl={listing.imageUrl}
+        photoCount={listing.photoCount}
         variant={variant}
       />
       {/* A 44px touch target around a smaller visible circle. */}
@@ -249,17 +265,29 @@ export const MapView = memo(function MapView({
   // Opens on the results, with room around the outermost pins so none sits against an edge.
   // Read once, when the map mounts.
   const [initialView] = useState(() => {
-    if (mappableListings.length === 0) return DEFAULT_VIEW;
-    const lngs = mappableListings.map((l) => l.lng);
-    const lats = mappableListings.map((l) => l.lat);
-    return {
-      bounds: [
-        [Math.min(...lngs), Math.min(...lats)],
-        [Math.max(...lngs), Math.max(...lats)],
-      ] as [[number, number], [number, number]],
-      fitBoundsOptions: { padding: 80, maxZoom: 14 },
-    };
+    const bounds = resultBounds(mappableListings);
+    return bounds ? { bounds, fitBoundsOptions: FIT_OPTIONS } : DEFAULT_VIEW;
   });
+
+  // Refits when the results change, such as after a filter change or as more pages load, but not
+  // when the reader pans or zooms. The ids say whether the results changed: a refetch returns new
+  // objects for the same listings.
+  const resultsKey = useMemo(() => mappableListings.map((l) => l.id).join(","), [mappableListings]);
+  const fittedResultsKey = useRef(resultsKey);
+  const fitToResults = useCallback(
+    (duration: number) => {
+      const map = mapRef.current;
+      if (!map || fittedResultsKey.current === resultsKey) return;
+      fittedResultsKey.current = resultsKey;
+      const bounds = resultBounds(mappableListings);
+      if (bounds) map.fitBounds(bounds, { ...FIT_OPTIONS, duration });
+    },
+    [mappableListings, resultsKey],
+  );
+
+  useEffect(() => {
+    fitToResults(600);
+  }, [fitToResults]);
 
   const selectedListing = useMemo(
     () => mappableListings.find((l) => l.id === selectedId) ?? null,
@@ -288,8 +316,10 @@ export const MapView = memo(function MapView({
       // Switching theme swaps the whole style, which drops the overrides.
       map.on("style.load", () => applyMapStyleOverrides(map, isDarkRef.current));
     }
+    // The results may have changed while the map was loading.
+    fitToResults(0);
     regroupPins();
-  }, [regroupPins]);
+  }, [fitToResults, regroupPins]);
 
   const zoomToCluster = useCallback((group: PinGroup) => {
     const map = mapRef.current;
@@ -418,7 +448,7 @@ export const MapView = memo(function MapView({
             }
             const listing = group.listings[0] as MappableListing;
             const selected = selectedId === listing.id;
-            const emphasised = selected || highlightedId === listing.id;
+            const highlighted = !selected && highlightedId === listing.id;
             return (
               <Marker
                 key={listing.id}
@@ -454,7 +484,9 @@ export const MapView = memo(function MapView({
                   <span
                     className={cn(
                       pillClassName,
-                      emphasised ? emphasisedPrice : cn(restingPrice, hoverPrice),
+                      selected
+                        ? selectedPrice
+                        : cn(restingPrice, hoverPrice, highlighted && highlightedPrice),
                     )}
                   >
                     {formatRent(listing.price)}

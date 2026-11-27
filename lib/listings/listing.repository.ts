@@ -125,6 +125,7 @@ export async function findListingSummaries(input: {
       squareFeet: listings.squareFeet,
       customFields: listings.customFields,
       unitNumber: listings.unitNumber,
+      availableOn: listings.availableOn,
       publishedAt: listings.publishedAt,
       createdAt: listings.createdAt,
       street1: properties.street1,

@@ -20,16 +20,14 @@ export function SiteFooter({ className }: { className?: string }) {
     <footer
       className={cn(
         "border-t bg-muted/50 text-sm dark:bg-background",
-        // Short pages such as sign-in render [data-compact-footer]; they keep only the bottom line.
+        // Sign-in and signed-in app pages render [data-compact-footer]; they keep only the bottom line.
         "peer-has-[[data-compact-footer]]/shell:[&>.footer-main]:hidden",
-        // Signed-in pages keep only the bottom line on phones, where the full footer is a screen long.
-        "max-sm:peer-has-[[data-compact-footer-mobile]]/shell:[&>.footer-main]:hidden",
         className,
       )}
     >
       <div className="footer-main site-container grid grid-cols-1 gap-x-6 gap-y-4 py-8 sm:grid-cols-2 sm:gap-y-8 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="space-y-3 sm:col-span-2 md:col-span-1">
-          <p className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-foreground">
+          <p className="flex items-center gap-2.5 text-base font-bold tracking-[-0.02em] text-foreground">
             <BrandMark className="size-7" />
             {siteConfig.name}
           </p>
@@ -56,7 +54,7 @@ export function SiteFooter({ className }: { className?: string }) {
           </p>
         </div>
         <nav aria-labelledby="footer-site-map" className="space-y-3 max-sm:space-y-0">
-          <h2 id="footer-site-map" className="text-sm font-semibold text-foreground max-sm:sr-only">
+          <h2 id="footer-site-map" className="text-sm font-bold text-foreground max-sm:sr-only">
             Site map
           </h2>
           <ul className="flex flex-wrap gap-x-5 gap-y-2 sm:block sm:space-y-2">
@@ -70,7 +68,7 @@ export function SiteFooter({ className }: { className?: string }) {
           </ul>
         </nav>
         <div className="min-w-0 space-y-3 max-sm:space-y-0">
-          <h2 className="text-sm font-semibold text-foreground max-sm:sr-only">Get in touch</h2>
+          <h2 className="text-sm font-bold text-foreground max-sm:sr-only">Get in touch</h2>
           <ul className="flex flex-wrap gap-x-5 gap-y-2 sm:block sm:space-y-2">
             <li>
               <a

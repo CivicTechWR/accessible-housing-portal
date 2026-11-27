@@ -11,7 +11,7 @@ export default function ListingNotFound() {
         <span className="mx-auto mb-4 flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <HugeiconsIcon icon={PropertySearchIcon} strokeWidth={2} className="size-5" aria-hidden />
         </span>
-        <h1 className="text-xl font-semibold sm:text-2xl">Listing not found</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">Listing not found</h1>
         <p className="mt-2 text-base text-muted-foreground">
           This listing doesn&apos;t exist or is no longer available.
         </p>

@@ -30,8 +30,12 @@ import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
 import { cn } from "@/lib/utils";
 import { formatNumberInput, parseNumberInput, stripLeadingZeros } from "./numberInput";
 
+type CoreFieldCategoryKey = (typeof CORE_FIELD_CATEGORIES)[number]["key"];
+
 export interface ListingFormFieldsProps {
   control: ListingFormControl;
+  /** The sections to render, in their usual order. Defaults to every core section. */
+  categories?: readonly CoreFieldCategoryKey[];
 }
 
 /** The field's columns in its section's two-column grid, or in its row of three. */
@@ -264,8 +268,11 @@ function groupRowsOfThree(fields: CoreFieldDefinition[]) {
   return items;
 }
 
-export function ListingFormFields({ control }: ListingFormFieldsProps) {
-  const fieldsByCategory = CORE_FIELD_CATEGORIES.map((cat) => ({
+export function ListingFormFields({ control, categories }: ListingFormFieldsProps) {
+  const shownCategories = CORE_FIELD_CATEGORIES.filter(
+    (cat) => !categories || categories.includes(cat.key),
+  );
+  const fieldsByCategory = shownCategories.map((cat) => ({
     ...cat,
     fields: CORE_FIELD_DEFINITIONS.filter((f) => f.category === cat.key).sort(
       (a, b) => a.sortOrder - b.sortOrder,

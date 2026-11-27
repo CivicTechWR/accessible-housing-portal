@@ -57,7 +57,7 @@ export function WalkScore({ score, address }: WalkScoreProps) {
             <h3 className="text-sm font-medium tracking-normal text-muted-foreground group-hover:underline">
               {rating.title}
             </h3>
-            <p className="text-2xl font-semibold tracking-normal tabular-nums">{rating.score}</p>
+            <p className="text-2xl font-bold tracking-normal tabular-nums">{rating.score}</p>
             <p className="text-sm text-foreground">{rating.description}</p>
           </div>
         ))}

@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { OrganizationLine } from "./OrganizationLine";
 
 const PAGE_SIZE = 25;
 
@@ -183,7 +184,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
             <table className="w-full table-fixed border-collapse text-left text-sm">
               <caption className="sr-only">Users</caption>
               <AccountTableColumns />
-              <thead className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
+              <thead className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">User</th>
                   <th className="px-4 py-3">Role</th>
@@ -215,14 +216,11 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                         >
                           {account.email ?? "No email"}
                         </span>
-                        {/* One line, never broken at a hyphen ("Co-op"). */}
                         {account.organization ? (
-                          <span
-                            className="truncate text-sm text-muted-foreground"
-                            title={account.organization}
-                          >
-                            {account.organization}
-                          </span>
+                          <OrganizationLine
+                            organization={account.organization}
+                            className="mt-0.5"
+                          />
                         ) : null}
                       </div>
                     </td>
@@ -265,14 +263,11 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                   >
                     {account.email ?? "No email"}
                   </span>
-                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-sm text-muted-foreground">
+                  {account.organization ? (
+                    <OrganizationLine organization={account.organization} />
+                  ) : null}
+                  <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-sm text-muted-foreground">
                     {account.role ? <RoleLabel role={account.role} /> : null}
-                    {account.organization ? (
-                      <>
-                        <span aria-hidden>·</span>
-                        <span className="min-w-0 truncate">{account.organization}</span>
-                      </>
-                    ) : null}
                     <AccountStatusText status={account.status} />
                   </p>
                 </div>

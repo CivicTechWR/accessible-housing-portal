@@ -73,7 +73,7 @@ export function HeaderMobileMenu({
           }}
           className="gap-4 bg-background p-4 pt-5 data-[side=right]:w-[min(20rem,calc(100vw-3rem))] [&>[data-slot=sheet-close]]:top-3 [&>[data-slot=sheet-close]]:right-3 [&>[data-slot=sheet-close]]:size-11 [&>[data-slot=sheet-close]]:rounded-lg [&>[data-slot=sheet-close]_svg]:size-5"
         >
-          <SheetTitle className="px-3 text-lg font-semibold">Menu</SheetTitle>
+          <SheetTitle className="px-3 text-lg font-bold">Menu</SheetTitle>
           <SheetDescription className="sr-only">
             Site navigation and account options
           </SheetDescription>

@@ -10,10 +10,11 @@ import {
   Mail01Icon,
   PencilEdit01Icon,
   Tick02Icon,
-  WheelchairIcon,
 } from "@hugeicons/core-free-icons";
 
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
+import { formatAvailability } from "../listings-card/ListingsCard";
+import { AccessibilityMark } from "@/components/ui/accessibility-mark";
 import { Button } from "../ui/button";
 import { AppPageShell, PageHeader, pageWidths } from "@/components/page-shell/AppPageShell";
 import { buildAddress } from "@/lib/address";
@@ -97,13 +98,13 @@ export interface ListingDetailProps {
 const CONTACT_SECTION_ID = "listing-contact";
 
 /**
- * The contact card in the desktop sidebar, the page's only card. Phones and the form preview show
- * the same content as a plain section.
+ * The contact card in the desktop sidebar. Phones and the form preview show the same content as a
+ * plain section.
  */
 const contactCardClassName =
-  "lg:rounded-xl lg:border lg:bg-card lg:p-6 lg:text-card-foreground lg:shadow-sm lg:dark:border-white/12";
+  "lg:rounded-xl lg:border lg:bg-card lg:p-6 lg:text-card-foreground lg:dark:border-white/12";
 
-/** Rent at 28px in the contact card; `className` can size it down, as the phone bottom bar does. */
+/** Rent at 28px; `className` can size it down, as the phone bottom bar does. */
 function Price({ price, className }: { price: number; className?: string }) {
   return (
     <span
@@ -115,22 +116,6 @@ function Price({ price, className }: { price: number; className?: string }) {
   );
 }
 
-/**
- * "Available May 15", so the date reads as a move-in date even in a half-width cell. The year
- * shows only when it is neither this year nor next.
- */
-function availableLabel(isoDate: string) {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  if (!year || !month || !day) return `Available ${isoDate}`;
-  const thisYear = new Date().getFullYear();
-  return `Available ${new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-CA", {
-    month: "long",
-    day: "numeric",
-    ...(year === thisYear || year === thisYear + 1 ? {} : { year: "numeric" }),
-    timeZone: "UTC",
-  })}`;
-}
-
 function FeatureItem({ feature }: { feature: ListingFeature }) {
   // The listings API sends a feature's name as its description when it has none.
   const featureDescription = feature.description.trim();
@@ -140,13 +125,13 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
       <HugeiconsIcon
         icon={Tick02Icon}
         strokeWidth={2}
-        className="mt-0.5 size-5 shrink-0 text-primary-text"
+        className="mt-0.5 size-5 shrink-0 text-foreground"
         aria-hidden
       />
       <div className="min-w-0">
-        <p className="text-base font-semibold text-foreground">{toSentenceCase(feature.name)}</p>
+        <p className="text-base font-medium text-foreground">{toSentenceCase(feature.name)}</p>
         {hasDescription && (
-          <p className="mt-0.5 max-w-prose text-base text-foreground/80">{featureDescription}</p>
+          <p className="mt-0.5 max-w-prose text-base text-foreground">{featureDescription}</p>
         )}
       </div>
     </li>
@@ -154,7 +139,8 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
 }
 
 /**
- * The most important block after the photos, and the page's one tinted panel. Features sit under
+ * The most important block after the photos, and the page's signature: a card with a strip of
+ * tactile yellow along its top edge and the accessibility mark by its heading. Features sit under
  * a small muted label for their category.
  */
 function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
@@ -164,13 +150,12 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
   return (
     <section
       aria-labelledby={headingId}
-      className="rounded-xl bg-primary/5 p-5 sm:p-6 dark:bg-primary-text/10"
+      className="relative overflow-hidden rounded-xl border bg-card p-5 pt-[26px] text-card-foreground sm:p-6 sm:pt-[30px] dark:border-white/12"
     >
+      <span aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-signal" />
       <div className="mb-5 flex items-center gap-3">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-5" aria-hidden />
-        </span>
-        <h2 id={headingId} className="min-w-0 text-[22px] leading-7 font-semibold tracking-tight">
+        <AccessibilityMark size="lg" />
+        <h2 id={headingId} className="min-w-0 text-[22px] leading-7 font-bold">
           Accessibility features
         </h2>
         {count > 0 && (
@@ -187,7 +172,7 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
             .filter((category) => category.features.length > 0)
             .map((category) => (
               <div key={category.categoryName}>
-                <h3 className="mb-3 text-xs font-semibold tracking-normal text-muted-foreground">
+                <h3 className="mb-3 text-sm font-medium tracking-normal text-muted-foreground">
                   {toSentenceCase(category.categoryName)}
                 </h3>
                 {/* Safari drops list semantics from a list without markers unless the role is set. */}
@@ -218,7 +203,7 @@ function Section({
 }) {
   return (
     <section aria-labelledby={id} className={cn("border-t pt-10 pb-8", className)}>
-      <h2 id={id} className="mb-3 text-[22px] leading-7 font-semibold tracking-tight">
+      <h2 id={id} className="mb-3 text-[22px] leading-7 font-bold">
         {title}
       </h2>
       {children}
@@ -306,14 +291,14 @@ export function ListingDetails({
   const heading = title || address;
   const trimmedDescription = description?.trim();
 
-  // Rent is in the contact card on desktop and in the bottom bar on phones. The embedded preview
-  // has neither, so rent joins the facts there.
+  // Rent is on the title row and in the contact card on desktop, and in the bottom bar below
+  // `lg`. The embedded preview has none of these, so rent joins the facts there.
   const keyFacts = [
     { key: "beds", icon: BedDoubleIcon, label: formatBeds(beds) },
     { key: "baths", icon: Bathtub01Icon, label: formatBaths(baths) },
     ...(sqft !== null ? [{ key: "area", icon: FloorPlanIcon, label: formatArea(sqft) }] : []),
     ...(availableOn
-      ? [{ key: "available", icon: Calendar03Icon, label: availableLabel(availableOn) }]
+      ? [{ key: "available", icon: Calendar03Icon, label: formatAvailability(availableOn) }]
       : []),
   ];
   const trimmedDeposit = depositInfo?.trim();
@@ -355,7 +340,7 @@ export function ListingDetails({
     ...(leaseTermMonths
       ? [
           {
-            label: "Initial lease term",
+            label: "Lease term",
             value: `${leaseTermMonths}-month lease`,
             info: {
               label: HOUSING_DEFINITIONS.leaseTerm.label,
@@ -422,6 +407,9 @@ export function ListingDetails({
   const header = (
     <div className="space-y-4">
       <PageHeader
+        // Below `lg` the rent moves to the bottom bar; without an Edit button the actions row
+        // would be left empty, so it is hidden there.
+        className={cn(!editUrl && "max-lg:[&>div+div]:hidden")}
         title={<span className="wrap-anywhere">{heading}</span>}
         description={
           title || posted ? (
@@ -438,13 +426,19 @@ export function ListingDetails({
           ) : undefined
         }
         actions={
-          editUrl ? (
-            <Button asChild variant="outline">
-              <Link href={editUrl}>
-                <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
-                Edit listing
-              </Link>
-            </Button>
+          editUrl || !embedded ? (
+            <>
+              {editUrl && (
+                <Button asChild variant="outline">
+                  <Link href={editUrl}>
+                    <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
+                    Edit listing
+                  </Link>
+                </Button>
+              )}
+              {/* Desktop shows rent on the title row. Below `lg` it is in the bottom bar. */}
+              {!embedded && <Price price={price} className="order-first mr-2 max-lg:hidden" />}
+            </>
           ) : undefined
         }
       />
@@ -565,21 +559,18 @@ export function ListingDetails({
       aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
       className={cn(
         "order-2 min-w-0 scroll-mt-6 border-t pt-10 pb-8",
-        // Sticky on desktop, so rent and Apply follow the reader down the page. The site header
-        // isn't sticky, so the card can stick close to the top.
+        // Sticky on desktop, so rent and Apply follow the reader down the page, clear of the site
+        // header's height.
         twoColumns && "lg:sticky lg:top-6 lg:border-t-0 lg:py-0",
       )}
     >
       <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
-        {/* Desktop leads with rent, over Apply; it is the only place rent shows there. Phones
-            have it in the bottom bar. */}
+        {/* Desktop leads with rent, over Apply, so it stays in view with Apply after the title
+            scrolls away. Phones have it in the bottom bar. */}
         {twoColumns && <Price price={price} className="block max-lg:hidden" />}
         <h2
           id={`${CONTACT_SECTION_ID}-heading`}
-          className={cn(
-            "text-[22px] leading-7 font-semibold tracking-tight",
-            twoColumns && "lg:sr-only",
-          )}
+          className={cn("text-[22px] leading-7 font-bold", twoColumns && "lg:sr-only")}
         >
           Contact and applications
         </h2>
@@ -605,7 +596,7 @@ export function ListingDetails({
                     heading shows (phones and the form preview), so it's hidden there. */}
                 <h3
                   className={cn(
-                    "text-sm font-semibold tracking-normal",
+                    "text-sm font-medium tracking-normal",
                     allContactMethodsShared && (embedded ? "sr-only" : "max-lg:sr-only"),
                   )}
                 >
@@ -646,7 +637,7 @@ export function ListingDetails({
             )}
             {applicationRows.length > 0 && (
               <section className={cn("min-w-0 space-y-3", hasContactDetails && "border-t pt-5")}>
-                <h3 className="text-sm font-semibold tracking-normal">Applications</h3>
+                <h3 className="text-sm font-medium tracking-normal">Applications</h3>
                 <dl className="space-y-2">
                   {applicationRows.map((row) => (
                     <div key={row.label} className="min-w-0">
@@ -678,22 +669,21 @@ export function ListingDetails({
 
   const body = (
     <div className={cn("mx-auto flex w-full flex-col gap-6 sm:gap-8", pageWidths.content)}>
-      {/* On phones this wrapper dissolves, so the back link can sit above the photos, which come
-          before the title there. Its row is just the link's 44px: the negative margins cancel the
-          page's top padding and the gap before the photos. */}
-      <div className={cn("flex flex-col gap-2", hasPhotos && !embedded && "max-sm:contents")}>
-        {!embedded && (
-          <BackToResults
-            className={cn(hasPhotos && "max-sm:order-first max-sm:-mt-8 max-sm:-mb-6")}
-          />
-        )}
+      <div className="flex flex-col gap-2">
+        {/* Phones with photos get the link over the first photo instead. */}
+        {!embedded && <BackToResults className={cn(hasPhotos && "max-sm:hidden")} />}
         {header}
       </div>
       {hasPhotos && (
         // Phones show the photos before the title, edge to edge, by cancelling the page shell's
-        // padding.
-        <div className={cn(!embedded && "max-sm:order-first max-sm:-mx-4")}>
+        // padding, with a compact back link over the top-left corner.
+        <div
+          className={cn("relative", !embedded && "max-sm:order-first max-sm:-mx-4 max-sm:-mt-8")}
+        >
           <ListingImageCarousel images={images} altPrefix={address} edgeToEdge={!embedded} />
+          {!embedded && (
+            <BackToResults className="absolute top-3 left-3 z-10 ml-0 h-10 min-h-10 rounded-lg bg-background/95 px-3 text-sm text-foreground shadow-md after:absolute after:-inset-1 sm:hidden" />
+          )}
         </div>
       )}
       <div

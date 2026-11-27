@@ -55,8 +55,6 @@ export type DisplayGroup = {
   category: string;
   label: string;
   fields: AdminCustomListingField[];
-  visibleFields: AdminCustomListingField[];
-  hiddenCount: number;
 };
 
 export type BulkEditPayload = Pick<
@@ -94,7 +92,7 @@ export function getCategoryStats(fields: AdminCustomListingField[]) {
   return Array.from(stats.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
 
-export function groupFields(fields: AdminCustomListingField[]) {
+export function groupFields(fields: AdminCustomListingField[]): DisplayGroup[] {
   const groups = new Map<
     string,
     {
@@ -120,30 +118,6 @@ export function groupFields(fields: AdminCustomListingField[]) {
   }
 
   return Array.from(groups.values()).sort((a, b) => a.label.localeCompare(b.label));
-}
-
-export function getDisplayGroups(input: {
-  activeCategory: string;
-  expandedCategories: Set<string>;
-  groupedFields: Array<{
-    category: string;
-    label: string;
-    fields: AdminCustomListingField[];
-  }>;
-  isFiltered: boolean;
-}): DisplayGroup[] {
-  return input.groupedFields.map((group, groupIndex) => {
-    const isExpanded = input.expandedCategories.has(group.category);
-    const shouldCollapse =
-      input.activeCategory === "all" && !input.isFiltered && groupIndex > 0 && !isExpanded;
-    const visibleFields = shouldCollapse ? group.fields.slice(0, 3) : group.fields;
-
-    return {
-      ...group,
-      visibleFields,
-      hiddenCount: group.fields.length - visibleFields.length,
-    };
-  });
 }
 
 export function sortFields(fields: AdminCustomListingField[]) {

@@ -170,6 +170,9 @@ export const listingSummarySchema = z.object({
   lat: z.number().optional(),
   lng: z.number().optional(),
   imageUrl: listingImageUrlSchema.optional(),
+  photoCount: z.number().int().min(0),
+  /** The move-in date, as on the detail page. */
+  availableOn: z.iso.date().optional(),
   timeAgo: nonEmptyString,
 });
 

@@ -17,7 +17,6 @@ import {
   type SortKey,
   type VisibilityFilter,
   getCategoryStats,
-  getDisplayGroups,
   getInsertionIndexForPointer,
   groupFields,
   isFormControlTarget,
@@ -52,7 +51,6 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("category");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set());
   const [pendingFieldId, setPendingFieldId] = useState<string | null>(null);
   const [selectedFieldIds, setSelectedFieldIds] = useState<Set<string>>(() => new Set());
   const [lastSelectedFieldId, setLastSelectedFieldId] = useState<string | null>(null);
@@ -77,7 +75,6 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
     () => categories.map((category) => category.category),
     [categories],
   );
-  const isFiltered = search.trim() !== "" || categoryFilter !== "all" || visibilityFilter !== "all";
 
   const filteredFields = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -103,19 +100,10 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
     return sortVisibleFields(nextFields, sortKey, sortDirection);
   }, [categoryFilter, fields, search, sortDirection, sortKey, visibilityFilter]);
 
-  const groupedFields = useMemo(() => groupFields(filteredFields), [filteredFields]);
-  const displayGroups = useMemo(
-    () =>
-      getDisplayGroups({
-        activeCategory: categoryFilter,
-        expandedCategories,
-        groupedFields,
-        isFiltered,
-      }),
-    [categoryFilter, expandedCategories, groupedFields, isFiltered],
-  );
+  // Every group shows all of its fields, so the page reads as the full list in order.
+  const displayGroups = useMemo(() => groupFields(filteredFields), [filteredFields]);
   const visibleFieldIds = useMemo(
-    () => displayGroups.flatMap((group) => group.visibleFields.map((field) => field.id)),
+    () => displayGroups.flatMap((group) => group.fields.map((field) => field.id)),
     [displayGroups],
   );
   const selectedFields = useMemo(
@@ -166,7 +154,6 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
     setSearch("");
     setCategoryFilter("all");
     setVisibilityFilter("all");
-    setExpandedCategories(new Set());
   };
 
   const handleSort = (nextSortKey: SortKey) => {
@@ -516,12 +503,6 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
       onClearSelection: clearSelection,
       onOpenBulkEdit: () => setBulkEditOpen(true),
       onSort: handleSort,
-      onExpandCategory: (category: string) =>
-        setExpandedCategories((current) => {
-          const next = new Set(current);
-          next.add(category);
-          return next;
-        }),
       onRowSelectToggle: handleRowHandleClick,
       onRowDragStart: handleRowDragStart,
       onRowDragEnd: handleRowDragEnd,

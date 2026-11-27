@@ -20,6 +20,7 @@ function page(pageNumber: number): ListingListResponse {
       beds: 2,
       baths: 1,
       sqft: 800,
+      photoCount: 0,
       timeAgo: "2 days ago",
     })),
     pagination: {

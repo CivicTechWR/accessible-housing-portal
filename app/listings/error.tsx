@@ -24,7 +24,7 @@ export default function ListingsError({
         <span className="mx-auto mb-4 flex size-11 items-center justify-center rounded-full bg-destructive/10 text-destructive">
           <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} className="size-5" aria-hidden />
         </span>
-        <h1 className="text-xl font-semibold sm:text-2xl">We couldn&apos;t load listings</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">We couldn&apos;t load listings</h1>
         <p className="mt-2 text-base text-muted-foreground">
           Try again in a moment. If it keeps happening, there may be a data or network problem.
         </p>

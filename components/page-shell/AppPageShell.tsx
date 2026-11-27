@@ -12,7 +12,7 @@ export function AppPageShell({ children, className }: AppPageShellProps) {
     <main
       className={cn("min-h-[calc(100vh-7rem)] bg-background px-4 py-8 sm:px-6 sm:py-10", className)}
     >
-      <div data-compact-footer-mobile hidden />
+      <div data-compact-footer hidden />
       {children}
     </main>
   );
@@ -43,7 +43,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
       )}
     >
       <div className="min-w-0 space-y-1.5">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        <h1 className="text-[1.75rem] sm:text-[2.125rem]">{title}</h1>
         {description ? (
           <p className="max-w-2xl text-base text-muted-foreground">{description}</p>
         ) : null}
@@ -81,7 +81,7 @@ export function PageMessage({
           contentClassName,
         )}
       >
-        <h1 className={cn("text-2xl font-semibold tracking-tight", titleClassName)}>{title}</h1>
+        <h1 className={cn("text-2xl", titleClassName)}>{title}</h1>
         <p
           className={cn(
             "mt-2 text-base",

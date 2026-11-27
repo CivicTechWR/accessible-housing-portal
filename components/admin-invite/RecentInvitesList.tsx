@@ -3,16 +3,18 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyInviteLinkButton } from "@/components/admin-invite/CopyInviteLinkButton";
 import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
-import { RoleLabel } from "@/components/admin-invite/RoleLabel";
-import type { InviteRecord } from "@/components/admin-invite/types";
+import { inviteRoleLabels, type InviteRecord } from "@/components/admin-invite/types";
 
 type RecentInvitesListProps = {
   invites: InviteRecord[];
 };
 
+// Recent invites are from the last few days, so the year would only add length.
 const inviteDateFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
 });
 
 export function RecentInvitesList({ invites }: RecentInvitesListProps) {
@@ -32,12 +34,12 @@ export function RecentInvitesList({ invites }: RecentInvitesListProps) {
           <ul className="-my-3 divide-y">
             {invites.map((invite) => (
               <li key={invite.id} className="space-y-2 py-3">
-                <div className="min-w-0 space-y-1">
+                <div className="min-w-0 space-y-0.5">
                   <p className="text-sm font-medium [overflow-wrap:anywhere] text-foreground">
                     {invite.email}
                   </p>
-                  <RoleLabel role={invite.role} />
                   <p className="text-sm text-muted-foreground">
+                    {inviteRoleLabels[invite.role]},{" "}
                     {inviteDateFormatter.format(new Date(invite.invitedAt))}
                   </p>
                 </div>
