@@ -44,6 +44,9 @@ interface ListingsCardProps {
  * dropping a chip, and the chips stay on one row so every card in a grid row lines up.
  */
 const MAX_FEATURES = 2;
+// Two chips plus "+N more" fit on one line of the narrowest card (about 260px) only when their
+// names are short; otherwise show one whole chip rather than two truncated ones.
+const MAX_CHARS_FOR_TWO_CHIPS = 22;
 
 const TIME_UNITS: Record<string, string> = {
   second: "s",
@@ -72,7 +75,8 @@ export function formatPostedLabel(timeAgo: string) {
 }
 
 function FeatureChips({ features, className }: { features: string[]; className?: string }) {
-  const shown = features.slice(0, MAX_FEATURES);
+  const fitsTwo = features.slice(0, MAX_FEATURES).join("").length <= MAX_CHARS_FOR_TWO_CHIPS;
+  const shown = features.slice(0, fitsTwo ? MAX_FEATURES : 1);
   const hiddenCount = features.length - shown.length;
   const chipClassName = "h-7 max-w-full gap-1.5 px-2.5 text-[13px] [&>svg]:size-4!";
 
