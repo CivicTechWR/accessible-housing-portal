@@ -39,7 +39,8 @@ function ExampleListing() {
     <figure className="overflow-hidden rounded-2xl border bg-card shadow-lg shadow-black/5">
       <div className="relative aspect-[3/2]">
         <Image
-          src="/home-hero.webp"
+          // A different photo from the hero, so the example reads as a listing rather than a repeat.
+          src="https://images.pexels.com/photos/7746646/pexels-photo-7746646.jpeg?cs=srgb&fm=jpg"
           alt=""
           fill
           sizes="(min-width: 1024px) 420px, 100vw"

@@ -29,13 +29,13 @@ export function HomeHeroSection() {
       />
       <div className="w-full px-4 pt-28 sm:px-6">
         <div className="mx-auto max-w-5xl pb-12 text-white sm:pb-16">
-          <p className="mb-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-sm font-medium backdrop-blur-sm">
+          <p className="mb-4 inline-flex items-center rounded-full bg-black/70 px-3 py-1 text-sm font-medium">
             Invitation-only pilot in {siteConfig.region}
           </p>
           <h1 id="home-title" className="max-w-3xl text-4xl leading-[1.1] sm:text-6xl">
             Affordable, accessible rentals in {siteConfig.region}
           </h1>
-          <p className="mt-5 max-w-2xl text-lg text-white/90 sm:text-xl">
+          <p className="mt-5 max-w-2xl text-lg font-medium text-white sm:text-xl">
             One place for housing navigators to find units from values-aligned providers, with the
             accessibility details that matter.
           </p>
@@ -47,7 +47,7 @@ export function HomeHeroSection() {
               asChild
               size="lg"
               variant="outline"
-              className="border-white/60 bg-transparent text-white hover:bg-white/10 hover:text-white dark:bg-transparent dark:hover:bg-white/10"
+              className="border-white/70 bg-black/35 text-white hover:bg-black/50 hover:text-white dark:bg-black/35 dark:hover:bg-black/50"
             >
               <a href={`mailto:${siteConfig.contactEmail}`}>Request access</a>
             </Button>

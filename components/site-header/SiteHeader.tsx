@@ -30,7 +30,9 @@ export async function SiteHeader() {
           <nav aria-label="Main" className="hidden flex-1 items-center gap-1 lg:flex">
             <HeaderNavLink href="/listings">Browse listings</HeaderNavLink>
             {canCreateListing ? (
-              <HeaderNavLink href="/my-listings">My listings</HeaderNavLink>
+              <HeaderNavLink href="/my-listings" alsoActiveFor={["/listing-form"]}>
+                My listings
+              </HeaderNavLink>
             ) : null}
             {role === "admin" ? (
               <>

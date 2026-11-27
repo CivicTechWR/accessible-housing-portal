@@ -12,7 +12,7 @@ const surfaceClasses = {
   // The site header, mobile menu and popover menus such as the account menu.
   default: {
     group: "bg-muted",
-    item: "text-muted-foreground hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm dark:data-[state=on]:bg-input/50",
+    item: "text-muted-foreground hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm dark:data-[state=on]:bg-white/15 dark:data-[state=on]:ring-1 dark:data-[state=on]:ring-white/25",
   },
 };
 
