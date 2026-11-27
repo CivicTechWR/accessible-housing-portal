@@ -24,12 +24,12 @@ it("moves from the community agreement to account setup in order", () => {
   ).toBeVisible();
   expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
 
-  const continueButton = screen.getByRole("button", { name: "Agree and continue" });
+  const continueButton = screen.getByRole("button", { name: "Continue" });
   expect(continueButton).toBeDisabled();
 
   fireEvent.click(
     screen.getByRole("checkbox", {
-      name: "I have read and agree to the community agreement and terms of use.",
+      name: "I agree to the terms above",
     }),
   );
   expect(continueButton).toBeEnabled();

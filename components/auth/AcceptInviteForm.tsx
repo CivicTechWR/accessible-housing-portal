@@ -66,7 +66,7 @@ export function AcceptInviteForm({ token, email }: AcceptInviteFormProps) {
     <form className="w-full max-w-[400px]" onSubmit={submit} noValidate>
       <AuthCard
         title={email ? "Activate your account" : "Reset your password"}
-        description={email}
+        description={email ?? "Use 12 to 128 characters."}
         footer={
           <Button type="submit" size="lg" className="w-full" disabled={pending}>
             {pending ? "Saving..." : "Save password"}

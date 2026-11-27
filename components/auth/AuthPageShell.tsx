@@ -11,7 +11,7 @@ export function AuthPageShell({ children, className }: AuthPageShellProps) {
   return (
     <main
       className={cn(
-        "flex items-start justify-center bg-background px-4 pt-8 pb-16 sm:min-h-[calc(100dvh-4rem)] sm:items-center sm:py-16",
+        "flex items-start justify-center bg-background px-4 pt-8 pb-16 sm:pt-24 sm:pb-24",
         className,
       )}
     >

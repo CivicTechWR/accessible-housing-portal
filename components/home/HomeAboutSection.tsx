@@ -11,7 +11,7 @@ const { about } = homeContent;
 export function HomeAboutSection() {
   return (
     <section aria-labelledby="about-title">
-      <h2 id="about-title" className="text-3xl">
+      <h2 id="about-title" className="text-2xl sm:text-3xl">
         Who it&apos;s for
       </h2>
       <p className="mt-5 max-w-3xl text-lg leading-relaxed">
@@ -40,14 +40,12 @@ export function HomeAboutSection() {
           </li>
         ))}
       </ul>
-      <div className="mt-10 grid gap-10 border-t pt-10 md:grid-cols-2 md:gap-16">
-        <div>
+      <div className="mt-10 grid gap-6 md:grid-cols-2">
+        <div className="rounded-xl border bg-card p-6 shadow-xs">
           <h3 className="text-xl">Housing navigators and case workers</h3>
           <p className="mt-3 text-base leading-relaxed">
-            Finding a unit that works for a client often means informal calls, several listing
-            sites, and checking accessibility details through site visits. {siteConfig.name} puts
-            listings from values-aligned providers in one place, on a map, with filters for
-            accessibility and affordability features. Listings also show{" "}
+            Find units from values-aligned providers in one place, on a map, with filters for
+            accessibility and affordability. Listings show{" "}
             <a
               href={WALK_SCORE_ATTRIBUTION_URL}
               target="_blank"
@@ -56,16 +54,14 @@ export function HomeAboutSection() {
             >
               Walk Score®
             </a>{" "}
-            and transit ratings where available. Saved filters and alerts are coming soon.
+            and transit ratings where available, and saved filters and alerts are coming soon.
           </p>
         </div>
-        <div>
+        <div className="rounded-xl border bg-card p-6 shadow-xs">
           <h3 className="text-xl">Housing providers and developers</h3>
           <p className="mt-3 text-base leading-relaxed">
-            Accessible and affordable units do the most good when they go to tenants who need their
-            features. {siteConfig.name} puts your listings in front of housing navigators and case
-            workers from trusted social agencies, so you fill units efficiently and with supported
-            tenants.
+            Put accessible and affordable units in front of navigators and case workers from trusted
+            social agencies, so they go to tenants who need their features.
           </p>
         </div>
       </div>

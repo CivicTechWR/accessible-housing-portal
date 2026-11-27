@@ -246,21 +246,16 @@
 }
 
 /* Unlayered: Tailwind v4 drops plain class rules inside @layer components.
-   The header and footer line their content up with the page's 64rem content column (whose
-   padding is 1rem, then 1.5rem from sm), and go full width on the full-screen map. */
+   The header and footer run the full width of every page with one gutter, so the logo sits in
+   the same place on the full-screen map and on pages with a centred content column. */
 .site-container {
-  margin-inline: auto;
   width: 100%;
-  max-width: calc(64rem + 3rem);
   padding-inline: 1rem;
 }
 @media (width >= 40rem) {
   .site-container {
     padding-inline: 1.5rem;
   }
-}
-html:has([data-fullscreen]) .site-container {
-  max-width: none;
 }
 
 @layer base {

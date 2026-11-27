@@ -17,7 +17,7 @@ const linkClass =
 
 export function SiteFooter({ className }: { className?: string }) {
   return (
-    <footer className={cn("border-t bg-muted/50 text-sm", className)}>
+    <footer className={cn("border-t bg-muted/50 text-sm dark:bg-background", className)}>
       <div className="site-container grid grid-cols-1 gap-x-6 gap-y-4 py-8 sm:grid-cols-2 sm:gap-y-8 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="space-y-3 sm:col-span-2 md:col-span-1">
           <p className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-foreground">
@@ -86,14 +86,11 @@ export function SiteFooter({ className }: { className?: string }) {
       </div>
       <div className="border-t">
         <div className="site-container flex flex-col gap-3 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
             <p>
               © {new Date().getFullYear()} {siteConfig.operator.name}
             </p>
-            <div className="flex items-center gap-2">
-              <span aria-hidden="true">Theme</span>
-              <ThemeToggle />
-            </div>
+            <ThemeToggle showLabels />
           </div>
           <p>
             Location scores:{" "}

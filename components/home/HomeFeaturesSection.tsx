@@ -87,7 +87,7 @@ export function HomeFeaturesSection() {
       className="grid items-center gap-12 lg:grid-cols-[1fr_420px] lg:gap-16"
     >
       <div>
-        <h2 id="features-title" className="text-3xl">
+        <h2 id="features-title" className="text-2xl sm:text-3xl">
           What every listing shows
         </h2>
         <ul role="list" className="mt-8 space-y-7">

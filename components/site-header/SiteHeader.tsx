@@ -26,12 +26,12 @@ export async function SiteHeader() {
           {siteConfig.name}
         </Link>
 
-        {/* Searchers only have the listings, which the logo already leads to, so the nav starts
-            with a second destination. */}
-        {canCreateListing ? (
+        {isSignedIn ? (
           <nav aria-label="Main" className="hidden flex-1 items-center gap-1 lg:flex">
             <HeaderNavLink href="/listings">Browse listings</HeaderNavLink>
-            <HeaderNavLink href="/my-listings">My listings</HeaderNavLink>
+            {canCreateListing ? (
+              <HeaderNavLink href="/my-listings">My listings</HeaderNavLink>
+            ) : null}
             {role === "admin" ? (
               <>
                 <HeaderNavLink href="/admin/users" alsoActiveFor={["/admin/invite"]}>
