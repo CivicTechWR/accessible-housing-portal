@@ -25,14 +25,16 @@ it("moves from the community agreement to account setup in order", () => {
   expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
 
   const continueButton = screen.getByRole("button", { name: "Continue" });
-  expect(continueButton).toBeDisabled();
+  const checkbox = screen.getByRole("checkbox", { name: "I agree to the community agreement" });
 
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: "I agree to the terms above",
-    }),
-  );
-  expect(continueButton).toBeEnabled();
+  // Continuing before agreeing explains what's missing and stays on the agreement.
+  fireEvent.click(continueButton);
+  expect(screen.getByRole("alert")).toHaveTextContent("Tick the box to agree before continuing.");
+  expect(checkbox).toHaveFocus();
+  expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
+
+  fireEvent.click(checkbox);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   fireEvent.click(continueButton);
 
   expect(screen.getByText("Step 2 of 2: Account setup")).toBeVisible();

@@ -46,10 +46,14 @@ function MapLoadingPlaceholder() {
   );
 }
 
-const LazyMapView = dynamic<{ listings: ListingSummary[]; highlightedId?: string | null }>(
-  () => import("../../components/map-view/MapView.tsx").then((mod) => mod.MapView),
-  { ssr: false, loading: MapLoadingPlaceholder },
-);
+const LazyMapView = dynamic<{
+  listings: ListingSummary[];
+  highlightedId?: string | null;
+  matchesAccessibilityFilter?: boolean;
+}>(() => import("../../components/map-view/MapView.tsx").then((mod) => mod.MapView), {
+  ssr: false,
+  loading: MapLoadingPlaceholder,
+});
 
 const serializeSearch = createSerializer(listingSearchParamsParsers);
 
@@ -213,7 +217,11 @@ export default function ListingsDashboard({
             {isSplitView && !isSplitViewAvailable ? (
               <MapLoadingPlaceholder />
             ) : (
-              <LazyMapView listings={listings} highlightedId={highlightedId} />
+              <LazyMapView
+                listings={listings}
+                highlightedId={highlightedId}
+                matchesAccessibilityFilter={filters.features.length > 0}
+              />
             )}
           </div>
         )}

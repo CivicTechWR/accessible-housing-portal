@@ -46,14 +46,17 @@ const statusToneClasses = {
   success: "bg-emerald-600/10 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300",
   warning: "bg-amber-500/15 text-amber-900 dark:bg-amber-400/15 dark:text-amber-200",
   danger: "bg-destructive/10 text-destructive dark:bg-destructive/20",
-  neutral: "bg-muted text-muted-foreground",
+  // A grey from the text colour rather than the blue-tinted muted fill, so it reads the same
+  // neutral on cards and the page, in light and dark.
+  neutral: "bg-foreground/[0.07] text-muted-foreground dark:bg-foreground/10",
 } as const;
 
 export type StatusTone = keyof typeof statusToneClasses;
 
 /**
- * The one chip for any status (listings, accounts, invitations): a tinted fill and a dot, with
- * only the hue changing, so the word carries the meaning and colour only reinforces it.
+ * The one chip for any status (listings, accounts, invitations, in tables and headers alike): a
+ * tinted fill and a dot, with only the hue changing, so the word carries the meaning and colour
+ * only reinforces it.
  */
 function StatusBadge({
   tone,
@@ -72,37 +75,4 @@ function StatusBadge({
   );
 }
 
-const statusDotClasses = {
-  success: "bg-emerald-600 dark:bg-emerald-400",
-  warning: "bg-amber-500 dark:bg-amber-400",
-  danger: "bg-destructive",
-  neutral: "bg-muted-foreground/60",
-} as const satisfies Record<StatusTone, string>;
-
-/**
- * A status as a coloured dot and plain text, for table rows where most rows share the same status:
- * every row says something, but a column of chips would shout.
- */
-function StatusLabel({
-  tone,
-  className,
-  children,
-}: {
-  tone: StatusTone;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-2 text-sm whitespace-nowrap text-foreground",
-        className,
-      )}
-    >
-      <span aria-hidden className={cn("size-2 shrink-0 rounded-full", statusDotClasses[tone])} />
-      {children}
-    </span>
-  );
-}
-
-export { Badge, badgeVariants, StatusBadge, StatusLabel };
+export { Badge, badgeVariants, StatusBadge };

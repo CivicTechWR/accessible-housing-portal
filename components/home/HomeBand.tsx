@@ -8,16 +8,10 @@ export function HomeBand({
   tone = "plain",
 }: {
   children: ReactNode;
-  tone?: "plain" | "muted" | "sign";
+  tone?: "plain" | "card";
 }) {
   return (
-    <div
-      className={cn(
-        "px-4 py-16 sm:px-6 sm:py-24",
-        tone === "muted" && "bg-muted/60",
-        tone === "sign" && "bg-primary text-primary-foreground dark:bg-[#17478f]",
-      )}
-    >
+    <div className={cn("px-4 py-16 sm:px-6 sm:py-24", tone === "card" && "border-y bg-card")}>
       <div className="mx-auto max-w-5xl">{children}</div>
     </div>
   );

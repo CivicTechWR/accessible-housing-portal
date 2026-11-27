@@ -1,17 +1,6 @@
 import { siteConfig } from "@/lib/site-config";
 
 export const homeContent = {
-  about: {
-    // The section renders the site name before `lead`, then links the operator and builder
-    // between `lead` and `rest`.
-    lead: "is a community-led rental listing platform connecting housing navigators from social service organizations with affordable and accessible units from values-aligned housing providers. Co-created by",
-    rest: ", the platform offers transparent listings—including pricing, accessibility features, and forms of income landlords will accept.",
-    aimsIntro: "The platform aims to:",
-    aims: [
-      "Streamline the search for affordable and accessible housing units.",
-      "Rent accessible and affordable units to tenants who most benefit from their features.",
-    ],
-  },
   scope: {
     is: [
       `A listing website for affordable and accessible units in ${siteConfig.region}—think Realtor.ca for specific types of units.`,

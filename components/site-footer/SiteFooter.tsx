@@ -97,7 +97,7 @@ export function SiteFooter({ className }: { className?: string }) {
             <p>
               © {new Date().getFullYear()} {siteConfig.operator.name}
             </p>
-            <ThemeToggle showLabels />
+            <ThemeToggle />
           </div>
           <p>
             Location scores:{" "}

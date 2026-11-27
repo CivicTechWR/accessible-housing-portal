@@ -6,7 +6,7 @@ export function BrandMark({ className }: { className?: string }) {
     <svg viewBox="0 0 32 32" aria-hidden="true" className={cn("size-8 shrink-0", className)}>
       <rect width="32" height="32" rx="8" className="fill-primary" />
       <path d="M16 4l10 10v14H6V14z M16 14v8h6v-8z" className="fill-primary-foreground" />
-      <path d="M4 28l12-6h12v6z" fill="#00a6f4" />
+      <path d="M4 28l12-6h12v6z" className="fill-signal" />
     </svg>
   );
 }

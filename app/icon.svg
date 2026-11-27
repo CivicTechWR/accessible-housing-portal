@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <!-- A house with a ramp rising to its door. Straight edges sit on even coordinates and the ramp
        rises 1 px for every 2 px, so the shapes land on whole pixels when drawn at 16 px. -->
-  <rect width="32" height="32" rx="7" fill="#0069a8"/>
-  <path d="M16 4l10 10v14H6V14z M16 14v8h6v-8z" fill="#f0f9ff"/>
-  <path d="M4 28l12-6h12v6z" fill="#00a6f4"/>
+  <rect width="32" height="32" rx="7" fill="#0b4ea2"/>
+  <path d="M16 4l10 10v14H6V14z M16 14v8h6v-8z" fill="#ffffff"/>
+  <path d="M4 28l12-6h12v6z" fill="#ffc629"/>
 </svg>

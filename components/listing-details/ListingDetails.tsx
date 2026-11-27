@@ -189,7 +189,7 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
   );
 }
 
-/** A plain titled block below the accessibility panel. A rule above it separates it from the last. */
+/** A plain titled block below the accessibility panel, 40px below the one before it. */
 function Section({
   id,
   title,
@@ -202,7 +202,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className={cn("border-t pt-10 pb-8", className)}>
+    <section aria-labelledby={id} className={cn("pt-10", className)}>
       <h2 id={id} className="mb-3 text-[22px] leading-7 font-bold">
         {title}
       </h2>
@@ -291,8 +291,8 @@ export function ListingDetails({
   const heading = title || address;
   const trimmedDescription = description?.trim();
 
-  // Rent is on the title row and in the contact card on desktop, and in the bottom bar below
-  // `lg`. The embedded preview has none of these, so rent joins the facts there.
+  // Rent is in the contact card on desktop and in the bottom bar below `lg`. The embedded preview
+  // has neither, so rent joins the facts there.
   const keyFacts = [
     { key: "beds", icon: BedDoubleIcon, label: formatBeds(beds) },
     { key: "baths", icon: Bathtub01Icon, label: formatBaths(baths) },
@@ -407,9 +407,6 @@ export function ListingDetails({
   const header = (
     <div className="space-y-4">
       <PageHeader
-        // Below `lg` the rent moves to the bottom bar; without an Edit button the actions row
-        // would be left empty, so it is hidden there.
-        className={cn(!editUrl && "max-lg:[&>div+div]:hidden")}
         title={<span className="wrap-anywhere">{heading}</span>}
         description={
           title || posted ? (
@@ -426,19 +423,13 @@ export function ListingDetails({
           ) : undefined
         }
         actions={
-          editUrl || !embedded ? (
-            <>
-              {editUrl && (
-                <Button asChild variant="outline">
-                  <Link href={editUrl}>
-                    <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
-                    Edit listing
-                  </Link>
-                </Button>
-              )}
-              {/* Desktop shows rent on the title row. Below `lg` it is in the bottom bar. */}
-              {!embedded && <Price price={price} className="order-first mr-2 max-lg:hidden" />}
-            </>
+          editUrl ? (
+            <Button asChild variant="outline">
+              <Link href={editUrl}>
+                <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
+                Edit listing
+              </Link>
+            </Button>
           ) : undefined
         }
       />
@@ -499,7 +490,7 @@ export function ListingDetails({
 
   const mainColumn = (
     <div className={cn("contents", twoColumns && "lg:flex lg:min-w-0 lg:flex-col")}>
-      <div className="order-1 pb-8">
+      <div className="order-1">
         <AccessibilityFeatures categories={features} />
       </div>
 
@@ -513,12 +504,12 @@ export function ListingDetails({
 
       <Section id="listing-rental-details" title="Rental details" className="order-4">
         {/* One label and value per row, so any number of details looks complete and long values
-            like the deposit wrap in place. */}
-        <dl className="divide-y border-y">
+            like the deposit wrap in place. Rules only between rows. */}
+        <dl className="divide-y">
           {rentalDetailRows.map((row) => (
             <div
               key={row.label}
-              className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-baseline gap-4 py-3"
+              className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-baseline gap-4 py-3 first:pt-0 last:pb-0"
             >
               <dt className="text-[15px] text-muted-foreground">
                 {row.info ? <LabelWithInfo label={row.label} info={row.info} /> : row.label}
@@ -558,15 +549,15 @@ export function ListingDetails({
       id={CONTACT_SECTION_ID}
       aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
       className={cn(
-        "order-2 min-w-0 scroll-mt-6 border-t pt-10 pb-8",
+        "order-2 min-w-0 scroll-mt-6 pt-10",
         // Sticky on desktop, so rent and Apply follow the reader down the page, clear of the site
         // header's height.
-        twoColumns && "lg:sticky lg:top-6 lg:border-t-0 lg:py-0",
+        twoColumns && "lg:sticky lg:top-6 lg:pt-0",
       )}
     >
       <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
-        {/* Desktop leads with rent, over Apply, so it stays in view with Apply after the title
-            scrolls away. Phones have it in the bottom bar. */}
+        {/* The page's one rent on desktop, over Apply, so it stays in view as the reader scrolls.
+            Phones have it in the bottom bar. */}
         {twoColumns && <Price price={price} className="block max-lg:hidden" />}
         <h2
           id={`${CONTACT_SECTION_ID}-heading`}
@@ -584,7 +575,7 @@ export function ListingDetails({
               />
             )}
             <p className="text-sm text-muted-foreground">
-              Apply directly with the housing provider, outside this portal.
+              You apply directly with the housing provider.
             </p>
           </div>
         )}
@@ -676,14 +667,12 @@ export function ListingDetails({
       </div>
       {hasPhotos && (
         // Phones show the photos before the title, edge to edge, by cancelling the page shell's
-        // padding, with a compact back link over the top-left corner.
+        // padding, with a round back button over the top-left corner.
         <div
           className={cn("relative", !embedded && "max-sm:order-first max-sm:-mx-4 max-sm:-mt-8")}
         >
           <ListingImageCarousel images={images} altPrefix={address} edgeToEdge={!embedded} />
-          {!embedded && (
-            <BackToResults className="absolute top-3 left-3 z-10 ml-0 h-10 min-h-10 rounded-lg bg-background/95 px-3 text-sm text-foreground shadow-md after:absolute after:-inset-1 sm:hidden" />
-          )}
+          {!embedded && <BackToResults iconOnly className="absolute top-3 left-3 z-10 sm:hidden" />}
         </div>
       )}
       <div

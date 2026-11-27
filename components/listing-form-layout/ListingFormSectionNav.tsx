@@ -1,9 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
-
 import { cn } from "@/lib/utils";
 import { useEdgeFade } from "@/lib/useEdgeFade";
 import { AccessibilityMark } from "@/components/ui/accessibility-mark";
@@ -16,10 +13,8 @@ export type ListingFormSectionLink = {
   label: string;
   /** A one-word label for the phone strip, such as "Details". Falls back to `label`. */
   shortLabel?: string;
-  /** Progress in words for wide screens, such as "2 of 5 required" or "3 photos". */
+  /** Progress in words, such as "2 of 5 required" or "3 photos". Visible from sm. */
   meta: string;
-  /** The same progress as a short count for the phone strip, such as "2/5" or "3". */
-  count?: string;
   status: ListingFormSectionStatus;
 };
 
@@ -63,11 +58,10 @@ function useActiveSection(ids: string[]) {
 
 /**
  * A horizontal strip of the form's sections, pinned above the form: where you are, and what's
- * left to fill in. On phones each tab is one line with its count as a badge, and the strip
- * scrolls sideways with faded edges. From sm every tab has the same 20px status slot, a green
- * check once the section is done and its step number until then, with progress in words
- * underneath. Optional sections that are still empty keep their number; the text says "Optional".
- * An empty accessibility section shows the yellow accessibility mark instead, at every width.
+ * left to fill in. Every tab carries its step number, tinted green once the section is done. From
+ * sm the progress shows in words under the label, and an empty accessibility section adds the
+ * yellow accessibility mark after its label. On phones each tab is the number and a one-word
+ * label, and the strip scrolls sideways with faded edges.
  */
 export function ListingFormSectionNav({ sections }: { sections: ListingFormSectionLink[] }) {
   const [activeId, setActiveId] = useActiveSection(sections.map((section) => section.id));
@@ -112,52 +106,40 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                     : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
-                {section.status === "complete" ? (
-                  <HugeiconsIcon
-                    icon={CheckmarkCircle02Icon}
-                    strokeWidth={2}
-                    className="size-5 shrink-0 text-emerald-700 max-sm:hidden dark:text-emerald-400"
-                    aria-hidden
-                  />
-                ) : section.status === "recommended" ? (
-                  <AccessibilityMark size="sm" />
-                ) : (
-                  <span
-                    aria-hidden
-                    className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground tabular-nums max-sm:hidden"
-                  >
-                    {index + 1}
-                  </span>
-                )}
-                <span className="flex flex-col leading-tight">
-                  {section.shortLabel ? (
-                    <>
-                      <span aria-hidden className="font-medium sm:hidden">
-                        {section.shortLabel}
-                      </span>
-                      <span className="font-medium max-sm:sr-only">{section.label}</span>
-                    </>
-                  ) : (
-                    <span className="font-medium">{section.label}</span>
+                <span
+                  aria-hidden
+                  className={cn(
+                    "flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-medium tabular-nums",
+                    section.status === "complete"
+                      ? "bg-emerald-600/15 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300"
+                      : isActive
+                        ? "bg-foreground text-background"
+                        : "bg-card text-muted-foreground ring-1 ring-border ring-inset",
                   )}
-                  {/* Read by screen readers at every width; the phone badge is only visual. */}
+                >
+                  {index + 1}
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="flex items-center gap-1.5">
+                    {section.shortLabel ? (
+                      <>
+                        <span aria-hidden className="font-medium sm:hidden">
+                          {section.shortLabel}
+                        </span>
+                        <span className="font-medium max-sm:sr-only">{section.label}</span>
+                      </>
+                    ) : (
+                      <span className="font-medium">{section.label}</span>
+                    )}
+                    {section.status === "recommended" ? (
+                      <AccessibilityMark size="sm" className="max-sm:hidden" />
+                    ) : null}
+                  </span>
+                  {/* Read by screen readers at every width; phones show only the step. */}
                   <span className="text-sm text-muted-foreground max-sm:sr-only">
                     {section.meta}
                   </span>
                 </span>
-                {section.count ? (
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "inline-flex h-6 items-center rounded-full px-2 text-xs font-medium tabular-nums sm:hidden",
-                      section.status === "complete"
-                        ? "bg-emerald-600/10 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {section.count}
-                  </span>
-                ) : null}
               </a>
             </li>
           );

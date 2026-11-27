@@ -89,7 +89,7 @@ export function SortHeader({
       type="button"
       title={helperText}
       aria-label={`${label}: ${helperText}`}
-      className="flex items-center gap-1 px-3 py-3 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+      className="flex items-center gap-1 px-3 py-3 text-left text-sm font-medium text-muted-foreground hover:text-foreground"
       onClick={() => onSort(sortKey)}
     >
       {label}

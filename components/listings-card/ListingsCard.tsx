@@ -1,4 +1,3 @@
-import { AccessibilityBadge } from "@/components/ui/accessibility-mark";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Image01Icon } from "@hugeicons/core-free-icons";
@@ -9,10 +8,10 @@ import {
   formatBeds,
   formatListingDate,
   formatRent,
-  toSentenceCase,
 } from "@/lib/listing-format";
 import Image from "next/image";
 import Link from "next/link";
+import { AccessibilityChips } from "./AccessibilityChips";
 import { Fragment, type ReactNode, type Ref } from "react";
 
 interface ListingsCardProps {
@@ -26,7 +25,7 @@ interface ListingsCardProps {
   baths: number;
   sqft: number | null;
   imageUrl?: string;
-  /** How many photos the listing has. The desktop card shows "1/3" on the photo when it has more than one. */
+  /** How many photos the listing has. The card shows "1/3" on the photo when it has more than one. */
   photoCount?: number;
   /** The move-in date (YYYY-MM-DD), shown as "Available May 15" after the address. */
   availableOn?: string;
@@ -106,30 +105,6 @@ export function PhotoEdge() {
       aria-hidden
       className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-black/5 ring-inset dark:ring-white/8"
     />
-  );
-}
-
-/**
- * The first accessibility feature by name and a count of the rest, such as "Barrier-free entrance
- * +2", on one line. The name truncates; the count never does. Cards with none get the muted pill
- * of the same size, so every card has the same structure.
- */
-function AccessibilitySummary({ features, className }: { features: string[]; className?: string }) {
-  const [first] = features;
-  const rest = features.length - 1;
-  return (
-    <div className={cn("flex min-w-0", className)}>
-      {first ? (
-        <AccessibilityBadge>
-          <span className="flex min-w-0">
-            <span className="truncate">{toSentenceCase(first)}</span>
-            {rest > 0 && <span className="shrink-0">&nbsp;+{rest}</span>}
-          </span>
-        </AccessibilityBadge>
-      ) : (
-        <AccessibilityBadge empty>No accessibility info</AccessibilityBadge>
-      )}
-    </div>
   );
 }
 
@@ -241,7 +216,7 @@ export function ListingsCard({
         {!isHorizontal && photoCount > 1 && (
           <span
             aria-hidden
-            className="absolute right-2.5 bottom-2.5 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white max-md:hidden"
+            className="absolute right-2.5 bottom-2.5 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white"
           >
             1/{photoCount}
           </span>
@@ -258,11 +233,11 @@ export function ListingsCard({
         <h3 className="line-clamp-2 text-[17px] leading-snug font-bold tracking-[-0.01em] wrap-anywhere text-foreground">
           {heading}
         </h3>
-        <p className="mt-0.5 text-xl leading-snug font-bold whitespace-nowrap text-foreground">
+        <p className="text-xl leading-snug font-bold whitespace-nowrap text-foreground">
           {formatRent(price)}
           <span className="text-[15px] font-normal text-muted-foreground">{RENT_PERIOD}</span>
         </p>
-        <p className="text-[15px] leading-snug text-foreground/80">
+        <p className="text-[15px] leading-snug font-medium text-foreground">
           <DotSeparated
             items={[
               formatBeds(beds),
@@ -272,13 +247,14 @@ export function ListingsCard({
           />
         </p>
         {(place || posted) && (
-          <p className="text-sm leading-snug wrap-anywhere text-muted-foreground md:text-[15px]">
+          <p className="text-sm leading-snug wrap-anywhere text-muted-foreground">
             <PlaceAndPosted place={place} posted={posted} />
           </p>
         )}
-        <AccessibilitySummary
+        <AccessibilityChips
           features={accessibilityFeatures ?? []}
-          className={isHorizontal ? "mt-2 hidden sm:flex" : "mt-2.5"}
+          // With the column's 4px gap, 8px above the chips.
+          className={isHorizontal ? "mt-1 hidden sm:flex" : "mt-1"}
         />
       </div>
 

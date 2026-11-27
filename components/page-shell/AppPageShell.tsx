@@ -43,7 +43,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
       )}
     >
       <div className="min-w-0 space-y-1.5">
-        <h1 className="text-[1.75rem] sm:text-[2.125rem]">{title}</h1>
+        <h1 className="text-[1.75rem] sm:text-[2rem]">{title}</h1>
         {description ? (
           <p className="max-w-2xl text-base text-muted-foreground">{description}</p>
         ) : null}

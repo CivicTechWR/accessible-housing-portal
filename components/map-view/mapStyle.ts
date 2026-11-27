@@ -88,10 +88,10 @@ const LIGHT_PAINT: PaintOverrides = [
     "text-color",
     "#6f8597",
   ],
-  [["highway-name-path", "highway-name-minor", "highway-name-major"], "text-color", "#8a8a8a"],
+  [["highway-name-path", "highway-name-minor", "highway-name-major"], "text-color", "#7a7a7a"],
   [["highway-name-path"], "text-halo-color", "#f6f6f4"],
-  [["label_other", "label_village"], "text-color", "#5c5c5c"],
-  [["label_town", "label_city", "label_city_capital", "label_state"], "text-color", "#3a3a3a"],
+  [["label_other", "label_village"], "text-color", "#4a4a4a"],
+  [["label_town", "label_city", "label_city_capital", "label_state"], "text-color", "#262626"],
 ];
 
 type LayoutProperty = Parameters<MaplibreMap["setLayoutProperty"]>[1];

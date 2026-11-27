@@ -15,14 +15,10 @@ export function HomeContactSection() {
         <h2 id="join-title" className="text-[1.75rem] sm:text-4xl">
           Getting access
         </h2>
-        <p className="mt-3 text-lg text-primary-foreground/90">{homeContent.access}</p>
+        <p className="mt-3 text-[1.0625rem] leading-relaxed">{homeContent.access}</p>
       </div>
       <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
-        <Button
-          asChild
-          size="lg"
-          className="bg-white text-primary hover:bg-white/90 dark:bg-white dark:text-[#17478f] dark:hover:bg-white/90"
-        >
+        <Button asChild size="lg">
           <a href={`mailto:${siteConfig.contactEmail}`}>
             <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} data-icon="inline-start" />
             Request access
@@ -30,7 +26,7 @@ export function HomeContactSection() {
         </Button>
         <a
           href={`mailto:${siteConfig.contactEmail}`}
-          className="text-base text-white underline underline-offset-2"
+          className="text-base text-primary-text underline underline-offset-4"
         >
           {siteConfig.contactEmail}
         </a>

@@ -33,32 +33,44 @@ export function AccessibilityMark({
 }
 
 /**
- * A yellow pill naming accessibility information, such as "Barrier-free entrance +2". With
- * `empty`, a muted pill of the same size for listings with nothing listed.
+ * A pill naming accessibility information, such as "Barrier-free entrance". `soft` (the default) is
+ * a yellow tint for chips that repeat down a list; `solid` is full tactile yellow for a single
+ * marker. With `empty`, a muted pill of the same size for listings with nothing listed.
  */
 export function AccessibilityBadge({
   children,
   empty = false,
+  tone = "soft",
+  icon = true,
   className,
 }: {
   children: React.ReactNode;
   empty?: boolean;
+  tone?: "soft" | "solid";
+  /** Show the wheelchair symbol. In a row of chips, only the first needs it. */
+  icon?: boolean;
   className?: string;
 }) {
   return (
     <span
       className={cn(
         "inline-flex h-7 max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-sm font-medium",
-        empty ? "bg-muted text-muted-foreground" : "bg-signal text-signal-foreground",
+        empty
+          ? "bg-muted text-muted-foreground"
+          : tone === "solid"
+            ? "bg-signal text-signal-foreground"
+            : "bg-signal-soft text-signal-soft-foreground",
         className,
       )}
     >
-      <HugeiconsIcon
-        icon={WheelchairIcon}
-        strokeWidth={2.25}
-        className="size-4 shrink-0"
-        aria-hidden
-      />
+      {icon && (
+        <HugeiconsIcon
+          icon={WheelchairIcon}
+          strokeWidth={2.25}
+          className="size-4 shrink-0"
+          aria-hidden
+        />
+      )}
       <span className="truncate">{children}</span>
     </span>
   );

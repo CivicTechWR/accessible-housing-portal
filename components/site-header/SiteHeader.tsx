@@ -45,22 +45,24 @@ export async function SiteHeader() {
           </nav>
         ) : null}
 
-        <div className="ml-auto hidden items-center gap-3 lg:flex">
-          {isSignedIn ? (
-            session?.user ? (
-              <HeaderAccountMenu user={session.user} />
-            ) : null
-          ) : (
+        {isSignedIn ? (
+          <>
+            <div className="ml-auto hidden items-center gap-3 lg:flex">
+              {session?.user ? <HeaderAccountMenu user={session.user} /> : null}
+            </div>
+            <HeaderMobileMenu
+              isAdmin={role === "admin"}
+              canCreateListing={canCreateListing}
+              user={session?.user ?? null}
+            />
+          </>
+        ) : (
+          // Signed out, the only destination is sign-in, so phones get the same button as desktop
+          // instead of a menu holding one link.
+          <div className="ml-auto flex items-center">
             <HeaderSignInButton />
-          )}
-        </div>
-
-        <HeaderMobileMenu
-          isSignedIn={isSignedIn}
-          isAdmin={role === "admin"}
-          canCreateListing={canCreateListing}
-          user={session?.user ?? null}
-        />
+          </div>
+        )}
       </div>
     </header>
   );

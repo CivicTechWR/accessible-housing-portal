@@ -206,7 +206,7 @@ describe("ListingDetails apply section", () => {
       "href",
       "tel:519-555-0111",
     );
-    screen.getByText(/Apply directly with the housing provider, outside this portal/);
+    screen.getByText(/You apply directly with the housing provider/);
     expect(screen.getByText(/We reply within two business days/).textContent).toBe(
       "Email to book a viewing.\nWe reply within two business days.",
     );

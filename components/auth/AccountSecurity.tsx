@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,14 @@ export function AccountSecurity() {
   const { data: passkeys, refetch } = authClient.useListPasskeys();
   const [message, setMessage] = useState("");
   const [passkeyMessage, setPasskeyMessage] = useState("");
+  // The name field shows only once the user starts adding a passkey.
+  const [isNamingPasskey, setIsNamingPasskey] = useState(false);
+  const addPasskeyButtonRef = useRef<HTMLButtonElement>(null);
+  // Closing the name form removes the focused control, so focus returns to "Add passkey".
+  function closePasskeyForm() {
+    setIsNamingPasskey(false);
+    requestAnimationFrame(() => addPasskeyButtonRef.current?.focus());
+  }
   const [passwordErrors, setPasswordErrors] = useState<{
     password?: string;
     newPassword?: string;
@@ -82,7 +90,7 @@ export function AccountSecurity() {
         );
         return;
       }
-      form.reset();
+      closePasskeyForm();
       setPasskeyMessage("Passkey added.");
       await refetch();
     } catch {
@@ -210,22 +218,44 @@ export function AccountSecurity() {
             </ul>
           ) : null}
           {passkeys?.length === 0 && (
-            <p className="flex min-h-14 items-center rounded-lg border border-dashed border-input px-4 text-sm text-muted-foreground">
-              No passkeys yet
-            </p>
+            <p className="text-sm text-muted-foreground">You haven't added a passkey yet.</p>
           )}
-          <form className="space-y-4" onSubmit={addPasskey}>
-            <div className="space-y-2">
-              <Label htmlFor="passkey-name">Passkey name (optional)</Label>
-              <Input id="passkey-name" name="name" aria-describedby="passkey-name-hint" />
-              <p id="passkey-name-hint" className="text-sm text-muted-foreground">
-                Name it after the device, such as "Work laptop".
-              </p>
-            </div>
-            <Button variant="outline" disabled={pending}>
+          {isNamingPasskey ? (
+            <form className="space-y-4" onSubmit={addPasskey}>
+              <div className="space-y-2">
+                <Label htmlFor="passkey-name">Passkey name (optional)</Label>
+                <Input
+                  id="passkey-name"
+                  name="name"
+                  aria-describedby="passkey-name-hint"
+                  autoFocus
+                />
+                <p id="passkey-name-hint" className="text-sm text-muted-foreground">
+                  Name it after the device, such as "Work laptop".
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" disabled={pending}>
+                  Add passkey
+                </Button>
+                <Button type="button" variant="ghost" onClick={closePasskeyForm}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <Button
+              ref={addPasskeyButtonRef}
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPasskeyMessage("");
+                setIsNamingPasskey(true);
+              }}
+            >
               Add passkey
             </Button>
-          </form>
+          )}
           {passkeyMessage && (
             <p role="status" className="text-sm">
               {passkeyMessage}

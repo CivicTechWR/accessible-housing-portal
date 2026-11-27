@@ -1,7 +1,7 @@
 "use client";
 
-import type { DragEvent } from "react";
-import { Search01Icon } from "@hugeicons/core-free-icons";
+import { useId, useState, type DragEvent } from "react";
+import { ArrowDown01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
@@ -85,6 +85,15 @@ export function CustomListingFieldsTable({
   onDeleteField: (field: AdminCustomListingField) => void;
 }) {
   const hasFilters = search !== "" || categoryFilter !== "all" || visibilityFilter !== "all";
+  const groupIdPrefix = useId();
+  // Categories the admin has folded away. Every group starts open.
+  const [collapsedCategories, setCollapsedCategories] = useState<ReadonlySet<string>>(new Set());
+  const toggleCategory = (category: string) =>
+    setCollapsedCategories((current) => {
+      const next = new Set(current);
+      if (!next.delete(category)) next.add(category);
+      return next;
+    });
 
   return (
     <div className="space-y-4">
@@ -164,11 +173,7 @@ export function CustomListingFieldsTable({
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="overflow-x-auto">
           <div
-            className={cn(
-              "grid border-b border-border bg-muted/50",
-              TABLE_MIN_WIDTH,
-              TABLE_COLUMNS,
-            )}
+            className={cn("grid border-b border-border bg-muted", TABLE_MIN_WIDTH, TABLE_COLUMNS)}
           >
             <div>
               <span className="sr-only">Reorder</span>
@@ -208,45 +213,67 @@ export function CustomListingFieldsTable({
                 No custom fields match these filters.
               </div>
             ) : (
-              displayGroups.map((group) => {
+              displayGroups.map((group, groupIndex) => {
+                const isOpen = !collapsedCategories.has(group.category);
+                const rowsId = `${groupIdPrefix}-group-${groupIndex}`;
                 return (
                   <div key={group.category}>
                     {/* A heading with space above, rather than a shaded band, so each group
-                        reads as a section of one list. The first group needs no top rule. */}
-                    <div className="flex items-baseline gap-2 border-b border-border px-4 pt-8 pb-2.5 [:not(:first-child)>&]:border-t">
-                      <h2 className="text-[15px] font-bold text-foreground">
-                        {toSentenceCase(group.label)}
-                      </h2>
-                      <span className="text-sm text-muted-foreground">
-                        {group.fields.length} {group.fields.length === 1 ? "field" : "fields"}
-                      </span>
-                    </div>
-                    {group.fields.map((field, index) => (
-                      <div key={field.id}>
-                        {dropIndicator?.category === group.category &&
-                        dropIndicator.insertionIndex === index ? (
-                          <DropIndicatorLine />
-                        ) : null}
-                        <FieldRow
-                          field={field}
-                          isPending={pendingFieldId === field.id}
-                          isSelected={selectedFieldIds.has(field.id)}
-                          onSelectToggle={(event) => onRowSelectToggle(field.id, event.shiftKey)}
-                          onDragStart={(event, rowElement) =>
-                            onRowDragStart(event, field, rowElement)
-                          }
-                          onDragEnd={onRowDragEnd}
-                          onDragOver={(event) => onRowDragOver(event, field)}
-                          onDrop={(event) => onRowDrop(event, field)}
-                          onEdit={() => onEditField(field)}
-                          onDelete={() => onDeleteField(field)}
+                        reads as a section of one list. The first group needs no top rule. The
+                        heading folds the group away so a long list can be scanned. */}
+                    <h2 className="border-b border-border px-2 pt-6 pb-1.5 [:not(:first-child)>&]:border-t">
+                      <button
+                        type="button"
+                        aria-expanded={isOpen}
+                        aria-controls={rowsId}
+                        onClick={() => toggleCategory(group.category)}
+                        className="flex min-h-10 w-full items-center gap-2 rounded-lg px-2 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                      >
+                        <HugeiconsIcon
+                          icon={ArrowDown01Icon}
+                          strokeWidth={2}
+                          className={cn(
+                            "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
+                            !isOpen && "-rotate-90",
+                          )}
+                          aria-hidden
                         />
-                      </div>
-                    ))}
-                    {dropIndicator?.category === group.category &&
-                    dropIndicator.insertionIndex === group.fields.length ? (
-                      <DropIndicatorLine />
-                    ) : null}
+                        <span className="text-[15px] font-bold text-foreground">
+                          {toSentenceCase(group.label)}
+                        </span>
+                        <span className="text-sm font-normal text-muted-foreground">
+                          {group.fields.length} {group.fields.length === 1 ? "field" : "fields"}
+                        </span>
+                      </button>
+                    </h2>
+                    <div id={rowsId} hidden={!isOpen}>
+                      {group.fields.map((field, index) => (
+                        <div key={field.id}>
+                          {dropIndicator?.category === group.category &&
+                          dropIndicator.insertionIndex === index ? (
+                            <DropIndicatorLine />
+                          ) : null}
+                          <FieldRow
+                            field={field}
+                            isPending={pendingFieldId === field.id}
+                            isSelected={selectedFieldIds.has(field.id)}
+                            onSelectToggle={(event) => onRowSelectToggle(field.id, event.shiftKey)}
+                            onDragStart={(event, rowElement) =>
+                              onRowDragStart(event, field, rowElement)
+                            }
+                            onDragEnd={onRowDragEnd}
+                            onDragOver={(event) => onRowDragOver(event, field)}
+                            onDrop={(event) => onRowDrop(event, field)}
+                            onEdit={() => onEditField(field)}
+                            onDelete={() => onDeleteField(field)}
+                          />
+                        </div>
+                      ))}
+                      {dropIndicator?.category === group.category &&
+                      dropIndicator.insertionIndex === group.fields.length ? (
+                        <DropIndicatorLine />
+                      ) : null}
+                    </div>
                   </div>
                 );
               })

@@ -9,7 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/app/query-keys";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Image01Icon } from "@hugeicons/core-free-icons";
+import { Image01Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -226,9 +226,10 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
             <li key={listing.id}>
               <Card
                 className={cn(
-                  // Phones: photo and title side by side, then facts and actions on full-width
-                  // rows so the facts line has room. From sm: photo, details, actions in a row.
-                  "grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4",
+                  // Phones: photo and title side by side with the menu in the top-right corner,
+                  // then facts and Edit on full-width rows so the facts line has room. From sm:
+                  // photo, details, actions in a row.
+                  "relative grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4",
                   isArchived && "bg-muted/40",
                 )}
               >
@@ -252,7 +253,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   )}
                 </div>
 
-                <div className="min-w-0 space-y-1 sm:self-end">
+                <div className={cn("min-w-0 space-y-1 sm:self-end", !isArchived && "max-sm:pr-12")}>
                   {/* The chip gets its own line so the title can use the full width to wrap. */}
                   <ListingStatusBadge status={listing.status} className="mb-1.5" />
                   <h2 className="text-base text-pretty break-words">{listing.title}</h2>
@@ -307,37 +308,41 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                       This listing is archived and is no longer publicly visible.
                     </p>
                   ) : (
-                    <>
-                      {listing.status === "published" ? (
-                        <Button asChild variant="outline" className="max-sm:h-11 max-sm:flex-1">
-                          <Link href={listing.viewUrl}>View</Link>
-                        </Button>
-                      ) : null}
-                      {/* Edit is each listing's main action, so it's the solid button. */}
-                      <Button asChild className="max-sm:h-11 max-sm:flex-1">
-                        <Link href={listing.editUrl}>
-                          {listing.status === "draft" ? "Resume draft" : "Edit"}
-                        </Link>
-                      </Button>
-                    </>
+                    // Only "New listing" is solid on this page; each row's Edit is outlined.
+                    <Button asChild variant="outline" className="max-sm:h-11 max-sm:flex-1">
+                      <Link href={listing.editUrl}>
+                        <HugeiconsIcon
+                          icon={PencilEdit02Icon}
+                          strokeWidth={2}
+                          data-icon="inline-start"
+                          aria-hidden
+                        />
+                        {listing.status === "draft" ? "Resume draft" : "Edit"}
+                      </Link>
+                    </Button>
                   )}
-                  <ListingActionsMenu
-                    listingTitle={listing.title}
-                    isArchived={isArchived}
-                    isMutating={isMutating}
-                    isDuplicating={isDuplicating}
-                    pendingLabel={pendingLabel}
-                    onDuplicate={() => {
-                      duplicateMutation.reset();
-                      setDuplicateTarget(listing);
-                    }}
-                    onArchive={() =>
-                      statusMutation.mutate({ listingId: listing.id, nextStatus: "archived" })
-                    }
-                    onRestore={() =>
-                      statusMutation.mutate({ listingId: listing.id, nextStatus: "draft" })
-                    }
-                  />
+                  {/* On phones the menu sits in the card's top-right corner, leaving Edit the
+                      full width. Restore stays in the row. */}
+                  <div className={cn(!isArchived && "max-sm:absolute max-sm:top-3 max-sm:right-3")}>
+                    <ListingActionsMenu
+                      listingTitle={listing.title}
+                      viewUrl={listing.status === "published" ? listing.viewUrl : undefined}
+                      isArchived={isArchived}
+                      isMutating={isMutating}
+                      isDuplicating={isDuplicating}
+                      pendingLabel={pendingLabel}
+                      onDuplicate={() => {
+                        duplicateMutation.reset();
+                        setDuplicateTarget(listing);
+                      }}
+                      onArchive={() =>
+                        statusMutation.mutate({ listingId: listing.id, nextStatus: "archived" })
+                      }
+                      onRestore={() =>
+                        statusMutation.mutate({ listingId: listing.id, nextStatus: "draft" })
+                      }
+                    />
+                  </div>
                 </div>
               </Card>
             </li>

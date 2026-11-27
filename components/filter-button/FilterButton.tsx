@@ -35,8 +35,8 @@ export function FilterButton({
       aria-label={isActive ? `Filters, ${activeFilterCount} applied` : "Filters"}
       aria-expanded={isFilterOpen}
       className={cn(
-        // Phones show it as a round icon button, matching the quick-filter chips beside it.
-        "relative shrink-0 gap-2 max-md:h-11 max-sm:w-11 max-sm:rounded-full max-sm:px-0",
+        // Phones show it as a square icon button the height of the search field beside it.
+        "relative shrink-0 gap-2 max-md:h-11 max-sm:w-11 max-sm:px-0",
         isActive && activeFilterClassName,
       )}
     >

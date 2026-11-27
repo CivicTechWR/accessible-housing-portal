@@ -15,7 +15,7 @@ import {
 } from "@/components/admin-users/account-display";
 import { RoleLabel } from "@/components/admin-invite/RoleLabel";
 import { inviteRoleOptions, type InviteRole } from "@/components/admin-invite/types";
-import { StatusLabel } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -41,8 +41,8 @@ function DateText({ value }: { value: string | null }) {
 }
 
 function AccountStatusText({ status }: { status: AccountStatus | null }) {
-  if (!status) return <StatusLabel tone="neutral">Unknown</StatusLabel>;
-  return <StatusLabel tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusLabel>;
+  if (!status) return <StatusBadge tone="neutral">Unknown</StatusBadge>;
+  return <StatusBadge tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusBadge>;
 }
 
 function accountName(account: AccountListItem) {
@@ -184,7 +184,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
             <table className="w-full table-fixed border-collapse text-left text-sm">
               <caption className="sr-only">Users</caption>
               <AccountTableColumns />
-              <thead className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
+              <thead className="border-b bg-muted text-sm font-medium text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">User</th>
                   <th className="px-4 py-3">Role</th>

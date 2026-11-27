@@ -284,7 +284,8 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       footerAction={
         <>
           {isUpToDate && activeListingId ? (
-            <Button asChild variant="outline" className="shrink-0 max-sm:h-11">
+            // A link to the public page, not the bar's main action, so it reads as a link.
+            <Button asChild variant="ghost" className="text-primary-text max-sm:h-11">
               <Link ref={viewListingRef} href={`/listings/${activeListingId}`}>
                 View listing
               </Link>
@@ -294,7 +295,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
               type="submit"
               form="listing-form"
               disabled={isSubmitting}
-              className="shrink-0 max-sm:h-11"
+              className="max-sm:h-11"
             >
               {isSubmitting ? "Publishing..." : submitLabel}
             </Button>
@@ -327,7 +328,6 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
       id,
       ...labels,
       meta: `${filled} of ${required.length} required`,
-      count: `${filled}/${required.length}`,
       status: filled === required.length ? "complete" : "incomplete",
     };
   });
@@ -342,7 +342,6 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
       label: "Features and accessibility",
       shortLabel: "Features",
       meta: featureCount === 0 ? "Recommended" : `${featureCount} selected`,
-      count: featureCount === 0 ? undefined : String(featureCount),
       status: featureCount === 0 ? "recommended" : "complete",
     },
     ...otherCoreSections,
@@ -351,7 +350,6 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
       label: "Photos",
       meta:
         photoCount === 0 ? "None yet" : `${photoCount} ${photoCount === 1 ? "photo" : "photos"}`,
-      count: String(photoCount),
       status: photoCount > 0 ? "complete" : "incomplete",
     },
   ];
@@ -388,17 +386,21 @@ function SaveStateIcon({ status }: { status: AutosaveStatus["status"] | "dirty" 
   );
 }
 
+/** One short line: 13px on phones, where it sits above the buttons, and 14px beside them from sm. */
+const SAVE_STATE_CLASS =
+  "mr-auto flex min-h-5 min-w-0 max-w-full items-center gap-2 text-xs sm:text-sm";
+
 /** The sticky bar's state for a published listing, which only changes when it's published. */
 function PublishState({ isDirty }: { isDirty: boolean }) {
   return (
     <div
       className={cn(
-        "mr-auto flex min-w-0 items-center gap-2 text-sm",
+        SAVE_STATE_CLASS,
         isDirty ? "font-medium text-amber-700 dark:text-amber-400" : "text-muted-foreground",
       )}
     >
       <SaveStateIcon status={isDirty ? "dirty" : "saved"} />
-      <p role="status" aria-live="polite">
+      <p className="truncate" role="status" aria-live="polite">
         {isDirty ? "Unpublished changes" : "Up to date"}
       </p>
     </div>
@@ -493,15 +495,21 @@ function SaveState({
   return (
     <div
       className={cn(
-        "mr-auto flex min-w-0 items-center gap-2 text-sm",
+        SAVE_STATE_CLASS,
         status === "error" ? "text-destructive" : "text-muted-foreground",
       )}
     >
       <SaveStateIcon status={status} />
-      {/* Always rendered so screen readers pick up the first change. Two lines of text at most,
-          so a long error never makes the sticky bar taller than its button. The relative time
-          sits outside the live region so its updates aren't announced every half minute. */}
-      <p className="line-clamp-2" role="status" aria-live="polite">
+      {/* Always rendered so screen readers pick up the first change. One line on phones and two
+          at most beside the buttons, so a long error never makes the sticky bar grow; the title
+          shows the rest. The relative time sits outside the live region so its updates aren't
+          announced every half minute. */}
+      <p
+        className="truncate sm:line-clamp-2 sm:whitespace-normal"
+        title={text ?? undefined}
+        role="status"
+        aria-live="polite"
+      >
         {text}
         {savedAt !== null ? (
           <span aria-hidden className="hidden sm:inline">

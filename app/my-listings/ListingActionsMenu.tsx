@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Archive02Icon, Copy01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import {
+  Archive02Icon,
+  Copy01Icon,
+  MoreHorizontalIcon,
+  ViewIcon,
+} from "@hugeicons/core-free-icons";
 
 import {
   AlertDialog,
@@ -25,6 +31,8 @@ import {
 
 type ListingActionsMenuProps = {
   listingTitle: string;
+  /** The public page, for a published listing. */
+  viewUrl?: string;
   isArchived: boolean;
   isMutating: boolean;
   isDuplicating: boolean;
@@ -35,12 +43,14 @@ type ListingActionsMenuProps = {
 };
 
 /**
- * The row's secondary actions: an overflow menu with Duplicate and Archive (which asks for
+ * The row's secondary actions: an overflow menu with View listing (once published), Duplicate
+ * and Archive (which asks for
  * confirmation), or a Restore button once the listing is archived. Render it at the same
  * position in both states so it stays mounted across the change.
  */
 export function ListingActionsMenu({
   listingTitle,
+  viewUrl,
   isArchived,
   isMutating,
   isDuplicating,
@@ -89,7 +99,7 @@ export function ListingActionsMenu({
             type="button"
             variant="outline"
             size="icon"
-            // Outlined at every width, like the View button beside it.
+            // Outlined at every width, like the Edit button beside it.
             className="max-sm:size-11"
             aria-label={`More actions for ${listingTitle}`}
             disabled={isMutating}
@@ -98,6 +108,14 @@ export function ListingActionsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {viewUrl ? (
+            <DropdownMenuItem asChild>
+              <Link href={viewUrl}>
+                <HugeiconsIcon icon={ViewIcon} strokeWidth={2} aria-hidden />
+                View listing
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
             disabled={isDuplicating}
             onSelect={() => {

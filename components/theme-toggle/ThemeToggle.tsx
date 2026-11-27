@@ -17,17 +17,15 @@ const surfaceClasses = {
 };
 
 type ThemeToggleProps = {
-  /** Shows "Light", "Dark" and "Auto" beside the icons, where there's room. */
-  showLabels?: boolean;
   /** The surface the toggle sits on, which sets its colours. */
   surface?: keyof typeof surfaceClasses;
 };
 
-export function ThemeToggle({ surface = "default", showLabels = false }: ThemeToggleProps) {
+export function ThemeToggle({ surface = "default" }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [isMounted, setIsMounted] = useState(false);
   const { group: groupClass, item } = surfaceClasses[surface];
-  const itemClass = cn("h-8 min-w-9 gap-1.5 rounded-full px-2", showLabels && "px-3", item);
+  const itemClass = cn("h-8 min-w-9 gap-1.5 rounded-full px-2", item);
 
   // next-themes only knows the stored theme on the client, so render without a
   // selection until mounted to keep server and client markup identical.
@@ -55,7 +53,6 @@ export function ThemeToggle({ surface = "default", showLabels = false }: ThemeTo
         className={itemClass}
       >
         <HugeiconsIcon icon={Sun03Icon} strokeWidth={2} size={16} />
-        {showLabels ? <span>Light</span> : null}
       </ToggleGroupItem>
       <ToggleGroupItem
         value="dark"
@@ -64,7 +61,6 @@ export function ThemeToggle({ surface = "default", showLabels = false }: ThemeTo
         className={itemClass}
       >
         <HugeiconsIcon icon={Moon02Icon} strokeWidth={2} size={16} />
-        {showLabels ? <span>Dark</span> : null}
       </ToggleGroupItem>
       <ToggleGroupItem
         value="system"
@@ -74,7 +70,6 @@ export function ThemeToggle({ surface = "default", showLabels = false }: ThemeTo
       >
         {/* A half-filled circle: follows the device's light or dark setting. */}
         <HugeiconsIcon icon={DarkModeIcon} strokeWidth={2} size={16} />
-        {showLabels ? <span>Auto</span> : null}
       </ToggleGroupItem>
     </ToggleGroup>
   );

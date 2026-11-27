@@ -88,31 +88,43 @@ export function groupOverlappingPins(
 }
 
 /**
- * Price pins are light in both themes, so they read the same way on the pale and the dark basemap,
- * with a hairline edge and a shadow, since they float over the map. Clusters are signage blue with
- * white text, so "3 homes" never looks like a price. The hovered or selected price turns blue in
- * light mode and gets a ring in dark mode, where a blue pill would sink into the dark ground. The
- * pin of the card being hovered in the list keeps its colours and gains a 2px blue ring.
+ * Price pins are white on the light basemap and card-coloured on the dark one, with a hairline
+ * edge and a small shadow, since they float over the map. Clusters are the same pill in signage
+ * blue with white text, so "3 homes" never looks like a price. The hovered or selected price turns
+ * solid blue. The pin of the card being hovered in the list keeps its colours and gains a 2px blue
+ * ring.
  */
 const pillClassName =
-  "flex h-8 items-center rounded-full border px-3 text-sm font-medium whitespace-nowrap transition-[transform,background-color,color,border-color,box-shadow] group-focus-visible:ring-3 group-focus-visible:ring-ring";
+  "relative flex h-8 items-center rounded-full border px-3 text-sm font-semibold whitespace-nowrap shadow-[0_1px_3px_rgb(0_0_0/0.2)] transition-[transform,background-color,color,border-color,box-shadow] group-focus-visible:ring-3 group-focus-visible:ring-ring";
 
-const restingPrice =
-  "border-black/10 bg-white text-[#15171b] shadow-[0_2px_8px_rgba(0,0,0,0.18)] dark:border-white/15 dark:bg-[#F4F4F5] dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
+const restingPrice = "border-black/15 bg-card text-foreground dark:border-white/15";
 
-const selectedPrice =
-  "scale-105 border-primary bg-primary text-white dark:scale-110 dark:border-white/15 dark:bg-[#F4F4F5] dark:text-[#15171b] dark:ring-2 dark:ring-white";
+const selectedPrice = "scale-105 border-primary bg-primary text-primary-foreground";
 
 const highlightedPrice = "scale-105 ring-2 ring-primary dark:ring-primary-text";
 
 const hoverPrice =
-  "group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-white dark:group-hover:scale-110 dark:group-hover:border-white/15 dark:group-hover:bg-[#F4F4F5] dark:group-hover:text-[#15171b] dark:group-hover:ring-2 dark:group-hover:ring-white";
+  "group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground";
 
 const clusterPill =
-  "border-black/10 bg-primary text-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] group-hover:scale-105 dark:border-white/15 dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
+  "border-black/15 bg-primary text-primary-foreground group-hover:scale-105 dark:border-white/15";
 
 /** A cluster holding the hovered card's listing grows and gets a ring in the text colour. */
 const emphasisedCluster = "scale-110 ring-2 ring-foreground";
+
+/**
+ * The yellow accessibility dot at a pin's top-right corner, shown while the Accessibility filter is
+ * on: every result then has the selected features. The ring in the card colour separates it from
+ * the pill and the map.
+ */
+function AccessibilityDot() {
+  return (
+    <span
+      aria-hidden
+      className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-signal ring-[1.5px] ring-card"
+    />
+  );
+}
 
 /** Room around the outermost pins when the map fits the results, and how close it may zoom. */
 const FIT_OPTIONS = { padding: 64, maxZoom: 14 } as const;
@@ -232,10 +244,16 @@ function SelectedListing({
 export const MapView = memo(function MapView({
   listings,
   highlightedId = null,
+  matchesAccessibilityFilter = false,
 }: {
   listings: Listing[];
   /** A listing to highlight, such as the one whose card is hovered in the list. */
   highlightedId?: string | null;
+  /**
+   * Set while the Accessibility filter has selections. The results are already filtered, so every
+   * pin gets the yellow accessibility dot.
+   */
+  matchesAccessibilityFilter?: boolean;
 }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -422,7 +440,10 @@ export const MapView = memo(function MapView({
                   longitude={group.lng}
                   latitude={group.lat}
                   anchor="center"
-                  className={cn("hover:z-1 focus-within:z-1", containsHighlighted && "z-3")}
+                  className={cn(
+                    "font-sans hover:z-1 focus-within:z-1",
+                    containsHighlighted && "z-3",
+                  )}
                   onClick={(e) => {
                     e.originalEvent.stopPropagation();
                     zoomToCluster(group);
@@ -441,6 +462,7 @@ export const MapView = memo(function MapView({
                       )}
                     >
                       {count} homes
+                      {matchesAccessibilityFilter && <AccessibilityDot />}
                     </span>
                   </button>
                 </Marker>
@@ -457,8 +479,9 @@ export const MapView = memo(function MapView({
                 anchor="center"
                 // A class rather than `style`: react-maplibre never removes inline styles it set,
                 // so a z-index there would stay after the pin is deselected.
+                // `font-sans` because MapLibre's container sets its own font.
                 className={cn(
-                  "hover:z-1 focus-within:z-1",
+                  "font-sans hover:z-1 focus-within:z-1",
                   selected && "z-2",
                   highlightedId === listing.id && "z-3",
                 )}
@@ -490,6 +513,7 @@ export const MapView = memo(function MapView({
                     )}
                   >
                     {formatRent(listing.price)}
+                    {matchesAccessibilityFilter && <AccessibilityDot />}
                   </span>
                 </button>
               </Marker>

@@ -16,8 +16,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
+/** The phone menu for signed-in people. Signed out, the header shows a Sign in button instead. */
 type HeaderMobileMenuProps = {
-  isSignedIn: boolean;
   isAdmin: boolean;
   canCreateListing: boolean;
   user: {
@@ -29,12 +29,7 @@ type HeaderMobileMenuProps = {
 const mobileMenuItemClass =
   "flex min-h-12 w-full items-center justify-between rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted";
 
-export function HeaderMobileMenu({
-  isSignedIn,
-  isAdmin,
-  canCreateListing,
-  user,
-}: HeaderMobileMenuProps) {
+export function HeaderMobileMenu({ isAdmin, canCreateListing, user }: HeaderMobileMenuProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
@@ -63,7 +58,7 @@ export function HeaderMobileMenu({
         <SheetContent
           side="right"
           onOpenAutoFocus={(event) => {
-            // Start on the first menu item (Sign in, or the first account link) rather than
+            // Start on the first menu item rather than
             // whatever Radix picks, which was the theme toggle.
             const first = navRef.current?.querySelector<HTMLElement>("a[href], button");
             if (first) {
@@ -78,75 +73,65 @@ export function HeaderMobileMenu({
             Site navigation and account options
           </SheetDescription>
           <nav ref={navRef} aria-label="Mobile navigation" className="space-y-1">
-            {isSignedIn ? (
-              <>
-                <Link
-                  href="/listings"
-                  className={mobileMenuItemClass}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <span>Browse listings</span>
-                </Link>
-                {canCreateListing ? (
-                  <>
-                    <Link
-                      href="/my-listings"
-                      className={mobileMenuItemClass}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <span>My listings</span>
-                    </Link>
-                  </>
-                ) : null}
-
-                {isAdmin ? (
-                  <>
-                    <Link
-                      href="/admin/custom-listing-fields"
-                      className={mobileMenuItemClass}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <span>Custom fields</span>
-                    </Link>
-                    <Link
-                      href="/admin/users"
-                      className={mobileMenuItemClass}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <span>Users</span>
-                    </Link>
-                  </>
-                ) : null}
-
-                {user ? (
-                  <div className="mt-3 flex items-center gap-3 border-t px-3 pt-4 pb-2 text-sm text-muted-foreground">
-                    <HugeiconsIcon icon={UserIcon} strokeWidth={2} size={16} />
-                    <span className="truncate font-medium">{user.name ?? user.email}</span>
-                  </div>
-                ) : null}
-
-                <Link
-                  href="/manage-account"
-                  className={mobileMenuItemClass}
-                  onClick={() => setIsOpen(false)}
-                >
-                  Manage account
-                </Link>
-                <form action={signOutFromHeader}>
-                  <button type="submit" className={mobileMenuItemClass}>
-                    <span>Sign out</span>
-                  </button>
-                </form>
-              </>
-            ) : (
+            <>
               <Link
-                href="/sign-in"
+                href="/listings"
                 className={mobileMenuItemClass}
                 onClick={() => setIsOpen(false)}
               >
-                <span>Sign in</span>
+                <span>Browse listings</span>
               </Link>
-            )}
+              {canCreateListing ? (
+                <>
+                  <Link
+                    href="/my-listings"
+                    className={mobileMenuItemClass}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <span>My listings</span>
+                  </Link>
+                </>
+              ) : null}
+
+              {isAdmin ? (
+                <>
+                  <Link
+                    href="/admin/custom-listing-fields"
+                    className={mobileMenuItemClass}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <span>Custom fields</span>
+                  </Link>
+                  <Link
+                    href="/admin/users"
+                    className={mobileMenuItemClass}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <span>Users</span>
+                  </Link>
+                </>
+              ) : null}
+
+              {user ? (
+                <div className="mt-3 flex items-center gap-3 border-t px-3 pt-4 pb-2 text-sm text-muted-foreground">
+                  <HugeiconsIcon icon={UserIcon} strokeWidth={2} size={16} />
+                  <span className="truncate font-medium">{user.name ?? user.email}</span>
+                </div>
+              ) : null}
+
+              <Link
+                href="/manage-account"
+                className={mobileMenuItemClass}
+                onClick={() => setIsOpen(false)}
+              >
+                Manage account
+              </Link>
+              <form action={signOutFromHeader}>
+                <button type="submit" className={mobileMenuItemClass}>
+                  <span>Sign out</span>
+                </button>
+              </form>
+            </>
 
             <div className="mt-3 flex items-center justify-between border-t px-3 pt-4 text-base font-medium text-foreground">
               <span>Theme</span>

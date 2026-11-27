@@ -74,8 +74,8 @@ export const activeFilterClassName =
  */
 const activeAccessibilityClassName = "border-foreground/60 dark:border-white/50";
 
-/** The phone quick-filter chips: fully rounded, so the row reads as chips, and 40px tall. */
-const chipClassName = "h-10 shrink-0 rounded-full px-3.5 text-sm";
+/** The phone quick-filter chips: the desktop filter buttons' shape, 40px tall, in a scrolling row. */
+const chipClassName = "h-10 shrink-0 rounded-lg px-3.5 text-sm";
 
 /** The number of selected accessibility features, beside the yellow mark. */
 function CountBadge({ count }: { count: number }) {
@@ -290,7 +290,16 @@ export function QuickFilterChips({
       >
         <AccessibilityIcon active={accessibilityCount > 0} />
         Accessibility
-        {accessibilityCount > 0 && <CountBadge count={accessibilityCount} />}
+        {accessibilityCount > 0 ? (
+          <CountBadge count={accessibilityCount} />
+        ) : (
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            strokeWidth={2}
+            className="size-4 text-muted-foreground"
+            aria-hidden
+          />
+        )}
       </Button>
       <FilterPopover
         chip

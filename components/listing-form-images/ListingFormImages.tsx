@@ -61,7 +61,7 @@ async function uploadFile(
 
 /** An icon button in the photo's control pill: 40px, 44px on phones. */
 const PHOTO_BUTTON =
-  "rounded-md text-inherit hover:bg-neutral-900/5 hover:text-inherit disabled:opacity-35 dark:hover:bg-white/10";
+  "rounded-md text-inherit hover:bg-muted hover:text-inherit disabled:opacity-35";
 
 export function ListingFormImages({
   control,
@@ -229,13 +229,13 @@ export function ListingFormImages({
                           />
                           {/* The Cover badge keeps a dark scrim so it reads on any photo. */}
                           {index === 0 ? (
-                            <Badge className="absolute top-2 left-2 h-7 border-white/15 bg-zinc-950/80 px-3 text-white backdrop-blur dark:bg-zinc-950/80">
+                            <Badge className="absolute top-2 left-2 h-7 border-white/15 bg-black/75 px-3 text-white backdrop-blur">
                               Cover
                             </Badge>
                           ) : null}
-                          {/* A solid pill rather than the scrim: white in light mode, near-black in
-                              dark, so the controls read on any photo. */}
-                          <div className="absolute top-2 right-2 flex rounded-lg border border-transparent bg-white/95 p-0.5 text-neutral-900 shadow-sm backdrop-blur dark:border-white/15 dark:bg-neutral-900/90 dark:text-white">
+                          {/* A solid pill in the card colour rather than the scrim, so the controls
+                              read on any photo. */}
+                          <div className="absolute top-2 right-2 flex rounded-lg border border-border bg-card/95 p-0.5 text-foreground shadow-sm backdrop-blur">
                             <Button
                               type="button"
                               variant="ghost"

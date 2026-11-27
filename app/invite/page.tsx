@@ -28,7 +28,7 @@ export default async function InvitePage({ searchParams }: InvitePageProps) {
   }
 
   return (
-    <AuthPageShell>
+    <AuthPageShell withPanel={false}>
       <AccountActivationFlow token={token} email={invite.user.email} />
     </AuthPageShell>
   );

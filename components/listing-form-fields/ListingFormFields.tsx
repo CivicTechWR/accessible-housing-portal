@@ -38,9 +38,8 @@ export interface ListingFormFieldsProps {
   categories?: readonly CoreFieldCategoryKey[];
 }
 
-/** The field's columns in its section's two-column grid, or in its row of three. */
+/** The field's columns in its section's two-column grid. */
 function fieldSpan(def: CoreFieldDefinition) {
-  if (def.rowOfThree) return "col-span-1";
   // Links are too long to read in half of the form column beside the preview.
   if (def.colSpan === 2 || def.fieldType === "url") return "col-span-2";
   // An email pairs with the phone number after it from sm, so neither sits alone at half width.
@@ -51,9 +50,12 @@ function fieldSpan(def: CoreFieldDefinition) {
 function FieldRenderer({
   def,
   control,
+  spanClassName = fieldSpan(def),
 }: {
   def: CoreFieldDefinition;
   control: ListingFormControl;
+  /** Overrides the field's usual columns. */
+  spanClassName?: string;
 }) {
   // The asterisk stays in the accessible name ("Title *"), which the form's "* Required" note
   // explains, but reads quieter than the label.
@@ -72,7 +74,7 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem className={cn("min-w-0", fieldSpan(def))} data-field-name={def.key}>
+          <FormItem className={cn("min-w-0", spanClassName)} data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <Select
               onValueChange={(value) => {
@@ -133,7 +135,7 @@ function FieldRenderer({
           };
 
           return (
-            <FormItem className={fieldSpan(def)} data-field-name={def.key}>
+            <FormItem className={spanClassName} data-field-name={def.key}>
               <FormLabel>{label}</FormLabel>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {def.options.map((opt) => (
@@ -162,10 +164,10 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem className={fieldSpan(def)} data-field-name={def.key}>
+          <FormItem className={spanClassName} data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <FormControl>
-              <Textarea rows={4} {...field} value={field.value ?? ""} />
+              <Textarea rows={4} className="min-h-32" {...field} value={field.value ?? ""} />
             </FormControl>
             {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
             <FormMessage />
@@ -184,7 +186,7 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem className={fieldSpan(def)} data-field-name={def.key}>
+          <FormItem className={spanClassName} data-field-name={def.key}>
             {/* Fixed to the label's height so the info button doesn't push this field below the one beside it. */}
             <div className="flex h-5 items-center gap-1">
               <FormLabel>{label}</FormLabel>
@@ -244,7 +246,7 @@ function FieldRenderer({
       control={control}
       name={def.key}
       render={({ field }) => (
-        <FormItem className={fieldSpan(def)} data-field-name={def.key}>
+        <FormItem className={spanClassName} data-field-name={def.key}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input type={inputType} {...field} value={field.value ?? ""} />
@@ -290,12 +292,23 @@ export function ListingFormFields({ control, categories }: ListingFormFieldsProp
         >
           {groupRowsOfThree(cat.fields).map((item) =>
             Array.isArray(item) ? (
+              // Two across on phones, where three columns would squeeze help text into ~100px.
+              // A field left over takes the full width there.
               <div
                 key={item[0].key}
-                className="col-span-2 grid grid-cols-3 gap-x-3 gap-y-5 sm:gap-x-4"
+                className="col-span-2 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3"
               >
-                {item.map((def) => (
-                  <FieldRenderer key={def.key} def={def} control={control} />
+                {item.map((def, index) => (
+                  <FieldRenderer
+                    key={def.key}
+                    def={def}
+                    control={control}
+                    spanClassName={
+                      index === item.length - 1 && item.length % 2 === 1
+                        ? "col-span-2 sm:col-span-1"
+                        : "col-span-1"
+                    }
+                  />
                 ))}
               </div>
             ) : (

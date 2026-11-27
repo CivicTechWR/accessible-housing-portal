@@ -60,7 +60,8 @@ export interface ListingFormLayoutProps {
   previewPaneHeader?: ReactNode;
   formContent: ReactNode;
   previewContent?: ReactNode;
-  /** The left of the sticky bar at the bottom of the screen, such as the save state. */
+  /** The left of the sticky bar at the bottom of the screen, such as the save state. On phones
+   * it sits on its own line above the buttons, so keep it to one short line. */
   footer?: ReactNode;
   /** The sticky bar's main action, at its right edge. Below lg the Preview button sits before it. */
   footerAction?: ReactNode;
@@ -101,13 +102,20 @@ function usePaneSwitcher() {
 
 /**
  * The bar pinned to the bottom of the screen. The bar spans the page, and its contents span the
- * editor's column: save state at the left edge, actions at the right edge of the preview.
+ * editor's column: save state at the left edge, actions at the right edge of the preview. On
+ * phones the save state gets its own line above two equal-width buttons.
  */
-function StickyFooter({ children }: { children: ReactNode }) {
+function StickyFooter({ status, actions }: { status: ReactNode; actions: ReactNode }) {
   return (
     <div className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-border bg-background px-4 py-3 sm:-mx-6 sm:px-6">
-      <div className={cn(PAGE_COLUMN, "flex min-w-0 items-center justify-end gap-3")}>
-        {children}
+      <div
+        className={cn(
+          PAGE_COLUMN,
+          "flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3",
+        )}
+      >
+        {status}
+        <div className="grid auto-cols-fr grid-flow-col gap-3 sm:flex sm:shrink-0">{actions}</div>
       </div>
     </div>
   );
@@ -194,22 +202,26 @@ export function ListingFormLayout({
         )}
       </div>
       {footer || footerAction ? (
-        <StickyFooter>
-          {footer}
-          {hasPreview ? (
-            // Below lg only one pane fits, so this button swaps them. Its label names the pane it
-            // opens; a pressed state would contradict the changing label, so it has none.
-            <Button
-              type="button"
-              variant="outline"
-              className="shrink-0 max-sm:h-11 lg:hidden"
-              onClick={() => switchPane(isPreviewing ? "form" : "preview")}
-            >
-              {isPreviewing ? "Edit" : "Preview"}
-            </Button>
-          ) : null}
-          {footerAction}
-        </StickyFooter>
+        <StickyFooter
+          status={footer}
+          actions={
+            <>
+              {hasPreview ? (
+                // Below lg only one pane fits, so this button swaps them. Its label names the pane it
+                // opens; a pressed state would contradict the changing label, so it has none.
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="max-sm:h-11 lg:hidden"
+                  onClick={() => switchPane(isPreviewing ? "form" : "preview")}
+                >
+                  {isPreviewing ? "Edit" : "Preview"}
+                </Button>
+              ) : null}
+              {footerAction}
+            </>
+          }
+        />
       ) : null}
     </div>
   );

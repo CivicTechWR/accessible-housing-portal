@@ -27,6 +27,11 @@ const labels: Record<State, string> = {
   complained: "Email marked as spam",
 };
 
+// Table rows are narrow, so the longest label gets a short form there; its title says the rest.
+const compactLabels: Partial<Record<State, string>> = {
+  not_requested: "Link only",
+};
+
 // Decorative. The label carries the meaning, so a status never depends on its icon or colour.
 const icons: Record<State, IconSvgElement> = {
   not_requested: MailRemove01Icon,
@@ -105,7 +110,7 @@ export function InviteEmailStatusSummary({
               ? "text-muted-foreground"
               : "font-medium text-foreground",
         )}
-        title={compact && !needsAction ? explanation : undefined}
+        title={compact && !needsAction ? `${labels[status.state]}. ${explanation}` : undefined}
       >
         <HugeiconsIcon
           icon={icons[status.state]}
@@ -113,7 +118,14 @@ export function InviteEmailStatusSummary({
           aria-hidden="true"
           className="mt-0.5 size-4 shrink-0"
         />
-        {labels[status.state]}
+        {compact && compactLabels[status.state] ? (
+          <>
+            <span aria-hidden>{compactLabels[status.state]}</span>
+            <span className="sr-only">{labels[status.state]}</span>
+          </>
+        ) : (
+          labels[status.state]
+        )}
       </p>
       {!compact || needsAction ? (
         <p className={cn("text-sm", needsAction ? "text-foreground" : "text-muted-foreground")}>

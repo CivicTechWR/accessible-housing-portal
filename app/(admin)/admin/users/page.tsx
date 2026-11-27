@@ -16,7 +16,7 @@ import {
   pageWidths,
 } from "@/components/page-shell/AppPageShell";
 import { Button } from "@/components/ui/button";
-import { Badge, StatusLabel, type StatusTone } from "@/components/ui/badge";
+import { Badge, StatusBadge, type StatusTone } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { findAccountInvites, type AccountInviteRow } from "@/lib/auth/invite-store";
@@ -95,7 +95,7 @@ const inviteLifecycle: Record<AccountInviteRow["lifecycle"], { label: string; to
 
 function InviteStatus({ lifecycle }: { lifecycle: AccountInviteRow["lifecycle"] }) {
   const { label, tone } = inviteLifecycle[lifecycle];
-  return <StatusLabel tone={tone}>{label}</StatusLabel>;
+  return <StatusBadge tone={tone}>{label}</StatusBadge>;
 }
 
 function DateText({ value }: { value: Date }) {
@@ -131,7 +131,7 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
         <table className="w-full table-fixed border-collapse text-left text-sm">
           <caption className="sr-only">Invitations</caption>
           <AccountTableColumns />
-          <thead className="border-b bg-muted/50 text-xs font-medium text-muted-foreground">
+          <thead className="border-b bg-muted text-sm font-medium text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Invitee</th>
               <th className="px-4 py-3">Role</th>
@@ -161,7 +161,7 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
                 <td className="px-4 py-3.5">
                   <RoleLabel role={invite.role} />
                 </td>
-                <td className="space-y-1 px-4 py-3.5">
+                <td className="space-y-1.5 px-4 py-3.5">
                   <InviteStatus lifecycle={invite.lifecycle} />
                   {invite.emailStatus && (
                     <InviteEmailStatusSummary status={invite.emailStatus} compact />
