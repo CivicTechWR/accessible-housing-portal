@@ -101,6 +101,24 @@ describe("ListingForm hydration", () => {
     ).toBe("First and last month's rent, refundable");
   });
 
+  it("offers to publish a published listing only once it has unpublished changes", async () => {
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    await waitFor(() => expect(title).toHaveValue("123 Main St Apartments"));
+    const publish = screen.getByRole("button", { name: "Publish changes" });
+
+    expect(screen.getByRole("status")).toHaveTextContent("Published and up to date");
+    expect(publish).toBeDisabled();
+
+    fireEvent.change(title, { target: { value: "Renamed" } });
+    expect(screen.getByRole("status")).toHaveTextContent("Unpublished changes");
+    expect(publish).toBeEnabled();
+
+    fireEvent.change(title, { target: { value: "123 Main St Apartments" } });
+    expect(screen.getByRole("status")).toHaveTextContent("Published and up to date");
+    expect(publish).toBeDisabled();
+  });
+
   it("selects, autosaves, reloads, and clears a public non-filterable feature", async () => {
     const feature = {
       id: "housing_provider_open_to_accessibility_modifications",

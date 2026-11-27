@@ -65,7 +65,7 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
 
   return (
     <nav aria-label="Form sections">
-      <p className="mb-2 px-3 text-xs font-medium text-muted-foreground">Sections</p>
+      <p className="mb-2 px-3 text-sm font-medium text-muted-foreground">Sections</p>
       <ul className="space-y-0.5">
         {sections.map((section) => {
           const isActive = section.id === activeId;
@@ -89,7 +89,7 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{section.label}</span>
                   {section.meta ? (
-                    <span className="block text-xs font-normal text-muted-foreground">
+                    <span className="block text-sm font-normal text-muted-foreground">
                       {section.meta}
                     </span>
                   ) : null}
@@ -128,7 +128,7 @@ export function ListingFormSectionJump({ sections }: { sections: ListingFormSect
             <span className="flex flex-col">
               <span>{section.label}</span>
               {section.meta ? (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {section.isComplete ? "Done" : section.meta}
                 </span>
               ) : null}

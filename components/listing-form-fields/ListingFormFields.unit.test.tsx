@@ -106,7 +106,7 @@ describe("ListingFormFields", () => {
     expect(form.getValues("heatingType")).toBe("");
     expect(form.getValues("buildingType")).toBe("apartment");
     expect(screen.getByRole("combobox", { name: "Primary heating type" }).textContent).toBe(
-      "Select primary heating type",
+      "Select",
     );
   });
 

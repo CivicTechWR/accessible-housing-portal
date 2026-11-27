@@ -16,7 +16,7 @@ export default async function ListingAuthorLayout({ children }: { children: Reac
   if (authzUser?.role !== "admin" && authzUser?.role !== "partner") {
     return (
       <PageMessage title="Listing author access required">
-        Only partner and admin accounts can access this area.
+        Only housing provider and admin accounts can access this area.
       </PageMessage>
     );
   }

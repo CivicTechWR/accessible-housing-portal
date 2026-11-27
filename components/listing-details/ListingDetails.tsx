@@ -118,7 +118,7 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
   const headingId = "listing-accessibility";
 
   return (
-    <section aria-labelledby={headingId} className="py-8 first:pt-0">
+    <section aria-labelledby={headingId}>
       {/* Light mode tints the panel; dark mode keeps the shared card surface and carries the
           brand colour in the border only, so it matches the contact card beside it. */}
       <div className="rounded-xl border border-primary/15 bg-primary/4 p-5 sm:p-7 dark:border-primary-text/35 dark:bg-card">
@@ -195,10 +195,21 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
   );
 }
 
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+/** A titled block below the accessibility panel. A rule above it separates it from the last. */
+function Section({
+  id,
+  title,
+  className,
+  children,
+}: {
+  id: string;
+  title: string;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <section aria-labelledby={id} className="py-8 first:pt-0">
-      <h2 id={id} className="mb-5 text-xl font-semibold tracking-tight">
+    <section aria-labelledby={id} className={cn("border-t pt-8", className)}>
+      <h2 id={id} className="mb-3 text-xl font-semibold tracking-tight">
         {title}
       </h2>
       {children}
@@ -277,8 +288,8 @@ export function ListingDetails({
   // The form preview passes the move-in date here, because a draft hasn't been posted.
   const posted = timeAgo.endsWith(" ago") ? timeAgo : undefined;
 
-  // Rent, size and availability are in the key facts above, and the address is under the title,
-  // so the details list only holds what isn't shown elsewhere.
+  // Rent, size and availability are in the key facts above, and the address and posting date are
+  // under the title, so the details list only holds what isn't shown elsewhere.
   const rentalDetailRows: Array<{
     label: string;
     value: string;
@@ -323,7 +334,6 @@ export function ListingDetails({
           },
         ]
       : []),
-    ...(posted ? [{ label: "Posted", value: posted }] : []),
   ];
 
   const generalEmail = contactEmail?.trim();
@@ -381,7 +391,15 @@ export function ListingDetails({
     <div className="space-y-4">
       <PageHeader
         title={<span className="wrap-anywhere">{heading}</span>}
-        description={title ? <span className="wrap-anywhere">{address}</span> : undefined}
+        description={
+          title || posted ? (
+            <span className="wrap-anywhere">
+              {[title ? address : undefined, posted ? `Posted ${posted}` : undefined]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          ) : undefined
+        }
         actions={
           editUrl ? (
             <Button asChild variant="outline">
@@ -418,65 +436,83 @@ export function ListingDetails({
     </div>
   );
 
+  // On desktop the page has two columns: the reading content on the left, and the contact card
+  // with the location under it on the right. Phones and the embedded preview have one column, where
+  // `display: contents` dissolves both column wrappers and `order` interleaves their blocks, so
+  // contact comes straight after the accessibility panel.
+  const twoColumns = !embedded;
+
+  const location = (coordinates || walkScore) && (
+    <Section
+      id="listing-location"
+      title="Location"
+      className={cn("order-5", twoColumns && "lg:border-t-0 lg:pt-0")}
+    >
+      <div className="space-y-3">
+        {/* The address is under the page title, which sits just above the sidebar on desktop. */}
+        <p
+          className={cn(
+            "flex items-start gap-2.5 text-base wrap-anywhere text-foreground",
+            twoColumns && "lg:sr-only",
+          )}
+        >
+          <HugeiconsIcon
+            icon={Location01Icon}
+            strokeWidth={2}
+            className="mt-0.5 size-5 shrink-0 text-foreground/70"
+            aria-hidden
+          />
+          {address}
+        </p>
+        {coordinates && <ListingLocationMap lat={coordinates.lat} lng={coordinates.lng} />}
+        {walkScore}
+      </div>
+    </Section>
+  );
+
   const mainColumn = (
-    <div className="min-w-0 divide-y">
-      <AccessibilityFeatures categories={features} />
+    <div className={cn("contents", twoColumns && "lg:flex lg:min-w-0 lg:flex-col lg:gap-8")}>
+      <div className="order-1">
+        <AccessibilityFeatures categories={features} />
+      </div>
 
       {trimmedDescription && (
-        <Section id="listing-description" title="Description">
+        <Section id="listing-description" title="Description" className="order-3">
           <p className="max-w-prose text-base whitespace-pre-line wrap-anywhere text-foreground">
             {trimmedDescription}
           </p>
         </Section>
       )}
 
-      <Section id="listing-rental-details" title="Rental details">
-        <dl className="grid grid-cols-2 gap-x-8">
-          {rentalDetailRows.map((row) => (
-            <div
-              key={row.label}
-              className={cn("min-w-0 border-t py-3.5", row.fullWidth && "col-span-2")}
-            >
-              <dt className="flex items-center gap-1 text-sm text-muted-foreground">
-                {row.label}
-                {row.info && <InfoPopover {...row.info} />}
-              </dt>
-              <dd
-                className={cn(
-                  "mt-1 text-base font-medium wrap-anywhere text-foreground",
-                  row.preserveWhitespace && "whitespace-pre-line",
-                )}
-              >
-                {row.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
+      <Section id="listing-rental-details" title="Rental details" className="order-4">
+        {/* Columns follow the section's width, which differs in the form preview. */}
+        <div className="@container">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 pt-1 @lg:grid-cols-3">
+            {rentalDetailRows.map((row) => (
+              <div key={row.label} className={cn("min-w-0", row.fullWidth && "col-span-full")}>
+                <dt className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+                  {row.label}
+                  {row.info && <InfoPopover {...row.info} />}
+                </dt>
+                <dd
+                  className={cn(
+                    "mt-0.5 text-base font-medium wrap-anywhere text-foreground",
+                    row.preserveWhitespace && "whitespace-pre-line",
+                  )}
+                >
+                  {row.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </Section>
 
-      {(coordinates || walkScore) && (
-        <Section id="listing-location" title="Location">
-          <div className="space-y-4">
-            <p className="flex items-start gap-2.5 text-base wrap-anywhere text-foreground">
-              <HugeiconsIcon
-                icon={Location01Icon}
-                strokeWidth={2}
-                className="mt-0.5 size-5 shrink-0 text-foreground/70"
-                aria-hidden
-              />
-              {address}
-            </p>
-            {coordinates && <ListingLocationMap lat={coordinates.lat} lng={coordinates.lng} />}
-            {walkScore}
-          </div>
-        </Section>
-      )}
-
       {instructions && (
-        <Section id="listing-how-to-apply" title="How to apply">
+        <Section id="listing-how-to-apply" title="How to apply" className="order-6">
           <figure className="space-y-2">
             <figcaption className="text-sm text-muted-foreground">
-              From the housing lister
+              From the housing provider
             </figcaption>
             <blockquote className="rounded-r-lg border-l-2 border-primary/40 bg-muted/50 px-4 py-3 text-base whitespace-pre-line wrap-anywhere">
               {instructions}
@@ -491,8 +527,7 @@ export function ListingDetails({
     <aside
       id={CONTACT_SECTION_ID}
       aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
-      // Sticky on desktop, so rent and Apply follow the reader down the page.
-      className={cn("min-w-0 scroll-mt-24", !embedded && "lg:sticky lg:top-22 lg:self-start")}
+      className="order-2 min-w-0 scroll-mt-24"
     >
       <div className="space-y-5 rounded-xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6 dark:border-white/12">
         {/* Phones get the price from the bottom bar, so it shows here on desktop only. */}
@@ -517,7 +552,7 @@ export function ListingDetails({
               />
             )}
             <p className="text-sm text-muted-foreground">
-              Apply directly with the housing lister, outside this portal.
+              Apply directly with the housing provider, outside this portal.
             </p>
           </div>
         )}
@@ -600,12 +635,23 @@ export function ListingDetails({
       {images.length > 0 && <ListingImageCarousel images={images} altPrefix={address} />}
       <div
         className={cn(
-          "grid grid-cols-1 gap-10",
-          !embedded && "lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-14",
+          "flex flex-col gap-8",
+          twoColumns && "lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-x-14",
         )}
       >
         {mainColumn}
-        {contactCard}
+        <div
+          className={cn(
+            "contents",
+            twoColumns &&
+              // Sticky on desktop, so rent and Apply follow the reader down the page. Only on
+              // screens tall enough to show the whole column, or its end would stay out of reach.
+              "lg:flex lg:flex-col lg:gap-6 lg:[@media(min-height:52rem)]:sticky lg:[@media(min-height:52rem)]:top-22",
+          )}
+        >
+          {contactCard}
+          {location}
+        </div>
       </div>
     </div>
   );
@@ -620,7 +666,7 @@ export function ListingDetails({
       {/* Keeps the price and the main action in reach while scrolling on phones. Sticky rather than
           fixed, so it takes its own space at the end of the page (nothing is left hidden under it)
           and stops above the site footer. Solid, so text scrolling underneath doesn't show through. */}
-      <div className="sticky bottom-0 z-20 -mx-4 mt-10 -mb-8 border-t bg-background px-4 py-3 sm:-mx-6 sm:-mb-10 sm:px-6 lg:hidden">
+      <div className="sticky bottom-0 z-20 -mx-4 mt-6 -mb-8 border-t bg-background px-4 py-3 sm:-mx-6 sm:-mb-10 sm:px-6 lg:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <Price price={price} className="min-w-0 text-xl" />
           {applyUrl ? (

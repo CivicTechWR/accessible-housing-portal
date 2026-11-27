@@ -7,6 +7,7 @@ import {
   Delete02Icon,
   DragDropVerticalIcon,
   EyeIcon,
+  MoreHorizontalIcon,
   Tick02Icon,
   ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
@@ -14,6 +15,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -125,7 +132,7 @@ export function SortHeader({
       type="button"
       title={helperText}
       aria-label={`${label}: ${helperText}`}
-      className="flex items-center gap-1 px-4 py-3 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+      className="flex items-center gap-1 px-4 py-3 text-left text-xs font-semibold text-muted-foreground hover:text-foreground"
       onClick={() => onSort(sortKey)}
     >
       {label}
@@ -186,6 +193,7 @@ export function FieldRow({
   onRequiredChange: (required: boolean) => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div
@@ -199,7 +207,7 @@ export function FieldRow({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      <div className="flex justify-end pt-3 pr-1">
+      <div className="flex items-center gap-1 pt-3 pl-2">
         <button
           type="button"
           draggable={!isPending}
@@ -224,8 +232,8 @@ export function FieldRow({
             className="size-4"
           />
         </button>
+        <span className="text-sm text-muted-foreground tabular-nums">{position}</span>
       </div>
-      <div className="py-3 pr-3 text-sm tabular-nums text-muted-foreground">{position}</div>
       <div className="flex min-w-0 flex-col">
         <EditableTextCell
           value={field.label}
@@ -242,7 +250,7 @@ export function FieldRow({
           {field.key}
         </p>
       </div>
-      <div className="px-4 py-3">
+      <div className="px-2 py-3">
         <Select
           value={field.appliesTo}
           onValueChange={(value) =>
@@ -268,7 +276,10 @@ export function FieldRow({
           label="Description"
           value={field.description ?? ""}
           displayValue={field.description || "No description"}
-          className={cn("py-1", field.description ? "text-foreground" : "text-muted-foreground")}
+          className={cn(
+            "pt-1.5 pb-0.5",
+            field.description ? "text-foreground" : "text-muted-foreground",
+          )}
           disabled={isPending}
           ariaLabel={`Edit description for ${field.label}`}
           multiline
@@ -278,14 +289,14 @@ export function FieldRow({
           label="Help text"
           value={field.helpText ?? ""}
           displayValue={field.helpText || "No help text"}
-          className="py-1 text-muted-foreground"
+          className="pt-0.5 pb-1.5 text-muted-foreground"
           disabled={isPending}
           ariaLabel={`Edit help text for ${field.label}`}
           multiline
           onCommit={(helpText) => onTextChange({ helpText: nullableTrim(helpText) })}
         />
       </div>
-      <div className="px-3 py-3">
+      <div className="px-2 py-3">
         <Select
           value={field.publicOnly ? "public" : "internal"}
           onValueChange={(value) => onVisibilityChange(value === "public")}
@@ -327,19 +338,36 @@ export function FieldRow({
           onCheckedChange={(checked) => onRequiredChange(checked === true)}
         />
       </div>
-      <div className="flex items-center justify-center py-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          aria-label={`Delete ${field.label}`}
-          title={`Delete ${field.label}`}
-          disabled={isPending}
-          onClick={onDelete}
-        >
-          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-4" aria-hidden />
-        </Button>
+      <div className="flex justify-center py-2">
+        {/* Not modal, so the delete dialog opened from it doesn't leave the page inert. */}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              ref={menuButtonRef}
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={`More actions for ${field.label}`}
+              disabled={isPending}
+            >
+              <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={2} aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => {
+                // The delete dialog returns focus to whatever had it when it opened, and the menu
+                // item is about to unmount.
+                menuButtonRef.current?.focus();
+                onDelete();
+              }}
+            >
+              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} aria-hidden />
+              Delete field
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
@@ -356,7 +384,8 @@ function EditableTextCell({
   ariaLabel,
   onCommit,
 }: {
-  /** A small caption above the value, for cells that stack several fields. */
+  /** Names the value for screen readers and above the box while editing, for cells that stack
+   * several fields. */
   label?: string;
   value: string;
   displayValue?: string;
@@ -422,7 +451,7 @@ function EditableTextCell({
     return (
       <div className="px-3 py-2">
         {label ? (
-          <span className="mb-1 block px-1 text-xs font-medium text-muted-foreground">{label}</span>
+          <span className="mb-1 block px-1 text-sm font-medium text-muted-foreground">{label}</span>
         ) : null}
         {multiline ? (
           <Textarea
@@ -461,9 +490,7 @@ function EditableTextCell({
       disabled={disabled}
       onClick={beginEditing}
     >
-      {label ? (
-        <span className="block text-xs font-medium text-muted-foreground">{label}</span>
-      ) : null}
+      {label ? <span className="sr-only">{label}: </span> : null}
       <span className="line-clamp-2" title={shownValue}>
         {shownValue}
       </span>

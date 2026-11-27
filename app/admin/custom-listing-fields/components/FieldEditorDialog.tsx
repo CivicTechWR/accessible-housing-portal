@@ -204,7 +204,7 @@ export function FieldEditorDialog({
                       disabled={isSaving}
                     />
                   </FormControl>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -226,7 +226,7 @@ export function FieldEditorDialog({
                       disabled={isSaving}
                     />
                   </FormControl>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -246,7 +246,7 @@ export function FieldEditorDialog({
                     disabled={isSaving}
                     required
                   />
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -278,7 +278,7 @@ export function FieldEditorDialog({
                       <SelectItem value="unit">Unit — specific to one unit</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -305,7 +305,7 @@ export function FieldEditorDialog({
                       <SelectItem value="internal">Internal</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -421,7 +421,7 @@ function FormTextArea({
           <FormControl>
             <Textarea {...field} rows={3} disabled={disabled} />
           </FormControl>
-          <FormMessage className="text-xs" />
+          <FormMessage />
         </FormItem>
       )}
     />
@@ -457,13 +457,13 @@ function CheckboxFieldControl({
               />
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span>{label}</span>
-                <span className="text-xs font-normal leading-snug text-muted-foreground">
+                <span className="text-sm font-normal leading-snug text-muted-foreground">
                   {helpText}
                 </span>
               </span>
             </label>
           </FormControl>
-          <FormMessage className="text-xs" />
+          <FormMessage />
         </FormItem>
       )}
     />

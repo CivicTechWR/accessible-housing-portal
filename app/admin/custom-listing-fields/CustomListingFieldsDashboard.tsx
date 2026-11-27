@@ -22,10 +22,10 @@ export function CustomListingFieldsDashboard({
 
   return (
     <AppPageShell>
-      <div className={cn("mx-auto space-y-6", pageWidths.wide)}>
+      <div className={cn("mx-auto space-y-6", pageWidths.content)}>
         <PageHeader
           title="Custom listing fields"
-          description="Fields that appear on listings and in search filters. Renters and partners see them in the order shown here. Drag a row to reorder it, or select rows to change their category."
+          description="Fields that appear on listings and in search filters. Navigators and housing providers see them in the order shown here. Drag a row to reorder it, or select rows to change their category."
           actions={
             <Button
               type="button"

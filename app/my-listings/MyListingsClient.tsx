@@ -226,11 +226,13 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
             <li key={listing.id}>
               <Card
                 className={cn(
-                  "grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:items-center sm:gap-x-5 sm:p-4",
+                  // Phones: photo and title side by side, then facts and actions on full-width
+                  // rows so the facts line has room. From sm: photo, details, actions in a row.
+                  "grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4",
                   isArchived && "bg-muted/40",
                 )}
               >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/5">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/5 sm:row-span-2 sm:self-center">
                   {listing.imageUrl ? (
                     <img
                       src={listing.imageUrl}
@@ -250,7 +252,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   )}
                 </div>
 
-                <div className="min-w-0 space-y-1">
+                <div className="min-w-0 space-y-1 sm:self-end">
                   {/* The chip gets its own line so the title can use the full width to wrap. */}
                   <ListingStatusBadge status={listing.status} className="mb-1.5" />
                   <h2 className="text-base font-semibold text-pretty break-words">
@@ -259,6 +261,9 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   <p className="truncate text-sm text-muted-foreground">
                     {listingLocation(listing) ?? "Address not set"}
                   </p>
+                </div>
+
+                <div className="col-span-2 min-w-0 space-y-1 sm:col-span-1 sm:col-start-2 sm:self-start">
                   <p className="flex flex-wrap gap-x-1.5 text-sm text-foreground">
                     {[
                       facts.rent === null ? (
@@ -290,12 +295,12 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                       </span>
                     ))}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Updated {formatDistance(new Date(listing.updatedAt), now, { addSuffix: true })}
                   </p>
                 </div>
 
-                <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:justify-end">
+                <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:justify-end sm:self-center">
                   {isArchived ? (
                     <p className="mr-auto text-sm text-muted-foreground sm:mr-2 sm:max-w-48 sm:text-right">
                       This listing is archived and is no longer publicly visible.

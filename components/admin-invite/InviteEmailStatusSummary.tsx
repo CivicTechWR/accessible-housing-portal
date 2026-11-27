@@ -104,7 +104,7 @@ export function InviteEmailStatusSummary({
         />
         {labels[status.state]}
       </p>
-      <p className={cn("text-xs", needsAction ? "text-foreground" : "text-muted-foreground")}>
+      <p className={cn("text-sm", needsAction ? "text-foreground" : "text-muted-foreground")}>
         {explain(status)}
       </p>
     </div>

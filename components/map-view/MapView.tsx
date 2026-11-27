@@ -20,7 +20,7 @@ type MappableListing = Listing & { lat: number; lng: number };
 /** At this zoom and closer every listing gets its own pin, even where pins overlap. */
 const CLUSTER_MAX_ZOOM = 15;
 /** Pins whose centres are closer than this, in screen pixels, merge into one cluster. */
-const CLUSTER_RADIUS = { x: 72, y: 34 };
+const CLUSTER_RADIUS = { x: 80, y: 34 };
 
 type PinGroup = { lat: number; lng: number; listings: MappableListing[] };
 
@@ -28,16 +28,27 @@ type PinGroup = { lat: number; lng: number; listings: MappableListing[] };
  * Greedily merges pins that would overlap on screen into clusters. Price pins are wide and
  * short, so the overlap test uses a box rather than a circle. Cheap enough to rerun after every
  * pan or zoom for the few hundred listings the search loads.
+ *
+ * Listings whose position is off screen are left out, so a cluster counts only homes in view
+ * and no sliver of a pin shows at the map's edge.
  */
 export function groupOverlappingPins(
-  map: { getZoom(): number; project(lngLat: [number, number]): { x: number; y: number } },
+  map: {
+    getZoom(): number;
+    project(lngLat: [number, number]): { x: number; y: number };
+    getContainer(): { clientWidth: number; clientHeight: number };
+  },
   listings: MappableListing[],
   keepSeparate: string | null,
 ) {
   if (map.getZoom() >= CLUSTER_MAX_ZOOM) return null;
+  const { clientWidth, clientHeight } = map.getContainer();
   const groups: Array<PinGroup & { x: number; y: number }> = [];
   for (const listing of listings) {
     const point = map.project([listing.lng, listing.lat]);
+    const onScreen =
+      point.x >= 0 && point.x <= clientWidth && point.y >= 0 && point.y <= clientHeight;
+    if (!onScreen && listing.id !== keepSeparate) continue;
     const group =
       listing.id === keepSeparate
         ? undefined
@@ -64,6 +75,21 @@ export function groupOverlappingPins(
     lat: members.reduce((sum, l) => sum + l.lat, 0) / members.length,
     lng: members.reduce((sum, l) => sum + l.lng, 0) / members.length,
   }));
+}
+
+/**
+ * Price pins and cluster pills share one look, so a cluster doesn't outrank a single home. Light
+ * mode uses white pills on the grey basemap; dark mode uses a raised dark pill, because white
+ * glares on the near-black map. The hovered, highlighted or selected pin takes the accent: brand
+ * blue in light mode, white in dark mode.
+ */
+const pillClassName =
+  "flex h-7.5 items-center rounded-full px-3 text-sm font-semibold whitespace-nowrap tabular-nums shadow-[0_1px_4px_rgba(0,0,0,0.25)] ring-1 transition-[transform,background-color,color] group-hover:scale-105 group-focus-visible:ring-3 group-focus-visible:ring-ring dark:shadow-[0_2px_6px_rgba(0,0,0,0.6)]";
+
+function pillTone(emphasised: boolean) {
+  return emphasised
+    ? "scale-105 bg-primary text-primary-foreground ring-primary dark:bg-white dark:text-neutral-900 dark:ring-white"
+    : "bg-white text-neutral-900 ring-black/10 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary dark:bg-[#1f262c] dark:text-white dark:ring-[#3d4852] dark:group-hover:bg-white dark:group-hover:text-neutral-900 dark:group-hover:ring-white";
 }
 
 function displayAddress(listing: Listing) {
@@ -308,15 +334,10 @@ export const MapView = memo(function MapView({
                   <button
                     type="button"
                     aria-label={`${count} listings here. Zoom in to see them.`}
-                    className="group flex size-11 cursor-pointer items-center justify-center rounded-full outline-none"
+                    className="group flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full outline-none"
                   >
-                    <span
-                      className={cn(
-                        "flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-lg ring-2 ring-white transition-transform group-hover:scale-110 group-focus-visible:ring-4 group-focus-visible:ring-ring",
-                        containsHighlighted && "scale-125 shadow-xl",
-                      )}
-                    >
-                      {count}
+                    <span className={cn(pillClassName, pillTone(containsHighlighted))}>
+                      {count} homes
                     </span>
                   </button>
                 </Marker>
@@ -357,16 +378,7 @@ export const MapView = memo(function MapView({
                   }}
                   className="group flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full outline-none"
                 >
-                  {/* White pills on both basemaps, which contrast with the grey light map and
-                      the near-black dark one. Hovered, highlighted and selected pins turn brand blue. */}
-                  <span
-                    className={cn(
-                      "flex h-7.5 items-center rounded-full px-3 text-sm font-semibold tabular-nums shadow-[0_1px_4px_rgba(0,0,0,0.25)] ring-1 transition-[transform,background-color,color] group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary group-focus-visible:ring-3 group-focus-visible:ring-ring",
-                      emphasised
-                        ? "scale-105 bg-primary text-primary-foreground ring-primary"
-                        : "bg-white text-neutral-900 ring-black/10",
-                    )}
-                  >
+                  <span className={cn(pillClassName, pillTone(emphasised))}>
                     {formatRent(listing.price)}
                   </span>
                 </button>

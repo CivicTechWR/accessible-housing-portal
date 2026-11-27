@@ -22,13 +22,14 @@ export type SortDirection = "asc" | "desc";
 
 // Drag handle, order, field (label and key), applies to, description and help text, visibility,
 // filterable, required, actions. The minimum fits inside the wide page width at 1440px.
+// Fits the 1024px page width: the drag handle and position share the first column.
 export const TABLE_COLUMNS =
-  "grid-cols-[40px_48px_minmax(200px,1fr)_136px_minmax(300px,1.8fr)_136px_88px_88px_56px]";
+  "grid-cols-[72px_minmax(176px,1fr)_124px_minmax(240px,1.7fr)_140px_88px_80px_52px]";
 
-export const TABLE_MIN_WIDTH = "min-w-[1100px]";
+export const TABLE_MIN_WIDTH = "min-w-[972px]";
 
 export const FIELD_HELP_TEXT = {
-  label: "Human-readable field name shown to partners and renters.",
+  label: "Human-readable field name shown to housing providers and renters.",
   key: "Stable identifier used by listing data and APIs.",
   category: "Groups related fields together in forms and listings.",
   appliesTo:

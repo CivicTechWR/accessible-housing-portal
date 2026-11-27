@@ -21,7 +21,7 @@ const LocationMap = dynamic<{ lat: number; lng: number }>(
 /** A small, non-interactive map with one marker. The address is shown as text beside it. */
 export function ListingLocationMap({ lat, lng }: { lat: number; lng: number }) {
   return (
-    <div className="relative h-60 overflow-hidden rounded-xl border bg-muted dark:border-white/12">
+    <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-muted dark:border-white/12">
       <LocationMap lat={lat} lng={lng} />
     </div>
   );

@@ -40,7 +40,7 @@ function FeatureSwitch({
 }: {
   label: string;
   helpText?: string;
-  /** The description renters read on the listing, when it says more than the label. */
+  /** The description navigators read on the listing, when it says more than the label. */
   publicText?: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
@@ -61,8 +61,6 @@ function FeatureSwitch({
     <div
       className={cn(
         "rounded-lg border px-3 transition-colors",
-        // An open row takes the full width so its details don't leave a tall gap beside it.
-        showDetails && "md:col-span-2",
         // A tinted row makes the few features that are on easy to find among the many that are off.
         checked ? "border-primary/30 bg-primary/5" : "border-transparent",
       )}
@@ -98,7 +96,8 @@ function FeatureSwitch({
           {helpText ? <p>{helpText}</p> : null}
           {showPublicText ? (
             <p>
-              <span className="font-medium text-foreground">Renters see:</span> &ldquo;{publicText}
+              <span className="font-medium text-foreground">Listing shows:</span> &ldquo;
+              {publicText}
               &rdquo;
             </p>
           ) : null}
@@ -116,7 +115,7 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
     return (
       <FormSection id={sectionId} title={SECTION_TITLE} description={SECTION_DESCRIPTION}>
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-start gap-3">
+          <div key={i} className="col-span-2 flex items-start gap-3">
             <div className="w-full space-y-2">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3 w-full" />
@@ -131,7 +130,7 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
   if (isError || !featureGroups) {
     return (
       <FormSection id={sectionId} title={SECTION_TITLE}>
-        <p className="text-destructive md:col-span-2">
+        <p className="col-span-2 text-destructive">
           Failed to load listing features. Please try again later.
         </p>
       </FormSection>
@@ -177,7 +176,7 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
               </Badge>
             }
           >
-            <FormItem className="md:col-span-2">
+            <FormItem className="col-span-2">
               <Accordion
                 type="multiple"
                 // Only categories with features already on start open.
@@ -211,7 +210,9 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="-mx-2 pb-4">
-                        <div className="grid grid-cols-1 items-start gap-x-4 gap-y-1 md:grid-cols-2">
+                        {/* One column, so a feature's details open under it without moving the
+                            rows beside it. */}
+                        <div className="flex max-w-2xl flex-col gap-1">
                           {group.options.map((option) => (
                             <FeatureSwitch
                               key={option.id}

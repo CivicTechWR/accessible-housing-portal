@@ -129,20 +129,20 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
           <caption className="sr-only">Invitations</caption>
           <colgroup>
             <col />
-            <col className="w-36" />
-            <col className="w-[30%]" />
+            <col className="w-48" />
+            <col className="w-[28%]" />
             <col className="w-32" />
             <col className="w-32" />
             <col className="w-20" />
           </colgroup>
-          <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
+          <thead className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
             <tr>
-              <th className="px-4 py-3 font-medium">Invitee</th>
-              <th className="px-4 py-3 font-medium">Role</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Invited</th>
-              <th className="px-4 py-3 font-medium">Expires</th>
-              <th className="px-4 py-3 font-medium">
+              <th className="px-4 py-3">Invitee</th>
+              <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Invited</th>
+              <th className="px-4 py-3">Expires</th>
+              <th className="px-4 py-3">
                 <span className="sr-only">Actions</span>
               </th>
             </tr>
@@ -152,11 +152,11 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
               <tr key={invite.id} className="align-top">
                 <td className="px-4 py-3.5">
                   <p className="font-medium break-words text-foreground">{invite.name}</p>
-                  <p className="text-xs [overflow-wrap:anywhere] text-muted-foreground">
+                  <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
                     {invite.email}
                   </p>
                   {invite.organization ? (
-                    <p className="text-xs break-words text-muted-foreground">
+                    <p className="text-sm break-words text-muted-foreground">
                       {invite.organization}
                     </p>
                   ) : null}
@@ -176,7 +176,7 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
                 <td className="px-4 py-3.5 text-muted-foreground">
                   <DateText value={invite.expiresAt} />
                 </td>
-                <td className="px-4 py-3.5">
+                <td className="px-4 py-3 text-right">
                   <AdminInviteActions
                     inviteId={invite.id}
                     inviteeLabel={invite.name || invite.email}
@@ -236,7 +236,7 @@ export default async function AdminUsersPage() {
 
   return (
     <AppPageShell>
-      <div className={cn("mx-auto space-y-8", pageWidths.wide)}>
+      <div className={cn("mx-auto space-y-8", pageWidths.content)}>
         <PageHeader
           title="Users"
           description="Review portal accounts, their access levels and recent activity."

@@ -205,8 +205,7 @@ export function CustomListingFieldsTable({
               TABLE_COLUMNS,
             )}
           >
-            <div />
-            <div className="py-3 pr-3 text-xs font-medium text-muted-foreground">Order</div>
+            <div className="py-3 pl-4 text-xs font-semibold text-muted-foreground">Order</div>
             <SortHeader
               label="Field"
               sortKey="label"
@@ -224,7 +223,7 @@ export function CustomListingFieldsTable({
               onSort={onSort}
             />
             <SortHeader
-              label="Description and help text"
+              label="Description"
               sortKey="description"
               helperText={`${FIELD_HELP_TEXT.description} Help text: ${FIELD_HELP_TEXT.helpText}`}
               activeSortKey={sortKey}
@@ -271,7 +270,7 @@ export function CustomListingFieldsTable({
                       <h2 className="text-sm font-semibold text-foreground">
                         {toSentenceCase(group.label)}
                       </h2>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-sm text-muted-foreground">
                         {group.fields.length} {group.fields.length === 1 ? "field" : "fields"}
                       </span>
                     </div>

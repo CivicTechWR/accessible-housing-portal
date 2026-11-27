@@ -22,7 +22,8 @@ export function AdminInvitePanel({
   });
 
   return (
-    <div className="space-y-6">
+    // The form takes the main column and recent invites sit beside it from lg.
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
       <Card>
         <CardHeader>
           <CardTitle>

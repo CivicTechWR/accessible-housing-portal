@@ -24,7 +24,7 @@ export function ListingFormSkeleton() {
           {CORE_FIELD_CATEGORIES.map((cat) => (
             <FormSection key={cat.key} title={cat.displayName} description={cat.description}>
               {Array.from({ length: cat.key === "listing_details" ? 8 : 6 }).map((_, i) => (
-                <div key={i} className="space-y-2">
+                <div key={i} className="col-span-2 space-y-2 md:col-span-1">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-10 w-full" />
                 </div>

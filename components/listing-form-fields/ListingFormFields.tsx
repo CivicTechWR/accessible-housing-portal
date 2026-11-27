@@ -27,10 +27,17 @@ import { listingFormSectionId } from "@/app/listing-form/fieldDefinitions";
 import { LabelledCheckbox } from "@/components/labelled-checkbox/LabelledCheckbox";
 import { InfoPopover } from "@/components/info-popover/InfoPopover";
 import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
+import { cn } from "@/lib/utils";
 import { formatNumberInput, parseNumberInput, stripLeadingZeros } from "./numberInput";
 
 export interface ListingFormFieldsProps {
   control: ListingFormControl;
+}
+
+/** The field's columns in its section's two-column grid. */
+function fieldSpan(def: CoreFieldDefinition) {
+  if (def.colSpan === 2) return "col-span-2";
+  return def.pairOnMobile ? "col-span-1" : "col-span-2 md:col-span-1";
 }
 
 function FieldRenderer({
@@ -48,10 +55,7 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem
-            className={def.colSpan === 2 ? "md:col-span-2 min-w-0" : undefined}
-            data-field-name={def.key}
-          >
+          <FormItem className={cn("min-w-0", fieldSpan(def))} data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <Select
               onValueChange={(value) => {
@@ -67,7 +71,7 @@ function FieldRenderer({
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder={`Select ${def.displayName.toLowerCase()}`} />
+                  <SelectValue placeholder="Select" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent className="max-w-[calc(100vw-2rem)]">
@@ -112,10 +116,7 @@ function FieldRenderer({
           };
 
           return (
-            <FormItem
-              className={def.colSpan === 2 ? "md:col-span-2" : undefined}
-              data-field-name={def.key}
-            >
+            <FormItem className={fieldSpan(def)} data-field-name={def.key}>
               <FormLabel>{label}</FormLabel>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {def.options.map((opt) => (
@@ -144,10 +145,7 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem
-            className={def.colSpan === 2 ? "md:col-span-2" : undefined}
-            data-field-name={def.key}
-          >
+          <FormItem className={fieldSpan(def)} data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <FormControl>
               <Textarea
@@ -174,7 +172,7 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem data-field-name={def.key}>
+          <FormItem className={fieldSpan(def)} data-field-name={def.key}>
             <div className="flex items-center gap-1">
               <FormLabel>{label}</FormLabel>
               {isLeaseTerm && def.helpText && (
@@ -234,10 +232,7 @@ function FieldRenderer({
       control={control}
       name={def.key}
       render={({ field }) => (
-        <FormItem
-          className={def.colSpan === 2 ? "md:col-span-2" : undefined}
-          data-field-name={def.key}
-        >
+        <FormItem className={fieldSpan(def)} data-field-name={def.key}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input

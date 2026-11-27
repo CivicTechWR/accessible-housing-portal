@@ -35,7 +35,9 @@ export function FormSection({ id, title, description, headerAside, children }: F
         </div>
         {headerAside}
       </div>
-      <div className="grid grid-cols-1 gap-x-4 gap-y-5 md:grid-cols-2">{children}</div>
+      {/* Two columns at every width, so short fields can pair up on phones. Children set their
+          own span: col-span-2 for a full row, "col-span-2 md:col-span-1" for half a row from md. */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5">{children}</div>
     </section>
   );
 }
@@ -79,16 +81,17 @@ function PaneTabs({
     >
       <TabsList
         aria-label="Listing editor view"
-        className="grid shrink-0 grid-cols-2 gap-1 p-1 group-data-horizontal/tabs:h-auto"
+        className="grid h-11 shrink-0 grid-cols-2 gap-1 rounded-lg p-1 group-data-horizontal/tabs:h-11"
       >
         {PANES.map(({ value, label }) => (
           <TabsTrigger
             key={value}
             value={value}
             className={cn(
-              "h-11 border-2 px-4 text-sm",
-              // The selected tab gets a border and bold text, not just a color change.
-              "data-active:border-foreground data-active:font-semibold data-active:shadow-sm dark:data-active:border-foreground",
+              "h-9 rounded-md px-4 text-sm",
+              // The selected tab is raised and bold, not just a colour change, matching the
+              // List/Map switch on the search page.
+              "data-active:font-semibold data-active:shadow-sm dark:data-active:bg-input/40",
             )}
           >
             {label}

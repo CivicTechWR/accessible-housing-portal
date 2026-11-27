@@ -38,6 +38,8 @@ interface BaseCoreFieldDefinition {
   isRequired: boolean;
   sortOrder: number;
   colSpan?: 1 | 2;
+  /** Keeps this half-width field beside its neighbour on phones too. Set it on both fields. */
+  pairOnMobile?: true;
 }
 
 interface TextLikeFieldDefinition extends BaseCoreFieldDefinition {
@@ -79,7 +81,7 @@ export const CORE_FIELD_CATEGORIES = [
   {
     key: "property_info",
     displayName: "Property and contact",
-    description: "Where the building is and who renters can contact.",
+    description: "Where the building is and who navigators can contact.",
   },
   {
     key: "application",
@@ -124,6 +126,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 3,
+    pairOnMobile: true,
     options: [
       { label: "Apartment", value: LISTING_BUILDING_TYPE_VALUES[0] },
       { label: "House", value: LISTING_BUILDING_TYPE_VALUES[1] },
@@ -138,7 +141,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: false,
     sortOrder: 4,
-    placeholder: "Optional",
+    pairOnMobile: true,
   },
   {
     key: "bedrooms",
@@ -147,7 +150,8 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 5,
-    placeholder: "0 for studio",
+    pairOnMobile: true,
+    helpText: "Enter 0 for a studio.",
   },
   {
     key: "bathrooms",
@@ -156,7 +160,8 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 6,
-    placeholder: "E.g. 1.5",
+    pairOnMobile: true,
+    helpText: "Half baths count as 0.5.",
   },
   {
     key: "squareFeet",
@@ -173,7 +178,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 8,
-    placeholder: "E.g. 1500",
     helpText: "Enter the monthly rent in dollars.",
   },
   {
@@ -194,7 +198,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 10,
-    placeholder: "E.g. 12",
     helpText: HOUSING_DEFINITIONS.leaseTerm.description,
   },
   {
@@ -267,6 +270,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "property_info",
     isRequired: true,
     sortOrder: 14,
+    pairOnMobile: true,
   },
   {
     key: "postalCode",
@@ -275,6 +279,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "property_info",
     isRequired: true,
     sortOrder: 15,
+    pairOnMobile: true,
   },
   {
     key: "contactName",
@@ -326,7 +331,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: false,
     sortOrder: 21,
     placeholder: "applications@example.org",
-    helpText: "Where searchers should email to apply or arrange a viewing.",
+    helpText: "Where navigators should email to apply or arrange a viewing.",
   },
   {
     key: "applicationPhone",
@@ -336,7 +341,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     isRequired: false,
     sortOrder: 22,
     placeholder: "519-555-0100",
-    helpText: "Where searchers should call to apply or arrange a viewing.",
+    helpText: "Where navigators should call to apply or arrange a viewing.",
   },
   {
     key: "applicationInstructions",

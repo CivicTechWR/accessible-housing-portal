@@ -83,8 +83,8 @@ describe("ListingDetails rental details", () => {
       "Primary heating type",
       "Utilities included",
       "Initial lease term",
-      "Posted",
     ]);
+    screen.getByText("Posted 2 days ago");
   });
 
   it("explains the initial lease term with the shared definition and a note for searchers", () => {
@@ -189,7 +189,7 @@ describe("ListingDetails apply section", () => {
       "href",
       "tel:519-555-0111",
     );
-    screen.getByText(/Apply directly with the housing lister, outside this portal/);
+    screen.getByText(/Apply directly with the housing provider, outside this portal/);
     expect(screen.getByText(/We reply within two business days/).textContent).toBe(
       "Email to book a viewing.\nWe reply within two business days.",
     );
@@ -200,7 +200,7 @@ describe("ListingDetails apply section", () => {
     render(<ListingDetails {...baseProps} applicationInstructions="Visit the office to apply." />);
 
     screen.getByText("Visit the office to apply.");
-    screen.getByText("From the housing lister");
+    screen.getByText("From the housing provider");
     expect(screen.queryByText(NO_DETAILS_MESSAGE)).toBeNull();
   });
 

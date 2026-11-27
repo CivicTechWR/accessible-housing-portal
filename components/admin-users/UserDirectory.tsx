@@ -38,12 +38,8 @@ function DateText({ value }: { value: string | null }) {
   );
 }
 
-/** Active is the normal state, so it reads as plain text and only the exceptions get a chip. */
 function AccountStatusText({ status }: { status: AccountStatus | null }) {
   if (!status) return <span className="text-sm text-muted-foreground">Unknown</span>;
-  if (status === "active") {
-    return <span className="text-sm text-foreground">{accountStatusLabels[status]}</span>;
-  }
   return <StatusBadge tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusBadge>;
 }
 
@@ -152,41 +148,41 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
               <caption className="sr-only">Users</caption>
               <colgroup>
                 <col />
-                <col className="w-[18%]" />
-                <col className="w-36" />
+                <col className="w-48" />
                 <col className="w-32" />
                 <col className="w-32" />
                 <col className="w-32" />
                 <col className="w-28" />
               </colgroup>
-              <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
+              <thead className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3 font-medium">User</th>
-                  <th className="px-4 py-3 font-medium">Organization</th>
-                  <th className="px-4 py-3 font-medium">Role</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Created</th>
-                  <th className="px-4 py-3 font-medium">Last sign-in</th>
-                  <th className="px-4 py-3 font-medium">
+                  <th className="px-4 py-3">User</th>
+                  <th className="px-4 py-3">Role</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Created</th>
+                  <th className="px-4 py-3">Last sign-in</th>
+                  <th className="px-4 py-3">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {visible.map((account) => (
-                  <tr key={account.id} className="hover:bg-muted/30">
+                  <tr key={account.id} className="align-top hover:bg-muted/30">
                     <td className="px-4 py-3.5">
                       <p className="font-medium break-words text-foreground">
                         {account.name ?? account.email ?? "Unnamed user"}
                       </p>
                       {/* Emails wrap at any character instead of truncating, so the whole
                           address stays readable. */}
-                      <p className="text-xs [overflow-wrap:anywhere] text-muted-foreground">
+                      <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
                         {account.email ?? "No email"}
                       </p>
-                    </td>
-                    <td className="px-4 py-3.5 break-words text-foreground">
-                      {account.organization ?? <span className="text-muted-foreground">—</span>}
+                      {account.organization ? (
+                        <p className="text-sm break-words text-muted-foreground">
+                          {account.organization}
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3.5">
                       {account.role ? <RoleLabel role={account.role} /> : "—"}

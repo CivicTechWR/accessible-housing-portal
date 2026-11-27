@@ -436,7 +436,7 @@ export function AccountSecurity() {
                         <Badge className="ml-2 align-middle">Current session</Badge>
                       ) : null}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Signed in {new Date(item.createdAt).toLocaleString()}
                     </p>
                   </div>

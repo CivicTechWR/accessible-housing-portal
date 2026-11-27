@@ -31,19 +31,14 @@ export function RecentInvitesList({ invites }: RecentInvitesListProps) {
           <ul className="-my-3 divide-y">
             {invites.map((invite) => (
               <li key={invite.id} className="space-y-2 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-0.5">
-                    <p
-                      className="truncate text-sm font-medium text-foreground"
-                      title={invite.email}
-                    >
-                      {invite.email}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {inviteDateFormatter.format(new Date(invite.invitedAt))}
-                    </p>
-                  </div>
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-medium [overflow-wrap:anywhere] text-foreground">
+                    {invite.email}
+                  </p>
                   <RoleLabel role={invite.role} />
+                  <p className="text-sm text-muted-foreground">
+                    {inviteDateFormatter.format(new Date(invite.invitedAt))}
+                  </p>
                 </div>
                 {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
               </li>

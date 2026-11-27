@@ -181,9 +181,10 @@ describe("MapView", () => {
 
 describe("groupOverlappingPins", () => {
   // Projects longitude straight to x pixels and latitude to y pixels.
-  const mapAt = (zoom: number) => ({
+  const mapAt = (zoom: number, size = 10_000) => ({
     getZoom: () => zoom,
     project: ([lng, lat]: [number, number]) => ({ x: lng, y: lat }),
+    getContainer: () => ({ clientWidth: size, clientHeight: size }),
   });
   const pinAt = (id: string, x: number, y: number) => ({ ...LISTING, id, lng: x, lat: y });
   const near = pinAt("a", 0, 0);
@@ -200,6 +201,13 @@ describe("groupOverlappingPins", () => {
     const groups = groupOverlappingPins(mapAt(12), [near, alsoNear], "a");
 
     expect(groups?.map((group) => group.listings.map((l) => l.id))).toEqual([["a"], ["b"]]);
+  });
+
+  it("leaves out listings positioned off screen, except the selected one", () => {
+    const offScreen = pinAt("d", -40, 0);
+    const groups = groupOverlappingPins(mapAt(12, 200), [near, far, offScreen], "c");
+
+    expect(groups?.map((group) => group.listings.map((l) => l.id))).toEqual([["a"], ["c"]]);
   });
 
   it("stops clustering once zoomed in far enough", () => {

@@ -1,9 +1,9 @@
 {
   "adminInvite": {
     "pageTitle": "Invite a user",
-    "pageDescription": "Invite housing searchers and housing listers by email.",
+    "pageDescription": "Invite housing navigators and housing providers by email.",
     "heading": "Invite a user",
-    "subheading": "Invite housing searchers and housing listers by email.",
+    "subheading": "Invite housing navigators and housing providers by email.",
     "formTitle": "Invitation details",
     "fields": {
       "nameLabel": "Name",
@@ -25,8 +25,8 @@
     },
     "roles": {
       "admin": "Admin",
-      "partner": "Housing lister",
-      "user": "Housing searcher"
+      "partner": "Housing provider",
+      "user": "Housing navigator"
     }
   }
 }

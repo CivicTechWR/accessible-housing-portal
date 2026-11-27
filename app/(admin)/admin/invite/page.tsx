@@ -24,7 +24,7 @@ export default async function AdminInvitePage() {
 
   return (
     <AppPageShell>
-      <div className={cn("mx-auto space-y-6", pageWidths.form)}>
+      <div className={cn("mx-auto space-y-6", pageWidths.content)}>
         <div className="space-y-3">
           <Button asChild variant="ghost" size="sm" className="-ml-2.5 text-muted-foreground">
             <Link href="/admin/users">

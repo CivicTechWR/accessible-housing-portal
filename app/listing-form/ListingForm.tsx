@@ -144,13 +144,21 @@ export default function ListingForm({ listingId }: ListingFormProps) {
 
   const liveFormData = form.watch();
   const isDirty = form.formState.isDirty;
+  // isDirty compares the whole form to its loaded values and can stay true after an edit is
+  // undone, so the publish state goes by the fields that still differ.
+  const hasUnpublishedChanges = Object.keys(form.formState.dirtyFields).length > 0;
   const isPreviewExpanded = previewMode === "details";
   const isDraft = liveFormData.status === "draft";
+  // A published listing doesn't autosave: edits stay private until the partner publishes them.
+  // Drafts and archived listings autosave, and publishing puts them on the site.
+  const isPublished = isEditMode && liveFormData.status === "published";
   const formHeading = !isEditMode ? "New listing" : isDraft ? "Edit draft" : "Edit listing";
-  const formDescription = isDraft
-    ? "Your draft saves automatically. Publish it when the listing is ready."
-    : "Changes go live when you save them.";
-  const submitLabel = isDraft ? "Publish listing" : isEditMode ? "Save changes" : "Create listing";
+  const formDescription = isPublished
+    ? "Navigators see your edits once you publish them."
+    : isDraft
+      ? "Your draft saves automatically. Publish it when the listing is ready."
+      : "Changes save automatically. Publish the listing to show it on the site again.";
+  const submitLabel = isPublished ? "Publish changes" : "Publish listing";
   const sections = listingFormSections(liveFormData);
 
   if (isLoading) {
@@ -202,7 +210,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-base font-semibold">Live preview</h2>
-            <p className="text-sm text-muted-foreground">How searchers will see this listing.</p>
+            <p className="text-sm text-muted-foreground">How navigators will see this listing.</p>
           </div>
           {/* Below lg the preview's own Back button returns to the card. */}
           <Button
@@ -254,12 +262,15 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       }
       footer={
         <>
-          <SaveState
-            autosaveStatus={autosaveStatus}
-            isDirty={isDirty}
-            isDraft={isDraft}
-            isSaved={isEditMode || activeListingId !== undefined}
-          />
+          {isPublished ? (
+            <PublishState isDirty={hasUnpublishedChanges} />
+          ) : (
+            <SaveState
+              autosaveStatus={autosaveStatus}
+              isDirty={isDirty}
+              isSaved={isEditMode || activeListingId !== undefined}
+            />
+          )}
           {submitFeedback && (
             <p
               className={cn(
@@ -274,8 +285,14 @@ export default function ListingForm({ listingId }: ListingFormProps) {
               {submitFeedback.message}
             </p>
           )}
-          <Button type="submit" form="listing-form" disabled={isSubmitting} className="shrink-0">
-            {isSubmitting ? "Saving..." : submitLabel}
+          <Button
+            type="submit"
+            form="listing-form"
+            // A published listing with nothing new has nothing to publish.
+            disabled={isSubmitting || (isPublished && !hasUnpublishedChanges)}
+            className="shrink-0"
+          >
+            {isSubmitting ? "Publishing..." : submitLabel}
           </Button>
         </>
       }
@@ -348,6 +365,23 @@ function SaveStateIcon({ status }: { status: AutosaveStatus["status"] | "dirty" 
   );
 }
 
+/** The sticky bar's state for a published listing, which only changes when it's published. */
+function PublishState({ isDirty }: { isDirty: boolean }) {
+  return (
+    <div
+      className={cn(
+        "mr-auto flex min-w-0 items-center gap-2 text-sm",
+        isDirty ? "font-medium text-amber-700 dark:text-amber-400" : "text-muted-foreground",
+      )}
+    >
+      <SaveStateIcon status={isDirty ? "dirty" : "saved"} />
+      <p role="status" aria-live="polite">
+        {isDirty ? "Unpublished changes" : "Published and up to date"}
+      </p>
+    </div>
+  );
+}
+
 function ListingLoadErrorMessage({ error }: { error: ListingLoadError }): React.JSX.Element {
   switch (error.kind) {
     case "not-found":
@@ -403,23 +437,20 @@ function formatSavedAgo(savedAt: number, now: number) {
   return `at ${new Date(savedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 }
 
-/** The save state on the left of the sticky bar. */
+/** The autosave state on the left of the sticky bar, for drafts and archived listings. */
 function SaveState({
   autosaveStatus,
   isDirty,
-  isDraft,
   isSaved,
 }: {
   autosaveStatus: AutosaveStatus | null;
   isDirty: boolean;
-  isDraft: boolean;
   /** Whether the listing exists on the server yet. */
   isSaved: boolean;
 }) {
   const savedAt = autosaveStatus?.status === "saved" ? autosaveStatus.savedAt : null;
   const now = useNow(savedAt !== null);
-  const status =
-    autosaveStatus?.status ?? (isDirty ? (isDraft ? null : "dirty") : isSaved ? "saved" : null);
+  const status = autosaveStatus?.status ?? (isDirty ? null : isSaved ? "saved" : null);
 
   let text: string | null;
   switch (autosaveStatus?.status) {
@@ -433,13 +464,7 @@ function SaveState({
       text = `Not saved. ${autosaveStatus.message}`;
       break;
     default:
-      text = isDirty
-        ? isDraft
-          ? null
-          : "Unsaved changes"
-        : isSaved
-          ? "All changes saved"
-          : "Your draft saves as you type";
+      text = isDirty ? null : isSaved ? "All changes saved" : "Your draft saves as you type";
   }
 
   return (

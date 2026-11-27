@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Image01Icon } from "@hugeicons/core-free-icons";
+import { Image01Icon, UniversalAccessIcon } from "@hugeicons/core-free-icons";
 import { featureIcon } from "@/components/listing-details/featureIcon";
 import {
   RENT_PERIOD,
@@ -40,12 +40,10 @@ interface ListingsCardProps {
 }
 
 /**
- * Two named chips and a "+N more" count. Long names truncate inside their chip rather than
- * dropping a chip, and the chips stay on one row so every card in a grid row lines up.
+ * Named chips while every feature fits on one row of the narrowest card (about 260px); past that,
+ * one chip with the count, so no feature hides behind a "+N more".
  */
-const MAX_FEATURES = 2;
-// Two chips plus "+N more" fit on one line of the narrowest card (about 260px) only when their
-// names are short; otherwise show one whole chip rather than two truncated ones.
+const MAX_NAMED_CHIPS = 2;
 const MAX_CHARS_FOR_TWO_CHIPS = 22;
 
 const TIME_UNITS: Record<string, string> = {
@@ -75,38 +73,45 @@ export function formatPostedLabel(timeAgo: string) {
 }
 
 function FeatureChips({ features, className }: { features: string[]; className?: string }) {
-  const fitsTwo = features.slice(0, MAX_FEATURES).join("").length <= MAX_CHARS_FOR_TWO_CHIPS;
-  const shown = features.slice(0, fitsTwo ? MAX_FEATURES : 1);
-  const hiddenCount = features.length - shown.length;
+  const showNames =
+    features.length === 1 ||
+    (features.length <= MAX_NAMED_CHIPS && features.join("").length <= MAX_CHARS_FOR_TWO_CHIPS);
   const chipClassName = "h-7 max-w-full gap-1.5 px-2.5 text-[13px] [&>svg]:size-4!";
 
   return (
     // A fixed-height row, kept even when empty, so cards in one grid row line up.
     <ul
       role="list"
-      aria-label={features.length > 0 ? "Accessibility features" : undefined}
+      aria-label={showNames ? "Accessibility features" : undefined}
       className={cn("flex h-7 min-w-0 items-center gap-1.5 overflow-hidden", className)}
     >
-      {shown.map((feature, index) => (
-        <li key={`${feature}-${index}`} className="flex min-w-0">
+      {showNames ? (
+        features.map((feature, index) => (
+          <li key={`${feature}-${index}`} className="flex min-w-0">
+            <Badge className={chipClassName}>
+              <HugeiconsIcon
+                icon={featureIcon(feature)}
+                strokeWidth={2}
+                className="shrink-0"
+                aria-hidden
+              />
+              <span className="truncate">{toSentenceCase(feature)}</span>
+            </Badge>
+          </li>
+        ))
+      ) : features.length > 0 ? (
+        <li className="flex min-w-0">
           <Badge className={chipClassName}>
             <HugeiconsIcon
-              icon={featureIcon(feature)}
+              icon={UniversalAccessIcon}
               strokeWidth={2}
               className="shrink-0"
               aria-hidden
             />
-            <span className="truncate">{toSentenceCase(feature)}</span>
+            <span className="truncate">{features.length} accessibility features</span>
           </Badge>
         </li>
-      ))}
-      {hiddenCount > 0 && (
-        <li className="flex shrink-0">
-          <Badge variant="secondary" className={chipClassName}>
-            +{hiddenCount} more
-          </Badge>
-        </li>
-      )}
+      ) : null}
     </ul>
   );
 }
@@ -180,7 +185,7 @@ export function ListingsCard({
       <div
         className={cn(
           "flex min-w-0 flex-1 flex-col",
-          isHorizontal ? "justify-center gap-0.5 p-3" : "gap-0.5 px-0.5",
+          isHorizontal ? "justify-center gap-0.5 p-3" : "gap-0.5",
         )}
       >
         {/* Rent is the strongest text on the card, so it holds the right of the first row and
@@ -189,7 +194,7 @@ export function ListingsCard({
           <h3 className="line-clamp-2 min-w-0 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground">
             {heading}
           </h3>
-          <p className="shrink-0 text-lg leading-snug font-semibold tracking-tight whitespace-nowrap text-foreground">
+          <p className="shrink-0 text-lg leading-snug font-semibold tracking-normal whitespace-nowrap text-foreground tabular-nums">
             {formatRent(price)}
             <span className="text-sm font-normal text-muted-foreground">{RENT_PERIOD}</span>
           </p>

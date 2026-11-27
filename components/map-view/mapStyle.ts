@@ -41,9 +41,9 @@ const DARK_PAINT: PaintOverrides = [
   [["railway", "railway_minor", "railway_transit"], "line-color", "#30373e"],
   [["water_name"], "text-color", "#7f9bb3"],
   [["water_name"], "text-halo-color", "#14181c"],
-  [DARK_MINOR_LABELS, "text-color", "#9aa4ae"],
+  [DARK_MINOR_LABELS, "text-color", "#aab3bc"],
   [DARK_MAJOR_LABELS, "text-color", "#c4ccd3"],
-  [[...DARK_MINOR_LABELS, ...DARK_MAJOR_LABELS], "text-halo-color", "rgba(20,24,28,0.85)"],
+  [[...DARK_MINOR_LABELS, ...DARK_MAJOR_LABELS], "text-halo-color", "#14181c"],
 ];
 
 /**

@@ -112,7 +112,7 @@ export function ListingFormImages({
     <FormSection
       id={listingFormSectionId("images")}
       title="Photos"
-      description="The first photo is the cover on search results. Captions help renters who use screen readers."
+      description="The first photo is the cover on search results. Captions describe each photo for people who use screen readers."
     >
       <FormField
         control={control}
@@ -128,7 +128,7 @@ export function ListingFormImages({
           };
 
           return (
-            <FormItem className="gap-4 md:col-span-2">
+            <FormItem className="col-span-2 gap-4">
               <FormLabel className="sr-only">Photos</FormLabel>
               <div
                 className={cn(
@@ -211,7 +211,10 @@ export function ListingFormImages({
               )}
 
               {images.length > 0 && (
-                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Uploaded photos">
+                <ul
+                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  aria-label="Uploaded photos"
+                >
                   {images.map((image, index) => {
                     const position = `Photo ${index + 1} of ${images.length}`;
                     return (
