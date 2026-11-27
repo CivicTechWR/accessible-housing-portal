@@ -10,9 +10,12 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 disabled:bg-foreground/7 disabled:text-muted-foreground disabled:opacity-100 disabled:shadow-none disabled:ring-1 disabled:ring-border",
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 disabled:bg-foreground/7 disabled:text-muted-foreground disabled:opacity-100 disabled:shadow-none disabled:ring-1 disabled:ring-border dark:disabled:bg-primary/35 dark:disabled:text-white/75 dark:disabled:ring-0",
         outline:
           "border-input bg-background shadow-xs hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:bg-input/10 dark:hover:bg-input/20",
+        // The main action inside a card or row, when the page already has its one filled button.
+        tinted:
+          "bg-primary/10 text-primary-text hover:bg-primary/15 dark:bg-primary-text/15 dark:hover:bg-primary-text/20",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
