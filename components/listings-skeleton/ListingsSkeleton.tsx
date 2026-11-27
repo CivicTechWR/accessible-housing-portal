@@ -1,62 +1,42 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
+/** Mirrors the search page's layout: filter bar, results bar, card grid and map. */
 export default function ListingsSkeleton() {
   return (
-    <>
-      <header className="flex h-16 items-center border-b bg-background px-4 shrink-0">
-        <div className="flex flex-row items-center w-full gap-6">
-          <div className="flex-1 max-w-sm">
-            <div className="relative">
-              <Skeleton className="h-10 w-full rounded-md" />
-            </div>
-          </div>
-          <div className="w-full max-w-[280px] shrink-0">
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-          <div className="hidden lg:flex items-center gap-6 shrink-0">
-            <Skeleton className="h-9 w-[180px] rounded-md" />
-            <Skeleton className="h-9 w-[180px] rounded-md" />
-          </div>
-          <div>
-            <Skeleton className="h-9 w-[100px] rounded-full" />
-          </div>
+    <div data-fullscreen className="flex min-h-0 flex-1 flex-col overflow-hidden" aria-busy>
+      <span className="sr-only">Loading listings</span>
+      <div className="flex shrink-0 flex-col border-b bg-background xl:h-16 xl:flex-row xl:items-center xl:gap-6 xl:px-6">
+        <div className="flex items-center gap-2 px-4 py-3 sm:h-16 sm:px-6 sm:py-0 xl:flex-1 xl:px-0">
+          <Skeleton className="h-11 flex-1 rounded-lg sm:max-w-sm md:h-10" />
+          <Skeleton className="hidden h-10 w-20 rounded-lg md:block" />
+          <Skeleton className="hidden h-10 w-20 rounded-lg md:block" />
+          <Skeleton className="hidden h-10 w-20 rounded-lg md:block" />
+          <Skeleton className="size-11 rounded-lg sm:h-10 sm:w-24" />
         </div>
-        <div className="ml-auto flex items-center gap-2 shrink-0">
-          <Skeleton className="h-9 w-[110px] rounded-full" />
+        <div className="flex items-center gap-2 border-t px-4 py-2 sm:gap-3 sm:px-6 xl:border-0 xl:p-0">
+          <Skeleton className="mr-auto h-4 w-28" />
+          <Skeleton className="h-11 w-28 rounded-lg md:h-10" />
+          <Skeleton className="h-11 w-28 rounded-lg md:h-10 lg:w-52" />
         </div>
-      </header>
-      <main className="flex flex-1 overflow-hidden">
-        <div className="flex flex-col h-full bg-background min-w-[300px] sm:min-w-[330px] lg:min-w-[360px] flex-1">
-          <div className="sticky top-0 z-10 bg-background border-b p-4 flex items-center gap-3">
-            <Skeleton className="h-4 w-[90px]" />
-            <Skeleton className="h-9 w-[180px]" />
-            <div className="ml-auto">
-              <Skeleton className="h-9 w-[110px] rounded-full" />
-            </div>
-          </div>
-          <div className="flex-1 overflow-auto p-4">
-            <div className="grid gap-4 grid-cols-[260px] sm:grid-cols-[290px_290px] lg:grid-cols-[320px_320px_320px]">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-[260px] sm:w-[290px] lg:w-[320px] h-[300px] sm:h-[330px] lg:h-[360px] rounded-lg border overflow-hidden"
-                >
-                  <Skeleton className="w-full h-[160px] sm:h-[175px] lg:h-[190px]" />
-                  <div className="p-4 space-y-3">
-                    <Skeleton className="h-6 w-[80px]" />
-                    <Skeleton className="h-4 w-[140px]" />
-                    <div className="flex gap-3">
-                      <Skeleton className="h-4 w-[40px]" />
-                      <Skeleton className="h-4 w-[40px]" />
-                      <Skeleton className="h-4 w-[50px]" />
-                    </div>
-                  </div>
+      </div>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="grid flex-1 grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] content-start gap-x-5 gap-y-6 overflow-hidden p-4 sm:px-6 lg:basis-1/2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="aspect-[3/2] w-full rounded-xl" />
+              <div className="space-y-2 px-0.5">
+                <div className="flex justify-between">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-4 w-20" />
                 </div>
-              ))}
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-40" />
+              </div>
             </div>
-          </div>
+          ))}
         </div>
-      </main>
-    </>
+        <Skeleton className="hidden rounded-none lg:block lg:basis-1/2" />
+      </div>
+    </div>
   );
 }

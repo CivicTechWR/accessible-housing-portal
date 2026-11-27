@@ -7,6 +7,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ComponentProps } from "react";
 import { LabelledCheckbox } from "../labelled-checkbox/LabelledCheckbox";
+import { toSentenceCase } from "@/lib/listing-format";
 
 export interface FilterOption {
   id: string;
@@ -23,24 +24,34 @@ export interface DynamicFilterGroup {
 export interface FeatureAccordionProps {
   groups: DynamicFilterGroup[];
   getCheckboxProps: (id: string) => ComponentProps<typeof Checkbox>;
+  /** Starts with every group expanded. */
+  defaultOpen?: boolean;
 }
 
-export function FeatureAccordion({ groups, getCheckboxProps }: FeatureAccordionProps) {
+export function FeatureAccordion({
+  groups,
+  getCheckboxProps,
+  defaultOpen = false,
+}: FeatureAccordionProps) {
   if (!groups || groups.length === 0) return null;
 
   return (
-    <Accordion type="multiple" className="w-full">
+    <Accordion
+      type="multiple"
+      defaultValue={defaultOpen ? groups.map((group) => group.groupId) : undefined}
+      className="w-full"
+    >
       {groups.map((group) => (
         <AccordionItem key={group.groupId} value={group.groupId}>
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-            {group.groupLabel}
+          <AccordionTrigger className="text-sm font-medium hover:no-underline">
+            {toSentenceCase(group.groupLabel)}
           </AccordionTrigger>
           <AccordionContent>
             <div className="grid grid-cols-2 gap-4 pt-2">
               {group.options.map((option) => (
                 <LabelledCheckbox
                   key={option.id}
-                  label={option.label}
+                  label={toSentenceCase(option.label)}
                   {...getCheckboxProps(option.id)}
                 />
               ))}

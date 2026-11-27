@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import ListingForm from "@/app/listing-form/ListingForm";
+import { AppPageShell } from "@/components/page-shell/AppPageShell";
 import { ListingFormSkeleton } from "@/components/listing-form-skeleton/ListingFormSkeleton";
 
 export const metadata: Metadata = {
-  title: "Edit Listing",
+  title: "Edit listing",
 };
 
 export const dynamic = "force-dynamic";
@@ -14,10 +15,10 @@ export default async function EditListingFormPage({ params }: { params: Promise<
   const { id } = await params;
 
   return (
-    <div data-listing-form-page="true" className="h-full">
+    <AppPageShell className="pb-0 sm:pb-0">
       <Suspense fallback={<ListingFormSkeleton />}>
         <ListingForm listingId={id} />
       </Suspense>
-    </div>
+    </AppPageShell>
   );
 }

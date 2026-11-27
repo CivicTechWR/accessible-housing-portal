@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { customListingFieldKeySchema } from "@/shared/schemas/custom-listing-fields";
+import {
+  customListingFieldKeySchema,
+  type AdminCustomListingField,
+  type UpdateCustomListingFieldInput,
+} from "@/shared/schemas/custom-listing-fields";
 
 import type {
   BulkEditPayload,
@@ -59,6 +63,49 @@ export function toCreateFieldDialogPayload(
     filterableOnly: values.filterableOnly,
     required: values.required,
     options: null,
+  };
+}
+
+export const editFieldSheetSchema = z.object({
+  label: z.string().trim().min(1, "Label is required."),
+  description: z.string(),
+  helpText: z.string(),
+  category: z.string().trim().min(1, "Category is required."),
+  appliesTo: z.enum(["building", "unit"]),
+  publicOnly: z.boolean(),
+  filterableOnly: z.boolean(),
+  required: z.boolean(),
+});
+
+export type EditFieldSheetInput = z.input<typeof editFieldSheetSchema>;
+export type EditFieldSheetValues = z.output<typeof editFieldSheetSchema>;
+
+export function getEditFieldSheetValues(field: AdminCustomListingField): EditFieldSheetInput {
+  return {
+    label: field.label,
+    description: field.description ?? "",
+    helpText: field.helpText ?? "",
+    category: field.category,
+    appliesTo: field.appliesTo,
+    publicOnly: field.publicOnly,
+    filterableOnly: field.filterableOnly,
+    required: field.required,
+  };
+}
+
+export function toUpdateFieldPayload(
+  values: EditFieldSheetValues,
+  categories: string[],
+): UpdateCustomListingFieldInput {
+  return {
+    label: values.label,
+    description: nullableTrim(values.description),
+    helpText: nullableTrim(values.helpText),
+    category: getCanonicalCategoryValue(values.category, categories),
+    appliesTo: values.appliesTo,
+    publicOnly: values.publicOnly,
+    filterableOnly: values.filterableOnly,
+    required: values.required,
   };
 }
 

@@ -1,55 +1,43 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   Listing,
   ListingsDisplayMode,
   ListingCardGallery,
 } from "@/components/listing-card-list/ListingsCardList";
-import { SortOptions as SortOptionsType } from "@/components/sort-options/SortOptions";
 import { DisplayMode } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
-import { ListingsPanelHeader } from "@/components/listings-panel-header/ListingsPanelHeader";
 
 interface ListingsPanelProps {
   listings: Listing[];
-  /** How many listings match the filters, which can be more than `listings` holds. */
-  total: number;
   isLoadingMore: boolean;
-  isPartial: boolean;
   isCapped: boolean;
   displayMode: DisplayMode;
-  sortOptionProps: { sortOptions: SortOptionsType[]; onChange: (value: string) => void };
-  isLoading?: boolean;
+  onHighlightChange?: (id: string | null) => void;
+  /** The results header, with the count and sort, above the cards. */
+  header?: ReactNode;
 }
 
 export function ListingsPanel({
   listings,
-  total,
   isLoadingMore,
-  isPartial,
   isCapped,
   displayMode,
-  sortOptionProps,
-  isLoading = false,
+  onHighlightChange,
+  header,
 }: ListingsPanelProps) {
   return (
     <div
       className={`flex min-h-0 flex-col overflow-hidden bg-background ${
-        displayMode === DisplayMode.LIST
-          ? "flex-1"
-          : "min-w-0 w-full flex-1 lg:min-w-0 lg:basis-1/2"
+        displayMode === DisplayMode.LIST ? "flex-1" : "w-full min-w-0 flex-1 lg:basis-[56%]"
       }`}
     >
-      <ListingsPanelHeader
-        shown={listings.length}
-        total={total}
-        isPartial={isPartial}
-        sortOptionProps={sortOptionProps}
-        isLoading={isLoading}
-      />
+      {header}
       <ListingCardGallery
         listings={listings}
         isLoadingMore={isLoadingMore}
         isCapped={isCapped}
+        onHighlightChange={onHighlightChange}
         mode={
           [DisplayMode.LIST, DisplayMode.MAP_LIST].includes(displayMode)
             ? ListingsDisplayMode.FULLSCREEN

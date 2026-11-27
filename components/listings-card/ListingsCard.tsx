@@ -1,8 +1,18 @@
-import { Card, CardContent } from "../ui/card";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Image01Icon } from "@hugeicons/core-free-icons";
+import {
+  RENT_PERIOD,
+  formatArea,
+  formatBaths,
+  formatBeds,
+  formatListingDate,
+  formatRent,
+} from "@/lib/listing-format";
 import Image from "next/image";
 import Link from "next/link";
-import type { Ref } from "react";
+import { AccessibilityChips } from "./AccessibilityChips";
+import { Fragment, type ReactNode, type Ref } from "react";
 
 interface ListingsCardProps {
   id: string;
@@ -15,7 +25,13 @@ interface ListingsCardProps {
   baths: number;
   sqft: number | null;
   imageUrl?: string;
-  timeAgo: string;
+  /** The move-in date (YYYY-MM-DD), shown as "Available May 15" after the address. */
+  availableOn?: string;
+  /**
+   * Shown after the address when there is no `availableOn`. The listing form preview passes the
+   * move-in date here ("2026-05-15", or "Now").
+   */
+  timeAgo?: string;
   variant?: "vertical" | "horizontal";
   href?: string;
   onClick?: () => void;
@@ -29,45 +45,98 @@ interface ListingsCardProps {
   photoMayNeedSession?: boolean;
 }
 
-const variants = {
-  vertical: {
-    card: "w-full max-w-[320px] flex flex-col min-h-[300px]",
-    image: "w-full h-[160px] sm:h-[175px] lg:h-[190px] shrink-0",
-    imageSizes: "(max-width: 640px) 260px, (max-width: 1024px) 290px, 320px",
-    content: "p-4 flex flex-col flex-1",
-    price: "text-xl",
-    address: "text-sm",
-    stats: "text-sm gap-x-3",
-    statGap: "gap-1",
-    badge: "top-2 left-2 px-2 py-1 gap-1.5",
-    badgeDot: "w-2 h-2",
-    badgeText: "text-[10px]",
-    noImageText: "text-sm",
-  },
-  horizontal: {
-    card: "w-full min-h-[120px] flex flex-row",
-    image: "w-[100px] sm:w-[130px] shrink-0 rounded-l-lg overflow-hidden",
-    imageSizes: "(min-width: 640px) 130px, 100px",
-    content: "p-3 sm:p-4 flex-1 min-w-0 flex flex-col justify-center",
-    price: "text-lg",
-    address: "text-xs",
-    stats: "text-xs gap-x-2",
-    statGap: "gap-0.5",
-    badge: "top-1.5 left-1.5 px-1.5 py-0.5 gap-1",
-    badgeDot: "w-1.5 h-1.5",
-    badgeText: "text-[8px]",
-    noImageText: "text-xs",
-  },
+const TIME_UNITS: Record<string, string> = {
+  second: "s",
+  minute: "m",
+  hour: "h",
+  day: "d",
+  month: "mo",
+  year: "y",
 };
 
-function FeatureBadge({ children }: { children: string }) {
+/**
+ * Shortens date-fns' "about 6 hours ago" to "6h ago". The listing form preview passes the move-in
+ * date ("2026-05-15", or "Now") instead, because a draft hasn't been posted yet; that shows as
+ * "Available May 15, 2026". Any other text is returned unchanged.
+ */
+export function formatPostedLabel(timeAgo: string) {
+  if (/^less than a minute ago$/.test(timeAgo)) return "Just now";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(timeAgo)) return `Available ${formatListingDate(timeAgo)}`;
+  if (timeAgo === "Now") return "Available now";
+  const match =
+    /^(?:about |over |almost )?(\d+|an?) (second|minute|hour|day|month|year)s? ago$/.exec(timeAgo);
+  if (!match) return timeAgo;
+  const [, amount, unit] = match;
+  const count = amount === "a" || amount === "an" ? "1" : amount;
+  return `${count}${TIME_UNITS[unit as keyof typeof TIME_UNITS]} ago`;
+}
+
+/** Today's date as YYYY-MM-DD in the reader's time zone, to compare with ISO move-in dates. */
+function todayIso() {
+  const now = new Date();
+  return [now.getFullYear(), now.getMonth() + 1, now.getDate()]
+    .map((part) => String(part).padStart(2, "0"))
+    .join("-");
+}
+
+/**
+ * "Available May 15", or "Available now" once the date is today or past. The year shows only when
+ * it is neither this year nor next.
+ */
+export function formatAvailability(isoDate: string, today = todayIso()) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return `Available ${isoDate}`;
+  if (isoDate <= today) return "Available now";
+  const thisYear = Number(today.slice(0, 4));
+  return `Available ${new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-CA", {
+    month: "long",
+    day: "numeric",
+    ...(year === thisYear || year === thisYear + 1 ? {} : { year: "numeric" }),
+    timeZone: "UTC",
+  })}`;
+}
+
+/** A thin inner edge over a photo, so a bright photo keeps its shape on a white or dark page. */
+export function PhotoEdge() {
   return (
-    <Badge
-      variant="secondary"
-      className="border-transparent bg-secondary/60 px-1.5 py-0 text-[10px] font-normal"
-    >
-      {children}
-    </Badge>
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-black/5 ring-inset dark:ring-white/8"
+    />
+  );
+}
+
+/**
+ * Items joined by " · ". Each separator stays with the item before it, so a wrapped line can end
+ * on a dot but never starts with one.
+ */
+function DotSeparated({ items }: { items: ReactNode[] }) {
+  return items.map((item, index) => (
+    <Fragment key={index}>
+      {index > 0 && " "}
+      <span className="whitespace-nowrap">
+        {item}
+        {index < items.length - 1 && " ·"}
+      </span>
+    </Fragment>
+  ));
+}
+
+/**
+ * "90 Queen St S, Kitchener · Available May 15". The place's last word, the dot and the
+ * availability never break apart, so a wrapped line never starts with the dot.
+ */
+function PlaceAndPosted({ place, posted }: { place: string; posted: string }) {
+  if (!place) return posted;
+  if (!posted) return place;
+  const lastSpace = place.lastIndexOf(" ");
+  return (
+    <>
+      {place.slice(0, lastSpace + 1)}
+      <span className="whitespace-nowrap">
+        {place.slice(lastSpace + 1)} · {posted}
+      </span>
+    </>
   );
 }
 
@@ -82,6 +151,7 @@ export function ListingsCard({
   baths,
   sqft,
   imageUrl,
+  availableOn,
   timeAgo,
   variant = "vertical",
   href,
@@ -89,111 +159,100 @@ export function ListingsCard({
   buttonRef,
   photoMayNeedSession = false,
 }: ListingsCardProps) {
-  const v = variants[variant];
   const isHorizontal = variant === "horizontal";
-  const safeFeatures = accessibilityFeatures || [];
-  const MAX_FEATURES = 3;
-  const hasMoreFeatures = safeFeatures.length > MAX_FEATURES;
-  const baseFeatures = safeFeatures.slice(0, MAX_FEATURES);
-  const extraFeatures = safeFeatures.slice(MAX_FEATURES);
   const listingHref = href ?? `/listings/${id}`;
   const displayAddress = city ? `${address}, ${city}` : address;
   const ariaLabel = `View listing: ${title ? `${title} at ${displayAddress}` : displayAddress}`;
+  const posted = availableOn
+    ? formatAvailability(availableOn)
+    : timeAgo
+      ? formatPostedLabel(timeAgo)
+      : "";
+  const overlayClassName =
+    "absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/60";
+
+  const photo = imageUrl ? (
+    <Image
+      src={imageUrl}
+      alt={displayAddress}
+      fill
+      sizes={isHorizontal ? "128px" : "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 360px"}
+      unoptimized={photoMayNeedSession && imageUrl.startsWith("/api/image-uploads/")}
+      className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+    />
+  ) : (
+    <div className="flex size-full flex-col items-center justify-center gap-1.5 text-sm text-muted-foreground">
+      <HugeiconsIcon icon={Image01Icon} strokeWidth={2} className="size-5" aria-hidden />
+      No photo
+    </div>
+  );
+
+  // The building name leads, as on the detail page and My listings. Without one, the street
+  // address takes its place and the grey line starts with the city instead.
+  const heading = title || address;
+  const place = title ? displayAddress : city;
 
   return (
-    <Card
-      className={`${v.card} relative overflow-hidden hover:shadow-md transition-all cursor-pointer group`}
+    <article
+      className={cn(
+        "group relative w-full",
+        isHorizontal
+          ? // Shown floating over the map, so it keeps a shadow under its border.
+            "flex min-h-28 overflow-hidden rounded-xl border bg-card text-card-foreground shadow-lg dark:border-white/15"
+          : "flex flex-col gap-3",
+      )}
     >
-      <div className={`relative ${v.image} bg-muted`}>
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={displayAddress}
-            fill
-            sizes={v.imageSizes}
-            unoptimized={photoMayNeedSession && imageUrl.startsWith("/api/image-uploads/")}
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div
-            className={`w-full h-full flex items-center justify-center text-muted-foreground ${v.noImageText}`}
-          >
-            {isHorizontal ? "No Image" : "No Image Available"}
-          </div>
+      <div
+        className={cn(
+          "relative shrink-0 overflow-hidden bg-muted",
+          isHorizontal ? "w-28 sm:w-32" : "aspect-video w-full rounded-xl sm:aspect-[3/2]",
         )}
-        <div
-          className={`absolute ${v.badge} bg-black/70 backdrop-blur-sm rounded flex items-center z-10`}
-        >
-          <div className={`${v.badgeDot} rounded-full bg-primary`} />
-          <span className={`${v.badgeText} text-white font-semibold tracking-wide uppercase`}>
-            {timeAgo}
-          </span>
-        </div>
+      >
+        {photo}
+        {imageUrl && <PhotoEdge />}
       </div>
 
-      <CardContent className={v.content}>
-        <div className={isHorizontal ? "mb-2" : "mb-3"}>
-          <div
-            className={`${v.price} font-bold text-foreground tracking-tight flex items-baseline gap-1`}
-          >
-            ${price.toLocaleString()}
-            <span className="text-sm font-normal text-muted-foreground">/mo</span>
-          </div>
-          <h3>{displayAddress}</h3>
-          {title && <h4>{title}</h4>}
-        </div>
-
-        <div className={`flex items-center ${v.stats} flex-wrap text-muted-foreground mb-auto`}>
-          <span className={`flex items-center ${v.statGap}`}>
-            <strong className="text-foreground">{beds}</strong> bds
-          </span>
-          <span className="text-border">|</span>
-          <span className={`flex items-center ${v.statGap}`}>
-            <strong className="text-foreground">{baths}</strong> ba
-          </span>
-          {sqft !== null && (
-            <>
-              <span className="text-border">|</span>
-              <span className={`flex items-center ${v.statGap}`}>
-                <strong className="text-foreground">{sqft}</strong> sqft
-              </span>
-            </>
-          )}
-        </div>
-
-        {safeFeatures.length > 0 && (
-          <div
-            className={`mt-3 pt-3 border-t relative z-20 ${isHorizontal ? "hidden sm:block" : ""}`}
-          >
-            <div className="flex flex-wrap gap-1.5 items-center">
-              {baseFeatures.map((f, idx) => (
-                <FeatureBadge key={`${f}-${idx}`}>{f}</FeatureBadge>
-              ))}
-
-              {hasMoreFeatures && (
-                <details className="group w-full">
-                  <summary className="list-none text-[10px] text-primary-text hover:underline font-medium px-1 cursor-pointer select-none [&::-webkit-details-marker]:hidden">
-                    <span className="group-open:hidden">{`+${extraFeatures.length} more`}</span>
-                    <span className="hidden group-open:inline">Show less</span>
-                  </summary>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {extraFeatures.map((f, idx) => (
-                      <FeatureBadge key={`${f}-${MAX_FEATURES + idx}`}>{f}</FeatureBadge>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </div>
-          </div>
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col",
+          isHorizontal ? "justify-center gap-0.5 p-3" : "gap-1",
         )}
-      </CardContent>
+      >
+        {/* The name gets its own lines, so it is never cut short by the rent. */}
+        <h3 className="line-clamp-2 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground">
+          {heading}
+        </h3>
+        <p className="text-xl leading-snug font-bold whitespace-nowrap text-foreground">
+          {formatRent(price)}
+          <span className="text-[15px] font-normal text-muted-foreground">{RENT_PERIOD}</span>
+        </p>
+        <p className="text-[15px] leading-snug text-foreground/80">
+          <DotSeparated
+            items={[
+              formatBeds(beds),
+              formatBaths(baths),
+              ...(sqft === null ? [] : [formatArea(sqft)]),
+            ]}
+          />
+        </p>
+        {(place || posted) && (
+          <p className="text-[15px] leading-snug wrap-anywhere text-muted-foreground">
+            <PlaceAndPosted place={place} posted={posted} />
+          </p>
+        )}
+        <AccessibilityChips
+          features={accessibilityFeatures ?? []}
+          // With the column's 4px gap, 8px above the chips.
+          className={isHorizontal ? "mt-1 hidden sm:flex" : "mt-1"}
+        />
+      </div>
 
       {onClick ? (
         <button
           ref={buttonRef}
           type="button"
           aria-label={ariaLabel}
-          className="absolute inset-0 z-10 cursor-pointer border-0 bg-transparent p-0"
+          className={cn(overlayClassName, "cursor-pointer border-0 bg-transparent p-0")}
           onClick={onClick}
         />
       ) : (
@@ -201,9 +260,9 @@ export function ListingsCard({
           href={listingHref}
           prefetch={false}
           aria-label={ariaLabel}
-          className="absolute inset-0 z-10"
+          className={overlayClassName}
         />
       )}
-    </Card>
+    </article>
   );
 }

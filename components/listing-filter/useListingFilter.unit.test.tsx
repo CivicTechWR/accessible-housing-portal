@@ -43,7 +43,7 @@ describe("useListingFilters", () => {
     const { result } = renderFilters();
 
     expect(result.current.searchInputProps.value).toBe("");
-    expect(result.current.searchInputProps.placeholder).toBe("Search city, address, or building");
+    expect(result.current.searchInputProps.placeholder).toBe("City, address or building");
   });
 
   it("keeps typed text in the input while syncing the trimmed location query param", () => {

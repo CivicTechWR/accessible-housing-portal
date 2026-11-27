@@ -23,23 +23,50 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormSection } from "@/components/listing-form-layout/ListingFormLayout";
+import { listingFormSectionId } from "@/app/listing-form/fieldDefinitions";
 import { LabelledCheckbox } from "@/components/labelled-checkbox/LabelledCheckbox";
 import { InfoPopover } from "@/components/info-popover/InfoPopover";
 import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
+import { cn } from "@/lib/utils";
 import { formatNumberInput, parseNumberInput, stripLeadingZeros } from "./numberInput";
+
+type CoreFieldCategoryKey = (typeof CORE_FIELD_CATEGORIES)[number]["key"];
 
 export interface ListingFormFieldsProps {
   control: ListingFormControl;
+  /** The sections to render, in their usual order. Defaults to every core section. */
+  categories?: readonly CoreFieldCategoryKey[];
+}
+
+/** The field's columns in its section's two-column grid. */
+function fieldSpan(def: CoreFieldDefinition) {
+  // Links are too long to read in half of the form column beside the preview.
+  if (def.colSpan === 2 || def.fieldType === "url") return "col-span-2";
+  // An email pairs with the phone number after it from sm, so neither sits alone at half width.
+  if (def.fieldType === "email" || def.fieldType === "tel") return "col-span-2 sm:col-span-1";
+  return def.pairOnMobile ? "col-span-1" : "col-span-2 md:col-span-1";
 }
 
 function FieldRenderer({
   def,
   control,
+  spanClassName = fieldSpan(def),
 }: {
   def: CoreFieldDefinition;
   control: ListingFormControl;
+  /** Overrides the field's usual columns. */
+  spanClassName?: string;
 }) {
-  const label = `${def.displayName}${def.isRequired ? " *" : ""}`;
+  // The asterisk stays in the accessible name ("Title *"), which the form's "* Required" note
+  // explains, but reads quieter than the label.
+  const label = (
+    <>
+      {def.displayName}
+      {def.isRequired ? (
+        <span className="-ml-1.5 font-normal text-muted-foreground"> *</span>
+      ) : null}
+    </>
+  );
 
   if (def.fieldType === "select") {
     return (
@@ -47,10 +74,7 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem
-            className={def.colSpan === 2 ? "md:col-span-2 min-w-0" : undefined}
-            data-field-name={def.key}
-          >
+          <FormItem className={cn("min-w-0", spanClassName)} data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <Select
               onValueChange={(value) => {
@@ -65,8 +89,8 @@ function FieldRenderer({
               value={field.value ?? ""}
             >
               <FormControl>
-                <SelectTrigger className="max-w-full min-w-0">
-                  <SelectValue placeholder={`Select ${def.displayName.toLowerCase()}`} />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent className="max-w-[calc(100vw-2rem)]">
@@ -111,10 +135,7 @@ function FieldRenderer({
           };
 
           return (
-            <FormItem
-              className={def.colSpan === 2 ? "md:col-span-2" : undefined}
-              data-field-name={def.key}
-            >
+            <FormItem className={spanClassName} data-field-name={def.key}>
               <FormLabel>{label}</FormLabel>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {def.options.map((opt) => (
@@ -143,18 +164,10 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem
-            className={def.colSpan === 2 ? "md:col-span-2" : undefined}
-            data-field-name={def.key}
-          >
+          <FormItem className={spanClassName} data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <FormControl>
-              <Textarea
-                placeholder={def.placeholder}
-                rows={4}
-                {...field}
-                value={field.value ?? ""}
-              />
+              <Textarea rows={5} className="min-h-36" {...field} value={field.value ?? ""} />
             </FormControl>
             {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
             <FormMessage />
@@ -173,8 +186,9 @@ function FieldRenderer({
         control={control}
         name={def.key}
         render={({ field }) => (
-          <FormItem data-field-name={def.key}>
-            <div className="flex items-center gap-1">
+          <FormItem className={spanClassName} data-field-name={def.key}>
+            {/* Fixed to the label's height so the info button doesn't push this field below the one beside it. */}
+            <div className="flex h-5 items-center gap-1">
               <FormLabel>{label}</FormLabel>
               {isLeaseTerm && def.helpText && (
                 <InfoPopover
@@ -188,7 +202,6 @@ function FieldRenderer({
                 type="number"
                 min={def.key === "squareFeet" ? 1 : 0}
                 step={def.key === "bathrooms" ? 0.5 : undefined}
-                placeholder={def.placeholder}
                 name={field.name}
                 ref={field.ref}
                 // Autosave only clears a stored optional number once its field is touched.
@@ -233,15 +246,10 @@ function FieldRenderer({
       control={control}
       name={def.key}
       render={({ field }) => (
-        <FormItem data-field-name={def.key}>
+        <FormItem className={spanClassName} data-field-name={def.key}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input
-              type={inputType}
-              placeholder={def.placeholder}
-              {...field}
-              value={field.value ?? ""}
-            />
+            <Input type={inputType} {...field} value={field.value ?? ""} />
           </FormControl>
           {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
           <FormMessage />
@@ -251,8 +259,22 @@ function FieldRenderer({
   );
 }
 
-export function ListingFormFields({ control }: ListingFormFieldsProps) {
-  const fieldsByCategory = CORE_FIELD_CATEGORIES.map((cat) => ({
+/** Collects consecutive `rowOfThree` fields into one array so they can share a row. */
+function groupRowsOfThree(fields: CoreFieldDefinition[]) {
+  const items: (CoreFieldDefinition | [CoreFieldDefinition, ...CoreFieldDefinition[]])[] = [];
+  for (const def of fields) {
+    const last = items.at(-1);
+    if (def.rowOfThree && Array.isArray(last)) last.push(def);
+    else items.push(def.rowOfThree ? [def] : def);
+  }
+  return items;
+}
+
+export function ListingFormFields({ control, categories }: ListingFormFieldsProps) {
+  const shownCategories = CORE_FIELD_CATEGORIES.filter(
+    (cat) => !categories || categories.includes(cat.key),
+  );
+  const fieldsByCategory = shownCategories.map((cat) => ({
     ...cat,
     fields: CORE_FIELD_DEFINITIONS.filter((f) => f.category === cat.key).sort(
       (a, b) => a.sortOrder - b.sortOrder,
@@ -261,16 +283,38 @@ export function ListingFormFields({ control }: ListingFormFieldsProps) {
 
   return (
     <>
-      {fieldsByCategory.map((cat, index) => (
+      {fieldsByCategory.map((cat) => (
         <FormSection
           key={cat.key}
-          isSeparated={index > 0}
+          id={listingFormSectionId(cat.key)}
           title={cat.displayName}
           description={cat.description}
         >
-          {cat.fields.map((def) => (
-            <FieldRenderer key={def.key} def={def} control={control} />
-          ))}
+          {groupRowsOfThree(cat.fields).map((item) =>
+            Array.isArray(item) ? (
+              // Two across on phones, where three columns would squeeze help text into ~100px.
+              // A field left over takes the full width there.
+              <div
+                key={item[0].key}
+                className="col-span-2 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3"
+              >
+                {item.map((def, index) => (
+                  <FieldRenderer
+                    key={def.key}
+                    def={def}
+                    control={control}
+                    spanClassName={
+                      index === item.length - 1 && item.length % 2 === 1
+                        ? "col-span-2 sm:col-span-1"
+                        : "col-span-1"
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              <FieldRenderer key={item.key} def={item} control={control} />
+            ),
+          )}
         </FormSection>
       ))}
     </>

@@ -19,14 +19,17 @@ describe("WalkScore", () => {
   it("shows all scores with trademark marks, the Redfin attribution, and correct links", () => {
     render(<WalkScore score={score} address="160 King St W, Kitchener, ON, Canada" />);
 
-    screen.getByRole("heading", { name: "Walk Score® rating" });
-    screen.getByText("72 · Very Walkable");
-    screen.getByRole("heading", { name: "Transit Score® rating" });
-    screen.getByText("55 · Good Transit");
-    screen.getByRole("heading", { name: "Bike Score® rating" });
-    screen.getByText("68 · Bikeable");
+    screen.getByRole("heading", { name: "Walk Score®" });
+    screen.getByText("72");
+    screen.getByText("Very Walkable");
+    screen.getByRole("heading", { name: "Transit Score®" });
+    screen.getByText("55");
+    screen.getByText("Good Transit");
+    screen.getByRole("heading", { name: "Bike Score®" });
+    screen.getByText("68");
+    screen.getByText("Bikeable");
 
-    const scoreLink = screen.getByRole("link", { name: /Walk Score® rating/ });
+    const scoreLink = screen.getByRole("link", { name: /^Walk Score® 72/ });
     expect(scoreLink).toHaveAttribute("href", score.walk.help_link);
     expect(scoreLink).toHaveAttribute("target", "_blank");
     expect(scoreLink).toHaveAttribute("rel", "noopener noreferrer");
@@ -47,11 +50,10 @@ describe("WalkScore", () => {
     expect(scoreLink).not.toContainElement(attribution);
   });
 
-  it("links Get Score to the listing address when no score is available", () => {
+  it("links to the address's Walk Score when no score is available", () => {
     render(<WalkScore score={null} address="160 King St W, Kitchener, ON, Canada" />);
 
-    screen.getByRole("heading", { name: "Walk Score® rating" });
-    const link = screen.getByRole("link", { name: "Get Score" });
+    const link = screen.getByRole("link", { name: "See the Walk Score® for this address" });
     expect(link).toHaveAttribute(
       "href",
       "https://www.walkscore.com/score/160%20King%20St%20W%2C%20Kitchener%2C%20ON%2C%20Canada",
@@ -64,7 +66,7 @@ describe("WalkScore", () => {
     const { transit: _transit, bike: _bike, ...walkOnlyScore } = score;
     render(<WalkScore score={walkOnlyScore} address="160 King St W, Kitchener, ON, Canada" />);
 
-    screen.getByText("72 · Very Walkable");
+    screen.getByText("72");
     expect(screen.queryByRole("heading", { name: /Transit Score®/ })).toBeNull();
     expect(screen.queryByRole("heading", { name: /Bike Score®/ })).toBeNull();
   });

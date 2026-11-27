@@ -20,7 +20,7 @@ export function DatePicker({ selected, onSelect, formattedText }: DatePickerProp
   return (
     <Field>
       <FieldLabel id={labelId} htmlFor={triggerId} className="font-medium leading-none">
-        Move-In Date
+        Move-in date
       </FieldLabel>
 
       <Popover>
@@ -28,7 +28,7 @@ export function DatePicker({ selected, onSelect, formattedText }: DatePickerProp
           <Button
             id={triggerId}
             variant="outline"
-            // Read as "Move-In Date, Any date" so the button isn't announced without a name.
+            // Read as "Move-in date, Any date" so the button isn't announced without a name.
             aria-labelledby={`${labelId} ${valueId}`}
             className="w-full justify-start text-left font-normal max-sm:h-10 max-sm:text-sm"
           >

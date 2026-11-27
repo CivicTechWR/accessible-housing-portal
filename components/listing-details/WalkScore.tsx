@@ -1,70 +1,73 @@
 import Link from "next/link";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowUpRight01Icon, WalkingIcon } from "@hugeicons/core-free-icons";
 
 import type { WalkScoreResult } from "@/lib/walk-score/walk-score.client";
 
 export const WALK_SCORE_ATTRIBUTION_URL = "https://www.redfin.com/how-walk-score-works";
 
-const footerLinkClassName = "text-primary-text underline-offset-4 hover:underline";
+const linkClassName = "text-primary-text underline-offset-4 hover:underline";
 
 type WalkScoreProps = {
   score: WalkScoreResult;
   address: string;
 };
 
+/** Walk, transit and bike scores under the listing's location map. */
 export function WalkScore({ score, address }: WalkScoreProps) {
   if (!score) {
     return (
-      <section className="rounded-lg border bg-card p-4" aria-label="Walk Score rating">
-        <h2 className="text-sm font-semibold">Walk Score® rating</h2>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+        <HugeiconsIcon
+          icon={WalkingIcon}
+          strokeWidth={2}
+          className="size-4 shrink-0 text-foreground/70"
+          aria-hidden
+        />
         <Link
           href={`https://www.walkscore.com/score/${encodeURIComponent(address)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 inline-block font-medium text-primary-text underline-offset-4 hover:underline"
+          className={`inline-flex items-center gap-1 font-medium ${linkClassName}`}
         >
-          Get Score
+          See the Walk Score® for this address
+          <HugeiconsIcon icon={ArrowUpRight01Icon} strokeWidth={2} className="size-4" aria-hidden />
         </Link>
-      </section>
+      </p>
     );
   }
 
+  const ratings = [
+    { title: "Walk Score®", ...score.walk },
+    score.transit && { title: "Transit Score®", ...score.transit },
+    score.bike && { title: "Bike Score®", ...score.bike },
+  ].filter((item): item is { title: string; score: number; description: string } => Boolean(item));
+
   return (
-    <section className="rounded-lg border bg-card p-4" aria-label="Location scores">
+    <section aria-label="Location scores" className="space-y-2">
+      {/* One link around every rating, to Walk Score's explanation of the ratings. */}
       <Link
         href={score.walk.help_link}
         target="_blank"
         rel="noopener noreferrer"
-        className="block space-y-3"
+        className="group grid auto-cols-fr grid-flow-col divide-x rounded-xl border bg-card text-card-foreground hover:bg-muted/60 dark:border-white/12 dark:divide-white/12"
       >
-        <div>
-          <h2 className="text-sm font-semibold">Walk Score® rating</h2>
-          <p className="text-sm text-muted-foreground">
-            {score.walk.score} · {score.walk.description}
-          </p>
-        </div>
-        {score.transit && (
-          <div>
-            <h3 className="text-sm font-semibold">Transit Score® rating</h3>
-            <p className="text-sm text-muted-foreground">
-              {score.transit.score} · {score.transit.description}
-            </p>
+        {ratings.map((rating) => (
+          <div key={rating.title} className="min-w-0 px-3 py-2.5">
+            <h3 className="text-sm font-medium tracking-normal text-muted-foreground group-hover:underline">
+              {rating.title}
+            </h3>
+            <p className="text-2xl font-bold tracking-normal tabular-nums">{rating.score}</p>
+            <p className="text-sm text-foreground">{rating.description}</p>
           </div>
-        )}
-        {score.bike && (
-          <div>
-            <h3 className="text-sm font-semibold">Bike Score® rating</h3>
-            <p className="text-sm text-muted-foreground">
-              {score.bike.score} · {score.bike.description}
-            </p>
-          </div>
-        )}
+        ))}
       </Link>
-      <p className="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t pt-3 text-xs">
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <a
           href={score.walk.ws_link}
           target="_blank"
           rel="noopener noreferrer"
-          className={footerLinkClassName}
+          className={linkClassName}
         >
           More about this address
         </a>
@@ -72,7 +75,7 @@ export function WalkScore({ score, address }: WalkScoreProps) {
           href={WALK_SCORE_ATTRIBUTION_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className={footerLinkClassName}
+          className={linkClassName}
         >
           Walk Score® by Redfin
         </a>

@@ -33,7 +33,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   FIELD_HELP_TEXT,
@@ -168,7 +174,7 @@ export function FieldEditorDialog({
         >
           <DialogHeader className="flex items-start justify-between">
             <div>
-              <DialogTitle>Add Custom Field</DialogTitle>
+              <DialogTitle>Add custom field</DialogTitle>
               <DialogDescription>
                 Configure how this field appears on listing forms, listing pages, and filters.
               </DialogDescription>
@@ -189,8 +195,8 @@ export function FieldEditorDialog({
               name="label"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel className="text-xs font-medium text-foreground">Label *</FormLabel>
-                  <FormDescription className="text-xs">{FIELD_HELP_TEXT.label}</FormDescription>
+                  <FormLabel>Label *</FormLabel>
+                  <FormDescription>{FIELD_HELP_TEXT.label}</FormDescription>
                   <FormControl>
                     <Input
                       {...field}
@@ -198,7 +204,7 @@ export function FieldEditorDialog({
                       disabled={isSaving}
                     />
                   </FormControl>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -208,8 +214,8 @@ export function FieldEditorDialog({
               name="key"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel className="text-xs font-medium text-foreground">Key *</FormLabel>
-                  <FormDescription className="text-xs">{FIELD_HELP_TEXT.key}</FormDescription>
+                  <FormLabel>Key *</FormLabel>
+                  <FormDescription>{FIELD_HELP_TEXT.key}</FormDescription>
                   <FormControl>
                     <Input
                       {...field}
@@ -220,7 +226,7 @@ export function FieldEditorDialog({
                       disabled={isSaving}
                     />
                   </FormControl>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -230,8 +236,8 @@ export function FieldEditorDialog({
               name="category"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel className="text-xs font-medium text-foreground">Category *</FormLabel>
-                  <FormDescription className="text-xs">{FIELD_HELP_TEXT.category}</FormDescription>
+                  <FormLabel>Category *</FormLabel>
+                  <FormDescription>{FIELD_HELP_TEXT.category}</FormDescription>
                   <CategoryCombobox
                     id="field-category"
                     value={field.value}
@@ -240,7 +246,7 @@ export function FieldEditorDialog({
                     disabled={isSaving}
                     required
                   />
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -250,23 +256,29 @@ export function FieldEditorDialog({
               name="appliesTo"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel className="text-xs font-medium text-foreground">
-                    Applicability *
-                  </FormLabel>
-                  <FormDescription className="text-xs">
+                  <FormLabel>Applicability *</FormLabel>
+                  <FormDescription>
                     Is this information shared across units in the building, or specific to one
                     unit?
                   </FormDescription>
-                  <FormControl>
-                    <NativeSelect {...field} disabled={isSaving} required>
-                      <option value="" disabled>
-                        Select applicability
-                      </option>
-                      <option value="building">Building — shared across units</option>
-                      <option value="unit">Unit — specific to one unit</option>
-                    </NativeSelect>
-                  </FormControl>
-                  <FormMessage className="text-xs" />
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    name={field.name}
+                    disabled={isSaving}
+                    required
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select applicability" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent position="popper">
+                      <SelectItem value="building">Building — shared across units</SelectItem>
+                      <SelectItem value="unit">Unit — specific to one unit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -276,21 +288,24 @@ export function FieldEditorDialog({
               name="publicOnly"
               render={({ field }) => (
                 <FormItem className="space-y-1.5">
-                  <FormLabel className="text-xs font-medium text-foreground">Visibility</FormLabel>
-                  <FormDescription className="text-xs">
-                    {FIELD_HELP_TEXT.visibility}
-                  </FormDescription>
-                  <FormControl>
-                    <NativeSelect
-                      value={field.value ? "public" : "internal"}
-                      onChange={(event) => field.onChange(event.target.value === "public")}
-                      disabled={isSaving}
-                    >
-                      <option value="public">Public</option>
-                      <option value="internal">Internal</option>
-                    </NativeSelect>
-                  </FormControl>
-                  <FormMessage className="text-xs" />
+                  <FormLabel>Visibility</FormLabel>
+                  <FormDescription>{FIELD_HELP_TEXT.visibility}</FormDescription>
+                  <Select
+                    value={field.value ? "public" : "internal"}
+                    onValueChange={(value) => field.onChange(value === "public")}
+                    disabled={isSaving}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent position="popper">
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="internal">Internal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -305,7 +320,7 @@ export function FieldEditorDialog({
             <FormTextArea
               control={form.control}
               name="helpText"
-              label="Partner Help Text"
+              label="Partner help text"
               helpText={FIELD_HELP_TEXT.helpText}
               disabled={isSaving}
             />
@@ -344,7 +359,7 @@ export function FieldEditorDialog({
               Cancel
             </Button>
             <Button type="submit" size="lg" disabled={isSaving}>
-              {isSaving ? "Saving..." : "Add Field"}
+              {isSaving ? "Saving..." : "Add field"}
             </Button>
           </DialogFooter>
         </DialogFormPanel>
@@ -363,17 +378,17 @@ export function FieldEditorDialog({
       >
         <DialogPanel onCloseAutoFocus={restoreFocusToDiscardRequester}>
           <DialogHeader>
-            <DialogTitle>Discard Custom Field?</DialogTitle>
+            <DialogTitle>Discard this field?</DialogTitle>
             <DialogDescription className="mt-2">
               You have unsaved changes. Discard this custom field and lose the entered values?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="outline" size="lg" onClick={closeDiscardConfirm}>
-              Keep Editing
+              Keep editing
             </Button>
             <Button type="button" variant="destructive" size="lg" onClick={onClose}>
-              Discard Changes
+              Discard changes
             </Button>
           </DialogFooter>
         </DialogPanel>
@@ -401,12 +416,12 @@ function FormTextArea({
       name={name}
       render={({ field }) => (
         <FormItem className="space-y-1.5 md:col-span-2">
-          <FormLabel className="text-xs font-medium text-foreground">{label}</FormLabel>
-          <FormDescription className="text-xs">{helpText}</FormDescription>
+          <FormLabel>{label}</FormLabel>
+          <FormDescription>{helpText}</FormDescription>
           <FormControl>
             <Textarea {...field} rows={3} disabled={disabled} />
           </FormControl>
-          <FormMessage className="text-xs" />
+          <FormMessage />
         </FormItem>
       )}
     />
@@ -442,13 +457,13 @@ function CheckboxFieldControl({
               />
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span>{label}</span>
-                <span className="text-xs font-normal leading-snug text-muted-foreground">
+                <span className="text-sm font-normal leading-snug text-muted-foreground">
                   {helpText}
                 </span>
               </span>
             </label>
           </FormControl>
-          <FormMessage className="text-xs" />
+          <FormMessage />
         </FormItem>
       )}
     />

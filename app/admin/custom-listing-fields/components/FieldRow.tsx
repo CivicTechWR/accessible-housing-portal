@@ -1,94 +1,69 @@
 "use client";
 
-import {
-  type DragEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-  useRef,
-  useState,
-} from "react";
+import { type DragEvent, type MouseEvent, useRef } from "react";
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
   Delete02Icon,
   DragDropVerticalIcon,
-  EyeIcon,
+  MoreHorizontalIcon,
+  PencilEdit02Icon,
   Tick02Icon,
-  ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCustomListingFieldCategoryLabel } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
+import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
-import type {
-  AdminCustomListingField,
-  UpdateCustomListingFieldInput,
-} from "@/shared/schemas/custom-listing-fields";
+import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fields";
 import {
   TABLE_COLUMNS,
   type SortDirection,
   type SortKey,
-  getCanonicalCategoryValue,
-  nullableTrim,
 } from "../custom-listing-fields-dashboard-utils";
-import { CategoryCombobox } from "./CategoryCombobox";
-
-export function CategoryTab({
-  isActive,
-  label,
-  count,
-  onClick,
-}: {
-  isActive: boolean;
-  label: string;
-  count?: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "flex h-11 shrink-0 items-center gap-2 border-b-2 px-5 text-sm font-medium transition-colors",
-        isActive
-          ? "border-primary-text text-primary-text"
-          : "border-transparent text-foreground/75 hover:text-foreground",
-      )}
-      onClick={onClick}
-    >
-      {label}
-      {count !== undefined ? (
-        <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-          {count}
-        </span>
-      ) : null}
-    </button>
-  );
-}
 
 export function FilterSelect({
   ariaLabel,
-  children,
+  options,
   value,
   onChange,
+  className,
 }: {
   ariaLabel: string;
-  children: ReactNode;
+  options: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
+  className?: string;
 }) {
   return (
-    <select
-      aria-label={ariaLabel}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="h-10 min-w-36 rounded-md border border-input bg-background px-4 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-    >
-      {children}
-    </select>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger aria-label={ariaLabel} className={cn("md:w-44", className)}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent position="popper">
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -114,7 +89,7 @@ export function SortHeader({
       type="button"
       title={helperText}
       aria-label={`${label}: ${helperText}`}
-      className="flex items-center gap-1 px-4 py-4 text-left text-xs font-medium text-foreground/80"
+      className="flex items-center gap-1 px-3 py-3 text-left text-sm font-medium text-muted-foreground hover:text-foreground"
       onClick={() => onSort(sortKey)}
     >
       {label}
@@ -122,7 +97,7 @@ export function SortHeader({
         <HugeiconsIcon
           icon={direction === "asc" ? ArrowUp01Icon : ArrowDown01Icon}
           strokeWidth={2}
-          className="size-3 text-primary-text"
+          className="size-3.5 text-primary-text"
         />
       ) : null}
     </button>
@@ -144,324 +119,161 @@ export function FieldRow({
   field,
   isPending,
   isSelected,
-  categoryOptions,
   onSelectToggle,
   onDragStart,
   onDragEnd,
   onDragOver,
   onDrop,
+  onEdit,
   onDelete,
-  onTextChange,
-  onApplicabilityChange,
-  onVisibilityChange,
-  onFilterableChange,
-  onRequiredChange,
 }: {
   field: AdminCustomListingField;
   isPending: boolean;
   isSelected: boolean;
-  categoryOptions: string[];
   onSelectToggle: (event: MouseEvent<HTMLButtonElement>) => void;
   onDragStart: (event: DragEvent<HTMLButtonElement>, rowElement: HTMLDivElement | null) => void;
   onDragEnd: () => void;
   onDragOver: (event: DragEvent<HTMLDivElement>) => void;
   onDrop: (event: DragEvent<HTMLDivElement>) => void;
+  onEdit: () => void;
   onDelete: () => void;
-  onTextChange: (payload: UpdateCustomListingFieldInput) => Promise<void>;
-  onApplicabilityChange: (appliesTo: AdminCustomListingField["appliesTo"]) => void;
-  onVisibilityChange: (publicOnly: boolean) => void;
-  onFilterableChange: (filterableOnly: boolean) => void;
-  onRequiredChange: (required: boolean) => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
-  const visibilityIcon = field.publicOnly ? EyeIcon : ViewOffSlashIcon;
-  const visibilityToneClass = field.publicOnly
-    ? "text-emerald-700 dark:text-emerald-400"
-    : "text-muted-foreground";
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const label = toSentenceCase(field.label);
 
   return (
+    // The whole row opens the editor for pointer users; the name button is the keyboard and screen
+    // reader entry point, so the row itself needs no role.
     <div
       ref={rowRef}
       className={cn(
-        "grid min-h-16 items-center border-b border-border text-sm transition-colors last:border-b-0",
+        "grid min-h-13 cursor-pointer items-center border-b border-border text-sm transition-colors last:border-b-0 hover:bg-muted/40",
         TABLE_COLUMNS,
-        isSelected && "bg-primary/5",
-        isPending && "opacity-60",
+        isSelected && "bg-primary/5 hover:bg-primary/10",
+        isPending && "pointer-events-none opacity-60",
       )}
+      onClick={() => {
+        if (!isPending) onEdit();
+      }}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      <div className="flex justify-end pr-1">
+      <div className="flex justify-center">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              draggable={!isPending}
+              className={cn(
+                "flex size-8 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors active:cursor-grabbing",
+                "hover:border-border hover:bg-background hover:text-foreground",
+                isSelected && "border-primary/30 bg-primary/10 text-primary-text",
+              )}
+              aria-label={`Select or drag ${label} to reorder`}
+              aria-pressed={isSelected}
+              disabled={isPending}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectToggle(event);
+              }}
+              onDragStart={(event) => onDragStart(event, rowRef.current)}
+              onDragEnd={onDragEnd}
+            >
+              <HugeiconsIcon
+                icon={isSelected ? Tick02Icon : DragDropVerticalIcon}
+                strokeWidth={2}
+                className="size-5"
+                aria-hidden
+              />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            Drag to reorder within{" "}
+            {toSentenceCase(formatCustomListingFieldCategoryLabel(field.category))}. Click to select
+            rows for bulk edit.
+          </TooltipContent>
+        </Tooltip>
+      </div>
+      {/* The name, then only the exceptions: a field is public and filterable unless marked. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5">
         <button
           type="button"
-          draggable={!isPending}
-          className={cn(
-            "flex size-7 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors active:cursor-grabbing",
-            "hover:border-border hover:bg-muted hover:text-foreground",
-            isSelected && "border-primary/30 bg-primary/10 text-primary-text",
-          )}
-          aria-label={`Select or drag ${field.label} to reorder`}
-          aria-pressed={isSelected}
-          title={`Drag ${field.label} to reorder within ${formatCustomListingFieldCategoryLabel(
-            field.category,
-          )}, or click to select`}
+          className="rounded-sm text-left font-medium text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
           disabled={isPending}
-          onClick={onSelectToggle}
-          onDragStart={(event) => onDragStart(event, rowRef.current)}
-          onDragEnd={onDragEnd}
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit();
+          }}
         >
-          <HugeiconsIcon
-            icon={isSelected ? Tick02Icon : DragDropVerticalIcon}
-            strokeWidth={2}
-            className="size-4"
-          />
+          <span className="sr-only">Edit </span>
+          {label}
         </button>
+        {!field.publicOnly ? <ExceptionBadge>Internal</ExceptionBadge> : null}
+        {!field.filterableOnly ? <ExceptionBadge>Not filterable</ExceptionBadge> : null}
+        {field.required ? <ExceptionBadge>Required</ExceptionBadge> : null}
       </div>
-      <div className="py-3 pr-3 font-mono text-xs tabular-nums text-muted-foreground">
-        {field.sortOrder}
+      <div className="px-3 py-2.5">
+        <span className="text-sm text-muted-foreground">
+          {field.appliesTo === "building" ? "Building" : "Unit"}
+        </span>
       </div>
-      <EditableTextCell
-        value={field.label}
-        className="font-medium text-foreground"
-        disabled={isPending}
-        required
-        ariaLabel={`Edit label for ${field.label}`}
-        onCommit={(label) => onTextChange({ label })}
-      />
-      <div
-        className="cursor-not-allowed px-4 py-3 font-mono text-xs text-muted-foreground"
-        title="Field keys are fixed after creation."
-      >
-        {field.key}
+      <div className="min-w-0 px-3 py-2.5">
+        <p className="line-clamp-1 text-muted-foreground" title={field.description || undefined}>
+          {field.description || "No description"}
+        </p>
       </div>
-      <EditableTextCell
-        value={formatCustomListingFieldCategoryLabel(field.category)}
-        displayValue={formatCustomListingFieldCategoryLabel(field.category)}
-        className="text-foreground/80"
-        disabled={isPending}
-        required
-        ariaLabel={`Edit category for ${field.label}`}
-        datalistId={`field-category-options-${field.id}`}
-        datalistOptions={categoryOptions}
-        onCommit={(category) =>
-          onTextChange({ category: getCanonicalCategoryValue(category, categoryOptions) })
-        }
-      />
-      <div className="px-4 py-3">
-        <select
-          aria-label={`Edit applicability for ${field.label}`}
-          title="Changing applicability affects future duplications; existing duplicated listings are unaffected."
-          value={field.appliesTo}
-          onChange={(event) =>
-            onApplicabilityChange(event.target.value as AdminCustomListingField["appliesTo"])
-          }
-          disabled={isPending}
-          className="h-8 w-28 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60"
-        >
-          <option value="building">Building</option>
-          <option value="unit">Unit</option>
-        </select>
-      </div>
-      <EditableTextCell
-        value={field.description ?? ""}
-        displayValue={field.description || "No description."}
-        className="text-foreground/90"
-        disabled={isPending}
-        ariaLabel={`Edit description for ${field.label}`}
-        multiline
-        onCommit={(description) => onTextChange({ description: nullableTrim(description) })}
-      />
-      <EditableTextCell
-        value={field.helpText ?? ""}
-        displayValue={field.helpText || "No help text."}
-        className="text-foreground/90"
-        disabled={isPending}
-        ariaLabel={`Edit help text for ${field.label}`}
-        multiline
-        onCommit={(helpText) => onTextChange({ helpText: nullableTrim(helpText) })}
-      />
-      <div className="px-4 py-3">
-        <label className="relative inline-flex">
-          <span className="sr-only">Visibility for {field.label}</span>
-          <HugeiconsIcon
-            icon={visibilityIcon}
-            strokeWidth={2}
-            className={cn(
-              "pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2",
-              visibilityToneClass,
-            )}
-          />
-          <select
-            value={field.publicOnly ? "public" : "internal"}
-            onChange={(event) => onVisibilityChange(event.target.value === "public")}
-            disabled={isPending}
-            className={cn(
-              "h-8 w-28 rounded-md border border-input bg-background py-1 pl-8 pr-2 text-xs font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60",
-              visibilityToneClass,
-            )}
-          >
-            <option value="public">Public</option>
-            <option value="internal">Internal</option>
-          </select>
-        </label>
-      </div>
-      <div className="px-4 py-3">
-        <Checkbox
-          aria-label={`Toggle filterable for ${field.label}`}
-          checked={field.filterableOnly}
-          disabled={isPending}
-          onCheckedChange={(checked) => onFilterableChange(checked === true)}
-        />
-      </div>
-      <div className="px-4 py-3">
-        <Checkbox
-          aria-label={`Toggle required for ${field.label}`}
-          checked={field.required}
-          disabled={isPending}
-          onCheckedChange={(checked) => onRequiredChange(checked === true)}
-        />
-      </div>
-      <div className="flex items-center gap-3 px-4 py-3">
-        <button
-          type="button"
-          className="text-destructive transition-colors hover:text-destructive/80 disabled:opacity-50"
-          aria-label={`Delete ${field.label}`}
-          disabled={isPending}
-          onClick={onDelete}
-        >
-          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-4" />
-        </button>
+      <div className="flex justify-center">
+        {/* Not modal, so the delete dialog opened from it doesn't leave the page inert. */}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              ref={menuButtonRef}
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="max-sm:size-11"
+              aria-label={`More actions for ${label}`}
+              disabled={isPending}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={2} aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+            <DropdownMenuItem
+              onSelect={() => {
+                // Gives the sheet a live element to return focus to when it closes.
+                menuButtonRef.current?.focus();
+                onEdit();
+              }}
+            >
+              <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} aria-hidden />
+              Edit field
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => {
+                // The delete dialog returns focus to whatever had it when it opened, and the menu
+                // item is about to unmount.
+                menuButtonRef.current?.focus();
+                onDelete();
+              }}
+            >
+              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} aria-hidden />
+              Delete field
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
 }
 
-function EditableTextCell({
-  value,
-  displayValue,
-  className,
-  disabled,
-  required,
-  multiline,
-  ariaLabel,
-  datalistId,
-  datalistOptions,
-  onCommit,
-}: {
-  value: string;
-  displayValue?: string;
-  className?: string;
-  disabled?: boolean;
-  required?: boolean;
-  multiline?: boolean;
-  ariaLabel: string;
-  datalistId?: string;
-  datalistOptions?: string[];
-  onCommit: (value: string) => Promise<void>;
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const [error, setError] = useState("");
-  const shownValue = displayValue ?? value;
-
-  const beginEditing = () => {
-    if (disabled) {
-      return;
-    }
-
-    setDraft(value);
-    setError("");
-    setIsEditing(true);
-  };
-
-  const commit = async (nextValue = draft) => {
-    const trimmed = nextValue.trim();
-
-    if (required && !trimmed) {
-      setError("Required");
-      return;
-    }
-
-    if (trimmed === value.trim()) {
-      setIsEditing(false);
-      return;
-    }
-
-    try {
-      await onCommit(required ? trimmed : nextValue);
-      setIsEditing(false);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to save.");
-    }
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setDraft(value);
-      setError("");
-      setIsEditing(false);
-      return;
-    }
-
-    if (event.key === "Enter" && !multiline) {
-      event.preventDefault();
-      void commit();
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <div className="px-3 py-2">
-        {multiline ? (
-          <Textarea
-            aria-label={ariaLabel}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={() => void commit()}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            rows={3}
-            className="min-h-20 bg-background text-sm"
-          />
-        ) : datalistId && datalistOptions ? (
-          <CategoryCombobox
-            id={datalistId}
-            value={draft}
-            options={datalistOptions}
-            onValueChange={setDraft}
-            onValueCommit={(nextValue) => void commit(nextValue)}
-            onBlur={() => void commit()}
-            onKeyDown={handleKeyDown}
-            required={required}
-          />
-        ) : (
-          <Input
-            aria-label={ariaLabel}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={() => void commit()}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            className="bg-background text-sm"
-          />
-        )}
-        {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
-      </div>
-    );
-  }
-
+function ExceptionBadge({ children }: { children: string }) {
   return (
-    <button
-      type="button"
-      className={cn(
-        "h-full w-full cursor-text px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
-        className,
-      )}
-      disabled={disabled}
-      onClick={beginEditing}
-    >
-      {shownValue}
-    </button>
+    <Badge variant="outline" className="font-normal text-muted-foreground">
+      {children}
+    </Badge>
   );
 }

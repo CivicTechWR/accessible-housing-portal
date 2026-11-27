@@ -1,21 +1,25 @@
 "use client";
 
-import { ChangeEvent } from "react";
+import { useId, useRef, useState } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Delete02Icon,
+  ImageUploadIcon,
+  Loading03Icon,
+} from "@hugeicons/core-free-icons";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { ListingFormControl, ListingFormImage } from "@/app/listing-form/types";
+import { listingFormSectionId } from "@/app/listing-form/fieldDefinitions";
 import { FormSection } from "@/components/listing-form-layout/ListingFormLayout";
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { trimmedAbsoluteOrRootRelativeUrlString } from "@/shared/schemas/string-normalizers";
 
 const uploadImageResponseSchema = z.object({
@@ -55,25 +59,30 @@ async function uploadFile(
   return uploadImageResponseSchema.parse(await response.json()).data;
 }
 
+/** An icon button in the photo's control pill: 40px, 44px on phones. */
+const PHOTO_BUTTON =
+  "rounded-md text-inherit hover:bg-muted hover:text-inherit disabled:opacity-35";
+
 export function ListingFormImages({
   control,
   listingId,
   activateDraftListing,
   prepareDraftListing,
 }: ListingFormImagesProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const hintId = useId();
   const uploadMutation = useMutation({
     mutationFn: async ({ file, listingId }: { file: File; listingId: string }) =>
       uploadFile(file, listingId),
   });
 
-  const handleImageUpload = async (
-    event: ChangeEvent<HTMLInputElement>,
+  const uploadImages = async (
+    files: File[],
     currentImages: ListingFormImage[],
     onChange: (images: ListingFormImage[]) => void,
   ) => {
-    const files = event.target.files;
-
-    if (!files?.length) {
+    if (files.length === 0 || uploadMutation.isPending) {
       return;
     }
 
@@ -81,7 +90,7 @@ export function ListingFormImages({
       const uploadedImages: ListingFormImage[] = [];
       const resolvedListingId = listingId ?? (await prepareDraftListing());
 
-      for (const file of Array.from(files)) {
+      for (const file of files) {
         const uploadedImage = await uploadMutation.mutateAsync({
           file,
           listingId: resolvedListingId,
@@ -99,45 +108,104 @@ export function ListingFormImages({
         activateDraftListing(resolvedListingId);
       }
     } catch {
-      // TanStack Query stores the error for rendering beside the input.
-    } finally {
-      event.target.value = "";
+      // TanStack Query stores the error for rendering beside the dropzone.
     }
   };
 
   return (
     <FormSection
-      isSeparated
-      title="Listing Images"
-      description="Upload photos for the listing and add captions to provide extra context for each image."
+      id={listingFormSectionId("images")}
+      title="Photos"
+      description="The first photo is the cover on search results. Captions describe each photo for people who use screen readers."
     >
       <FormField
         control={control}
         name="images"
         render={({ field }) => {
           const images = field.value ?? [];
+          const moveImage = (from: number, to: number) => {
+            const next = [...images];
+            const [moved] = next.splice(from, 1);
+            if (!moved) return;
+            next.splice(to, 0, moved);
+            field.onChange(next);
+          };
 
           return (
-            <FormItem className="md:col-span-2">
-              <FormLabel>Images</FormLabel>
-              <FormControl>
-                <Input
-                  type="file"
-                  multiple
-                  accept={acceptedImageTypes}
-                  onChange={(event) => handleImageUpload(event, images, field.onChange)}
-                  disabled={uploadMutation.isPending}
+            <FormItem className="col-span-2 gap-4">
+              <FormLabel className="sr-only">Photos</FormLabel>
+              <div
+                className={cn(
+                  "relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors",
+                  isDragging
+                    ? "border-primary bg-primary/5"
+                    : "border-input bg-muted/30 hover:bg-muted/50",
+                  uploadMutation.isPending && "pointer-events-none opacity-70",
+                )}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setIsDragging(false);
+                  const files = Array.from(event.dataTransfer.files).filter((file) =>
+                    file.type.startsWith("image/"),
+                  );
+                  void uploadImages(files, images, field.onChange);
+                }}
+              >
+                <HugeiconsIcon
+                  icon={uploadMutation.isPending ? Loading03Icon : ImageUploadIcon}
+                  strokeWidth={2}
+                  className={cn(
+                    "size-5 text-muted-foreground",
+                    uploadMutation.isPending && "animate-spin",
+                  )}
+                  aria-hidden
                 />
-              </FormControl>
-              <FormDescription>
-                {uploadMutation.isPending
-                  ? "Uploading images..."
-                  : !listingId
-                    ? "Uploading an image will create a draft automatically."
-                    : "You can select multiple files at once. Captions are optional."}
-              </FormDescription>
+                <p className="text-sm font-medium text-foreground">
+                  {uploadMutation.isPending ? (
+                    "Uploading photos..."
+                  ) : (
+                    <>
+                      Drag photos here or{" "}
+                      <button
+                        type="button"
+                        className="rounded-sm font-medium text-primary-text underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none"
+                        aria-describedby={hintId}
+                        onClick={() => inputRef.current?.click()}
+                      >
+                        browse
+                      </button>
+                    </>
+                  )}
+                </p>
+                <p id={hintId} className="text-sm text-muted-foreground">
+                  JPG, PNG, WebP or AVIF, up to 25 MB each.
+                  {!listingId ? " Adding a photo saves this listing as a draft." : null}
+                </p>
+                <FormControl>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    multiple
+                    accept={acceptedImageTypes}
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={(event) => {
+                      const files = Array.from(event.target.files ?? []);
+                      event.target.value = "";
+                      void uploadImages(files, images, field.onChange);
+                    }}
+                    disabled={uploadMutation.isPending}
+                  />
+                </FormControl>
+              </div>
               {uploadMutation.error && (
-                <p className="text-sm text-destructive">
+                <p className="text-sm text-destructive" role="alert">
                   {uploadMutation.error instanceof Error
                     ? uploadMutation.error.message
                     : "Unable to upload image(s). Please try again."}
@@ -145,24 +213,85 @@ export function ListingFormImages({
               )}
 
               {images.length > 0 && (
-                <div className="space-y-4 pt-2">
-                  {images.map((image, index) => (
-                    <div key={`${image.url}-${index}`} className="rounded-md border p-3">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-[120px_1fr_auto] md:items-start">
-                        <div className="overflow-hidden rounded-md border bg-muted/30">
+                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Uploaded photos">
+                  {images.map((image, index) => {
+                    const position = `Photo ${index + 1} of ${images.length}`;
+                    return (
+                      <li
+                        key={`${image.url}-${index}`}
+                        className="overflow-hidden rounded-xl border border-border bg-background"
+                      >
+                        <div className="relative aspect-[3/2] bg-muted">
                           <img
                             src={image.url}
-                            alt={image.caption || `Uploaded listing image ${index + 1}`}
-                            className="h-24 w-full object-cover"
+                            alt={image.caption || position}
+                            className="size-full object-cover"
                           />
+                          {/* The Cover badge keeps a dark scrim so it reads on any photo. */}
+                          {index === 0 ? (
+                            <Badge className="absolute top-2 left-2 h-7 border-white/15 bg-black/75 px-3 text-white backdrop-blur dark:bg-black/75 dark:text-white">
+                              Cover
+                            </Badge>
+                          ) : null}
+                          {/* A solid pill in the card colour rather than the scrim, so the controls
+                              read on any photo. */}
+                          <div className="absolute top-2 right-2 flex rounded-lg border border-border bg-card/95 p-0.5 text-foreground shadow-sm backdrop-blur">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className={PHOTO_BUTTON}
+                              aria-label={`Move ${position} earlier`}
+                              title="Move earlier"
+                              disabled={index === 0}
+                              onClick={() => moveImage(index, index - 1)}
+                            >
+                              <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} aria-hidden />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className={PHOTO_BUTTON}
+                              aria-label={`Move ${position} later`}
+                              title="Move later"
+                              disabled={index === images.length - 1}
+                              onClick={() => moveImage(index, index + 1)}
+                            >
+                              <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} aria-hidden />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                PHOTO_BUTTON,
+                                "text-red-600 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400",
+                              )}
+                              aria-label={`Remove ${position}`}
+                              title="Remove"
+                              onClick={() => {
+                                field.onChange(
+                                  images.filter((_, imageIndex) => imageIndex !== index),
+                                );
+                              }}
+                            >
+                              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} aria-hidden />
+                            </Button>
+                          </div>
                         </div>
-
-                        <div className="space-y-2">
-                          <p className="text-xs text-muted-foreground break-all">{image.url}</p>
-                          <Input
-                            type="text"
-                            placeholder="Write an image caption"
+                        <div className="p-3">
+                          {/* The caption is the photo's alt text, so it wraps and grows instead of
+                              cutting off. It stays one paragraph: Enter doesn't add a line. */}
+                          <Textarea
+                            rows={2}
+                            className="min-h-[calc(2lh+1.25rem+2px)] resize-none [field-sizing:content]"
+                            aria-label={`Caption for ${position.toLowerCase()}`}
+                            placeholder="Add a caption"
                             value={image.caption}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") event.preventDefault();
+                            }}
                             onChange={(event) => {
                               field.onChange(
                                 images.map((currentImage, imageIndex) =>
@@ -177,20 +306,10 @@ export function ListingFormImages({
                             }}
                           />
                         </div>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            field.onChange(images.filter((_, imageIndex) => imageIndex !== index));
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
               <FormMessage />
             </FormItem>

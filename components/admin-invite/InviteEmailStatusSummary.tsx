@@ -17,7 +17,7 @@ type State = InviteEmailStatus["state"];
 type FailureReason = Extract<InviteEmailStatus, { state: "failed" }>["reason"];
 
 const labels: Record<State, string> = {
-  not_requested: "No email requested",
+  not_requested: "Link only, no email sent",
   queued: "Email queued",
   submitted: "Email sent",
   delayed: "Email delayed",
@@ -25,6 +25,11 @@ const labels: Record<State, string> = {
   retrying: "Email bounced, retrying",
   failed: "Email not delivered",
   complained: "Email marked as spam",
+};
+
+// Table rows are narrow, so the longest label gets a short form there; its title says the rest.
+const compactLabels: Partial<Record<State, string>> = {
+  not_requested: "Link only",
 };
 
 // Decorative. The label carries the meaning, so a status never depends on its icon or colour.
@@ -78,23 +83,34 @@ function explain(status: InviteEmailStatus): string {
   }
 }
 
-/** One invitation's email status as a label and a sentence on what it means or what to do. */
+/**
+ * One invitation's email status as a label and a sentence on what it means or what to do.
+ * `compact` is for table rows: one line, with the sentence kept only when the admin has to act.
+ */
 export function InviteEmailStatusSummary({
   status,
+  compact = false,
   className,
 }: {
   status: InviteEmailStatus;
+  compact?: boolean;
   className?: string;
 }) {
   const needsAction = status.state === "failed" || status.state === "complained";
+  const explanation = explain(status);
 
   return (
     <div className={cn("space-y-1", className)}>
       <p
         className={cn(
-          "flex items-start gap-1.5 text-sm font-medium",
-          needsAction ? "text-destructive" : "text-foreground",
+          "flex items-start gap-1.5 text-sm",
+          needsAction
+            ? "font-medium text-destructive"
+            : compact
+              ? "text-muted-foreground"
+              : "font-medium text-foreground",
         )}
+        title={compact && !needsAction ? `${labels[status.state]}. ${explanation}` : undefined}
       >
         <HugeiconsIcon
           icon={icons[status.state]}
@@ -102,11 +118,20 @@ export function InviteEmailStatusSummary({
           aria-hidden="true"
           className="mt-0.5 size-4 shrink-0"
         />
-        {labels[status.state]}
+        {compact && compactLabels[status.state] ? (
+          <>
+            <span aria-hidden>{compactLabels[status.state]}</span>
+            <span className="sr-only">{labels[status.state]}</span>
+          </>
+        ) : (
+          labels[status.state]
+        )}
       </p>
-      <p className={cn("text-xs", needsAction ? "text-foreground" : "text-muted-foreground")}>
-        {explain(status)}
-      </p>
+      {!compact || needsAction ? (
+        <p className={cn("text-sm", needsAction ? "text-foreground" : "text-muted-foreground")}>
+          {explanation}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -12,8 +12,8 @@ export type PageEntry = {
   desktopOnly?: boolean;
   /** Captured at mobile size only, for views that only exist below the lg breakpoint. */
   mobileOnly?: boolean;
-  /** Name of a tab to select after the page loads, to capture a different view of it. */
-  selectTab?: string;
+  /** Name of a button to press after the page loads, to capture a different view of it. */
+  pressButton?: string;
 };
 
 // Every route under app/ with a page.tsx. Add new pages here so they get a screenshot and the
@@ -45,7 +45,7 @@ export const PAGES: PageEntry[] = [
     path: `/listing-form/${E2E_SEEDED_LISTING_ID}`,
     role: "partner",
     mobileOnly: true,
-    selectTab: "Preview",
+    pressButton: "Preview",
   },
 
   { name: "admin-users", path: "/admin/users", role: "admin", desktopOnly: true },

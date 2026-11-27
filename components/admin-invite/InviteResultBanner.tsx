@@ -18,7 +18,7 @@ export function InviteResultBanner({ result }: InviteResultBannerProps) {
       <p>{result.message}</p>
       {result.inviteUrl && (
         <div className="mt-3 space-y-1">
-          <label htmlFor="created-invite-url" className="text-xs">
+          <label htmlFor="created-invite-url" className="text-sm font-medium">
             Invitation link, select to copy
           </label>
           <Input

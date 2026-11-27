@@ -144,10 +144,15 @@ export async function getListingsService(
   });
 
   const imageByListingId = new Map<string, string>();
+  const photoCountByListingId = new Map<string, number>();
   for (const image of imageRows) {
     if (!imageByListingId.has(image.listingId)) {
       imageByListingId.set(image.listingId, getListingImageUrl(image.id, image.imageUrl));
     }
+    photoCountByListingId.set(
+      image.listingId,
+      (photoCountByListingId.get(image.listingId) ?? 0) + 1,
+    );
   }
 
   return succeed({
@@ -158,6 +163,7 @@ export async function getListingsService(
       );
       const listingSummary = {
         id: row.id,
+        title: row.title.trim() || undefined,
         price: centsToDollars(row.monthlyRentCents),
         address: formatListingAddress(row.street1, row.unitNumber),
         city: row.city,
@@ -166,6 +172,8 @@ export async function getListingsService(
         sqft: row.squareFeet,
         accessibilityFeatures: accessibilityFeatures.length > 0 ? accessibilityFeatures : undefined,
         imageUrl: imageByListingId.get(row.id),
+        photoCount: photoCountByListingId.get(row.id) ?? 0,
+        availableOn: row.availableOn ?? undefined,
         timeAgo: formatListingTimeAgo(row.publishedAt, row.createdAt),
       };
 
@@ -732,6 +740,8 @@ async function buildListingDetailsResponse(listing: ListingRecord): Promise<List
     beds: listing.bedrooms,
     baths: listing.bathrooms,
     sqft: listing.squareFeet,
+    lat: listing.property.latitude ?? undefined,
+    lng: listing.property.longitude ?? undefined,
     heatingType: listing.heatingType ?? undefined,
     utilitiesIncluded: [...listing.utilitiesIncluded],
     depositInfo: getOptionalListingText(listing.depositInfo),

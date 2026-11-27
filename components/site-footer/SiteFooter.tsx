@@ -2,86 +2,105 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/lib/site-config";
 
-import { WALK_SCORE_ATTRIBUTION_URL } from "@/components/listing-details/WalkScore";
+import { BrandMark } from "@/components/brand/BrandMark";
+import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
 
 const siteMap = [
   { href: "/", label: "Home" },
-  { href: "/listings", label: "Browse Listings" },
-  { href: "/community-agreement", label: "Community Agreement & Terms of Use" },
+  { href: "/listings", label: "Browse listings" },
+  { href: "/community-agreement", label: "Community agreement and terms of use" },
 ];
+
+const linkClass =
+  "rounded-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline";
 
 export function SiteFooter({ className }: { className?: string }) {
   return (
-    <footer className={cn("bg-primary text-primary-foreground", className)}>
-      <div className="mx-auto flex max-w-7xl justify-center px-6 py-10">
-        <div className="grid w-full max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-3">
-            <img
-              src="https://civictechwr.org/images/logos/civictechwr_logo_black.webp"
-              alt="Civic Tech WR Region"
-              className="h-14 invert brightness-0"
-            />
-            <p className="text-xs text-primary-foreground/70 leading-relaxed">
-              Our mission is to bring together people from different sectors and industries to
-              actively solve issues facing our local community using design and technology.
-            </p>
-          </div>
-          <div className="space-y-3">
-            <h3 className="text-sm uppercase tracking-wider">Site Map</h3>
-            <ul className="space-y-2 text-sm text-primary-foreground/80">
-              {siteMap.map((page) => (
-                <li key={page.href}>
-                  <Link
-                    href={page.href}
-                    className="hover:text-primary-foreground transition-colors"
-                  >
-                    {page.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="space-y-3">
-            <h3 className="text-sm uppercase tracking-wider">Civic Tech WR</h3>
-            <ul className="space-y-2 text-sm text-primary-foreground/80">
-              <li>
-                <a
-                  href="https://civictechwr.org"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary-foreground transition-colors"
-                >
-                  Civic Tech WR
-                </a>
-              </li>
-              <li>
-                <a
-                  href={siteConfig.repositoryUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary-foreground transition-colors"
-                >
-                  GitHub
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      <div className="border-t border-primary-foreground/20 px-6 py-4 text-xs text-primary-foreground/60">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 sm:flex-row sm:justify-between">
-          <p>{siteConfig.name}</p>
-          <p className="text-[11px]">
-            Location scores:{" "}
+    <footer
+      className={cn(
+        "border-t bg-muted/50 text-sm dark:bg-background",
+        // Sign-in and signed-in app pages render [data-compact-footer]; they keep only the bottom line.
+        "peer-has-[[data-compact-footer]]/shell:[&>.footer-main]:hidden",
+        className,
+      )}
+    >
+      <div className="footer-main site-container grid grid-cols-1 gap-x-6 gap-y-4 py-8 sm:grid-cols-2 sm:gap-y-8 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="space-y-3 sm:col-span-2 md:col-span-1">
+          <p className="flex items-center gap-2.5 text-base font-bold tracking-[-0.02em] text-foreground">
+            <BrandMark className="size-7" />
+            {siteConfig.name}
+          </p>
+          <p className="max-w-sm leading-relaxed text-muted-foreground">
+            Affordable, accessible rentals in {siteConfig.region}. Run by{" "}
             <a
-              href={WALK_SCORE_ATTRIBUTION_URL}
+              href={siteConfig.operator.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-4 hover:text-primary-foreground transition-colors"
+              className={cn(linkClass, "underline")}
             >
-              Walk Score® by Redfin
+              {siteConfig.operator.name}
+            </a>{" "}
+            and built by volunteers at{" "}
+            <a
+              href={siteConfig.builder.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(linkClass, "underline")}
+            >
+              Civic Tech WR
             </a>
+            .
           </p>
+        </div>
+        <nav aria-labelledby="footer-site-map" className="space-y-3 max-sm:space-y-0">
+          <h2 id="footer-site-map" className="text-sm font-bold text-foreground max-sm:sr-only">
+            Site map
+          </h2>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 sm:block sm:space-y-2">
+            {siteMap.map((page) => (
+              <li key={page.href}>
+                <Link href={page.href} className={linkClass}>
+                  {page.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="min-w-0 space-y-3 max-sm:space-y-0">
+          <h2 className="text-sm font-bold text-foreground max-sm:sr-only">Get in touch</h2>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 sm:block sm:space-y-2">
+            <li>
+              <a
+                href={`mailto:${siteConfig.contactEmail}`}
+                className={cn(linkClass, "wrap-anywhere")}
+              >
+                {siteConfig.contactEmail}
+              </a>
+            </li>
+            <li>
+              <a
+                href={siteConfig.repositoryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkClass}
+              >
+                Source code on GitHub
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div className="border-t">
+        <div className="site-container flex flex-col gap-3 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <p>
+              © {new Date().getFullYear()} {siteConfig.operator.name}
+            </p>
+            <div className="flex items-center gap-2">
+              <span aria-hidden>Theme</span>
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
       </div>
     </footer>

@@ -118,12 +118,14 @@ export async function findListingSummaries(input: {
   const rows = await db
     .select({
       id: listings.id,
+      title: listings.title,
       monthlyRentCents: listings.monthlyRentCents,
       bedrooms: listings.bedrooms,
       bathrooms: listings.bathrooms,
       squareFeet: listings.squareFeet,
       customFields: listings.customFields,
       unitNumber: listings.unitNumber,
+      availableOn: listings.availableOn,
       publishedAt: listings.publishedAt,
       createdAt: listings.createdAt,
       street1: properties.street1,

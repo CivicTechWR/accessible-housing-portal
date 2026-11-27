@@ -34,10 +34,16 @@ interface BaseCoreFieldDefinition {
   displayName: string;
   category: string;
   helpText?: string;
-  placeholder?: string;
   isRequired: boolean;
   sortOrder: number;
   colSpan?: 1 | 2;
+  /** Keeps this half-width field beside its neighbour on phones too. Set it on both fields. */
+  pairOnMobile?: true;
+  /**
+   * Puts this short field in a row of three with the neighbouring fields that also set it
+   * (at every width, so keep them short). Set it on consecutive fields.
+   */
+  rowOfThree?: true;
 }
 
 interface TextLikeFieldDefinition extends BaseCoreFieldDefinition {
@@ -73,13 +79,13 @@ export type CoreFieldDefinition =
 export const CORE_FIELD_CATEGORIES = [
   {
     key: "listing_details",
-    displayName: "Listing Details",
-    description: "Core information about the listing.",
+    displayName: "Listing details",
+    description: "The unit, its rent and what's included.",
   },
   {
     key: "property_info",
-    displayName: "Property & Contact Info",
-    description: "Location and owner details for this building/property.",
+    displayName: "Property and contact",
+    description: "Where the building is and who navigators can contact.",
   },
   {
     key: "application",
@@ -89,6 +95,13 @@ export const CORE_FIELD_CATEGORIES = [
   },
 ] as const;
 
+/** The section nav's anchor for each card in the form. */
+export function listingFormSectionId(
+  section: (typeof CORE_FIELD_CATEGORIES)[number]["key"] | "images" | "features",
+) {
+  return `section-${section}`;
+}
+
 export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   {
     key: "title",
@@ -97,7 +110,8 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 1,
-    placeholder: "E.g. Sunny 2BR Apartment",
+    colSpan: 2,
+    helpText: 'For example, "Sunny 2-bedroom apartment".',
   },
   {
     key: "description",
@@ -106,12 +120,11 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: false,
     sortOrder: 2,
-    placeholder: "Short description of the unit and building...",
     colSpan: 2,
   },
   {
     key: "buildingType",
-    displayName: "Building Type",
+    displayName: "Building type",
     fieldType: "select",
     category: "listing_details",
     isRequired: true,
@@ -125,12 +138,11 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "unitNumber",
-    displayName: "Unit Number",
+    displayName: "Unit number",
     fieldType: "text",
     category: "listing_details",
     isRequired: false,
     sortOrder: 4,
-    placeholder: "Optional",
   },
   {
     key: "bedrooms",
@@ -139,7 +151,8 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 5,
-    placeholder: "0 for studio",
+    rowOfThree: true,
+    helpText: "Enter 0 for a studio.",
   },
   {
     key: "bathrooms",
@@ -148,45 +161,43 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 6,
-    placeholder: "E.g. 1.5",
+    rowOfThree: true,
+    helpText: "Half baths count as 0.5.",
   },
   {
     key: "squareFeet",
-    displayName: "Square Feet",
+    displayName: "Square feet",
     fieldType: "number",
     category: "listing_details",
     isRequired: false,
     sortOrder: 7,
+    rowOfThree: true,
   },
   {
     key: "monthlyRentCents",
-    displayName: "Monthly Rent ($)",
+    displayName: "Monthly rent ($)",
     fieldType: "number",
     category: "listing_details",
     isRequired: true,
     sortOrder: 8,
-    placeholder: "E.g. 1500",
-    helpText: "Enter the monthly rent in dollars.",
   },
   {
     key: "depositInfo",
-    displayName: "Deposit Information",
+    displayName: "Deposit information",
     fieldType: "textarea",
     category: "listing_details",
     isRequired: false,
-    sortOrder: 9,
+    sortOrder: 10,
     colSpan: 2,
-    placeholder: "E.g. First and last month's rent, refundable",
-    helpText: "Describe any deposits required so tenants know what to expect.",
+    helpText: "For example, first and last month's rent.",
   },
   {
     key: "leaseTerm",
-    displayName: "Initial Lease Term in Months",
+    displayName: "Initial lease term in months",
     fieldType: "number",
     category: "listing_details",
     isRequired: true,
-    sortOrder: 10,
-    placeholder: "E.g. 12",
+    sortOrder: 9,
     helpText: HOUSING_DEFINITIONS.leaseTerm.description,
   },
   {
@@ -198,7 +209,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     sortOrder: 11,
     colSpan: 2,
     helpText:
-      "Select the system that provides most of the unit's heat. Electric resistance includes electric baseboards and electric furnaces.",
+      "The system that heats most of the unit. Electric baseboards and furnaces count as electric resistance.",
     options: HEATING_TYPE_VALUES.map((value) => ({
       label: HEATING_TYPE_LABELS[value],
       value,
@@ -206,13 +217,13 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "utilitiesIncluded",
-    displayName: "Utilities Included",
+    displayName: "Utilities included",
     fieldType: "checkbox-group",
     category: "listing_details",
     isRequired: false,
     sortOrder: 12,
     colSpan: 2,
-    helpText: "Select all utilities included in the monthly rent.",
+    helpText: "Included in the monthly rent.",
     options: UTILITY_INCLUDED_VALUES.map((value) => ({
       label: UTILITY_INCLUDED_LABELS[value],
       value,
@@ -221,12 +232,11 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
 
   {
     key: "name",
-    displayName: "Property Name",
+    displayName: "Property name",
     fieldType: "text",
     category: "property_info",
     isRequired: true,
     sortOrder: 10,
-    placeholder: "E.g. Elm Village",
   },
   {
     key: "street1",
@@ -259,18 +269,20 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "property_info",
     isRequired: true,
     sortOrder: 14,
+    pairOnMobile: true,
   },
   {
     key: "postalCode",
-    displayName: "Postal Code",
+    displayName: "Postal code",
     fieldType: "text",
     category: "property_info",
     isRequired: true,
     sortOrder: 15,
+    pairOnMobile: true,
   },
   {
     key: "contactName",
-    displayName: "Contact Name",
+    displayName: "Contact name",
     fieldType: "text",
     category: "property_info",
     isRequired: true,
@@ -278,16 +290,16 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "contactRole",
-    displayName: "Contact Role",
+    displayName: "Contact role",
     fieldType: "text",
     category: "property_info",
     isRequired: false,
     sortOrder: 17,
-    placeholder: "e.g. Property manager",
+    helpText: 'Such as "Property manager".',
   },
   {
     key: "contactEmail",
-    displayName: "Contact Email",
+    displayName: "Contact email",
     fieldType: "email",
     category: "property_info",
     isRequired: true,
@@ -295,11 +307,12 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "contactPhone",
-    displayName: "Contact Phone",
+    displayName: "Contact phone",
     fieldType: "tel",
     category: "property_info",
     isRequired: true,
     sortOrder: 19,
+    helpText: "Format: 519-555-0100.",
   },
   {
     key: "applicationUrl",
@@ -308,7 +321,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "application",
     isRequired: false,
     sortOrder: 20,
-    placeholder: "https://example.org/apply",
+    helpText: "Starts with https://.",
   },
   {
     key: "applicationEmail",
@@ -317,8 +330,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "application",
     isRequired: false,
     sortOrder: 21,
-    placeholder: "applications@example.org",
-    helpText: "Where searchers should email to apply or arrange a viewing.",
   },
   {
     key: "applicationPhone",
@@ -327,8 +338,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "application",
     isRequired: false,
     sortOrder: 22,
-    placeholder: "519-555-0100",
-    helpText: "Where searchers should call to apply or arrange a viewing.",
+    helpText: "Format: 519-555-0100.",
   },
   {
     key: "applicationInstructions",
@@ -339,6 +349,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     sortOrder: 23,
     colSpan: 2,
     helpText:
-      "Share anything else applicants should know, such as required documents, viewing arrangements, or response times. This appears on the listing as a note from you.",
+      "Such as required documents, viewings or when you reply. Shows on the listing as a note from you.",
   },
 ];

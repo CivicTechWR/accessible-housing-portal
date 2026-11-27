@@ -18,13 +18,12 @@ describe("ListingFormPreview card", () => {
           postalCode: "N2G 2T8",
         }}
         onOpenDetails={() => {}}
-        onCloseDetails={() => {}}
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe(
-      "88 Courtland Ave E #4, Kitchener",
-    );
+    // Without a building name, the street is the card's heading and the city sits under it.
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("88 Courtland Ave E #4");
+    expect(screen.getAllByText("Kitchener")).toHaveLength(1);
   });
 
   it("loads an uploaded photo directly, since the listing may be a draft only the owner can see", () => {
@@ -38,10 +37,24 @@ describe("ListingFormPreview card", () => {
           images: [{ id: "0b7f2a64-3c8e-4d1a-9f5b-2e6c1d8a4b90", url: photoUrl, caption: "" }],
         }}
         onOpenDetails={() => {}}
-        onCloseDetails={() => {}}
       />,
     );
 
     expect(screen.getByRole("img").getAttribute("src")).toBe(photoUrl);
+  });
+
+  it("marks missing rent instead of showing zeros", () => {
+    render(
+      <ListingFormPreview
+        mode="card"
+        formData={{ ...CREATE_FORM_DEFAULTS, bedrooms: 2 }}
+        onOpenDetails={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("No rent yet")).toBeInTheDocument();
+    expect(screen.getByText("2 beds")).toBeInTheDocument();
+    expect(screen.queryByText(/bath/)).toBeNull();
+    expect(screen.queryByText(/\$0/)).toBeNull();
   });
 });

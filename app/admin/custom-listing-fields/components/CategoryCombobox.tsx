@@ -95,7 +95,7 @@ export function CategoryCombobox({
               <span className="font-medium text-foreground">
                 {formatCustomListingFieldCategoryLabel(option)}
               </span>
-              <span className="text-xs text-muted-foreground">Existing category</span>
+              <span className="text-sm text-muted-foreground">Existing category</span>
             </button>
           ))}
 
@@ -115,7 +115,7 @@ export function CategoryCombobox({
               <span className="font-medium text-primary-text">
                 Create new category "{customCategory}"
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm text-muted-foreground">
                 Saving with this value will create it.
               </span>
             </button>

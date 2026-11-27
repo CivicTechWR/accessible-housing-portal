@@ -20,9 +20,9 @@ export async function openPage(page: Page, entry: PageEntry) {
   // Client queries can start after networkidle while the page hydrates.
   await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0, { timeout: 30_000 });
   await page.evaluate(() => document.fonts.ready);
-  if (entry.selectTab) {
-    const tab = page.getByRole("tab", { name: entry.selectTab, exact: true });
-    await tab.click();
-    await expect(tab).toHaveAttribute("aria-selected", "true");
+  if (entry.pressButton) {
+    const button = page.getByRole("button", { name: entry.pressButton, exact: true });
+    await button.click();
+    await expect(button).not.toBeVisible();
   }
 }

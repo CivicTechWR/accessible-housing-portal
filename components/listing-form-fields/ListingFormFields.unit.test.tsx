@@ -49,7 +49,7 @@ describe("ListingFormFields", () => {
   it("stores typed deposit information on the form", () => {
     const form = renderForm();
 
-    fireEvent.change(screen.getByPlaceholderText("E.g. First and last month's rent, refundable"), {
+    fireEvent.change(screen.getByLabelText("Deposit information"), {
       target: { value: "First and last month's rent, refundable" },
     });
 
@@ -62,14 +62,14 @@ describe("ListingFormFields", () => {
 
     expect(screen.getByRole("button", { name: label })).toHaveAccessibleDescription(description);
     expect(
-      screen.getByRole("spinbutton", { name: /Initial Lease Term/ }),
+      screen.getByRole("spinbutton", { name: /Initial lease term/ }),
     ).toHaveAccessibleDescription(description);
   });
 
   it("renders a described checkbox for each utility", () => {
     renderForm();
 
-    const description = screen.getByText("Select all utilities included in the monthly rent.");
+    const description = screen.getByText("Included in the monthly rent.");
     for (const label of ["Heat", "Water", "Electricity", "Gas", "Internet"]) {
       const checkbox = screen.getByRole("checkbox", { name: label });
       expect(checkbox).not.toBeChecked();
@@ -91,7 +91,7 @@ describe("ListingFormFields", () => {
   it("sends an explicit clear after removing a saved contact role", () => {
     const form = renderForm({ contactRole: "Property manager" });
 
-    fireEvent.change(screen.getByRole("textbox", { name: "Contact Role" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: "Contact role" }), {
       target: { value: "" },
     });
 
@@ -106,7 +106,7 @@ describe("ListingFormFields", () => {
     expect(form.getValues("heatingType")).toBe("");
     expect(form.getValues("buildingType")).toBe("apartment");
     expect(screen.getByRole("combobox", { name: "Primary heating type" }).textContent).toBe(
-      "Select primary heating type",
+      "Select",
     );
   });
 
@@ -114,9 +114,9 @@ describe("ListingFormFields", () => {
     const numberFields = [
       "Bedrooms",
       "Bathrooms",
-      "Square Feet",
-      "Monthly Rent ($)",
-      "Initial Lease Term in Months",
+      "Square feet",
+      "Monthly rent ($)",
+      "Initial lease term in months",
     ];
     // Required labels end in " *", so match on the start of the accessible name.
     const getNumberInput = (label: string) =>
@@ -130,7 +130,7 @@ describe("ListingFormFields", () => {
 
     it("keeps the remaining zeros when the first digit of a saved number is deleted", () => {
       const form = renderForm({ squareFeet: 1000 });
-      const input = getNumberInput("Square Feet");
+      const input = getNumberInput("Square feet");
 
       fireEvent.change(input, { target: { value: "000" } });
 
@@ -161,7 +161,7 @@ describe("ListingFormFields", () => {
 
     it("stores no value after a typed number is cleared", () => {
       const form = renderForm();
-      const input = getNumberInput("Square Feet");
+      const input = getNumberInput("Square feet");
 
       fireEvent.change(input, { target: { value: "850" } });
       fireEvent.change(input, { target: { value: "" } });
@@ -172,7 +172,7 @@ describe("ListingFormFields", () => {
 
     it("keeps a saved number cleared instead of showing it again", () => {
       const form = renderForm({ squareFeet: 850 });
-      const input = getNumberInput("Square Feet");
+      const input = getNumberInput("Square feet");
 
       fireEvent.change(input, { target: { value: "" } });
 
@@ -193,7 +193,7 @@ describe("ListingFormFields", () => {
 
     it("shows saved rent in dollars and stores typed rent in cents", () => {
       const form = renderForm({ monthlyRentCents: 185000 });
-      const input = getNumberInput("Monthly Rent ($)");
+      const input = getNumberInput("Monthly rent ($)");
       expect(input).toHaveDisplayValue("1850");
 
       fireEvent.change(input, { target: { value: "1900" } });

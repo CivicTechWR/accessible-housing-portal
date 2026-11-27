@@ -2,7 +2,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { AuthCard } from "@/components/auth/AuthCard";
+import { AuthCard, AuthField } from "@/components/auth/AuthCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -27,24 +27,33 @@ export function ForgotPasswordForm() {
     }
   }
   return (
-    <form onSubmit={submit}>
+    <form className="w-full max-w-[400px]" onSubmit={submit}>
       <AuthCard
         title="Forgot password?"
         description="We'll email you a link that expires in one hour."
         footer={
-          <Button disabled={pending}>{pending ? "Please wait..." : "Send reset link"}</Button>
+          <>
+            <Button className="w-full" size="lg" disabled={pending}>
+              {pending ? "Please wait..." : "Send reset link"}
+            </Button>
+            <Link
+              href="/sign-in"
+              className="block text-center text-sm font-medium text-primary-text underline-offset-4 hover:underline"
+            >
+              Back to sign in
+            </Link>
+          </>
         }
       >
-        <label htmlFor="email">Email</label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <AuthField>
+          <label htmlFor="email">Email</label>
+          <Input id="email" name="email" type="email" autoComplete="email" required />
+        </AuthField>
         {message && (
-          <p role="status" className="text-sm">
+          <p role="status" className="rounded-lg bg-muted px-4 py-3 text-sm">
             {message}
           </p>
         )}
-        <Link className="text-sm underline" href="/sign-in">
-          Back to sign in
-        </Link>
       </AuthCard>
     </form>
   );

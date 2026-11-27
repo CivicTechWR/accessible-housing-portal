@@ -1,36 +1,49 @@
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import type { ReactNode } from "react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type AuthCardProps = {
+  /** A muted tile above the title, for states such as an expired link. */
+  icon?: IconSvgElement;
   title: ReactNode;
   description?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
   footer?: ReactNode;
   className?: string;
 };
 
-export function AuthCard({ title, description, children, footer, className }: AuthCardProps) {
+/** The card every sign-in, reset and invite screen uses. */
+export function AuthCard({ icon, title, description, children, footer, className }: AuthCardProps) {
   return (
-    <Card
-      className={cn("w-full max-w-md border border-border/80 shadow-xl shadow-black/5", className)}
+    <div
+      className={cn(
+        "flex h-fit w-full max-w-[400px] flex-col gap-6 text-card-foreground sm:rounded-xl sm:border sm:bg-card sm:p-8 dark:sm:border-white/20",
+        // Beside the sign panel (AuthPageShell), the shared box supplies the border.
+        "lg:group-data-[auth-panel]/auth:h-full lg:group-data-[auth-panel]/auth:max-w-none lg:group-data-[auth-panel]/auth:justify-center lg:group-data-[auth-panel]/auth:rounded-none lg:group-data-[auth-panel]/auth:border-0 lg:group-data-[auth-panel]/auth:p-10",
+        className,
+      )}
     >
-      <CardHeader className="border-b border-border/60">
-        <CardTitle>
-          <h1>{title}</h1>
-        </CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
-      </CardHeader>
-      <CardContent className="space-y-4 pt-4">{children}</CardContent>
-      {footer ? <CardFooter className="border-t border-border/60 pt-4">{footer}</CardFooter> : null}
-    </Card>
+      <div className="space-y-2">
+        {icon ? (
+          <span className="mb-4 flex size-11 items-center justify-center rounded-lg border bg-muted text-foreground">
+            <HugeiconsIcon icon={icon} strokeWidth={2} size={22} aria-hidden="true" />
+          </span>
+        ) : null}
+        <h1 className="text-2xl">{title}</h1>
+        {description ? <p className="text-base text-muted-foreground">{description}</p> : null}
+      </div>
+      {children ? <div className="space-y-5">{children}</div> : null}
+      {footer ? <div className="space-y-3">{footer}</div> : null}
+    </div>
+  );
+}
+
+/** A label and input stacked with consistent spacing inside an AuthCard. */
+export function AuthField({ children }: { children: ReactNode }) {
+  return (
+    <div className="space-y-2 [&>label]:block [&>label]:text-sm [&>label]:font-medium">
+      {children}
+    </div>
   );
 }

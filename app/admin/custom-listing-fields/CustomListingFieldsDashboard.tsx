@@ -4,11 +4,13 @@ import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
+import { AppPageShell, PageHeader, pageWidths } from "@/components/page-shell/AppPageShell";
 import { cn } from "@/lib/utils";
 import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fields";
 import { BulkEditDialog } from "./components/BulkEditDialog";
 import { CustomListingFieldsTable } from "./components/CustomListingFieldsTable";
 import { DeleteFieldDialog } from "./components/DeleteFieldDialog";
+import { FieldEditSheet } from "./components/FieldEditSheet";
 import { FieldEditorDialog } from "./components/FieldEditorDialog";
 import { useCustomListingFieldsDashboard } from "./useCustomListingFieldsDashboard";
 
@@ -20,40 +22,34 @@ export function CustomListingFieldsDashboard({
   const dashboard = useCustomListingFieldsDashboard(initialFields);
 
   return (
-    <main className="min-h-[calc(100vh-7rem)] bg-muted/60 px-5 py-7 text-sm text-foreground md:px-7">
-      <div className="mx-auto max-w-[1920px]">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Custom Listing Fields</h1>
-            <p className="mt-1 text-base text-muted-foreground">
-              Manage the custom fields that appear on listings and filters. The order in this table
-              is the order renters and partners will see on each listing.
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Applicability is independent of category. Changing it affects future duplications;
-              existing duplicated listings are unaffected.
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-3">
+    <AppPageShell>
+      <div className={cn("mx-auto space-y-6", pageWidths.content)}>
+        <PageHeader
+          title="Custom listing fields"
+          description="Fields that appear on listings and in search filters, in the order shown here."
+          actions={
             <Button
               type="button"
-              size="lg"
-              className="h-10 gap-2 rounded-md px-5 text-sm"
               onClick={() => dashboard.openCreateDialog()}
               disabled={dashboard.isCreating}
             >
-              <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
-              Add Field
+              <HugeiconsIcon
+                icon={Add01Icon}
+                strokeWidth={2}
+                data-icon="inline-start"
+                aria-hidden
+              />
+              Add field
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         <CustomListingFieldsTable {...dashboard.tableProps} />
 
         {dashboard.feedback ? (
           <p
             className={cn(
-              "mt-4 text-sm",
+              "text-sm",
               dashboard.feedback.status === "success"
                 ? "text-emerald-700 dark:text-emerald-400"
                 : "text-destructive",
@@ -76,6 +72,17 @@ export function CustomListingFieldsDashboard({
         />
       ) : null}
 
+      {dashboard.editTarget ? (
+        <FieldEditSheet
+          key={dashboard.editTarget.id}
+          field={dashboard.editTarget}
+          categories={dashboard.categoryOptions}
+          isSaving={dashboard.pendingFieldId === dashboard.editTarget.id}
+          onClose={dashboard.closeEditSheet}
+          onSave={dashboard.handleSaveField}
+        />
+      ) : null}
+
       {dashboard.bulkEditOpen ? (
         <BulkEditDialog
           categories={dashboard.categoryOptions}
@@ -94,6 +101,6 @@ export function CustomListingFieldsDashboard({
           onConfirm={() => void dashboard.handleDeleteField()}
         />
       ) : null}
-    </main>
+    </AppPageShell>
   );
 }

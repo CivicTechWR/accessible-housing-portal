@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { UserIcon } from "@hugeicons/core-free-icons";
+import { ArrowDown01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { usePathname } from "next/navigation";
 
@@ -19,10 +19,10 @@ type HeaderAccountMenuProps = {
 };
 
 const triggerClass =
-  "inline-flex max-w-56 cursor-pointer items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/30";
+  "inline-flex h-10 max-w-72 cursor-pointer items-center gap-2 rounded-full border border-border bg-card py-1 pr-3 pl-1 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-muted";
 
 const menuItemClass =
-  "flex w-full items-center rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors";
+  "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors";
 
 export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
   const pathname = usePathname();
@@ -41,16 +41,21 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
           aria-expanded={isOpen}
           aria-haspopup="menu"
           aria-label="Open account menu"
-          className={cn(triggerClass, isOpen && "bg-primary-foreground/30")}
+          className={cn(triggerClass, isOpen && "bg-muted")}
         >
-          <HugeiconsIcon icon={UserIcon} strokeWidth={2} size={16} />
-          <span className="truncate">{accountLabel}</span>
           <span
             aria-hidden="true"
-            className={cn(
-              "mb-0.5 size-2.5 rotate-45 border-r-2 border-b-2 border-current transition-transform",
-              isOpen ? "translate-y-0.5 rotate-[225deg]" : "-translate-y-px",
-            )}
+            className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary-text dark:bg-primary-text/15"
+          >
+            <HugeiconsIcon icon={UserIcon} strokeWidth={2} size={18} />
+          </span>
+          <span className="truncate">{accountLabel}</span>
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            strokeWidth={2}
+            size={16}
+            aria-hidden="true"
+            className={cn("text-muted-foreground transition-transform", isOpen && "rotate-180")}
           />
         </button>
       </PopoverTrigger>
@@ -75,7 +80,7 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
 
         <div className="flex items-center justify-between border-t border-border px-3 pt-2 pb-1 text-sm font-medium text-foreground">
           <span>Theme</span>
-          <ThemeToggle surface="popover" />
+          <ThemeToggle />
         </div>
       </PopoverContent>
     </Popover>

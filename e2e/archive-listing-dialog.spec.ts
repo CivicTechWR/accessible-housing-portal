@@ -13,12 +13,15 @@ test("the archive confirmation closes on Cancel and Escape without archiving", a
   });
 
   await page.goto("/my-listings");
-  const archive = page.getByRole("button", { name: "Archive" }).first();
+  // Archive sits in each row's overflow menu, which gets focus back when the dialog closes.
+  const menuButton = page.getByRole("button", { name: /^More actions for / }).first();
+  const archive = page.getByRole("menuitem", { name: "Archive" });
   const restoreButtons = page.getByRole("button", { name: "Restore" });
   const restoreCount = await restoreButtons.count();
   const dialog = page.getByRole("alertdialog", { name: "Archive this listing?" });
   const cancel = dialog.getByRole("button", { name: "Cancel" });
 
+  await menuButton.click();
   await archive.click();
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText(
@@ -28,13 +31,14 @@ test("the archive confirmation closes on Cancel and Escape without archiving", a
   await expect(cancel).toBeFocused();
   await cancel.click();
   await expect(dialog).toBeHidden();
-  await expect(archive).toBeFocused();
+  await expect(menuButton).toBeFocused();
 
   await page.keyboard.press("Enter");
+  await archive.click();
   await expect(dialog).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
-  await expect(archive).toBeFocused();
+  await expect(menuButton).toBeFocused();
 
   expect(archiveRequests).toEqual([]);
   await expect(restoreButtons).toHaveCount(restoreCount);

@@ -1,4 +1,6 @@
 import { memo } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PropertySearchIcon } from "@hugeicons/core-free-icons";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ListingSummary } from "@/shared/schemas/listings";
 import { ListingsCard } from "../listings-card/ListingsCard";
@@ -17,6 +19,8 @@ interface ListingCardGalleryProps {
   isLoadingMore: boolean;
   /** Loading stopped at the cap, with more matches left. */
   isCapped: boolean;
+  /** Called with a listing's id while its card is hovered or focused, and null after. */
+  onHighlightChange?: (id: string | null) => void;
 }
 
 // Memoized because the search page re-renders on every keystroke in its filters, and this can
@@ -26,6 +30,7 @@ export const ListingCardGallery = memo(function ListingCardGallery({
   mode,
   isLoadingMore,
   isCapped,
+  onHighlightChange,
 }: ListingCardGalleryProps) {
   const isFullscreen = mode === ListingsDisplayMode.FULLSCREEN;
   const footer = isLoadingMore
@@ -36,34 +41,56 @@ export const ListingCardGallery = memo(function ListingCardGallery({
 
   return (
     <ScrollArea className="min-h-0 flex-1 w-full">
+      {listings.length === 0 && !isLoadingMore && (
+        <div className="mx-4 mt-6 rounded-xl border border-dashed px-6 py-12 text-center sm:mx-6">
+          <HugeiconsIcon
+            icon={PropertySearchIcon}
+            strokeWidth={2}
+            className="mx-auto mb-3 size-6 text-muted-foreground"
+            aria-hidden
+          />
+          <p className="text-base font-medium text-foreground">No listings match your search</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Try another location, a wider price range or fewer filters.
+          </p>
+        </div>
+      )}
       <div
-        className={`p-4 grid gap-4 ${
-          isFullscreen
-            ? "justify-items-center grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))]"
-            : "grid-cols-1"
+        // Below `md`, leave room at the end for the floating List / Map button.
+        className={`grid gap-x-5 gap-y-6 px-4 pt-3 pb-4 max-md:pb-24 sm:px-6 sm:pt-4 ${
+          isFullscreen ? "grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))]" : "grid-cols-1"
         }`}
       >
         {listings.map((listing) => (
-          <ListingsCard
+          <div
             key={listing.id}
-            id={listing.id}
-            title={listing.title}
-            accessibilityFeatures={listing.accessibilityFeatures?.map((feature) => feature.name)}
-            price={listing.price}
-            address={listing.address}
-            city={listing.city}
-            beds={listing.beds}
-            baths={listing.baths}
-            sqft={listing.sqft}
-            timeAgo={listing.timeAgo}
-            imageUrl={listing.imageUrl}
-            variant={isFullscreen ? "vertical" : "horizontal"}
-          />
+            // min-w-0 lets the card's truncated lines shrink instead of widening the grid at 320px.
+            className="flex min-w-0"
+            onPointerEnter={() => onHighlightChange?.(listing.id)}
+            onPointerLeave={() => onHighlightChange?.(null)}
+            onFocus={() => onHighlightChange?.(listing.id)}
+            onBlur={() => onHighlightChange?.(null)}
+          >
+            <ListingsCard
+              id={listing.id}
+              title={listing.title}
+              accessibilityFeatures={listing.accessibilityFeatures?.map((feature) => feature.name)}
+              price={listing.price}
+              address={listing.address}
+              city={listing.city}
+              beds={listing.beds}
+              baths={listing.baths}
+              sqft={listing.sqft}
+              availableOn={listing.availableOn}
+              imageUrl={listing.imageUrl}
+              variant={isFullscreen ? "vertical" : "horizontal"}
+            />
+          </div>
         ))}
       </div>
       {/* Always mounted, and never display: none, so screen readers announce the text when it
           changes. It has no height while empty. */}
-      <p role="status" className="px-4 pb-4 text-center text-sm text-muted-foreground empty:pb-0">
+      <p role="status" className="px-4 pb-6 text-center text-sm text-muted-foreground empty:pb-0">
         {footer}
       </p>
     </ScrollArea>

@@ -3,7 +3,7 @@ import { useQueryStates } from "nuqs";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FilterButtonProps } from "@/components/filter-button/FilterButton";
 
-const LISTING_LOCATION_PLACEHOLDER = "Search city, address, or building";
+const LISTING_LOCATION_PLACEHOLDER = "City, address or building";
 
 function normalizeLocationFilter(value: string) {
   const trimmedValue = value.trim();
@@ -25,9 +25,10 @@ export function useListingFilters() {
       sortOptions: [
         { value: "newest", label: "Newest" },
         { value: "oldest", label: "Oldest" },
-        { value: "price_asc", label: "Price: Low to High" },
-        { value: "price_desc", label: "Price: High to Low" },
+        { value: "price_asc", label: "Price: low to high" },
+        { value: "price_desc", label: "Price: high to low" },
       ],
+      value: filters.sort,
       // An unknown value parses to null, which resets the sort to its default.
       onChange: async (value: string) =>
         await setFilters({ sort: listingSearchParamsParsers.sort.parse(value) }),

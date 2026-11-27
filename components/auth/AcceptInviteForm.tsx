@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { AuthCard } from "@/components/auth/AuthCard";
+import { AuthCard, AuthField } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -56,58 +56,63 @@ export function AcceptInviteForm({ token, email }: AcceptInviteFormProps) {
   if (done)
     return (
       <AuthCard title="Password saved" description="Sign in with your new password to continue.">
-        <Button asChild>
+        <Button asChild size="lg" className="w-full">
           <Link href="/sign-in">Go to sign in</Link>
         </Button>
       </AuthCard>
     );
 
   return (
-    <form onSubmit={submit} noValidate>
+    <form className="w-full max-w-[400px]" onSubmit={submit} noValidate>
       <AuthCard
         title={email ? "Activate your account" : "Reset your password"}
-        description={email}
+        description={email ?? "Choose a new password for your account."}
         footer={
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" size="lg" className="w-full" disabled={pending}>
             {pending ? "Saving..." : "Save password"}
           </Button>
         }
       >
-        <p className="text-sm text-muted-foreground">Use 12 to 128 characters.</p>
-        <label htmlFor="password">New password</label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
-          required
-          aria-invalid={!!fieldErrors.password}
-          aria-describedby={fieldErrors.password ? "password-error" : undefined}
-        />
-        {fieldErrors.password && (
-          <p id="password-error" role="alert" className="text-sm text-destructive">
-            {fieldErrors.password}
-          </p>
-        )}
-        <label htmlFor="confirmPassword">Confirm password</label>
-        <Input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
-          required
-          aria-invalid={!!fieldErrors.confirmPassword}
-          aria-describedby={fieldErrors.confirmPassword ? "confirm-password-error" : undefined}
-        />
-        {fieldErrors.confirmPassword && (
-          <p id="confirm-password-error" role="alert" className="text-sm text-destructive">
-            {fieldErrors.confirmPassword}
-          </p>
-        )}
+        <AuthField>
+          <label htmlFor="password">New password</label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            required
+            aria-invalid={!!fieldErrors.password}
+            aria-describedby={fieldErrors.password ? "password-error" : undefined}
+          />
+          {fieldErrors.password ? (
+            <p id="password-error" role="alert" className="text-sm text-destructive">
+              {fieldErrors.password}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">Use 12 to 128 characters.</p>
+          )}
+        </AuthField>
+        <AuthField>
+          <label htmlFor="confirmPassword">Confirm password</label>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            required
+            aria-invalid={!!fieldErrors.confirmPassword}
+            aria-describedby={fieldErrors.confirmPassword ? "confirm-password-error" : undefined}
+          />
+          {fieldErrors.confirmPassword && (
+            <p id="confirm-password-error" role="alert" className="text-sm text-destructive">
+              {fieldErrors.confirmPassword}
+            </p>
+          )}
+        </AuthField>
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}

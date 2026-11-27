@@ -1,32 +1,37 @@
-import { AdminAccountActions } from "@/components/admin-users/AdminAccountActions";
-import { AdminInviteActions } from "@/components/admin-users/AdminInviteActions";
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Add01Icon } from "@hugeicons/core-free-icons";
 
-import { AppPageShell, PageMessage } from "@/components/page-shell/AppPageShell";
+import { AccountTableColumns } from "@/components/admin-users/AccountTableColumns";
+import { AdminInviteActions } from "@/components/admin-users/AdminInviteActions";
+import { UserDirectory } from "@/components/admin-users/UserDirectory";
+import { formatAccountDate } from "@/components/admin-users/account-display";
+import { RoleLabel } from "@/components/admin-invite/RoleLabel";
+import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
+import {
+  AppPageShell,
+  PageHeader,
+  PageMessage,
+  pageWidths,
+} from "@/components/page-shell/AppPageShell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge, StatusBadge, type StatusTone } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { findAccountInvites, type AccountInviteRow } from "@/lib/auth/invite-store";
-import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
 import { getAccountsService } from "@/lib/accounts/account.service";
 import { cn } from "@/lib/utils";
 import type { AccountListResponse } from "@/shared/schemas/account-management";
+import { OrganizationLine } from "@/components/admin-users/OrganizationLine";
 
 export const metadata: Metadata = {
-  title: "Manage Users",
+  title: "Users",
 };
 
 export const dynamic = "force-dynamic";
 
 const pageLimit = 100;
-
-const dateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 async function getAllAccounts() {
   const firstPageResult = await getAccountsService({
@@ -79,148 +84,144 @@ async function getAllAccounts() {
   };
 }
 
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "Never";
-  }
+const inviteLifecycle: Record<AccountInviteRow["lifecycle"], { label: string; tone: StatusTone }> =
+  {
+    // The same word the All users table uses for the account the invite created.
+    pending: { label: "Invited", tone: "warning" },
+    accepted: { label: "Accepted", tone: "success" },
+    expired: { label: "Expired", tone: "neutral" },
+    revoked: { label: "Revoked", tone: "neutral" },
+  };
 
-  return dateTimeFormatter.format(new Date(value));
+function InviteStatus({ lifecycle }: { lifecycle: AccountInviteRow["lifecycle"] }) {
+  const { label, tone } = inviteLifecycle[lifecycle];
+  return <StatusBadge tone={tone}>{label}</StatusBadge>;
 }
 
-function roleBadgeVariant(role: AccountListResponse["data"][number]["role"]) {
-  switch (role) {
-    case "admin":
-      return "default" as const;
-    case "partner":
-      return "secondary" as const;
-    case "user":
-      return "outline" as const;
-  }
-}
-
-const inviteLifecycleLabels: Record<AccountInviteRow["lifecycle"], string> = {
-  pending: "Pending",
-  accepted: "Accepted",
-  expired: "Expired",
-  revoked: "Revoked",
-};
-
-function statusBadgeVariant(status: AccountListResponse["data"][number]["status"]) {
-  switch (status) {
-    case "active":
-      return "secondary" as const;
-    case "invited":
-      return "outline" as const;
-    case "suspended":
-      return "destructive" as const;
-    case "deactivated":
-      return "ghost" as const;
-  }
-}
-
-function formatRole(role: AccountListResponse["data"][number]["role"]) {
-  switch (role) {
-    case "partner":
-      return "Housing Lister";
-    case "user":
-      return "Housing Searcher";
-    case "admin":
-      return "Admin";
-  }
-}
-
-function formatStatus(status: AccountListResponse["data"][number]["status"]) {
-  switch (status) {
-    case "active":
-      return "Active";
-    case "invited":
-      return "Invited";
-    case "suspended":
-      return "Suspended";
-    case "deactivated":
-      return "Deactivated";
-  }
-}
-
-function AdminDataSection({ title, children }: { title: string; children: ReactNode }) {
+function DateText({ value }: { value: Date }) {
+  const date = formatAccountDate(value);
   return (
-    <Card className="gap-0 overflow-hidden py-0">
-      <CardHeader className="border-b bg-background py-4">
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      {children}
-    </Card>
+    <span className="whitespace-nowrap" title={date.full}>
+      {date.short}
+    </span>
   );
 }
 
-function DesktopDataTable({ columns, children }: { columns: string[]; children: ReactNode }) {
+function SectionHeading({ id, title, count }: { id: string; title: string; count: number }) {
   return (
-    <div className="hidden overflow-x-auto lg:block">
-      <table className="min-w-full border-collapse text-left text-sm">
-        <thead className="bg-muted/60 text-muted-foreground">
-          <tr>
-            {columns.map((column) => (
-              <th key={column} className="px-4 py-3 font-medium">
-                {column}
+    <h2 id={id} className="flex items-center gap-2 text-lg">
+      {title}
+      <Badge variant="secondary">{count}</Badge>
+    </h2>
+  );
+}
+
+function Invitations({ invites }: { invites: AccountInviteRow[] }) {
+  if (invites.length === 0) {
+    return (
+      <Card className="py-0">
+        <EmptyState className="border-0">No invitations found.</EmptyState>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="gap-0 py-0">
+      <div className="hidden lg:block">
+        <table className="w-full table-fixed border-collapse text-left text-sm">
+          <caption className="sr-only">Invitations</caption>
+          <AccountTableColumns />
+          <thead className="border-b bg-muted text-sm font-medium text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">Invitee</th>
+              <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Invited</th>
+              <th className="px-4 py-3">Expires</th>
+              <th className="px-4 py-3">
+                <span className="sr-only">Actions</span>
               </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {invites.map((invite) => (
+              <tr key={invite.id} className="align-top">
+                <td className="px-4 py-3.5">
+                  {/* One line each, like the All users table, so nothing breaks at a hyphen. */}
+                  <p className="truncate font-medium text-foreground" title={invite.name}>
+                    {invite.name}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground" title={invite.email}>
+                    {invite.email}
+                  </p>
+                  {invite.organization ? (
+                    <OrganizationLine organization={invite.organization} className="mt-0.5" />
+                  ) : null}
+                </td>
+                <td className="px-4 py-3.5">
+                  <RoleLabel role={invite.role} />
+                </td>
+                <td className="space-y-1.5 px-4 py-3.5">
+                  <InviteStatus lifecycle={invite.lifecycle} />
+                  {invite.emailStatus && (
+                    <InviteEmailStatusSummary status={invite.emailStatus} compact />
+                  )}
+                </td>
+                <td className="px-4 py-3.5 text-muted-foreground">
+                  <DateText value={invite.invitedAt} />
+                </td>
+                <td className="px-4 py-3.5 text-muted-foreground">
+                  <DateText value={invite.expiresAt} />
+                </td>
+                <td className="py-2.5 pr-3 text-right">
+                  <AdminInviteActions
+                    inviteId={invite.id}
+                    inviteeLabel={invite.name || invite.email}
+                    available={invite.lifecycle === "pending" && invite.canResend}
+                    canResend={invite.canResend}
+                  />
+                </td>
+              </tr>
             ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  );
-}
-
-function DesktopDataRow({ children }: { children: ReactNode }) {
-  return <tr className="border-t border-border/80 align-top">{children}</tr>;
-}
-
-function DesktopDataCell({ children, muted = false }: { children: ReactNode; muted?: boolean }) {
-  return <td className={cn("px-4 py-4", muted && "text-muted-foreground")}>{children}</td>;
-}
-
-function MobileDataList({ children }: { children: ReactNode }) {
-  return <CardContent className="grid gap-4 p-4 lg:hidden">{children}</CardContent>;
-}
-
-function MobileDataCard({ children }: { children: ReactNode }) {
-  // `min-w-0` lets the card shrink below a long email address instead of widening the grid.
-  return (
-    <div className="min-w-0 rounded-xl border border-border bg-background p-4">{children}</div>
-  );
-}
-
-function MobileDataHeader({
-  title,
-  subtitle,
-  badges,
-}: {
-  title: string;
-  subtitle: string;
-  badges: ReactNode;
-}) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="min-w-0 space-y-1 wrap-anywhere">
-        <p className="font-medium text-foreground">{title}</p>
-        <p className="text-sm text-muted-foreground">{subtitle}</p>
+          </tbody>
+        </table>
       </div>
-      <div className="flex flex-wrap gap-2">{badges}</div>
-    </div>
-  );
-}
 
-function MobileDetails({ children }: { children: ReactNode }) {
-  return <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">{children}</dl>;
-}
-
-function MobileDetail({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-foreground">{children}</dd>
-    </div>
+      <ul className="divide-y lg:hidden">
+        {invites.map((invite) => (
+          <li key={invite.id} className="flex min-w-0 items-start gap-3 p-4">
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <p className="truncate font-medium text-foreground">{invite.name}</p>
+              <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
+                {invite.email}
+              </p>
+              <div className="flex flex-wrap items-center gap-3 pt-0.5">
+                <RoleLabel role={invite.role} />
+                <InviteStatus lifecycle={invite.lifecycle} />
+              </div>
+              {invite.emailStatus && (
+                <InviteEmailStatusSummary status={invite.emailStatus} compact />
+              )}
+              <p className="text-sm text-muted-foreground">
+                {/* Each half stays whole, so a wrapped line starts with "Expires". */}
+                <span className="whitespace-nowrap">
+                  Invited <DateText value={invite.invitedAt} /> ·
+                </span>{" "}
+                <span className="whitespace-nowrap">
+                  Expires <DateText value={invite.expiresAt} />
+                </span>
+              </p>
+            </div>
+            <AdminInviteActions
+              inviteId={invite.id}
+              inviteeLabel={invite.name || invite.email}
+              available={invite.lifecycle === "pending" && invite.canResend}
+              canResend={invite.canResend}
+            />
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 
@@ -233,190 +234,62 @@ export default async function AdminUsersPage() {
 
   // Loaded only after `getAllAccounts` has confirmed an administrator.
   const invites = await findAccountInvites();
-  const accounts = result.value.data;
+  // Someone who hasn't accepted an invitation is listed once, under Invitations.
+  const invitedEmails = new Set(invites.map((invite) => invite.email.toLowerCase()));
+  const isListedAsInvite = (account: (typeof result.value.data)[number]) =>
+    account.status === "invited" &&
+    account.email !== null &&
+    invitedEmails.has(account.email.toLowerCase());
+  const accounts = result.value.data.filter((account) => !isListedAsInvite(account));
+  const hasHiddenInvitees = accounts.length < result.value.data.length;
+  const hasInvitedAccounts = accounts.some((account) => account.status === "invited");
+  const directoryNote = hasInvitedAccounts
+    ? "Includes people who haven't accepted their invite yet."
+    : hasHiddenInvitees
+      ? "People who haven't accepted their invite yet are under Invitations."
+      : null;
 
   return (
     <AppPageShell>
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">Manage Users</h1>
-            <p className="max-w-3xl text-sm text-muted-foreground">
-              Review all portal accounts, their access levels, and recent activity.
-            </p>
-          </div>
-          <Button asChild size="lg">
-            <Link href="/admin/invite">Invite user</Link>
-          </Button>
-        </div>
-
-        <AdminDataSection title="Invitations">
-          <DesktopDataTable
-            columns={["Invitee", "Organization", "Role", "Status", "Invited", "Expires", "Actions"]}
-          >
-            {invites.length > 0 ? (
-              invites.map((invite) => (
-                <DesktopDataRow key={invite.id}>
-                  <DesktopDataCell>
-                    <div className="max-w-72 space-y-1 wrap-break-word">
-                      <p className="font-medium text-foreground">{invite.name}</p>
-                      <p className="text-xs text-muted-foreground">{invite.email}</p>
-                    </div>
-                  </DesktopDataCell>
-                  <DesktopDataCell muted>{invite.organization ?? "Not provided"}</DesktopDataCell>
-                  <DesktopDataCell>
-                    <Badge variant={roleBadgeVariant(invite.role)}>{formatRole(invite.role)}</Badge>
-                  </DesktopDataCell>
-                  <DesktopDataCell>
-                    <div className="max-w-xs min-w-44 space-y-2">
-                      <Badge variant="outline">{inviteLifecycleLabels[invite.lifecycle]}</Badge>
-                      {invite.emailStatus && (
-                        <InviteEmailStatusSummary status={invite.emailStatus} />
-                      )}
-                    </div>
-                  </DesktopDataCell>
-                  <DesktopDataCell muted>
-                    {formatDateTime(invite.invitedAt.toISOString())}
-                  </DesktopDataCell>
-                  <DesktopDataCell muted>
-                    {formatDateTime(invite.expiresAt.toISOString())}
-                  </DesktopDataCell>
-                  <DesktopDataCell>
-                    <AdminInviteActions
-                      inviteId={invite.id}
-                      available={invite.lifecycle === "pending" && invite.canResend}
-                      canResend={invite.canResend}
-                    />
-                  </DesktopDataCell>
-                </DesktopDataRow>
-              ))
-            ) : (
-              <tr className="border-t border-border/80">
-                <td colSpan={7} className="px-4 py-8">
-                  <EmptyState className="border-0 bg-transparent py-0">
-                    No invitations found.
-                  </EmptyState>
-                </td>
-              </tr>
-            )}
-          </DesktopDataTable>
-
-          <MobileDataList>
-            {invites.length > 0 ? (
-              invites.map((invite) => (
-                <MobileDataCard key={invite.id}>
-                  <MobileDataHeader
-                    title={invite.name}
-                    subtitle={invite.email}
-                    badges={
-                      <>
-                        <Badge variant={roleBadgeVariant(invite.role)}>
-                          {formatRole(invite.role)}
-                        </Badge>
-                        <Badge variant="outline">{inviteLifecycleLabels[invite.lifecycle]}</Badge>
-                      </>
-                    }
-                  />
-                  {invite.emailStatus && (
-                    <InviteEmailStatusSummary status={invite.emailStatus} className="mt-4" />
-                  )}
-                  <MobileDetails>
-                    <MobileDetail label="Organization">
-                      {invite.organization ?? "Not provided"}
-                    </MobileDetail>
-                    <MobileDetail label="Invited">
-                      {formatDateTime(invite.invitedAt.toISOString())}
-                    </MobileDetail>
-                    <MobileDetail label="Expires">
-                      {formatDateTime(invite.expiresAt.toISOString())}
-                    </MobileDetail>
-                  </MobileDetails>
-                  <div className="mt-4">
-                    <AdminInviteActions
-                      inviteId={invite.id}
-                      available={invite.lifecycle === "pending" && invite.canResend}
-                      canResend={invite.canResend}
-                    />
-                  </div>
-                </MobileDataCard>
-              ))
-            ) : (
-              <EmptyState>No invitations found.</EmptyState>
-            )}
-          </MobileDataList>
-        </AdminDataSection>
-
-        <AdminDataSection title="User directory">
-          <DesktopDataTable
-            columns={["User", "Organization", "Role", "Status", "Created", "Last login", "Actions"]}
-          >
-            {accounts.map((account) => (
-              <DesktopDataRow key={account.id}>
-                <DesktopDataCell>
-                  <div className="space-y-1">
-                    <p className="font-medium text-foreground">
-                      {account.name ?? account.email ?? "Unnamed user"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{account.email ?? "No email"}</p>
-                  </div>
-                </DesktopDataCell>
-                <DesktopDataCell muted>{account.organization ?? "Not provided"}</DesktopDataCell>
-                <DesktopDataCell>
-                  <Badge variant={roleBadgeVariant(account.role)}>{formatRole(account.role)}</Badge>
-                </DesktopDataCell>
-                <DesktopDataCell>
-                  <Badge variant={statusBadgeVariant(account.status)}>
-                    {formatStatus(account.status)}
-                  </Badge>
-                </DesktopDataCell>
-                <DesktopDataCell muted>
-                  <div className="space-y-1">
-                    <p>{formatDateTime(account.createdAt)}</p>
-                    <p className="text-xs">Updated {formatDateTime(account.updatedAt)}</p>
-                  </div>
-                </DesktopDataCell>
-                <DesktopDataCell muted>{formatDateTime(account.lastLoginAt)}</DesktopDataCell>
-                <DesktopDataCell>
-                  <AdminAccountActions account={account} />
-                </DesktopDataCell>
-              </DesktopDataRow>
-            ))}
-          </DesktopDataTable>
-
-          <MobileDataList>
-            {accounts.map((account) => (
-              <MobileDataCard key={account.id}>
-                <MobileDataHeader
-                  title={account.name ?? account.email ?? "Unnamed user"}
-                  subtitle={account.email ?? "No email"}
-                  badges={
-                    <>
-                      <Badge variant={roleBadgeVariant(account.role)}>
-                        {formatRole(account.role)}
-                      </Badge>
-                      <Badge variant={statusBadgeVariant(account.status)}>
-                        {formatStatus(account.status)}
-                      </Badge>
-                    </>
-                  }
+      <div className={cn("mx-auto space-y-8", pageWidths.content)}>
+        <PageHeader
+          title="Users"
+          description="Review portal accounts, their access levels and recent activity."
+          actions={
+            <Button asChild>
+              <Link href="/admin/invite">
+                <HugeiconsIcon
+                  icon={Add01Icon}
+                  strokeWidth={2}
+                  data-icon="inline-start"
+                  aria-hidden
                 />
-                <MobileDetails>
-                  <MobileDetail label="Organization">
-                    {account.organization ?? "Not provided"}
-                  </MobileDetail>
-                  <MobileDetail label="Created">{formatDateTime(account.createdAt)}</MobileDetail>
-                  <MobileDetail label="Updated">{formatDateTime(account.updatedAt)}</MobileDetail>
-                  <MobileDetail label="Last login">
-                    {formatDateTime(account.lastLoginAt)}
-                  </MobileDetail>
-                </MobileDetails>
-                <div className="mt-4">
-                  <AdminAccountActions account={account} />
-                </div>
-              </MobileDataCard>
-            ))}
-          </MobileDataList>
-        </AdminDataSection>
+                Invite user
+              </Link>
+            </Button>
+          }
+        />
+
+        <section className="space-y-3" aria-labelledby="invitations-heading">
+          <SectionHeading id="invitations-heading" title="Invitations" count={invites.length} />
+          <Invitations invites={invites} />
+        </section>
+
+        <section
+          className="space-y-3"
+          aria-labelledby="directory-heading"
+          aria-describedby={directoryNote ? "directory-note" : undefined}
+        >
+          <div className="space-y-1">
+            <SectionHeading id="directory-heading" title="All users" count={accounts.length} />
+            {directoryNote ? (
+              <p id="directory-note" className="text-sm text-muted-foreground">
+                {directoryNote}
+              </p>
+            ) : null}
+          </div>
+          <UserDirectory accounts={accounts} />
+        </section>
       </div>
     </AppPageShell>
   );

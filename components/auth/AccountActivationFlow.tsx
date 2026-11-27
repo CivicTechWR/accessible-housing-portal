@@ -40,10 +40,24 @@ function ActivationStep({ step, children }: { step: AccountActivationStep; child
   const { number, label } = accountActivationSteps[step];
 
   return (
-    <div className="flex w-full flex-col items-center gap-3">
-      <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
-        Step {number} of 2: {label}
-      </p>
+    <div className="flex w-full max-w-3xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-2">
+        <div className="flex w-48 gap-2" aria-hidden="true">
+          {[1, 2].map((n) => (
+            <span
+              key={n}
+              className={
+                n <= number
+                  ? "h-2 flex-1 rounded-full bg-primary"
+                  : "h-2 flex-1 rounded-full bg-border"
+              }
+            />
+          ))}
+        </div>
+        <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
+          Step {number} of 2: {label}
+        </p>
+      </div>
       {children}
     </div>
   );

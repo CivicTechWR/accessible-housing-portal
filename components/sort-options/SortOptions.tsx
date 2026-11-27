@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export type SortOptions = {
   value: string;
@@ -14,16 +15,24 @@ export type SortOptions = {
 export function SortOptions({
   sortOptions,
   onChange,
+  value,
+  className,
 }: {
   sortOptions: SortOptions[];
   onChange: (value: string) => void;
+  value?: string;
+  className?: string;
 }) {
   return (
-    <Select onValueChange={onChange}>
-      <SelectTrigger className="w-full sm:w-[180px]">
-        <SelectValue placeholder="Sort By" />
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger
+        aria-label="Sort listings"
+        className={cn("h-11 w-auto gap-1.5 md:h-10", className)}
+      >
+        <span className="text-muted-foreground">Sort:</span>
+        <SelectValue placeholder="Newest" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent position="popper" align="end">
         <SelectGroup>
           {sortOptions.map((option) => (
             <SelectItem key={option.value} id={option.value} value={option.value}>

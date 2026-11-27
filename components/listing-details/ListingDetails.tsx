@@ -1,9 +1,23 @@
 import type { ReactNode } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Bathtub01Icon,
+  BedDoubleIcon,
+  Calendar03Icon,
+  Call02Icon,
+  FloorPlanIcon,
+  Location01Icon,
+  Mail01Icon,
+  PencilEdit01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
 
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
+import { formatAvailability } from "../listings-card/ListingsCard";
 import { Button } from "../ui/button";
-import { CardHeader, CardTitle, CardDescription, CardAction, CardContent, Card } from "../ui/card";
+import { AppPageShell, PageHeader, pageWidths } from "@/components/page-shell/AppPageShell";
 import { buildAddress } from "@/lib/address";
+import { cn } from "@/lib/utils";
 import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
 import { InfoPopover } from "@/components/info-popover/InfoPopover";
 import {
@@ -14,9 +28,18 @@ import {
   type UtilityIncluded,
 } from "@/shared/schemas/listings";
 import { HEATING_TYPE_LABELS, type HeatingType } from "@/shared/heating-type";
-import { format, parseISO } from "date-fns";
+import {
+  RENT_PERIOD,
+  formatArea,
+  formatBaths,
+  formatBeds,
+  formatRent,
+  toSentenceCase,
+} from "@/lib/listing-format";
 import Link from "next/link";
+import { BackToResults } from "./BackToResults";
 import { ListingApplyButton } from "./ListingApplyButton";
+import { ListingLocationMap } from "./ListingLocationMap";
 
 type ListingFeature = {
   name: string;
@@ -64,13 +87,173 @@ export interface ListingDetailProps {
   images: ListingImage[];
   timeAgo: string;
   features: ListingFeatureCategory[];
+  /** Rendered inside another page, such as the listing form preview: no page shell, no sticky parts. */
   embedded?: boolean;
+  /** Where the building is, for the map in the Location section. */
+  coordinates?: { lat: number; lng: number };
   walkScore?: ReactNode;
 }
 
-function formatAvailableDate(isoDate: string) {
-  const parsed = parseISO(isoDate);
-  return Number.isNaN(parsed.getTime()) ? isoDate : format(parsed, "MMMM d, yyyy");
+const CONTACT_SECTION_ID = "listing-contact";
+
+/**
+ * The contact card in the desktop sidebar. Phones and the form preview show the same content as a
+ * plain section.
+ */
+const contactCardClassName =
+  "lg:rounded-xl lg:border lg:bg-card lg:p-6 lg:text-card-foreground lg:dark:border-white/12";
+
+/** Rent at 28px; `className` can size it down, as the header and the phone bottom bar do. */
+function Price({ price, className }: { price: number; className?: string }) {
+  return (
+    <span
+      className={cn("text-[28px] leading-9 font-bold whitespace-nowrap text-foreground", className)}
+    >
+      {formatRent(price)}
+      <span className="text-base font-normal text-muted-foreground">{RENT_PERIOD}</span>
+    </span>
+  );
+}
+
+function FeatureItem({ feature }: { feature: ListingFeature }) {
+  // The listings API sends a feature's name as its description when it has none.
+  const featureDescription = feature.description.trim();
+  const hasDescription = featureDescription !== "" && featureDescription !== feature.name;
+  return (
+    <li className="flex gap-3 py-3 wrap-anywhere first:pt-0 last:pb-0">
+      <HugeiconsIcon
+        icon={Tick02Icon}
+        strokeWidth={2}
+        className="mt-[3px] size-[18px] shrink-0 text-foreground"
+        aria-hidden
+      />
+      <div className="min-w-0">
+        <p className="text-base font-semibold text-foreground">{toSentenceCase(feature.name)}</p>
+        {hasDescription && (
+          <p className="mt-0.5 max-w-prose text-[15px] leading-6 text-foreground/85">
+            {featureDescription}
+          </p>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/**
+ * The most important block after the photos, and the page's signature: the only card in the main
+ * column, with the dotted tactile strip along its top edge. Features sit under a label for their
+ * category, with a rule between them.
+ */
+function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
+  const count = categories.reduce((total, category) => total + category.features.length, 0);
+  const headingId = "listing-accessibility";
+
+  return (
+    <section
+      aria-labelledby={headingId}
+      className="relative overflow-hidden rounded-xl border bg-card p-4 pt-6 text-card-foreground sm:p-6 sm:pt-8 dark:border-white/12"
+    >
+      <span aria-hidden className="tactile-strip absolute inset-x-0 top-0 h-2" />
+      <h2 id={headingId} className="mb-5 text-[22px] leading-7 font-bold">
+        Accessibility features
+        {count > 0 && (
+          // Screen readers count the features from the lists below.
+          <span aria-hidden className="font-normal text-muted-foreground">
+            {" "}
+            ({count})
+          </span>
+        )}
+      </h2>
+      {count === 0 ? (
+        <p className="text-base text-foreground">No accessibility features listed.</p>
+      ) : (
+        <div className="space-y-6">
+          {categories
+            .filter((category) => category.features.length > 0)
+            .map((category) => (
+              <div key={category.categoryName}>
+                <h3 className="mb-3 text-[15px] font-semibold tracking-normal text-foreground">
+                  {toSentenceCase(category.categoryName)}
+                </h3>
+                {/* Safari drops list semantics from a list without markers unless the role is set. */}
+                <ul role="list" className="divide-y">
+                  {category.features.map((feature) => (
+                    <FeatureItem key={feature.name} feature={feature} />
+                  ))}
+                </ul>
+              </div>
+            ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * A plain titled block after the accessibility card: a 1px rule 40px below the block before it,
+ * then the heading 40px under the rule. Every section but the accessibility card looks like this.
+ */
+function Section({
+  id,
+  title,
+  className,
+  children,
+}: {
+  id: string;
+  title: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section aria-labelledby={id} className={cn("mt-10 border-t pt-10", className)}>
+      <h2 id={id} className="mb-3 text-[22px] leading-7 font-bold">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/** Keeps the info button on the same line as the label's last word when the label wraps. */
+function LabelWithInfo({
+  label,
+  info,
+}: {
+  label: string;
+  info: { label: string; description: string };
+}) {
+  const lastSpace = label.lastIndexOf(" ");
+  return (
+    <>
+      {label.slice(0, lastSpace + 1)}
+      <span className="whitespace-nowrap">
+        {label.slice(lastSpace + 1)}
+        <span className="ml-1 inline-flex align-middle">
+          <InfoPopover {...info} />
+        </span>
+      </span>
+    </>
+  );
+}
+
+function ContactLink({
+  href,
+  icon,
+  children,
+}: {
+  href: string;
+  icon: typeof Mail01Icon;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      className="inline-flex min-h-6 items-start gap-2 text-[15px] text-primary-text underline-offset-4 hover:underline"
+    >
+      <HugeiconsIcon icon={icon} strokeWidth={2} className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span className="wrap-anywhere">{children}</span>
+    </a>
+  );
 }
 
 export function ListingDetails({
@@ -104,44 +287,50 @@ export function ListingDetails({
   street2,
   postalCode,
   embedded = false,
+  coordinates,
   walkScore,
 }: ListingDetailProps) {
   const address = buildAddress({ unitNumber, street1, street2, city, postalCode });
-  const rentalCost = `$${price.toLocaleString()}`;
-  const WrapperElement = embedded ? "section" : "main";
-
+  const heading = title || address;
   const trimmedDescription = description?.trim();
 
+  const keyFacts = [
+    { key: "beds", icon: BedDoubleIcon, label: formatBeds(beds) },
+    { key: "baths", icon: Bathtub01Icon, label: formatBaths(baths) },
+    ...(sqft !== null ? [{ key: "area", icon: FloorPlanIcon, label: formatArea(sqft) }] : []),
+    ...(availableOn
+      ? [{ key: "available", icon: Calendar03Icon, label: formatAvailability(availableOn) }]
+      : []),
+  ];
+  const trimmedDeposit = depositInfo?.trim();
+  // The form preview passes the move-in date here, because a draft hasn't been posted.
+  const posted = timeAgo.endsWith(" ago") ? timeAgo : undefined;
+
+  // Rent, size and availability are in the key facts above, and the address and posting date are
+  // under the title, so the details list only holds what isn't shown elsewhere.
   const rentalDetailRows: Array<{
     label: string;
     value: string;
     info?: { label: string; description: string };
-    fullWidth?: boolean;
     preserveWhitespace?: boolean;
   }> = [
-    { label: "Address", value: address || "Address Here", fullWidth: true },
-    ...(depositInfo?.trim()
+    ...(trimmedDeposit
       ? [
           {
             label: "Deposit",
-            value: depositInfo.trim(),
-            fullWidth: true,
+            value: trimmedDeposit,
             preserveWhitespace: true,
           },
         ]
       : []),
-    { label: "Rental Cost", value: rentalCost },
     ...(buildingType
-      ? [{ label: "Building Type", value: LISTING_BUILDING_TYPE_LABELS[buildingType] }]
+      ? [{ label: "Building type", value: LISTING_BUILDING_TYPE_LABELS[buildingType] }]
       : []),
-    { label: "Bedrooms", value: String(beds) },
-    { label: "Bathrooms", value: String(baths) },
-    ...(sqft !== null ? [{ label: "Square Feet", value: `${sqft.toLocaleString()} sqft` }] : []),
     ...(heatingType
       ? [{ label: "Primary heating type", value: HEATING_TYPE_LABELS[heatingType] }]
       : []),
     {
-      label: "Utilities Included",
+      label: "Utilities included",
       value:
         utilitiesIncluded && utilitiesIncluded.length > 0
           ? UTILITY_INCLUDED_VALUES.filter((utility) => utilitiesIncluded.includes(utility))
@@ -152,7 +341,7 @@ export function ListingDetails({
     ...(leaseTermMonths
       ? [
           {
-            label: "Initial Lease Term",
+            label: "Lease term",
             value: `${leaseTermMonths}-month lease`,
             info: {
               label: HOUSING_DEFINITIONS.leaseTerm.label,
@@ -161,9 +350,8 @@ export function ListingDetails({
           },
         ]
       : []),
-    ...(availableOn ? [{ label: "Available", value: formatAvailableDate(availableOn) }] : []),
-    { label: "Posted", value: timeAgo },
   ];
+
   const generalEmail = contactEmail?.trim();
   const generalPhone = contactPhone?.trim();
   const applyUrl = applicationUrl?.trim();
@@ -182,242 +370,375 @@ export function ListingDetails({
   const allContactMethodsShared =
     hasContactMethod && (!generalEmail || sharesEmail) && (!generalPhone || sharesPhone);
   const contactRows = [
-    { label: "Email", value: generalEmail, href: `mailto:${generalEmail}`, shared: sharesEmail },
-    { label: "Phone", value: generalPhone, href: `tel:${generalPhone}`, shared: sharesPhone },
+    {
+      label: "Email",
+      value: generalEmail,
+      href: `mailto:${generalEmail}`,
+      icon: Mail01Icon,
+      shared: sharesEmail,
+    },
+    {
+      label: "Phone",
+      value: generalPhone,
+      href: `tel:${generalPhone}`,
+      icon: Call02Icon,
+      shared: sharesPhone,
+    },
   ].filter((row): row is typeof row & { value: string } => Boolean(row.value));
   const applicationRows = [
     {
       label: "Application email",
       value: sharesEmail ? undefined : applyEmail,
       href: `mailto:${applyEmail}`,
+      icon: Mail01Icon,
     },
     {
       label: "Application phone",
       value: sharesPhone ? undefined : applyPhone,
       href: `tel:${applyPhone}`,
+      icon: Call02Icon,
     },
   ].filter((row): row is typeof row & { value: string } => Boolean(row.value));
   const hasContactDetails = Boolean(contactName?.trim() || contactRole?.trim() || hasContactMethod);
   const hasApplicationMethod = Boolean(applyUrl || applyEmail || applyPhone);
+  const canReachLister = hasContactMethod || applicationRows.length > 0;
 
-  const wrapperClasses = embedded ? "w-full" : "min-h-screen bg-muted/30 px-4 py-8 sm:px-6 lg:px-8";
-  const contentClasses = embedded
-    ? "mx-auto flex w-full max-w-5xl flex-col gap-6"
-    : "mx-auto flex w-full max-w-4xl flex-col gap-6";
+  const hasPhotos = images.length > 0;
+
+  const header = (
+    <div className="space-y-4">
+      <PageHeader
+        title={<span className="wrap-anywhere">{heading}</span>}
+        description={
+          title || posted ? (
+            // On phones the posting date drops its dot and wraps under the address as a whole.
+            <span className="mt-0.5 flex flex-wrap items-baseline gap-x-2 wrap-anywhere sm:gap-x-0">
+              {title && <span>{address}</span>}
+              {posted && (
+                <span className="whitespace-nowrap max-sm:text-sm">
+                  {title && <span className="max-sm:hidden">&nbsp;·&nbsp;</span>}
+                  Posted {posted}
+                </span>
+              )}
+            </span>
+          ) : undefined
+        }
+        actions={
+          editUrl ? (
+            <Button asChild variant="outline">
+              <Link href={editUrl}>
+                <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
+                Edit listing
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
+      {/* The page shows rent once: in the sticky Apply card on desktop and the bottom bar on
+          phones. The form preview has neither, so it shows rent here. */}
+      {embedded && (
+        <p>
+          <Price price={price} className="text-2xl leading-8" />
+        </p>
+      )}
+      {/* One wrapping row of facts; quieter on phones, where the title is close above. */}
+      <ul
+        role="list"
+        aria-label="Key facts"
+        className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px] text-foreground/80 sm:gap-x-6 sm:text-lg sm:font-medium sm:text-foreground"
+      >
+        {keyFacts.map((fact) => (
+          <li key={fact.key} className="flex min-w-0 items-center gap-2">
+            <HugeiconsIcon
+              icon={fact.icon}
+              strokeWidth={2}
+              className="size-4 shrink-0 text-foreground/80 sm:size-5"
+              aria-hidden
+            />
+            <span>{fact.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  // On desktop the page has two columns: plain sections on the left, and the contact card on the
+  // right. Phones and the embedded preview have one column, where `display: contents` dissolves
+  // the left column's wrapper and `order` puts contact straight after the accessibility panel.
+  const twoColumns = !embedded;
+
+  // Below both columns at the full content width, so the map has room; its text keeps the reading
+  // measure of the sections above.
+  const location = (coordinates || walkScore) && (
+    // The page column's 24px (32px on wider screens) gap plus this margin make the 40px.
+    <Section id="listing-location" title="Location" className="mt-4 sm:mt-2">
+      <div className="space-y-4">
+        <p className="flex max-w-[40rem] items-start gap-2.5 text-base wrap-anywhere text-foreground">
+          <HugeiconsIcon
+            icon={Location01Icon}
+            strokeWidth={2}
+            className="mt-0.5 size-5 shrink-0 text-foreground/80"
+            aria-hidden
+          />
+          {address}
+        </p>
+        {coordinates && (
+          <ListingLocationMap
+            lat={coordinates.lat}
+            lng={coordinates.lng}
+            className="aspect-[4/3] sm:aspect-auto sm:h-[360px]"
+          />
+        )}
+        {walkScore && <div className="max-w-[40rem]">{walkScore}</div>}
+      </div>
+    </Section>
+  );
+
+  // In the main column on phones and the form preview; on desktop it sits under the contact card in
+  // the sidebar, so the facts navigators compare stay beside the description.
+  const rentalDetails = (
+    <Section
+      id="listing-rental-details"
+      title="Rental details"
+      className={cn("order-4", twoColumns && "lg:mt-10 lg:border-t-0 lg:pt-0")}
+    >
+      {/* One label and value per row, so any number of details looks complete and long values
+          like the deposit wrap in place. Rules only between rows. */}
+      <dl className="divide-y">
+        {rentalDetailRows.map((row) => (
+          <div
+            key={row.label}
+            className={cn(
+              "grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] items-baseline gap-4 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]",
+              // The desktop sidebar is 360px wide, so the label column narrows again there.
+              twoColumns && "lg:grid-cols-[minmax(0,9rem)_minmax(0,1fr)]",
+            )}
+          >
+            <dt className="text-[15px] text-muted-foreground">
+              {row.info ? <LabelWithInfo label={row.label} info={row.info} /> : row.label}
+            </dt>
+            <dd
+              className={cn(
+                "text-base wrap-anywhere text-foreground",
+                row.preserveWhitespace && "whitespace-pre-line",
+              )}
+            >
+              {row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </Section>
+  );
+
+  const mainColumn = (
+    <div className={cn("contents", twoColumns && "lg:flex lg:min-w-0 lg:flex-col")}>
+      <div className="order-1">
+        <AccessibilityFeatures categories={features} />
+      </div>
+
+      {trimmedDescription && (
+        <Section id="listing-description" title="Description" className="order-3">
+          <p className="max-w-prose text-base whitespace-pre-line wrap-anywhere text-foreground">
+            {trimmedDescription}
+          </p>
+        </Section>
+      )}
+
+      {instructions && (
+        <Section id="listing-how-to-apply" title="How to apply" className="order-5">
+          <figure className="space-y-2">
+            <figcaption className="text-sm text-muted-foreground">
+              From the housing provider
+            </figcaption>
+            <blockquote className="rounded-r-lg border-l-2 border-primary/40 bg-muted/50 px-4 py-3 text-base whitespace-pre-line wrap-anywhere">
+              {instructions}
+            </blockquote>
+          </figure>
+        </Section>
+      )}
+    </div>
+  );
+
+  const contactCard = (
+    <aside
+      id={CONTACT_SECTION_ID}
+      aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
+      className={cn(
+        // In one column, a section like the others: a rule, then 40px of space each side.
+        "order-2 mt-10 min-w-0 scroll-mt-6 border-t pt-10",
+        twoColumns && "lg:mt-0 lg:border-t-0 lg:pt-0",
+      )}
+    >
+      <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
+        {/* Rent over Apply on desktop, so it stays in view as the reader scrolls. Phones have it
+            in the bottom bar. */}
+        {twoColumns && <Price price={price} className="block max-lg:hidden" />}
+        <h2
+          id={`${CONTACT_SECTION_ID}-heading`}
+          className={cn("text-[22px] leading-7 font-bold", twoColumns && "lg:sr-only")}
+        >
+          Contact and applications
+        </h2>
+        {(applyUrl || hasContactMethod || hasApplicationMethod || instructions) && (
+          <div className="space-y-2">
+            {/* Phones have Apply in the bottom bar, so the section keeps only the contacts there. */}
+            {applyUrl && (
+              <ListingApplyButton
+                applicationUrl={applyUrl}
+                className={cn("w-full", twoColumns && "max-lg:hidden")}
+              />
+            )}
+            <p className="text-sm text-muted-foreground">
+              You apply directly with the housing provider.
+            </p>
+          </div>
+        )}
+        {(hasContactDetails || applicationRows.length > 0) && (
+          <div className="space-y-5 border-t pt-5">
+            {hasContactDetails && (
+              <section className="min-w-0 space-y-3">
+                {/* When one contact covers everything, this repeats the card's heading wherever that
+                    heading shows (phones and the form preview), so it's hidden there. */}
+                <h3
+                  className={cn(
+                    "text-sm font-medium tracking-normal",
+                    allContactMethodsShared && (embedded ? "sr-only" : "max-lg:sr-only"),
+                  )}
+                >
+                  {allContactMethodsShared ? "For questions and applications" : "General enquiries"}
+                </h3>
+                {(contactName?.trim() || contactRole?.trim()) && (
+                  <div>
+                    {contactName?.trim() && (
+                      <p className="text-base font-medium wrap-anywhere">{contactName.trim()}</p>
+                    )}
+                    {contactRole?.trim() && (
+                      <p className="text-sm wrap-anywhere text-muted-foreground">
+                        {contactRole.trim()}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {contactRows.length > 0 && (
+                  <dl className="space-y-2">
+                    {contactRows.map((row) => (
+                      <div key={row.label} className="min-w-0">
+                        <dt className="sr-only">{row.label}</dt>
+                        <dd>
+                          <ContactLink href={row.href} icon={row.icon}>
+                            {row.value}
+                          </ContactLink>
+                          {row.shared && !allContactMethodsShared && (
+                            <span className="block pl-6 text-sm text-muted-foreground">
+                              Also for applications
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </section>
+            )}
+            {applicationRows.length > 0 && (
+              <section className={cn("min-w-0 space-y-3", hasContactDetails && "border-t pt-5")}>
+                <h3 className="text-sm font-medium tracking-normal">Applications</h3>
+                <dl className="space-y-2">
+                  {applicationRows.map((row) => (
+                    <div key={row.label} className="min-w-0">
+                      <dt className="sr-only">{row.label}</dt>
+                      <dd>
+                        <ContactLink href={row.href} icon={row.icon}>
+                          {row.value}
+                        </ContactLink>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
+          </div>
+        )}
+        {!hasApplicationMethod && hasContactMethod && (
+          <p className="text-sm text-muted-foreground">Contact the lister to ask how to apply.</p>
+        )}
+        {!hasContactDetails && !hasApplicationMethod && !instructions && (
+          <p className="text-sm text-muted-foreground">
+            The lister hasn&apos;t provided contact or application details for this listing yet.
+            Please check back later.
+          </p>
+        )}
+      </div>
+    </aside>
+  );
+
+  const body = (
+    <div className={cn("mx-auto flex w-full flex-col gap-6 sm:gap-8", pageWidths.content)}>
+      <div className="flex flex-col gap-2">
+        {/* Phones with photos get the link over the first photo instead. */}
+        {!embedded && <BackToResults className={cn(hasPhotos && "max-sm:hidden")} />}
+        {header}
+      </div>
+      {hasPhotos && (
+        // Phones show the photos before the title, edge to edge, by cancelling the page shell's
+        // padding, with a round back button over the top-left corner. The title follows 16px
+        // below the photo's caption.
+        <div
+          className={cn(
+            "relative",
+            !embedded && "max-sm:order-first max-sm:-mx-4 max-sm:-mt-8 max-sm:-mb-2",
+          )}
+        >
+          <ListingImageCarousel images={images} altPrefix={address} edgeToEdge={!embedded} />
+          {!embedded && <BackToResults iconOnly className="absolute top-3 left-3 z-10 sm:hidden" />}
+        </div>
+      )}
+      <div
+        className={cn(
+          "flex flex-col",
+          twoColumns && "lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-x-14",
+        )}
+      >
+        {mainColumn}
+        {/* Sticky on desktop, so rent, Apply and the rental details follow the reader down the
+            page. In one column `display: contents` dissolves it, and `order` places its parts. */}
+        <div
+          className={cn(
+            "contents",
+            twoColumns && "lg:sticky lg:top-6 lg:flex lg:min-w-0 lg:flex-col",
+          )}
+        >
+          {contactCard}
+          {rentalDetails}
+        </div>
+      </div>
+      {location}
+    </div>
+  );
+
+  if (embedded) {
+    return <section className="w-full">{body}</section>;
+  }
 
   return (
-    <WrapperElement className={wrapperClasses}>
-      <div className={contentClasses}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="wrap-anywhere">
-            <h1>{address}</h1>
-            {title && <h2>{title}</h2>}
-            <h3 className="sm:text-xl">{`${rentalCost}/month`}</h3>
-          </div>
-          {editUrl ? (
-            <Button asChild>
-              <Link href={editUrl}>Edit listing</Link>
+    <AppPageShell className="bg-background">
+      {body}
+      {/* Keeps the price and the main action in reach while scrolling on phones. Sticky rather than
+          fixed, so it takes its own space at the end of the page (nothing is left hidden under it)
+          and stops above the site footer. Solid, so text scrolling underneath doesn't show through. */}
+      <div className="sticky bottom-0 z-20 -mx-4 mt-4 -mb-8 border-t bg-background px-4 py-3 sm:-mx-6 sm:-mb-10 sm:px-6 lg:hidden">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+          <Price price={price} className="min-w-0 text-[22px] leading-7" />
+          {applyUrl ? (
+            <ListingApplyButton applicationUrl={applyUrl} className="px-8" />
+          ) : canReachLister ? (
+            <Button asChild size="lg" className="h-12 px-8">
+              <a href={`#${CONTACT_SECTION_ID}`}>Contact</a>
             </Button>
           ) : null}
         </div>
-
-        {images.length > 0 && <ListingImageCarousel images={images} altPrefix={address} />}
-
-        {trimmedDescription && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-line wrap-anywhere text-sm text-foreground">
-                {trimmedDescription}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Rental Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {rentalDetailRows.map((row) => (
-                <div
-                  key={row.label}
-                  className={`bg-background p-3 ${row.fullWidth ? "sm:col-span-2" : ""}`}
-                >
-                  <dt className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-                    {row.label}
-                    {row.info && <InfoPopover {...row.info} />}
-                  </dt>
-                  <dd
-                    className={`mt-1 wrap-anywhere text-sm font-medium text-foreground${
-                      row.preserveWhitespace ? " whitespace-pre-line" : ""
-                    }`}
-                  >
-                    {row.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Rental Features</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {features.length === 0 && <p>No features listed</p>}
-            {features.map((category) => (
-              <section key={category.categoryName} className="space-y-2">
-                <h2 className="text-sm text-foreground">{category.categoryName}</h2>
-                {/* Safari drops list semantics from a list without markers unless the role is set. */}
-                <ul role="list" className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-                  {category.features.map((feature) => {
-                    // The listings API sends a feature's name as its description when it has none.
-                    const featureDescription = feature.description.trim();
-                    const hasDescription =
-                      featureDescription !== "" && featureDescription !== feature.name;
-                    return (
-                      <li key={feature.name} className="wrap-anywhere text-sm">
-                        <p className="font-medium text-foreground">{feature.name}</p>
-                        {hasDescription && (
-                          <p className="text-muted-foreground">{featureDescription}</p>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            ))}
-          </CardContent>
-        </Card>
-
-        {walkScore}
-
-        <Card>
-          <CardHeader className="gap-x-4 gap-y-2 border-b">
-            <CardTitle>
-              <h2 className="text-base font-semibold">Contact and applications</h2>
-            </CardTitle>
-            {(hasContactMethod || hasApplicationMethod || instructions) && (
-              <CardDescription className="text-sm">
-                Apply directly with the housing lister, outside this portal.
-              </CardDescription>
-            )}
-            {applyUrl && (
-              <CardAction>
-                <ListingApplyButton applicationUrl={applyUrl} />
-              </CardAction>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {(hasContactDetails || applicationRows.length > 0) && (
-              <div
-                className={
-                  hasContactDetails && applicationRows.length > 0
-                    ? "grid gap-6 sm:grid-cols-2"
-                    : "grid gap-6"
-                }
-              >
-                {hasContactDetails && (
-                  <section className="min-w-0 space-y-3">
-                    <h3 className="text-sm font-semibold">
-                      {allContactMethodsShared
-                        ? "For questions and applications"
-                        : "General enquiries"}
-                    </h3>
-                    {(contactName?.trim() || contactRole?.trim()) && (
-                      <div>
-                        {contactName?.trim() && (
-                          <p className="wrap-anywhere text-sm font-medium">{contactName.trim()}</p>
-                        )}
-                        {contactRole?.trim() && (
-                          <p className="wrap-anywhere text-sm text-muted-foreground">
-                            {contactRole.trim()}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {contactRows.length > 0 && (
-                      <dl className="space-y-2">
-                        {contactRows.map((row) => (
-                          <div key={row.label} className="min-w-0">
-                            <dt className="sr-only">{row.label}</dt>
-                            <dd className="wrap-anywhere text-sm leading-relaxed">
-                              <a
-                                href={row.href}
-                                className="text-primary-text underline-offset-4 hover:underline"
-                              >
-                                {row.value}
-                              </a>
-                              {row.shared && !allContactMethodsShared && (
-                                <span className="block text-xs text-muted-foreground">
-                                  Also for applications
-                                </span>
-                              )}
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
-                    )}
-                  </section>
-                )}
-                {applicationRows.length > 0 && (
-                  <section
-                    className={
-                      hasContactDetails
-                        ? "min-w-0 space-y-3 border-t pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6"
-                        : "min-w-0 space-y-3"
-                    }
-                  >
-                    <h3 className="text-sm font-semibold">Applications</h3>
-                    <dl className="space-y-2">
-                      {applicationRows.map((row) => (
-                        <div key={row.label} className="min-w-0">
-                          <dt className="sr-only">{row.label}</dt>
-                          <dd className="wrap-anywhere text-sm leading-relaxed">
-                            <a
-                              href={row.href}
-                              className="text-primary-text underline-offset-4 hover:underline"
-                            >
-                              {row.value}
-                            </a>
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </section>
-                )}
-              </div>
-            )}
-            {!hasApplicationMethod && hasContactMethod && (
-              <p className="text-sm text-muted-foreground">
-                Contact the lister to ask how to apply.
-              </p>
-            )}
-            {instructions && (
-              <figure className="space-y-3 border-t pt-4">
-                <figcaption className="space-y-1">
-                  <h3 className="text-sm font-semibold">Additional application information</h3>
-                  <p className="text-xs text-muted-foreground">From the housing lister</p>
-                </figcaption>
-                <blockquote className="whitespace-pre-line wrap-anywhere rounded-r-md border-l-2 border-primary/30 bg-muted/40 px-4 py-3 text-sm leading-relaxed">
-                  {instructions}
-                </blockquote>
-              </figure>
-            )}
-            {!hasContactDetails && !hasApplicationMethod && !instructions && (
-              <p className="text-sm text-muted-foreground">
-                The lister hasn&apos;t provided contact or application details for this listing yet.
-                Please check back later.
-              </p>
-            )}
-          </CardContent>
-        </Card>
       </div>
-    </WrapperElement>
+    </AppPageShell>
   );
 }

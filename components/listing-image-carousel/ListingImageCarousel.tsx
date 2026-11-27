@@ -10,16 +10,49 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { Lightbox } from "@/components/lightbox/Lightbox";
+import { PhotoEdge } from "@/components/listings-card/ListingsCard";
+import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { GridViewIcon } from "@hugeicons/core-free-icons";
+
+/**
+ * From this many photos, wide screens show a grid instead of the carousel: a large photo with two
+ * stacked tiles beside it, or with a 2×2 block of tiles once there are enough photos to fill it.
+ * The grid's shape keeps every small tile near 4:3, so rooms aren't cropped to a strip.
+ */
+const GRID_MIN_PHOTOS = 3;
+const QUAD_GRID_MIN_PHOTOS = 5;
+
+function gridLayout(total: number) {
+  return total >= QUAD_GRID_MIN_PHOTOS
+    ? { shown: 5, className: "aspect-[16/5] grid-cols-[58fr_21fr_21fr]" }
+    : { shown: 3, className: "aspect-[5/2] grid-cols-[66fr_34fr]" };
+}
+
+/** A 36px circle over the photo, with an invisible 44px hit area around it. */
+const arrowClassName =
+  "pointer-events-auto size-9 border-0 bg-white/95 text-neutral-900 shadow-md after:absolute after:-inset-1 hover:bg-white hover:text-neutral-900 dark:bg-white/95 dark:hover:bg-white";
 
 interface ListingImageCarouselProps {
   images: Array<{ url: string; caption: string }>;
   altPrefix: string;
+  /** Phones show the photo edge to edge, without rounded corners. */
+  edgeToEdge?: boolean;
 }
 
-export function ListingImageCarousel({ images, altPrefix }: ListingImageCarouselProps) {
+export function ListingImageCarousel({
+  images,
+  altPrefix,
+  edgeToEdge = false,
+}: ListingImageCarouselProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  // The photo the lightbox opens on. The grid opens on the tile that was clicked; the carousel
+  // opens on the shown slide.
+  const [lightboxStart, setLightboxStart] = useState(0);
+  const showsGrid = images.length >= GRID_MIN_PHOTOS;
+  const grid = gridLayout(images.length);
   const photoRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const focusWasInSlides = useRef(false);
 
@@ -51,9 +84,59 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
     };
   }, [api, onSelect]);
 
+  function openLightbox(index: number) {
+    setLightboxStart(index);
+    setLightboxOpen(true);
+  }
+
   return (
     <div className="relative w-full">
-      <Carousel className="w-full" opts={{ loop: true }} setApi={setApi}>
+      {/* At the 1024px page width the grid is 320–410px tall, so Apply and the accessibility
+          heading stay on the first screen. */}
+      {showsGrid && (
+        <div
+          className={cn(
+            "relative hidden grid-rows-2 gap-2 overflow-hidden rounded-xl md:grid",
+            grid.className,
+          )}
+        >
+          {images.slice(0, grid.shown).map((image, index) => (
+            <button
+              key={`${image.url}-${index}`}
+              type="button"
+              className={cn(
+                "group relative min-h-0 cursor-zoom-in overflow-hidden bg-muted focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-primary",
+                index === 0 && "row-span-2",
+              )}
+              aria-label={`Open photo ${index + 1} of ${images.length}`}
+              onClick={() => openLightbox(index)}
+            >
+              <img
+                src={image.url}
+                alt={image.caption || `${altPrefix} image ${index + 1}`}
+                className="size-full object-cover transition duration-300 group-hover:brightness-90"
+              />
+              <PhotoEdge />
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => openLightbox(0)}
+            className="absolute right-4 bottom-4 inline-flex h-10 items-center gap-2 rounded-lg border border-foreground/15 bg-background px-3.5 text-sm font-medium text-foreground shadow-md hover:bg-muted"
+          >
+            <HugeiconsIcon icon={GridViewIcon} strokeWidth={2} className="size-4" aria-hidden />
+            {/* When the grid already shows every photo, the button only enlarges them. */}
+            {images.length <= grid.shown
+              ? "View photos full size"
+              : `Show all ${images.length} photos`}
+          </button>
+        </div>
+      )}
+      <Carousel
+        className={cn("w-full", showsGrid && "md:hidden")}
+        opts={{ loop: true }}
+        setApi={setApi}
+      >
         <CarouselContent>
           {images.map((image, index) => (
             <CarouselItem
@@ -62,42 +145,56 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
               aria-hidden={index !== current}
               inert={index !== current}
             >
-              <div>
-                <button
-                  ref={(node) => {
-                    photoRefs.current[index] = node;
-                  }}
-                  type="button"
-                  className="block w-full cursor-zoom-in overflow-hidden rounded-lg focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-primary"
-                  aria-label={`View image ${index + 1} of ${images.length} larger`}
-                  onClick={() => setLightboxOpen(true)}
-                >
-                  <img
-                    src={image.url}
-                    alt={image.caption || `${altPrefix} image ${index + 1}`}
-                    className="h-64 w-full object-cover sm:h-80"
-                  />
-                </button>
-                <div className="flex items-center justify-between mt-2">
-                  {image.caption && (
-                    <p className="text-sm text-muted-foreground">{image.caption}</p>
-                  )}
-                  <span
-                    className={`inline-flex items-center justify-center rounded-full bg-black/60 px-2.5 py-1 text-sm font-medium text-white ${image.caption ? "" : "w-full text-center"}`}
-                  >
-                    {current + 1} / {images.length}
-                  </span>
-                </div>
-              </div>
+              <button
+                ref={(node) => {
+                  photoRefs.current[index] = node;
+                }}
+                type="button"
+                className={cn(
+                  "relative block w-full cursor-zoom-in overflow-hidden rounded-xl bg-muted focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-primary",
+                  edgeToEdge && "max-sm:rounded-none",
+                )}
+                aria-label={`View image ${index + 1} of ${images.length} larger`}
+                onClick={() => openLightbox(current)}
+              >
+                <img
+                  src={image.url}
+                  alt={image.caption || `${altPrefix} image ${index + 1}`}
+                  className="aspect-[4/3] w-full object-cover md:aspect-[2/1] lg:aspect-auto lg:h-100"
+                />
+                <PhotoEdge />
+              </button>
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow-lg hover:bg-white dark:bg-background/90 dark:hover:bg-background" />
-        <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow-lg hover:bg-white dark:bg-background/90 dark:hover:bg-background" />
+        {images.length > 1 && (
+          // Phones swipe between photos, so they get only the counter.
+          <div className="pointer-events-none absolute inset-0">
+            <span className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+              {current + 1} / {images.length}
+            </span>
+            <CarouselPrevious size="icon" className={cn("left-3 max-sm:hidden", arrowClassName)} />
+            <CarouselNext size="icon" className={cn("right-3 max-sm:hidden", arrowClassName)} />
+          </div>
+        )}
       </Carousel>
+      {/* The shown photo's caption, 8px under the photo rather than over it. Hidden from screen
+          readers, which get it as the photo's alt text. */}
+      {images[current]?.caption && (
+        <p
+          aria-hidden
+          className={cn(
+            "mt-2 text-xs text-muted-foreground",
+            edgeToEdge && "max-sm:px-4",
+            showsGrid && "md:hidden",
+          )}
+        >
+          {images[current].caption}
+        </p>
+      )}
       <Lightbox
         images={images}
-        startIndex={current}
+        startIndex={lightboxStart}
         open={lightboxOpen}
         onOpenChange={setLightboxOpen}
         title={`Photos of ${altPrefix}`}

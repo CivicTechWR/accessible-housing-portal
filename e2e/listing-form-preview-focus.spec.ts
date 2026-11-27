@@ -14,31 +14,33 @@ async function openListingForm(page: Page) {
   await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0, { timeout: 30_000 });
 }
 
-test("below lg, focus moves between the preview card and the Back button", async ({
+test("below lg, focus moves from the preview card to the preview toggle", async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile", "The Back button only shows below lg.");
+  test.skip(testInfo.project.name !== "mobile", "The Preview button only shows below lg.");
   await openListingForm(page);
-  await page.getByRole("tab", { name: "Preview", exact: true }).click();
+  await page.getByRole("button", { name: "Preview", exact: true }).click();
 
   const card = page.getByRole("button", { name: /^View listing:/ });
-  const back = page.getByRole("button", { name: "Back to card preview" });
+  const toggle = page.getByRole("button", { name: "Show card preview" });
 
   await card.click();
-  await expect(back).toBeFocused();
+  await expect(toggle).toBeFocused();
 
-  await back.click();
-  await expect(card).toBeFocused();
+  await toggle.click();
+  await expect(page.getByRole("button", { name: "Show full page" })).toBeFocused();
 });
 
-test("at lg and up, focus moves to the divider and stays there", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "desktop", "The divider only shows at lg and up.");
+test("at lg and up, focus moves to the preview toggle and stays there", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "Both panes only show side by side at lg and up.");
   await openListingForm(page);
 
   await page.getByRole("button", { name: /^View listing:/ }).click();
-  const hideDetails = page.getByRole("button", { name: "Hide Listing Details Page Preview" });
+  const hideDetails = page.getByRole("button", { name: "Show card preview" });
   await expect(hideDetails).toBeFocused();
 
   await hideDetails.click();
-  await expect(page.getByRole("button", { name: "Show Listing Page Preview" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Show full page" })).toBeFocused();
 });

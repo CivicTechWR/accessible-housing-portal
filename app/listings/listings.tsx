@@ -5,14 +5,21 @@ import type { ListingFiltersProps } from "@/components/listing-filter/ListingFil
 import { useListingFilters } from "@/components/listing-filter/useListingFilter";
 import {
   DisplayMode,
+  FloatingViewToggle,
   ListingFilterSearchBar,
+  QuickFilterChips,
+  ViewSwitch,
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createSerializer } from "nuqs";
+import { rememberListingSearch } from "@/components/listing-details/BackToResults";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
+import { ListingsPanelHeader } from "@/components/listings-panel-header/ListingsPanelHeader";
 import type { ListingListResponse, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
 import { toListingSearchFilters } from "./query";
+import { listingSearchParamsParsers } from "./searchParams";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { Button } from "@/components/ui/button";
@@ -39,10 +46,16 @@ function MapLoadingPlaceholder() {
   );
 }
 
-const LazyMapView = dynamic<{ listings: ListingSummary[] }>(
-  () => import("../../components/map-view/MapView.tsx").then((mod) => mod.MapView),
-  { ssr: false, loading: MapLoadingPlaceholder },
-);
+const LazyMapView = dynamic<{
+  listings: ListingSummary[];
+  highlightedId?: string | null;
+  matchesAccessibilityFilter?: boolean;
+}>(() => import("../../components/map-view/MapView.tsx").then((mod) => mod.MapView), {
+  ssr: false,
+  loading: MapLoadingPlaceholder,
+});
+
+const serializeSearch = createSerializer(listingSearchParamsParsers);
 
 interface ListingsDashboardProps {
   initialData: ListingListResponse;
@@ -59,13 +72,18 @@ export default function ListingsDashboard({
   dynamicGroups,
 }: ListingsDashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const mobileFilterButtonRef = useRef<HTMLButtonElement>(null);
+  // Set when the phone Accessibility chip opens the filter sheet, so it opens at that section.
+  const [filterSection, setFilterSection] = useState<"accessibility">();
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const accessibilityChipRef = useRef<HTMLButtonElement>(null);
   const mobileFilterSheetRef = useRef<HTMLDivElement>(null);
   const isMobileViewport = useMediaQuery(belowBreakpoint("sm"));
   // Split view only fits at `lg` (1024px) and up, so phones and tablets get List and Map only.
   // This is `false` until hydration, so nothing that affects first paint may depend on it.
   const isSplitViewAvailable = useMediaQuery(atLeastBreakpoint("lg"));
   const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.MAP_LIST);
+  // The listing whose card is hovered or focused, so the map can highlight its pin.
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
   // Below `lg`, split view shows as List. The stored choice stays Split, so widening past `lg`
   // brings it back.
   const effectiveDisplayMode =
@@ -85,10 +103,17 @@ export default function ListingsDashboard({
     filters,
   } = useListingFilters();
   const filterButtonProps = {
-    ...getFilterButtonProps(isFilterOpen, () => setIsFilterOpen(!isFilterOpen)),
-    mobileButtonRef: mobileFilterButtonRef,
+    ...getFilterButtonProps(isFilterOpen, () => {
+      setFilterSection(undefined);
+      setIsFilterOpen(!isFilterOpen);
+    }),
+    buttonRef: filterButtonRef,
   };
   const query = useMemo(() => toListingSearchFilters(filters), [filters]);
+  // Lets "Back to results" on a listing return to this search.
+  useEffect(() => {
+    rememberListingSearch(serializeSearch(filters));
+  }, [filters]);
   const { listings, total, error, retry, isLoading, isLoadingMore, isPartial, isCapped } =
     useListingsQuery(query, {
       data: initialData,
@@ -110,20 +135,44 @@ export default function ListingsDashboard({
     // data-fullscreen opts into the root layout's full-screen mode, which sizes this page to fill
     // the screen below the site header (see app/layout.tsx).
     <div data-fullscreen className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <header className="shrink-0 border-b bg-background px-4 py-3 sm:flex sm:h-16 sm:items-center sm:gap-4 sm:py-0 lg:gap-6">
-        <ListingFilterSearchBar
-          searchInputProps={searchInputProps}
+      <h1 className="sr-only">Search listings</h1>
+      {/* The toolbar holds the search, the filters and the view switch; the count and sort sit
+          over the results. Phones get the search field and a row of quick-filter chips, and the
+          view switch as a floating button, to keep the first listing photo high on the screen. */}
+      <header className="flex shrink-0 flex-col border-b bg-background">
+        <div className="flex items-center gap-3 px-4 pt-3 pb-2 sm:h-16 sm:px-6 sm:py-0">
+          <ListingFilterSearchBar
+            searchInputProps={searchInputProps}
+            priceRangeProps={priceRangeProps}
+            bedroomToggleProps={bedroomToggleProps}
+            bathroomToggleProps={bathroomToggleProps}
+            filterButton={<FilterButton {...filterButtonProps} />}
+            accessibilityFilter={{
+              groups: dynamicGroups,
+              getCheckboxProps: getFeatureCheckboxProps,
+              count: filters.features.length,
+            }}
+          />
+          <div className="ml-auto shrink-0 max-md:hidden">
+            <ViewSwitch
+              displayModes={displayModes}
+              value={effectiveDisplayMode}
+              onChange={setDisplayMode}
+            />
+          </div>
+        </div>
+        <QuickFilterChips
           priceRangeProps={priceRangeProps}
           bedroomToggleProps={bedroomToggleProps}
           bathroomToggleProps={bathroomToggleProps}
-          displayModeProps={{
-            displayModes,
-            onChange: (value: string) => setDisplayMode(value as DisplayMode),
-            value: effectiveDisplayMode,
+          accessibilityCount={filters.features.length}
+          accessibilityRef={accessibilityChipRef}
+          onAccessibilityClick={() => {
+            setFilterSection("accessibility");
+            setIsFilterOpen(true);
           }}
-          mobileFilterButton={<FilterButton {...filterButtonProps} viewport="mobile" />}
+          className="pb-2 sm:hidden"
         />
-        <FilterButton {...filterButtonProps} viewport="desktop" />
       </header>
       {error ? (
         <AlertBanner
@@ -141,20 +190,26 @@ export default function ListingsDashboard({
         {displayMode !== DisplayMode.MAP ? (
           <ListingsPanel
             listings={listings}
-            total={total}
             isLoadingMore={isLoadingMore}
-            isPartial={isPartial}
             isCapped={isCapped}
             displayMode={displayMode}
-            sortOptionProps={sortOptionProps}
-            isLoading={isLoading}
+            onHighlightChange={setHighlightedId}
+            header={
+              <ListingsPanelHeader
+                shown={listings.length}
+                total={total}
+                isPartial={isPartial}
+                sortOptionProps={sortOptionProps}
+                isLoading={isLoading}
+              />
+            }
           />
         ) : null}
         {[DisplayMode.MAP, DisplayMode.MAP_LIST].includes(displayMode) && (
           <div
             // In split view, CSS hides the map below `lg`, so the server HTML is right at every width.
             className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${
-              isSplitView ? "hidden lg:block lg:basis-1/2" : ""
+              isSplitView ? "hidden lg:block lg:basis-[44%] lg:border-l" : ""
             }`}
           >
             {/* Server and hydration renders both take the placeholder branch, so they match, and
@@ -162,17 +217,19 @@ export default function ListingsDashboard({
             {isSplitView && !isSplitViewAvailable ? (
               <MapLoadingPlaceholder />
             ) : (
-              <LazyMapView listings={listings} />
+              <LazyMapView
+                listings={listings}
+                highlightedId={highlightedId}
+                matchesAccessibilityFilter={filters.features.length > 0}
+              />
             )}
-            {/* Map view has no list header to show the count, so say here when pins are missing.
-                Bottom left stays clear of the attribution and the selected-listing card. */}
-            {displayMode === DisplayMode.MAP && isPartial ? (
-              <p className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm">
-                Showing {listings.length} of {total} listings
-              </p>
-            ) : null}
           </div>
         )}
+        <FloatingViewToggle
+          value={effectiveDisplayMode}
+          onChange={setDisplayMode}
+          className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2 md:hidden"
+        />
         {/* Rendered outside the list panel so phones can filter in Map view too. */}
         {isMobileViewport ? (
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
@@ -185,10 +242,13 @@ export default function ListingsDashboard({
                 event.preventDefault();
                 mobileFilterSheetRef.current?.focus();
               }}
-              // The filter button isn't a SheetTrigger, so Radix has nowhere to return focus on close.
+              // The sheet has no SheetTrigger, so Radix has nowhere to return focus on close.
               onCloseAutoFocus={(event) => {
                 event.preventDefault();
-                mobileFilterButtonRef.current?.focus();
+                (filterSection === "accessibility"
+                  ? accessibilityChipRef
+                  : filterButtonRef
+                ).current?.focus();
               }}
               className="gap-0 rounded-t-lg bg-background p-0 data-[side=bottom]:max-h-[85dvh]"
             >
@@ -211,6 +271,7 @@ export default function ListingsDashboard({
                   clearFilters={clearFilters}
                   dynamicGroups={dynamicGroups}
                   showActions={false}
+                  initialSection={filterSection}
                   className="max-w-none border-0"
                 />
               </div>

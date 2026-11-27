@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { HomeFeaturesSection } from "@/components/home/HomeFeaturesSection";
 import { HomeAboutSection } from "@/components/home/HomeAboutSection";
 import { HomeContactSection } from "@/components/home/HomeContactSection";
 import { HomeHeroSection } from "@/components/home/HomeHeroSection";
-import { HomeInfoSection } from "@/components/home/HomeInfoSection";
+import { HomeBand } from "@/components/home/HomeBand";
 import { HomeScopeSection } from "@/components/home/HomeScopeSection";
 import { getOptionalSession } from "@/lib/auth/session";
 import { siteConfig } from "@/lib/site-config";
@@ -26,12 +27,19 @@ export default async function Home() {
   return (
     <main>
       <HomeHeroSection />
-      <div className="mx-auto max-w-5xl space-y-12 px-6 py-12 sm:py-16">
+      {/* Bands alternate between the page and white so each section reads as its own. */}
+      <HomeBand tone="card">
+        <HomeFeaturesSection />
+      </HomeBand>
+      <HomeBand>
         <HomeAboutSection />
-        <HomeInfoSection />
-        <HomeScopeSection />
+        <div className="mt-16">
+          <HomeScopeSection />
+        </div>
+      </HomeBand>
+      <HomeBand tone="card">
         <HomeContactSection />
-      </div>
+      </HomeBand>
     </main>
   );
 }

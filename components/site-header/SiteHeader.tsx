@@ -1,8 +1,10 @@
 import Link from "next/link";
 
+import { BrandMark } from "@/components/brand/BrandMark";
 import { HeaderAccountMenu } from "@/components/site-header/HeaderAccountMenu";
 import { HeaderMobileMenu } from "@/components/site-header/HeaderMobileMenu";
-import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
+import { HeaderNavLink } from "@/components/site-header/HeaderNavLink";
+import { HeaderSignInButton } from "@/components/site-header/HeaderSignInButton";
 import { getOptionalSession } from "@/lib/auth/session";
 import { siteConfig } from "@/lib/site-config";
 
@@ -10,61 +12,57 @@ export async function SiteHeader() {
   const optionalSession = await getOptionalSession();
   const session = optionalSession.session;
   const isSignedIn = Boolean(session?.user);
-  const canCreateListing =
-    optionalSession.authzUser?.role === "admin" || optionalSession.authzUser?.role === "partner";
-  const navPillClass =
-    "rounded-full bg-primary-foreground/20 px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/30";
+  const role = optionalSession.authzUser?.role;
+  const canCreateListing = role === "admin" || role === "partner";
 
   return (
-    <header className="bg-primary text-primary-foreground shrink-0">
-      <div className="w-full px-4 sm:px-6">
-        <div className="relative flex min-h-14 items-center justify-center py-2">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-primary-foreground">
-            {siteConfig.name}
-          </Link>
+    <header className="shrink-0 border-b bg-background">
+      <div className="site-container flex h-16 items-center gap-6">
+        <Link
+          href="/"
+          className="-mx-1 flex items-center gap-2.5 rounded-lg px-1 text-lg font-bold tracking-[-0.02em] text-foreground"
+        >
+          <BrandMark />
+          {siteConfig.name}
+        </Link>
 
-          <nav className="absolute right-0 hidden items-center gap-2 lg:flex">
-            {isSignedIn ? (
+        {isSignedIn ? (
+          <nav aria-label="Main" className="hidden flex-1 items-center gap-1 self-stretch lg:flex">
+            <HeaderNavLink href="/listings">Browse listings</HeaderNavLink>
+            {canCreateListing ? (
+              <HeaderNavLink href="/my-listings" alsoActiveFor={["/listing-form"]}>
+                My listings
+              </HeaderNavLink>
+            ) : null}
+            {role === "admin" ? (
               <>
-                {canCreateListing ? (
-                  <>
-                    <Link href="/my-listings" className={navPillClass}>
-                      My Listings
-                    </Link>
-                  </>
-                ) : null}
-
-                {optionalSession.authzUser?.role === "admin" ? (
-                  <>
-                    <Link href="/admin/custom-listing-fields" className={navPillClass}>
-                      Custom Fields
-                    </Link>
-                    <Link href="/admin/users" className={navPillClass}>
-                      Manage Users
-                    </Link>
-                  </>
-                ) : null}
-
-                {session?.user ? <HeaderAccountMenu user={session.user} /> : null}
+                <HeaderNavLink href="/admin/users" alsoActiveFor={["/admin/invite"]}>
+                  Users
+                </HeaderNavLink>
+                <HeaderNavLink href="/admin/custom-listing-fields">Custom fields</HeaderNavLink>
               </>
-            ) : (
-              <>
-                {/* Signed-in users find the theme control in the account menu. */}
-                <ThemeToggle />
-                <Link href="/sign-in" className={navPillClass}>
-                  Sign in
-                </Link>
-              </>
-            )}
+            ) : null}
           </nav>
+        ) : null}
 
-          <HeaderMobileMenu
-            isSignedIn={isSignedIn}
-            isAdmin={optionalSession.authzUser?.role === "admin"}
-            canCreateListing={canCreateListing}
-            user={session?.user ?? null}
-          />
-        </div>
+        {isSignedIn ? (
+          <>
+            <div className="ml-auto hidden items-center gap-3 lg:flex">
+              {session?.user ? <HeaderAccountMenu user={session.user} /> : null}
+            </div>
+            <HeaderMobileMenu
+              isAdmin={role === "admin"}
+              canCreateListing={canCreateListing}
+              user={session?.user ?? null}
+            />
+          </>
+        ) : (
+          // Signed out, the only destination is sign-in, so phones get the same button as desktop
+          // instead of a menu holding one link.
+          <div className="ml-auto flex items-center">
+            <HeaderSignInButton />
+          </div>
+        )}
       </div>
     </header>
   );

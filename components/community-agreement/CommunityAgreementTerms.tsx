@@ -1,17 +1,22 @@
 import { communityAgreement } from "@/content/community-agreement";
 
-export function CommunityAgreementTerms() {
+/** `showClosing`: the closing "By using…" line. The invite step leaves it out, since there the
+ * reader agrees with an explicit checkbox instead. */
+export function CommunityAgreementTerms({ showClosing = true }: { showClosing?: boolean }) {
   return (
-    <div className="space-y-6 text-sm leading-6">
+    <div className="max-w-[68ch] space-y-10 text-base leading-relaxed">
       <p>{communityAgreement.introduction}</p>
 
       {communityAgreement.sections.map((section) => (
-        <section key={section.title} className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">{section.title}</h2>
-          <ul className="list-disc space-y-3 pl-5 text-muted-foreground">
+        <section key={section.title} className="space-y-5">
+          <h2 className="text-[1.375rem] text-foreground">{section.title}</h2>
+          <ul role="list" className="space-y-6">
             {section.items.map((item) => (
               <li key={item.title}>
-                <span className="font-semibold text-foreground">{item.title}:</span> {item.body}
+                <span className="mb-1 block text-[1.0625rem] font-semibold text-foreground">
+                  {item.title}
+                </span>
+                {item.body}
                 {item.link && (
                   <>
                     {" "}
@@ -19,7 +24,7 @@ export function CommunityAgreementTerms() {
                       href={item.link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-primary underline underline-offset-4"
+                      className="font-medium text-primary-text underline underline-offset-4"
                     >
                       {item.link.text}
                     </a>
@@ -31,7 +36,11 @@ export function CommunityAgreementTerms() {
         </section>
       ))}
 
-      <p className="font-medium text-foreground">{communityAgreement.closing}</p>
+      {showClosing && (
+        <p className="rounded-xl bg-muted px-5 py-4 font-medium text-foreground">
+          {communityAgreement.closing}
+        </p>
+      )}
     </div>
   );
 }

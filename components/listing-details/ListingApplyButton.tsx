@@ -12,8 +12,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog-shell";
 import { siteConfig } from "@/lib/site-config";
+import { cn } from "@/lib/utils";
 
-export function ListingApplyButton({ applicationUrl }: { applicationUrl: string }) {
+export function ListingApplyButton({
+  applicationUrl,
+  className,
+}: {
+  applicationUrl: string;
+  className?: string;
+}) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleConfirm = () => {
@@ -22,7 +29,12 @@ export function ListingApplyButton({ applicationUrl }: { applicationUrl: string 
 
   return (
     <>
-      <Button type="button" size="sm" onClick={() => setIsConfirmOpen(true)}>
+      <Button
+        type="button"
+        size="lg"
+        className={cn("h-12", className)}
+        onClick={() => setIsConfirmOpen(true)}
+      >
         Apply
       </Button>
 

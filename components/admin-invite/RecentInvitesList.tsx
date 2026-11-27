@@ -1,48 +1,55 @@
 import verbiage from "@/content/verbiage.json";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CopyInviteLinkButton } from "@/components/admin-invite/CopyInviteLinkButton";
 import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
-import type { InviteRecord } from "@/components/admin-invite/types";
-import { inviteRoleLabels } from "@/components/admin-invite/types";
+import { inviteRoleLabels, type InviteRecord } from "@/components/admin-invite/types";
 
 type RecentInvitesListProps = {
   invites: InviteRecord[];
 };
 
+// Recent invites are from the last few days, so the year would only add length.
 const inviteDateFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
 });
 
 export function RecentInvitesList({ invites }: RecentInvitesListProps) {
   const copy = verbiage.adminInvite.recentInvites;
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4 text-card-foreground">
-      <header className="space-y-0.5">
-        <h2 className="font-heading text-sm font-semibold text-foreground">{copy.heading}</h2>
-      </header>
-
-      {invites.length === 0 ? (
-        <EmptyState size="sm">{copy.emptyState}</EmptyState>
-      ) : (
-        <ul className="space-y-2">
-          {invites.map((invite) => (
-            <li key={invite.id} className="space-y-2 rounded-md border border-border/70 px-3 py-2">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h2 className="text-lg">{copy.heading}</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {invites.length === 0 ? (
+          <EmptyState size="sm">{copy.emptyState}</EmptyState>
+        ) : (
+          <ul className="-my-3 divide-y">
+            {invites.map((invite) => (
+              <li key={invite.id} className="space-y-2 py-3">
                 <div className="min-w-0 space-y-0.5">
-                  <p className="truncate text-sm font-medium text-foreground">{invite.email}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm font-medium [overflow-wrap:anywhere] text-foreground">
+                    {invite.email}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {inviteRoleLabels[invite.role]},{" "}
                     {inviteDateFormatter.format(new Date(invite.invitedAt))}
                   </p>
                 </div>
-                <Badge variant="outline">{inviteRoleLabels[invite.role]}</Badge>
-              </div>
-              {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+                {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
+                <CopyInviteLinkButton inviteId={invite.id} email={invite.email} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

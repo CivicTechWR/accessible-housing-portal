@@ -12,7 +12,6 @@ import {
 import {
   getCanonicalCategoryValue,
   getCategoryStats,
-  getDisplayGroups,
   getInsertionIndexForPointer,
   getUniqueCategoryOptions,
   groupFields,
@@ -87,7 +86,7 @@ describe("custom listing field dashboard utilities", () => {
     ]);
   });
 
-  it("groups and collapses display groups when all fields are unfiltered", () => {
+  it("groups fields by category, keeping every field in its group", () => {
     const groupedFields = groupFields(
       sortFields([
         field({ label: "Ramp", category: "ACCESSIBILITY" }),
@@ -97,17 +96,14 @@ describe("custom listing field dashboard utilities", () => {
       ]),
     );
 
-    const displayGroups = getDisplayGroups({
-      activeCategory: "all",
-      expandedCategories: new Set(),
-      groupedFields,
-      isFiltered: false,
-    });
-
-    expect(displayGroups).toHaveLength(2);
-    expect(displayGroups[0]?.visibleFields).toHaveLength(1);
-    expect(displayGroups[1]?.visibleFields).toHaveLength(3);
-    expect(displayGroups[1]?.hiddenCount).toBe(1);
+    expect(groupedFields).toHaveLength(2);
+    expect(groupedFields[0]?.fields).toHaveLength(1);
+    expect(groupedFields[1]?.fields.map((item) => item.label)).toEqual([
+      "Laundry",
+      "Parking",
+      "Storage",
+      "Elevator",
+    ]);
   });
 
   it("sorts visible fields by requested key and direction", () => {

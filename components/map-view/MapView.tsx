@@ -1,29 +1,174 @@
 "use client";
 
-import { memo, useState, useCallback, useEffect, useMemo, useRef, type Ref } from "react";
+import {
+  memo,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type Ref,
+  type RefObject,
+} from "react";
 import { Map, Marker, Popup, type ErrorEvent, type MapRef } from "@vis.gl/react-maplibre";
 import { useTheme } from "next-themes";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, MinusSignIcon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import type { Listing } from "@/components/listing-card-list/ListingsCardList";
 import { Button } from "@/components/ui/button";
+import { formatRent } from "@/lib/listing-format";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { ListingsCard } from "../listings-card/ListingsCard";
-
-const OPENFREEMAP_LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty";
-const OPENFREEMAP_DARK_STYLE = "https://tiles.openfreemap.org/styles/fiord";
+import { MAP_STYLE_URLS, applyMapStyleOverrides, foldAttribution } from "./mapStyle";
+import "./mapControls.css";
 
 const DEFAULT_VIEW = { ...siteConfig.mapCenter, zoom: 12 } as const;
 
 type MappableListing = Listing & { lat: number; lng: number };
+
+/** At this zoom and closer every listing gets its own pin, even where pins overlap. */
+const CLUSTER_MAX_ZOOM = 15;
+/** Pins whose centres are closer than this, in screen pixels, merge into one cluster. */
+const CLUSTER_RADIUS = { x: 80, y: 34 };
+
+type PinGroup = { lat: number; lng: number; listings: MappableListing[] };
+
+/**
+ * Greedily merges pins that would overlap on screen into clusters. Price pins are wide and
+ * short, so the overlap test uses a box rather than a circle. Cheap enough to rerun after every
+ * pan or zoom for the few hundred listings the search loads.
+ *
+ * Listings whose position is off screen are left out, so a cluster counts only homes in view
+ * and no sliver of a pin shows at the map's edge.
+ */
+export function groupOverlappingPins(
+  map: {
+    getZoom(): number;
+    project(lngLat: [number, number]): { x: number; y: number };
+    getContainer(): { clientWidth: number; clientHeight: number };
+  },
+  listings: MappableListing[],
+  keepSeparate: string | null,
+) {
+  if (map.getZoom() >= CLUSTER_MAX_ZOOM) return null;
+  const { clientWidth, clientHeight } = map.getContainer();
+  const groups: Array<PinGroup & { x: number; y: number }> = [];
+  for (const listing of listings) {
+    const point = map.project([listing.lng, listing.lat]);
+    const onScreen =
+      point.x >= 0 && point.x <= clientWidth && point.y >= 0 && point.y <= clientHeight;
+    if (!onScreen && listing.id !== keepSeparate) continue;
+    const group =
+      listing.id === keepSeparate
+        ? undefined
+        : groups.find(
+            (candidate) =>
+              candidate.listings[0]?.id !== keepSeparate &&
+              Math.abs(candidate.x - point.x) < CLUSTER_RADIUS.x &&
+              Math.abs(candidate.y - point.y) < CLUSTER_RADIUS.y,
+          );
+    if (group) {
+      group.listings.push(listing);
+    } else {
+      groups.push({
+        x: point.x,
+        y: point.y,
+        lat: listing.lat,
+        lng: listing.lng,
+        listings: [listing],
+      });
+    }
+  }
+  return groups.map(({ listings: members }) => ({
+    listings: members,
+    lat: members.reduce((sum, l) => sum + l.lat, 0) / members.length,
+    lng: members.reduce((sum, l) => sum + l.lng, 0) / members.length,
+  }));
+}
+
+/**
+ * Pins are small sign plates in signage blue with white text: a 2px white edge on the light
+ * basemap, a faint light edge on the dark one. Clusters are exactly the same plate in a deeper
+ * blue, reading "3 homes". The hovered or selected pin, and the pin of the card hovered in the
+ * list, swap the edge for tactile yellow in both themes. Focus shows as an outline, since the ring
+ * is the plate's edge.
+ */
+const pillClassName =
+  "relative flex h-8 items-center rounded-md px-2.5 text-sm font-semibold whitespace-nowrap shadow-[0_2px_6px_rgb(0_0_0/0.3)] ring-2 transition-[transform,box-shadow] group-focus-visible:outline-3 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring";
+
+const restingPrice = "bg-primary text-primary-foreground ring-white dark:ring-white/25";
+
+/** Hovered, selected or matching the hovered card. */
+const emphasisedPin = "scale-105 ring-signal dark:ring-signal";
+
+const hoverPin = "group-hover:scale-105 group-hover:ring-signal dark:group-hover:ring-signal";
+
+const clusterPill = "bg-[#08397a] text-white ring-white dark:bg-[#173a7a] dark:ring-white/25";
+
+/**
+ * The yellow accessibility dot at a pin's top-right corner, shown while the Accessibility filter is
+ * on: every result then has the selected features. A ring in the plate's edge colour separates it
+ * from the plate.
+ */
+function AccessibilityDot() {
+  return (
+    <span
+      aria-hidden
+      className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-signal ring-2 ring-white dark:ring-background"
+    />
+  );
+}
+
+/** Room around the outermost pins when the map fits the results, and how close it may zoom. */
+const FIT_OPTIONS = { padding: 64, maxZoom: 14 } as const;
+
+function resultBounds(listings: MappableListing[]): [[number, number], [number, number]] | null {
+  if (listings.length === 0) return null;
+  const lngs = listings.map((l) => l.lng);
+  const lats = listings.map((l) => l.lat);
+  return [
+    [Math.min(...lngs), Math.min(...lats)],
+    [Math.max(...lngs), Math.max(...lats)],
+  ];
+}
+
+/** Zooms the map in or out by one step. 40px, in the map's top-right corner. */
+function ZoomControls({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
+  const buttonClassName =
+    "flex size-10 items-center justify-center text-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:ring-inset";
+  return (
+    <div
+      role="group"
+      aria-label="Zoom"
+      className="absolute top-3 right-3 z-10 flex flex-col divide-y overflow-hidden rounded-xl border bg-background shadow-md dark:border-white/15"
+    >
+      <button
+        type="button"
+        aria-label="Zoom in"
+        className={buttonClassName}
+        onClick={() => mapRef.current?.zoomIn()}
+      >
+        <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="size-5" aria-hidden />
+      </button>
+      <button
+        type="button"
+        aria-label="Zoom out"
+        className={buttonClassName}
+        onClick={() => mapRef.current?.zoomOut()}
+      >
+        <HugeiconsIcon icon={MinusSignIcon} strokeWidth={2} className="size-5" aria-hidden />
+      </button>
+    </div>
+  );
+}
 
 function displayAddress(listing: Listing) {
   return listing.city ? `${listing.address}, ${listing.city}` : listing.address;
 }
 
 function pinLabel(listing: Listing) {
-  return `$${listing.price.toLocaleString()} per month, ${displayAddress(listing)}`;
+  return `${formatRent(listing.price)} per month, ${displayAddress(listing)}`;
 }
 
 /**
@@ -67,7 +212,7 @@ function SelectedListing({
         beds={listing.beds}
         baths={listing.baths}
         sqft={listing.sqft}
-        timeAgo={listing.timeAgo}
+        availableOn={listing.availableOn}
         imageUrl={listing.imageUrl}
         variant={variant}
       />
@@ -89,14 +234,35 @@ function SelectedListing({
 
 // Memoized because the search page re-renders on every keystroke in its filters, and this can
 // hold hundreds of pins.
-export const MapView = memo(function MapView({ listings }: { listings: Listing[] }) {
+export const MapView = memo(function MapView({
+  listings,
+  highlightedId = null,
+  matchesAccessibilityFilter = false,
+}: {
+  listings: Listing[];
+  /** A listing to highlight, such as the one whose card is hovered in the list. */
+  highlightedId?: string | null;
+  /**
+   * Set while the Accessibility filter has selections. The results are already filtered, so every
+   * pin gets the yellow accessibility dot.
+   */
+  matchesAccessibilityFilter?: boolean;
+}) {
   const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  // Read when a new style finishes loading, which happens after the theme changes.
+  const isDarkRef = useRef(isDark);
+  useEffect(() => {
+    isDarkRef.current = isDark;
+  }, [isDark]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   const pinRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const mapRef = useRef<MapRef>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const bottomCardRef = useRef<HTMLDivElement>(null);
+  // Null until the map has loaded, and whenever every listing should get its own pin.
+  const [pinGroups, setPinGroups] = useState<PinGroup[] | null>(null);
 
   const mappableListings = useMemo(
     () =>
@@ -107,6 +273,33 @@ export const MapView = memo(function MapView({ listings }: { listings: Listing[]
     [listings],
   );
 
+  // Opens on the results, with room around the outermost pins so none sits against an edge.
+  // Read once, when the map mounts.
+  const [initialView] = useState(() => {
+    const bounds = resultBounds(mappableListings);
+    return bounds ? { bounds, fitBoundsOptions: FIT_OPTIONS } : DEFAULT_VIEW;
+  });
+
+  // Refits when the results change, such as after a filter change or as more pages load, but not
+  // when the reader pans or zooms. The ids say whether the results changed: a refetch returns new
+  // objects for the same listings.
+  const resultsKey = useMemo(() => mappableListings.map((l) => l.id).join(","), [mappableListings]);
+  const fittedResultsKey = useRef(resultsKey);
+  const fitToResults = useCallback(
+    (duration: number) => {
+      const map = mapRef.current;
+      if (!map || fittedResultsKey.current === resultsKey) return;
+      fittedResultsKey.current = resultsKey;
+      const bounds = resultBounds(mappableListings);
+      if (bounds) map.fitBounds(bounds, { ...FIT_OPTIONS, duration });
+    },
+    [mappableListings, resultsKey],
+  );
+
+  useEffect(() => {
+    fitToResults(600);
+  }, [fitToResults]);
+
   const selectedListing = useMemo(
     () => mappableListings.find((l) => l.id === selectedId) ?? null,
     [mappableListings, selectedId],
@@ -116,6 +309,42 @@ export const MapView = memo(function MapView({ listings }: { listings: Listing[]
   // when a later filter brings that listing back. The listings query keeps the previous results
   // while the first page of new results loads, so this doesn't fire until that page arrives.
   if (selectedId && !selectedListing) setSelectedId(null);
+
+  const regroupPins = useCallback(() => {
+    const map = mapRef.current;
+    if (map) setPinGroups(groupOverlappingPins(map, mappableListings, selectedId));
+  }, [mappableListings, selectedId]);
+
+  useEffect(() => {
+    regroupPins();
+  }, [regroupPins]);
+
+  const handleLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (map) {
+      applyMapStyleOverrides(map, isDarkRef.current);
+      foldAttribution(map);
+      // Switching theme swaps the whole style, which drops the overrides.
+      map.on("style.load", () => applyMapStyleOverrides(map, isDarkRef.current));
+    }
+    // The results may have changed while the map was loading.
+    fitToResults(0);
+    regroupPins();
+  }, [fitToResults, regroupPins]);
+
+  const zoomToCluster = useCallback((group: PinGroup) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const lngs = group.listings.map((l) => l.lng);
+    const lats = group.listings.map((l) => l.lat);
+    map.fitBounds(
+      [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ],
+      { padding: 96, maxZoom: CLUSTER_MAX_ZOOM, duration: 500 },
+    );
+  }, []);
 
   const handleMarkerClick = useCallback((id: string) => {
     setSelectedId((prev) => (prev === id ? null : id));
@@ -176,11 +405,14 @@ export const MapView = memo(function MapView({ listings }: { listings: Listing[]
         <Map
           ref={mapRef}
           workerUrl="/maplibre/maplibre-gl-worker.mjs"
-          mapStyle={resolvedTheme === "dark" ? OPENFREEMAP_DARK_STYLE : OPENFREEMAP_LIGHT_STYLE}
-          initialViewState={DEFAULT_VIEW}
+          mapStyle={isDark ? MAP_STYLE_URLS.dark : MAP_STYLE_URLS.light}
+          initialViewState={initialView}
           style={{ width: "100%", height: "100%" }}
           scrollZoom={true}
+          attributionControl={{ compact: true }}
           onClick={() => setSelectedId(null)}
+          onLoad={handleLoad}
+          onMoveEnd={regroupPins}
           onError={({ error }: ErrorEvent) => {
             if (error.name === "GPUInitializationError") {
               setMapUnavailable(true);
@@ -189,7 +421,48 @@ export const MapView = memo(function MapView({ listings }: { listings: Listing[]
             }
           }}
         >
-          {mappableListings.map((listing) => {
+          {(
+            pinGroups ?? mappableListings.map((listing) => ({ ...listing, listings: [listing] }))
+          ).map((group) => {
+            if (group.listings.length > 1) {
+              const count = group.listings.length;
+              const containsHighlighted = group.listings.some((l) => l.id === highlightedId);
+              return (
+                <Marker
+                  key={`cluster-${group.listings[0]?.id}`}
+                  longitude={group.lng}
+                  latitude={group.lat}
+                  anchor="center"
+                  className={cn(
+                    "font-sans hover:z-1 focus-within:z-1",
+                    containsHighlighted && "z-3",
+                  )}
+                  onClick={(e) => {
+                    e.originalEvent.stopPropagation();
+                    zoomToCluster(group);
+                  }}
+                >
+                  <button
+                    type="button"
+                    aria-label={`${count} listings here. Zoom in to see them.`}
+                    className="group flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full outline-none"
+                  >
+                    <span
+                      className={cn(
+                        pillClassName,
+                        clusterPill,
+                        hoverPin,
+                        containsHighlighted && emphasisedPin,
+                      )}
+                    >
+                      {count} homes
+                      {matchesAccessibilityFilter && <AccessibilityDot />}
+                    </span>
+                  </button>
+                </Marker>
+              );
+            }
+            const listing = group.listings[0] as MappableListing;
             const selected = selectedId === listing.id;
             return (
               <Marker
@@ -199,7 +472,12 @@ export const MapView = memo(function MapView({ listings }: { listings: Listing[]
                 anchor="center"
                 // A class rather than `style`: react-maplibre never removes inline styles it set,
                 // so a z-index there would stay after the pin is deselected.
-                className={cn("focus-within:z-1", selected && "z-2")}
+                // `font-sans` because MapLibre's container sets its own font.
+                className={cn(
+                  "font-sans hover:z-1 focus-within:z-1",
+                  selected && "z-2",
+                  highlightedId === listing.id && "z-3",
+                )}
                 onClick={(e) => {
                   e.originalEvent.stopPropagation();
                   handleMarkerClick(listing.id);
@@ -221,11 +499,14 @@ export const MapView = memo(function MapView({ listings }: { listings: Listing[]
                 >
                   <span
                     className={cn(
-                      "rounded-full border border-white px-2.5 py-1 text-xs font-bold text-white shadow-lg transition-transform group-hover:scale-110 group-focus-visible:ring-3 group-focus-visible:ring-foreground group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background",
-                      selected ? "bg-blue-600" : "bg-[#3b444b]",
+                      pillClassName,
+                      restingPrice,
+                      hoverPin,
+                      (selected || highlightedId === listing.id) && emphasisedPin,
                     )}
                   >
-                    ${listing.price.toLocaleString()}
+                    {formatRent(listing.price)}
+                    {matchesAccessibilityFilter && <AccessibilityDot />}
                   </span>
                 </button>
               </Marker>
@@ -250,12 +531,14 @@ export const MapView = memo(function MapView({ listings }: { listings: Listing[]
                 ref={popupRef}
                 listing={selectedListing}
                 variant="vertical"
+                className="w-72"
                 onClose={closeSelected}
               />
             </Popup>
           )}
         </Map>
       </div>
+      <ZoomControls mapRef={mapRef} />
 
       {selectedListing && (
         <SelectedListing
@@ -263,7 +546,8 @@ export const MapView = memo(function MapView({ listings }: { listings: Listing[]
           listing={selectedListing}
           variant="horizontal"
           onClose={closeSelected}
-          className="absolute inset-x-3 bottom-10 z-10 @lg:hidden"
+          // Clears the floating List / Map button on phones.
+          className="absolute inset-x-3 bottom-20 z-10 @lg:hidden"
         />
       )}
     </div>

@@ -20,13 +20,14 @@ export type SortKey =
   | "required";
 export type SortDirection = "asc" | "desc";
 
-export const TABLE_COLUMNS =
-  "grid-cols-[36px_48px_minmax(180px,1.1fr)_minmax(190px,1.15fr)_minmax(150px,0.85fr)_minmax(140px,0.8fr)_minmax(260px,1.35fr)_minmax(260px,1.35fr)_minmax(132px,0.7fr)_96px_96px_94px]";
+// Drag handle, field (with its exception badges), applies to, description, menu.
+// Fits the 1024px page width without scrolling; narrower screens scroll sideways.
+export const TABLE_COLUMNS = "grid-cols-[48px_minmax(220px,1.3fr)_112px_minmax(240px,2fr)_56px]";
 
-export const TABLE_MIN_WIDTH = "min-w-[1700px]";
+export const TABLE_MIN_WIDTH = "min-w-[840px]";
 
 export const FIELD_HELP_TEXT = {
-  label: "Human-readable field name shown to partners and renters.",
+  label: "Human-readable field name shown to housing providers and renters.",
   key: "Stable identifier used by listing data and APIs.",
   category: "Groups related fields together in forms and listings.",
   appliesTo:
@@ -54,8 +55,6 @@ export type DisplayGroup = {
   category: string;
   label: string;
   fields: AdminCustomListingField[];
-  visibleFields: AdminCustomListingField[];
-  hiddenCount: number;
 };
 
 export type BulkEditPayload = Pick<
@@ -93,7 +92,7 @@ export function getCategoryStats(fields: AdminCustomListingField[]) {
   return Array.from(stats.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
 
-export function groupFields(fields: AdminCustomListingField[]) {
+export function groupFields(fields: AdminCustomListingField[]): DisplayGroup[] {
   const groups = new Map<
     string,
     {
@@ -119,30 +118,6 @@ export function groupFields(fields: AdminCustomListingField[]) {
   }
 
   return Array.from(groups.values()).sort((a, b) => a.label.localeCompare(b.label));
-}
-
-export function getDisplayGroups(input: {
-  activeCategory: string;
-  expandedCategories: Set<string>;
-  groupedFields: Array<{
-    category: string;
-    label: string;
-    fields: AdminCustomListingField[];
-  }>;
-  isFiltered: boolean;
-}): DisplayGroup[] {
-  return input.groupedFields.map((group, groupIndex) => {
-    const isExpanded = input.expandedCategories.has(group.category);
-    const shouldCollapse =
-      input.activeCategory === "all" && !input.isFiltered && groupIndex > 0 && !isExpanded;
-    const visibleFields = shouldCollapse ? group.fields.slice(0, 3) : group.fields;
-
-    return {
-      ...group,
-      visibleFields,
-      hiddenCount: group.fields.length - visibleFields.length,
-    };
-  });
 }
 
 export function sortFields(fields: AdminCustomListingField[]) {

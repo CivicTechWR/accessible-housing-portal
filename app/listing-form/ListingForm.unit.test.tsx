@@ -64,7 +64,7 @@ describe("ListingForm hydration", () => {
   it("keeps the persisted building type selected after the listing loads", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
-    await screen.findByText("Building Type *");
+    await screen.findByText("Building type");
 
     const buildingType = () =>
       document.querySelector('[data-field-name="buildingType"] [role="combobox"]');
@@ -82,7 +82,7 @@ describe("ListingForm hydration", () => {
   it("hydrates the remaining core fields from the editor payload", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
-    await screen.findByText("Title *");
+    await screen.findByText("Title");
 
     const valueOf = (fieldName: string) =>
       (document.querySelector(`[data-field-name="${fieldName}"] input`) as HTMLInputElement | null)
@@ -101,12 +101,36 @@ describe("ListingForm hydration", () => {
     ).toBe("First and last month's rent, refundable");
   });
 
+  it("offers to publish a published listing only once it has unpublished changes", async () => {
+    render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
+    await waitFor(() => expect(title).toHaveValue("123 Main St Apartments"));
+    const publish = () => screen.queryByRole("button", { name: "Publish changes" });
+    const viewListing = () =>
+      screen.queryByRole("link", { name: "View listing (opens in a new tab)" });
+
+    expect(screen.getByRole("status")).toHaveTextContent("Up to date");
+    expect(publish()).toBeNull();
+    expect(viewListing()).toHaveAttribute("href", `/listings/${LISTING_ID}`);
+
+    fireEvent.change(title, { target: { value: "Renamed" } });
+    expect(screen.getByRole("status")).toHaveTextContent("Unpublished changes");
+    expect(publish()).toBeEnabled();
+    expect(viewListing()).toBeNull();
+
+    fireEvent.change(title, { target: { value: "123 Main St Apartments" } });
+    expect(screen.getByRole("status")).toHaveTextContent("Up to date");
+    expect(publish()).toBeNull();
+  });
+
   it("selects, autosaves, reloads, and clears a public non-filterable feature", async () => {
     const feature = {
       id: "housing_provider_open_to_accessibility_modifications",
       name: "Housing Provider Open to Accessibility Modifications",
       description: "The housing provider is willing to discuss accessibility modifications.",
     };
+    // The form shows feature names in sentence case.
+    const switchName = "Housing provider open to accessibility modifications";
     let selected = false;
     const savedSelections: boolean[] = [];
     global.fetch = jest.fn(async (input: unknown, init?: RequestInit) => {
@@ -144,16 +168,22 @@ describe("ListingForm hydration", () => {
     }) as unknown as typeof fetch;
 
     const firstRender = render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
-    await screen.findByText(feature.name);
-    fireEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    // The first category starts open.
+    fireEvent.click(await screen.findByRole("switch", { name: switchName }));
     await waitFor(() => expect(savedSelections).toContain(true), { timeout: 3000 });
     firstRender.unmount();
 
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    // The category lists the saved feature for when it's closed, and its switch is on.
+    const category = await screen.findByRole("button", { name: /^Other/ });
+    await waitFor(() => expect(category).toHaveTextContent(switchName));
     await waitFor(() =>
-      expect(screen.getByRole("radio", { name: "Yes" }).getAttribute("aria-checked")).toBe("true"),
+      expect(screen.getByRole("switch", { name: switchName })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      ),
     );
-    fireEvent.click(screen.getByRole("radio", { name: "No" }));
+    fireEvent.click(screen.getByRole("switch", { name: switchName }));
     await waitFor(() => expect(savedSelections).toEqual([true, false]), { timeout: 3000 });
   });
 
@@ -258,7 +288,7 @@ describe("ListingForm hydration", () => {
     const city = screen.getByRole("textbox", { name: (name) => name.startsWith("City") });
     await waitFor(() => expect(editorRequests).toBe(1));
 
-    fireEvent.click(screen.getByRole("button", { name: "Publish Listing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish listing" }));
     await waitFor(() => expect(title).toBeInvalid());
     expect(city).toBeInvalid();
 
@@ -296,7 +326,7 @@ describe("ListingForm autosave status", () => {
     fireEvent.change(title, { target: { value } });
   }
 
-  it("keeps showing Saved after an autosave until the next edit", async () => {
+  it("keeps showing Draft saved after an autosave until the next edit", async () => {
     const patches = mockDraftApi(() => ({
       ok: true,
       status: 200,
@@ -306,12 +336,12 @@ describe("ListingForm autosave status", () => {
     await editTitle("Renamed");
 
     expect(screen.getByRole("status")).toHaveTextContent("Saving...");
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"), {
       timeout: 3000,
     });
     // Well past the save and the refetch it triggers.
     await new Promise((resolve) => setTimeout(resolve, 500));
-    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    expect(screen.getByRole("status")).toHaveTextContent("Draft saved");
 
     fireEvent.change(screen.getByRole("textbox", { name: (name) => name.startsWith("Title") }), {
       target: { value: "Renamed again" },
@@ -323,7 +353,7 @@ describe("ListingForm autosave status", () => {
         timeout: 3000,
       },
     );
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"));
   });
 
   it("keeps a failed autosave's error on screen, then tries the same change again", async () => {
@@ -346,7 +376,7 @@ describe("ListingForm autosave status", () => {
     expect(patches).toHaveLength(1);
 
     serverUp = true;
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"), {
       timeout: 8000,
     });
     expect(patches.map((patch) => patch.title)).toEqual(["Renamed", "Renamed"]);
@@ -386,7 +416,7 @@ describe("ListingForm autosave status", () => {
         expect(patches.map((patch) => patch.title)).toEqual(["Renamed", "123 Main St Apartments"]),
       { timeout: 3000 },
     );
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"));
   });
 });
 
@@ -423,7 +453,7 @@ describe("ListingForm new listing autosave", () => {
 
     // A different change saves without waiting for the retry delay.
     fireEvent.change(title, { target: { value: "New home on Main" } });
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"), {
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved"), {
       timeout: 3000,
     });
 
@@ -442,17 +472,16 @@ describe("ListingForm live preview", () => {
     window.scrollTo = jest.fn() as unknown as typeof window.scrollTo;
   });
 
-  // Below lg the layout divider is hidden, so this button is the only way back to the card.
   it("returns from the details preview to the card preview", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
     fireEvent.click(await screen.findByRole("button", { name: /^View listing:/ }));
     expect(screen.queryByRole("button", { name: /^View listing:/ })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Back to card preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show card preview" }));
 
     expect(screen.getByRole("button", { name: /^View listing:/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Back to card preview" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Show full page" })).toBeTruthy();
   });
 });
 
@@ -486,7 +515,7 @@ describe("ListingForm publishing", () => {
     fireEvent.change(title, { target: { value: "Renamed" } });
     await waitFor(() => expect(requests).toEqual(["PATCH started"]), { timeout: 3000 });
 
-    const publish = screen.getByRole("button", { name: "Publish Listing" });
+    const publish = screen.getByRole("button", { name: "Publish listing" });
     expect(publish).toBeEnabled();
     fireEvent.click(publish);
     // The publish waits for the save that is in flight.
@@ -520,7 +549,7 @@ describe("ListingForm publishing", () => {
 
     // Publish before the autosave for this edit has fired.
     fireEvent.change(title, { target: { value: "Renamed" } });
-    fireEvent.click(screen.getByRole("button", { name: "Publish Listing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish listing" }));
     await waitFor(() => expect(requests).toEqual(["PUT"]), { timeout: 3000 });
 
     // The listing page has not replaced the form yet. Longer than the autosave delay.

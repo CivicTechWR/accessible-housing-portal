@@ -1,22 +1,100 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertBanner } from "@/components/ui/alert-banner";
+import { Badge, StatusBadge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Key01Icon } from "@hugeicons/core-free-icons";
+
+const SURFACE = "rounded-xl bg-card shadow-xs ring-1 ring-foreground/10 dark:ring-foreground/15";
+
+/**
+ * One settings group. Below lg, a card with the title and description above the controls. From
+ * lg, a settings row: the title and description in a 280px column on the left, and the controls
+ * in a card on the right.
+ */
+function SettingsSection({
+  title,
+  status,
+  description,
+  className,
+  children,
+}: {
+  title: string;
+  /** Beside the title, such as whether the method is set up. */
+  status?: ReactNode;
+  description: ReactNode;
+  /** Classes for the card that holds the controls, such as its spacing. */
+  className?: string;
+  children: ReactNode;
+}) {
+  const headingId = useId();
+  return (
+    <section
+      aria-labelledby={headingId}
+      className={cn(
+        SURFACE,
+        "p-5 text-sm text-card-foreground lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:gap-10 lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none lg:ring-0",
+      )}
+    >
+      <div className="mb-5 space-y-1.5 lg:mb-0 lg:pt-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 id={headingId} className="text-lg">
+            {title}
+          </h2>
+          {status}
+        </div>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      <div
+        className={cn(
+          "lg:rounded-xl lg:bg-card lg:p-5 lg:shadow-xs lg:ring-1 lg:ring-foreground/10 lg:dark:ring-foreground/15",
+          className,
+        )}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/** Whether a sign-in method is set up, beside its section title. Nothing while it loads. */
+function SetupStatus({ isOn }: { isOn: boolean | undefined }) {
+  if (isOn === undefined) return null;
+  return isOn ? (
+    <StatusBadge tone="success">On</StatusBadge>
+  ) : (
+    <StatusBadge tone="neutral">Not set up</StatusBadge>
+  );
+}
 
 export function AccountSecurity() {
   const { data: session } = authClient.useSession();
   const { data: passkeys, refetch } = authClient.useListPasskeys();
   const [message, setMessage] = useState("");
   const [passkeyMessage, setPasskeyMessage] = useState("");
+  // The name field shows only once the user starts adding a passkey.
+  const [isNamingPasskey, setIsNamingPasskey] = useState(false);
+  const addPasskeyButtonRef = useRef<HTMLButtonElement>(null);
+  // Closing the name form removes the focused control, so focus returns to "Add passkey".
+  function closePasskeyForm() {
+    setIsNamingPasskey(false);
+    requestAnimationFrame(() => addPasskeyButtonRef.current?.focus());
+  }
   const [passwordErrors, setPasswordErrors] = useState<{
     password?: string;
     newPassword?: string;
     confirmPassword?: string;
   }>({});
   const [pending, setPending] = useState(false);
+  // The authenticator card asks for the password only once setup (or disabling) is started.
+  const [twoFactorPasswordOpen, setTwoFactorPasswordOpen] = useState(false);
   const [setup, setSetup] = useState<{ totpURI: string; backupCodes: string[] } | null>(null);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [sessions, setSessions] = useState<(typeof authClient.$Infer.Session.session)[] | null>(
@@ -37,7 +115,6 @@ export function AccountSecurity() {
   function check(error: { message?: string } | null) {
     if (error) throw new Error(error.message ?? "Unable to complete this action.");
   }
-  const sectionClass = "space-y-4 rounded-2xl border border-border bg-card p-6";
 
   async function addPasskey(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,7 +135,7 @@ export function AccountSecurity() {
         );
         return;
       }
-      form.reset();
+      closePasskeyForm();
       setPasskeyMessage("Passkey added.");
       await refetch();
     } catch {
@@ -130,97 +207,163 @@ export function AccountSecurity() {
         }
       }
       form.reset();
+      setTwoFactorPasswordOpen(false);
     });
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:space-y-10">
       {message && (
-        <p role="status" className="rounded-xl border p-4 text-sm">
+        <AlertBanner variant="info" role="status">
           {message}
-        </p>
+        </AlertBanner>
       )}
-      <section className={sectionClass}>
-        <h2 className="text-xl font-semibold">Passkeys</h2>
-        <p className="text-sm text-muted-foreground">
-          Sign in with your device's screen lock, biometrics, or a security key. Passkeys work only
-          on the domain where you add them.
-        </p>
-        <form className="flex flex-wrap gap-3" onSubmit={addPasskey}>
-          <Input
-            name="name"
-            aria-label="Passkey name"
-            placeholder="Passkey name, e.g. laptop"
-            className="sm:max-w-xs"
-          />
-          <Button disabled={pending}>Add passkey</Button>
-        </form>
+      <SettingsSection
+        title="Passkeys"
+        status={<SetupStatus isOn={passkeys ? passkeys.length > 0 : undefined} />}
+        description="Sign in with your device's screen lock, biometrics, or a security key. Passkeys work only on the domain where you add them."
+        className="space-y-4"
+      >
+        {passkeys && passkeys.length > 0 ? (
+          <ul className="divide-y rounded-lg border">
+            {passkeys.map((key) => (
+              <li key={key.id} className="flex items-center justify-between gap-4 px-4 py-2.5">
+                <span className="flex min-w-0 items-center gap-2.5 text-sm font-medium">
+                  <HugeiconsIcon
+                    icon={Key01Icon}
+                    strokeWidth={2}
+                    className="size-4 shrink-0 text-muted-foreground"
+                    aria-hidden
+                  />
+                  <span className="truncate">{key.name || "Passkey"}</span>
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() =>
+                    void run(async () => {
+                      const result = await authClient.passkey.deletePasskey({ id: key.id });
+                      check(result.error);
+                      await refetch();
+                      setMessage("Passkey removed.");
+                    })
+                  }
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {passkeys?.length === 0 && (
+          <p className="text-sm text-muted-foreground">You haven't added a passkey yet.</p>
+        )}
+        {isNamingPasskey ? (
+          <form className="space-y-4" onSubmit={addPasskey}>
+            <div className="space-y-2">
+              <Label htmlFor="passkey-name">Passkey name (optional)</Label>
+              <Input id="passkey-name" name="name" aria-describedby="passkey-name-hint" autoFocus />
+              <p id="passkey-name-hint" className="text-sm text-muted-foreground">
+                Name it after the device, such as "Work laptop".
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" disabled={pending}>
+                Add passkey
+              </Button>
+              <Button type="button" variant="ghost" onClick={closePasskeyForm}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button
+            ref={addPasskeyButtonRef}
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setPasskeyMessage("");
+              setIsNamingPasskey(true);
+            }}
+          >
+            Add passkey
+          </Button>
+        )}
         {passkeyMessage && (
           <p role="status" className="text-sm">
             {passkeyMessage}
           </p>
         )}
-        <ul className="space-y-3">
-          {passkeys?.map((key) => (
-            <li key={key.id} className="flex items-center justify-between gap-4">
-              <span>{key.name || "Passkey"}</span>
+      </SettingsSection>
+      <SettingsSection
+        title="Authenticator app"
+        status={<SetupStatus isOn={session ? Boolean(session.user.twoFactorEnabled) : undefined} />}
+        description={
+          session?.user.twoFactorEnabled
+            ? "Password sign-in requires an authenticator or recovery code. Passkey sign-in uses your device's verification."
+            : "Use an app to confirm it's you when you sign in with a password."
+        }
+        className="space-y-6"
+      >
+        {twoFactorPasswordOpen ? (
+          <form onSubmit={configureTwoFactor} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="two-factor-password">Current password</Label>
+              <Input
+                id="two-factor-password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                autoFocus
+              />
+            </div>
+            <div className="flex flex-wrap gap-3">
               <Button
+                variant={session?.user.twoFactorEnabled ? "destructive" : "default"}
+                disabled={pending}
+              >
+                {session?.user.twoFactorEnabled ? "Disable authenticator" : "Continue"}
+              </Button>
+              <Button
+                type="button"
                 variant="outline"
                 disabled={pending}
-                onClick={() =>
-                  void run(async () => {
-                    const result = await authClient.passkey.deletePasskey({ id: key.id });
-                    check(result.error);
-                    await refetch();
-                    setMessage("Passkey removed.");
-                  })
-                }
+                onClick={() => setTwoFactorPasswordOpen(false)}
               >
-                Remove
+                Cancel
               </Button>
-            </li>
-          ))}
-        </ul>
-        {passkeys?.length === 0 && (
-          <p className="text-sm text-muted-foreground">No passkeys added yet.</p>
-        )}
-      </section>
-      <section className={sectionClass}>
-        <h2 className="text-xl font-semibold">Authenticator app</h2>
-        <p className="text-sm text-muted-foreground">
-          {session?.user.twoFactorEnabled
-            ? "Enabled. Password sign-in requires an authenticator or recovery code. Passkey sign-in uses your device's verification."
-            : "Use an authenticator app to verify password sign-ins."}
-        </p>
-        <form onSubmit={configureTwoFactor} className="space-y-3">
-          <label htmlFor="two-factor-password">Current password</label>
-          <Input
-            id="two-factor-password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-          <Button disabled={pending || !!setup}>
+            </div>
+          </form>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending || !!setup}
+            onClick={() => setTwoFactorPasswordOpen(true)}
+          >
             {session?.user.twoFactorEnabled ? "Disable authenticator" : "Set up authenticator"}
           </Button>
-        </form>
+        )}
         {setup && (
-          <div className="space-y-4">
-            <p>Scan this code with your authenticator app, then enter its six-digit code.</p>
-            <div className="inline-block rounded-xl bg-white p-4">
+          <div className="space-y-4 border-t pt-6">
+            <p className="text-sm">
+              Scan this code with your authenticator app, then enter its six-digit code.
+            </p>
+            <div className="inline-block rounded-xl bg-white p-4 ring-1 ring-foreground/10">
               <QRCodeSVG value={setup.totpURI} size={200} title="Authenticator setup QR code" />
             </div>
             <details>
-              <summary className="cursor-pointer text-sm underline">
+              <summary className="cursor-pointer text-sm font-medium text-primary-text underline-offset-4 hover:underline">
                 Enter setup key manually
               </summary>
-              <code className="break-all text-sm">
+              <code className="mt-2 block rounded-lg bg-muted p-3 font-mono text-sm break-all">
                 {new URL(setup.totpURI).searchParams.get("secret")}
               </code>
             </details>
             <form
-              className="flex gap-3"
+              className="flex flex-col items-start gap-3 sm:flex-row"
               onSubmit={(event) => {
                 event.preventDefault();
                 const code = String(new FormData(event.currentTarget).get("code"));
@@ -238,6 +381,7 @@ export function AccountSecurity() {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 pattern="[0-9]{6}"
+                className="max-w-48"
                 required
               />
               <Button disabled={pending}>Verify and enable</Button>
@@ -245,12 +389,14 @@ export function AccountSecurity() {
           </div>
         )}
         {backupCodes.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="font-semibold">Save your recovery codes</h3>
+          <div className="space-y-3 border-t pt-6">
+            <h3 className="text-base">Save your recovery codes</h3>
             <p className="text-sm">
               Each code works once. Store them somewhere private, separate from your authenticator.
             </p>
-            <pre className="rounded-xl bg-muted p-4 text-sm">{backupCodes.join("\n")}</pre>
+            <pre className="rounded-lg bg-muted p-4 font-mono text-sm">
+              {backupCodes.join("\n")}
+            </pre>
             <Button
               variant="outline"
               onClick={() => {
@@ -263,7 +409,7 @@ export function AccountSecurity() {
         )}
         {session?.user.twoFactorEnabled && (
           <form
-            className="space-y-3"
+            className="space-y-4 border-t pt-6"
             onSubmit={(event) => {
               event.preventDefault();
               const form = event.currentTarget;
@@ -276,135 +422,173 @@ export function AccountSecurity() {
               });
             }}
           >
-            <label htmlFor="recovery-password">Current password to replace recovery codes</label>
+            <div className="space-y-2">
+              <Label htmlFor="recovery-password">Current password to replace recovery codes</Label>
+              <Input
+                id="recovery-password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                aria-describedby="recovery-password-hint"
+              />
+              <p id="recovery-password-hint" className="text-sm text-muted-foreground">
+                This invalidates your previous recovery codes.
+              </p>
+            </div>
+            <Button variant="outline" disabled={pending}>
+              Replace recovery codes
+            </Button>
+          </form>
+        )}
+      </SettingsSection>
+      <SettingsSection
+        title="Password"
+        description="Changing your password signs out your other devices."
+      >
+        <form onSubmit={changePassword} className="space-y-4" noValidate>
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Current password</Label>
             <Input
-              id="recovery-password"
+              id="current-password"
               name="password"
               type="password"
               autoComplete="current-password"
               required
+              aria-invalid={!!passwordErrors.password}
+              aria-describedby={passwordErrors.password ? "current-password-error" : undefined}
             />
-            <Button variant="outline" disabled={pending}>
-              Replace recovery codes
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              This invalidates your previous recovery codes.
-            </p>
-          </form>
-        )}
-      </section>
-      <section className={sectionClass}>
-        <h2 className="text-xl font-semibold">Password</h2>
-        <form onSubmit={changePassword} className="space-y-3" noValidate>
-          <label htmlFor="current-password">Current password</label>
-          <Input
-            id="current-password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            aria-invalid={!!passwordErrors.password}
-            aria-describedby={passwordErrors.password ? "current-password-error" : undefined}
-          />
-          {passwordErrors.password && (
-            <p id="current-password-error" role="alert" className="text-sm text-destructive">
-              {passwordErrors.password}
-            </p>
-          )}
-          <label htmlFor="new-password">New password, 12 to 128 characters</label>
-          <Input
-            id="new-password"
-            name="newPassword"
-            type="password"
-            autoComplete="new-password"
-            minLength={12}
-            maxLength={128}
-            required
-            aria-invalid={!!passwordErrors.newPassword}
-            aria-describedby={passwordErrors.newPassword ? "new-password-error" : undefined}
-          />
-          {passwordErrors.newPassword && (
-            <p id="new-password-error" role="alert" className="text-sm text-destructive">
-              {passwordErrors.newPassword}
-            </p>
-          )}
-          <label htmlFor="confirm-password">Confirm new password</label>
-          <Input
-            id="confirm-password"
-            name="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            minLength={12}
-            maxLength={128}
-            required
-            aria-invalid={!!passwordErrors.confirmPassword}
-            aria-describedby={passwordErrors.confirmPassword ? "confirm-password-error" : undefined}
-          />
-          {passwordErrors.confirmPassword && (
-            <p id="confirm-password-error" role="alert" className="text-sm text-destructive">
-              {passwordErrors.confirmPassword}
-            </p>
-          )}
+            {passwordErrors.password && (
+              <p id="current-password-error" role="alert" className="text-sm text-destructive">
+                {passwordErrors.password}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New password</Label>
+            <Input
+              id="new-password"
+              name="newPassword"
+              type="password"
+              autoComplete="new-password"
+              minLength={12}
+              maxLength={128}
+              required
+              aria-invalid={!!passwordErrors.newPassword}
+              aria-describedby={
+                passwordErrors.newPassword ? "new-password-error" : "new-password-hint"
+              }
+            />
+            {passwordErrors.newPassword ? (
+              <p id="new-password-error" role="alert" className="text-sm text-destructive">
+                {passwordErrors.newPassword}
+              </p>
+            ) : (
+              <p id="new-password-hint" className="text-sm text-muted-foreground">
+                Use 12 to 128 characters.
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm new password</Label>
+            <Input
+              id="confirm-password"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              minLength={12}
+              maxLength={128}
+              required
+              aria-invalid={!!passwordErrors.confirmPassword}
+              aria-describedby={
+                passwordErrors.confirmPassword ? "confirm-password-error" : undefined
+              }
+            />
+            {passwordErrors.confirmPassword && (
+              <p id="confirm-password-error" role="alert" className="text-sm text-destructive">
+                {passwordErrors.confirmPassword}
+              </p>
+            )}
+          </div>
           <Button disabled={pending}>Change password</Button>
         </form>
-      </section>
-      <section className={sectionClass}>
-        <h2 className="text-xl font-semibold">Signed-in devices</h2>
-        <Button
-          variant="outline"
-          disabled={pending}
-          onClick={() =>
-            void run(async () => {
-              const result = await authClient.listSessions();
-              check(result.error);
-              setSessions(result.data);
-            })
-          }
-        >
-          Show sessions
-        </Button>
-        <ul className="space-y-4">
-          {sessions?.map((item) => (
-            <li key={item.id} className="space-y-2 border-t pt-3">
-              <p className="break-words text-sm">
-                {item.userAgent || "Unknown device"}
-                {item.id === session?.session.id ? " • Current session" : ""}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Created {new Date(item.createdAt).toLocaleString()}
-              </p>
-              {item.id !== session?.session.id && (
-                <Button
-                  variant="outline"
-                  disabled={pending}
-                  onClick={() =>
-                    void run(async () => {
-                      const result = await authClient.revokeSession({ token: item.token });
-                      check(result.error);
-                      setSessions(sessions.filter((other) => other.id !== item.id));
-                    })
-                  }
-                >
-                  Sign out device
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
-        <Button
-          disabled={pending}
-          onClick={() =>
-            void run(async () => {
-              const result = await authClient.revokeOtherSessions();
-              check(result.error);
-              setSessions(null);
-              setMessage("Other sessions have been signed out.");
-            })
-          }
-        >
-          Sign out all other devices
-        </Button>
-      </section>
+      </SettingsSection>
+      <SettingsSection
+        title="Signed-in devices"
+        description="See where your account is signed in, and sign out devices you don't recognize."
+        className="space-y-4"
+      >
+        {sessions ? (
+          <ul className="divide-y rounded-lg border">
+            {sessions.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-sm break-words">
+                    {item.userAgent || "Unknown device"}
+                    {item.id === session?.session.id ? (
+                      <Badge className="ml-2 align-middle">Current session</Badge>
+                    ) : null}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Signed in {new Date(item.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                {item.id !== session?.session.id && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 self-start sm:self-auto"
+                    disabled={pending}
+                    onClick={() =>
+                      void run(async () => {
+                        const result = await authClient.revokeSession({ token: item.token });
+                        check(result.error);
+                        setSessions(sessions.filter((other) => other.id !== item.id));
+                      })
+                    }
+                  >
+                    Sign out device
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <div className="flex flex-wrap gap-3">
+          {!sessions ? (
+            <Button
+              variant="outline"
+              disabled={pending}
+              onClick={() =>
+                void run(async () => {
+                  const result = await authClient.listSessions();
+                  check(result.error);
+                  setSessions(result.data);
+                })
+              }
+            >
+              Show sessions
+            </Button>
+          ) : null}
+          <Button
+            variant="destructive"
+            disabled={pending}
+            onClick={() =>
+              void run(async () => {
+                const result = await authClient.revokeOtherSessions();
+                check(result.error);
+                setSessions(null);
+                setMessage("Other sessions have been signed out.");
+              })
+            }
+          >
+            Sign out all other devices
+          </Button>
+        </div>
+      </SettingsSection>
     </div>
   );
 }

@@ -22,7 +22,13 @@ import {
   useDialogOpenerFocus,
 } from "@/components/ui/dialog-shell";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { type BulkEditPayload } from "../custom-listing-fields-dashboard-utils";
 import { CategoryCombobox } from "./CategoryCombobox";
 
@@ -89,7 +95,7 @@ export function BulkEditDialog({
           onInteractOutside={handleDismiss}
         >
           <DialogHeader>
-            <DialogTitle>Bulk Edit Fields</DialogTitle>
+            <DialogTitle>Bulk edit fields</DialogTitle>
             <DialogDescription>
               Apply changes to {selectedCount} selected {selectedCount === 1 ? "field" : "fields"}.
               Applicability changes affect future duplications; existing duplicated listings are
@@ -116,7 +122,7 @@ export function BulkEditDialog({
                       onValueChange={field.onChange}
                       disabled={!categoryEnabled || isSaving}
                     />
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -133,17 +139,22 @@ export function BulkEditDialog({
                 name="appliesTo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormControl>
-                      <NativeSelect
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={!applicabilityEnabled || isSaving}
-                      >
-                        <option value="building">Building — shared across units</option>
-                        <option value="unit">Unit — specific to one unit</option>
-                      </NativeSelect>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={!applicabilityEnabled || isSaving}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper">
+                        <SelectItem value="building">Building — shared across units</SelectItem>
+                        <SelectItem value="unit">Unit — specific to one unit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -160,17 +171,22 @@ export function BulkEditDialog({
                 name="visibility"
                 render={({ field }) => (
                   <FormItem>
-                    <FormControl>
-                      <NativeSelect
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={!visibilityEnabled || isSaving}
-                      >
-                        <option value="public">Public</option>
-                        <option value="internal">Internal</option>
-                      </NativeSelect>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={!visibilityEnabled || isSaving}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper">
+                        <SelectItem value="public">Public</SelectItem>
+                        <SelectItem value="internal">Internal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -187,17 +203,22 @@ export function BulkEditDialog({
                 name="filterableOnly"
                 render={({ field }) => (
                   <FormItem>
-                    <FormControl>
-                      <NativeSelect
-                        value={field.value ? "yes" : "no"}
-                        onChange={(event) => field.onChange(event.target.value === "yes")}
-                        disabled={!filterableEnabled || isSaving}
-                      >
-                        <option value="yes">Filterable</option>
-                        <option value="no">Not filterable</option>
-                      </NativeSelect>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
+                    <Select
+                      value={field.value ? "yes" : "no"}
+                      onValueChange={(value) => field.onChange(value === "yes")}
+                      disabled={!filterableEnabled || isSaving}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper">
+                        <SelectItem value="yes">Filterable</SelectItem>
+                        <SelectItem value="no">Not filterable</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -214,17 +235,22 @@ export function BulkEditDialog({
                 name="required"
                 render={({ field }) => (
                   <FormItem>
-                    <FormControl>
-                      <NativeSelect
-                        value={field.value ? "yes" : "no"}
-                        onChange={(event) => field.onChange(event.target.value === "yes")}
-                        disabled={!requiredEnabled || isSaving}
-                      >
-                        <option value="yes">Required</option>
-                        <option value="no">Not required</option>
-                      </NativeSelect>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
+                    <Select
+                      value={field.value ? "yes" : "no"}
+                      onValueChange={(value) => field.onChange(value === "yes")}
+                      disabled={!requiredEnabled || isSaving}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper">
+                        <SelectItem value="yes">Required</SelectItem>
+                        <SelectItem value="no">Not required</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -240,7 +266,7 @@ export function BulkEditDialog({
               Cancel
             </Button>
             <Button type="submit" size="lg" disabled={isSaving}>
-              {isSaving ? "Applying..." : "Apply Bulk Edit"}
+              {isSaving ? "Applying..." : "Apply bulk edit"}
             </Button>
           </DialogFooter>
         </DialogFormPanel>

@@ -1,16 +1,14 @@
 "use client";
 
-import type { DragEvent } from "react";
+import { useId, useState, type DragEvent } from "react";
 import { ArrowDown01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
-import type {
-  AdminCustomListingField,
-  UpdateCustomListingFieldInput,
-} from "@/shared/schemas/custom-listing-fields";
+import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fields";
 import {
   FIELD_HELP_TEXT,
   TABLE_COLUMNS,
@@ -21,7 +19,7 @@ import {
   type SortKey,
   type VisibilityFilter,
 } from "../custom-listing-fields-dashboard-utils";
-import { CategoryTab, DropIndicatorLine, FieldRow, FilterSelect, SortHeader } from "./FieldRow";
+import { DropIndicatorLine, FieldRow, FilterSelect, SortHeader } from "./FieldRow";
 
 type CategoryStat = {
   category: string;
@@ -31,7 +29,6 @@ type CategoryStat = {
 
 export function CustomListingFieldsTable({
   categories,
-  categoryOptions,
   categoryFilter,
   visibilityFilter,
   search,
@@ -49,21 +46,15 @@ export function CustomListingFieldsTable({
   onClearSelection,
   onOpenBulkEdit,
   onSort,
-  onExpandCategory,
   onRowSelectToggle,
   onRowDragStart,
   onRowDragEnd,
   onRowDragOver,
   onRowDrop,
+  onEditField,
   onDeleteField,
-  onTextChange,
-  onApplicabilityChange,
-  onVisibilityChange,
-  onFilterableChange,
-  onRequiredChange,
 }: {
   categories: CategoryStat[];
-  categoryOptions: string[];
   categoryFilter: string;
   visibilityFilter: VisibilityFilter;
   search: string;
@@ -81,7 +72,6 @@ export function CustomListingFieldsTable({
   onClearSelection: () => void;
   onOpenBulkEdit: () => void;
   onSort: (sortKey: SortKey) => void;
-  onExpandCategory: (category: string) => void;
   onRowSelectToggle: (fieldId: string, shiftKey: boolean) => void;
   onRowDragStart: (
     event: DragEvent<HTMLButtonElement>,
@@ -91,210 +81,172 @@ export function CustomListingFieldsTable({
   onRowDragEnd: () => void;
   onRowDragOver: (event: DragEvent<HTMLDivElement>, field: AdminCustomListingField) => void;
   onRowDrop: (event: DragEvent<HTMLDivElement>, field: AdminCustomListingField) => void;
+  onEditField: (field: AdminCustomListingField) => void;
   onDeleteField: (field: AdminCustomListingField) => void;
-  onTextChange: (fieldId: string, payload: UpdateCustomListingFieldInput) => Promise<void>;
-  onApplicabilityChange: (fieldId: string, appliesTo: AdminCustomListingField["appliesTo"]) => void;
-  onVisibilityChange: (fieldId: string, publicOnly: boolean) => void;
-  onFilterableChange: (fieldId: string, filterableOnly: boolean) => void;
-  onRequiredChange: (fieldId: string, required: boolean) => void;
 }) {
-  return (
-    <>
-      <div className="mt-8 border-b border-border">
-        <div className="flex gap-7 overflow-x-auto">
-          <CategoryTab
-            isActive={categoryFilter === "all"}
-            label="All Fields"
-            onClick={() => onCategoryFilterChange("all")}
-          />
-          {categories.map((category) => (
-            <CategoryTab
-              key={category.category}
-              isActive={categoryFilter === category.category}
-              label={category.label}
-              count={category.count}
-              onClick={() => onCategoryFilterChange(category.category)}
-            />
-          ))}
-        </div>
-      </div>
+  const hasFilters = search !== "" || categoryFilter !== "all" || visibilityFilter !== "all";
+  const groupIdPrefix = useId();
+  // Categories the admin has folded away. Every group starts open.
+  const [collapsedCategories, setCollapsedCategories] = useState<ReadonlySet<string>>(new Set());
+  const toggleCategory = (category: string) =>
+    setCollapsedCategories((current) => {
+      const next = new Set(current);
+      if (!next.delete(category)) next.add(category);
+      return next;
+    });
 
-      <div className="mt-6 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-          <label className="relative block w-full xl:w-80">
+  return (
+    // The search and filters sit in the card's header, as on the Users page.
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="flex flex-col gap-3 border-b border-border p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <label className="relative block w-full md:flex-1">
             <span className="sr-only">Search fields</span>
             <HugeiconsIcon
               icon={Search01Icon}
               strokeWidth={2}
-              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
             />
             <Input
+              type="search"
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search fields..."
-              className="h-10 rounded-md bg-background pl-11 text-sm"
+              placeholder="Search fields"
+              className="pl-9"
             />
           </label>
 
-          <FilterSelect
-            ariaLabel="Filter by category"
-            value={categoryFilter}
-            onChange={onCategoryFilterChange}
-          >
-            <option value="all">Category: All</option>
-            {categories.map((category) => (
-              <option key={category.category} value={category.category}>
-                Category: {category.label}
-              </option>
-            ))}
-          </FilterSelect>
+          <div className="grid grid-cols-2 gap-3 md:flex">
+            <FilterSelect
+              ariaLabel="Filter by category"
+              className="md:w-52"
+              value={categoryFilter}
+              onChange={onCategoryFilterChange}
+              options={[
+                { value: "all", label: "All categories" },
+                ...categories.map((category) => ({
+                  value: category.category,
+                  label: `${toSentenceCase(category.label)} (${category.count})`,
+                })),
+              ]}
+            />
 
-          <FilterSelect
-            ariaLabel="Filter by visibility"
-            value={visibilityFilter}
-            onChange={(value) => onVisibilityFilterChange(value as VisibilityFilter)}
-          >
-            <option value="all">Visibility: All</option>
-            <option value="public">Visibility: Public</option>
-            <option value="internal">Visibility: Internal</option>
-          </FilterSelect>
+            <FilterSelect
+              ariaLabel="Filter by visibility"
+              value={visibilityFilter}
+              onChange={(value) => onVisibilityFilterChange(value as VisibilityFilter)}
+              options={[
+                { value: "all", label: "Any visibility" },
+                { value: "public", label: "Public" },
+                { value: "internal", label: "Internal" },
+              ]}
+            />
+          </div>
 
-          <button
-            type="button"
-            className="h-10 px-3 text-left text-sm font-medium text-foreground/80 hover:text-primary-text"
-            onClick={onClearFilters}
-          >
-            Clear filters
-          </button>
+          {hasFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="self-start md:self-auto"
+              onClick={onClearFilters}
+            >
+              Clear filters
+            </Button>
+          ) : null}
         </div>
 
         {selectedFieldCount > 0 ? (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center xl:justify-end">
-            <span className="text-sm font-medium text-foreground">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-sm font-medium text-foreground" role="status">
               {selectedFieldCount} {selectedFieldCount === 1 ? "field" : "fields"} selected
             </span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="bg-background"
-                onClick={onClearSelection}
-              >
-                Clear selection
-              </Button>
-              <Button type="button" size="lg" onClick={onOpenBulkEdit}>
-                Bulk Edit
-              </Button>
-            </div>
+            <Button type="button" variant="ghost" onClick={onClearSelection}>
+              Clear selection
+            </Button>
+            <Button type="button" variant="outline" onClick={onOpenBulkEdit}>
+              Bulk edit
+            </Button>
           </div>
         ) : null}
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-md border border-border bg-background">
-        <div className="overflow-x-auto">
-          <div
-            className={cn(
-              "grid border-b border-border bg-muted/50",
-              TABLE_MIN_WIDTH,
-              TABLE_COLUMNS,
-            )}
-          >
-            <div />
-            <div className="py-4 pr-3 text-xs font-medium text-foreground/80">Order</div>
-            <SortHeader
-              label="Label"
-              sortKey="label"
-              helperText={FIELD_HELP_TEXT.label}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Key"
-              sortKey="key"
-              helperText={FIELD_HELP_TEXT.key}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Category"
-              sortKey="category"
-              helperText={FIELD_HELP_TEXT.category}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Applies To"
-              sortKey="appliesTo"
-              helperText={FIELD_HELP_TEXT.appliesTo}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Description"
-              sortKey="description"
-              helperText={FIELD_HELP_TEXT.description}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Help Text"
-              sortKey="helpText"
-              helperText={FIELD_HELP_TEXT.helpText}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Visibility"
-              sortKey="visibility"
-              helperText={FIELD_HELP_TEXT.visibility}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Filterable"
-              sortKey="filterable"
-              helperText={FIELD_HELP_TEXT.filterable}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Required"
-              sortKey="required"
-              helperText={FIELD_HELP_TEXT.required}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <div className="px-4 py-4 text-xs font-medium text-foreground/80">Actions</div>
+      <div className="overflow-x-auto">
+        <div className={cn("grid border-b border-border bg-muted", TABLE_MIN_WIDTH, TABLE_COLUMNS)}>
+          <div>
+            <span className="sr-only">Reorder</span>
           </div>
+          <SortHeader
+            label="Field"
+            sortKey="label"
+            helperText={FIELD_HELP_TEXT.label}
+            activeSortKey={sortKey}
+            direction={sortDirection}
+            onSort={onSort}
+          />
+          <SortHeader
+            label="Applies to"
+            sortKey="appliesTo"
+            helperText={FIELD_HELP_TEXT.appliesTo}
+            activeSortKey={sortKey}
+            direction={sortDirection}
+            onSort={onSort}
+          />
+          <SortHeader
+            label="Description"
+            sortKey="description"
+            helperText={FIELD_HELP_TEXT.description}
+            activeSortKey={sortKey}
+            direction={sortDirection}
+            onSort={onSort}
+          />
+          <div>
+            <span className="sr-only">Actions</span>
+          </div>
+        </div>
 
-          <div className={TABLE_MIN_WIDTH}>
-            {displayGroups.length === 0 ? (
-              <div className="px-8 py-14 text-center text-muted-foreground">
-                No custom fields match these filters.
-              </div>
-            ) : (
-              displayGroups.map((group) => {
-                return (
-                  <div key={group.category}>
-                    <div className="flex h-10 items-center gap-3 border-y border-border bg-muted/20 pl-[84px] pr-4">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-foreground/80">
-                        {group.label}
+        <div className={TABLE_MIN_WIDTH}>
+          {displayGroups.length === 0 ? (
+            <div className="px-8 py-14 text-center text-muted-foreground">
+              No custom fields match these filters.
+            </div>
+          ) : (
+            displayGroups.map((group, groupIndex) => {
+              const isOpen = !collapsedCategories.has(group.category);
+              const rowsId = `${groupIdPrefix}-group-${groupIndex}`;
+              return (
+                <div key={group.category}>
+                  {/* A heading row between rules, rather than a shaded band, so each group reads
+                        as a section of one list. Every group, the first included, gets the same
+                        space above; the first needs no top rule. The heading folds the group away
+                        so a long list can be scanned. */}
+                  <h2 className="border-b border-border px-2 py-1.5 [:not(:first-child)>&]:border-t">
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls={rowsId}
+                      onClick={() => toggleCategory(group.category)}
+                      className="flex min-h-10 w-full items-center gap-2 rounded-lg px-2 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                    >
+                      <HugeiconsIcon
+                        icon={ArrowDown01Icon}
+                        strokeWidth={2}
+                        className={cn(
+                          "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
+                          !isOpen && "-rotate-90",
+                        )}
+                        aria-hidden
+                      />
+                      <span className="text-[15px] font-bold text-foreground">
+                        {toSentenceCase(group.label)}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-sm font-normal text-muted-foreground">
                         {group.fields.length} {group.fields.length === 1 ? "field" : "fields"}
                       </span>
-                    </div>
-                    {group.visibleFields.map((field, index) => (
+                    </button>
+                  </h2>
+                  <div id={rowsId} hidden={!isOpen}>
+                    {group.fields.map((field, index) => (
                       <div key={field.id}>
                         {dropIndicator?.category === group.category &&
                         dropIndicator.insertionIndex === index ? (
@@ -304,7 +256,6 @@ export function CustomListingFieldsTable({
                           field={field}
                           isPending={pendingFieldId === field.id}
                           isSelected={selectedFieldIds.has(field.id)}
-                          categoryOptions={categoryOptions}
                           onSelectToggle={(event) => onRowSelectToggle(field.id, event.shiftKey)}
                           onDragStart={(event, rowElement) =>
                             onRowDragStart(event, field, rowElement)
@@ -312,42 +263,22 @@ export function CustomListingFieldsTable({
                           onDragEnd={onRowDragEnd}
                           onDragOver={(event) => onRowDragOver(event, field)}
                           onDrop={(event) => onRowDrop(event, field)}
+                          onEdit={() => onEditField(field)}
                           onDelete={() => onDeleteField(field)}
-                          onTextChange={(payload) => onTextChange(field.id, payload)}
-                          onApplicabilityChange={(appliesTo) =>
-                            onApplicabilityChange(field.id, appliesTo)
-                          }
-                          onVisibilityChange={(publicOnly) =>
-                            onVisibilityChange(field.id, publicOnly)
-                          }
-                          onFilterableChange={(filterableOnly) =>
-                            onFilterableChange(field.id, filterableOnly)
-                          }
-                          onRequiredChange={(required) => onRequiredChange(field.id, required)}
                         />
                       </div>
                     ))}
                     {dropIndicator?.category === group.category &&
-                    dropIndicator.insertionIndex === group.visibleFields.length ? (
+                    dropIndicator.insertionIndex === group.fields.length ? (
                       <DropIndicatorLine />
                     ) : null}
-                    {group.hiddenCount > 0 ? (
-                      <button
-                        type="button"
-                        className="flex h-9 w-full items-center justify-center gap-2 border-b border-border text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
-                        onClick={() => onExpandCategory(group.category)}
-                      >
-                        Show more in this category ({group.hiddenCount} more)
-                        <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} className="size-4" />
-                      </button>
-                    ) : null}
                   </div>
-                );
-              })
-            )}
-          </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

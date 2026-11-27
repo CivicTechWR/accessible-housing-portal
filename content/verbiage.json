@@ -1,17 +1,14 @@
 {
   "adminInvite": {
-    "pageTitle": "Admin Invites",
-    "pageDescription": "Invite housing searchers and housing listers by email.",
-    "heading": "Admin invites",
-    "subheading": "Invite housing searchers and housing listers by email.",
-    "formTitle": "Send invitation",
+    "pageTitle": "Invite a user",
+    "pageDescription": "Invite housing navigators and housing providers by email.",
+    "heading": "Invite a user",
+    "subheading": "Invite housing navigators and housing providers by email.",
+    "formTitle": "Invitation details",
     "fields": {
       "nameLabel": "Name",
-      "namePlaceholder": "Jane Doe",
-      "emailLabel": "Invite email",
-      "emailPlaceholder": "name@example.com",
-      "organizationLabel": "Organization",
-      "organizationPlaceholder": "Optional",
+      "emailLabel": "Email",
+      "organizationLabel": "Organization (optional)",
       "roleLabel": "Invite as",
       "rolePlaceholder": "Select a role"
     },
@@ -25,8 +22,8 @@
     },
     "roles": {
       "admin": "Admin",
-      "partner": "Housing Lister",
-      "user": "Housing Searcher"
+      "partner": "Housing provider",
+      "user": "Housing navigator"
     }
   }
 }

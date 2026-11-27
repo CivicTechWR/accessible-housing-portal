@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   defaultInviteRole,
   inviteRoleOptions,
@@ -51,22 +52,21 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
   }, [onResult, state]);
 
   return (
-    <form className="space-y-4" action={action}>
-      <div className="space-y-1.5">
+    <form className="space-y-5" action={action}>
+      <div className="space-y-2">
         <Label htmlFor="invite-name">{copy.nameLabel}</Label>
         <Input
           id="invite-name"
           name="name"
           autoComplete="name"
           required
-          placeholder={copy.namePlaceholder}
           value={name}
           onChange={(event) => setName(event.target.value)}
           disabled={pending}
         />
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label htmlFor="invite-email">{copy.emailLabel}</Label>
         <Input
           id="invite-email"
@@ -74,27 +74,25 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
           type="email"
           autoComplete="email"
           required
-          placeholder={copy.emailPlaceholder}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           disabled={pending}
         />
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label htmlFor="invite-organization">{copy.organizationLabel}</Label>
         <Input
           id="invite-organization"
           name="organization"
           autoComplete="organization"
-          placeholder={copy.organizationPlaceholder}
           value={organization}
           onChange={(event) => setOrganization(event.target.value)}
           disabled={pending}
         />
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label htmlFor="invite-role">{copy.roleLabel}</Label>
         <input type="hidden" name="role" value={role} />
         <Select
@@ -115,20 +113,25 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="sendInviteEmail" defaultChecked disabled={pending} />
-          Send onboarding emails
-        </label>
-        <p className="text-xs text-muted-foreground">
-          Navigators and providers receive a welcome email followed by their account invitation.
-        </p>
+      <div className="flex items-start gap-3">
+        <Checkbox
+          id="invite-send-email"
+          name="sendInviteEmail"
+          defaultChecked
+          disabled={pending}
+          aria-describedby="invite-send-email-hint"
+          className="mt-0.5"
+        />
+        <div className="space-y-1">
+          <Label htmlFor="invite-send-email">Send onboarding emails</Label>
+          <p id="invite-send-email-hint" className="text-sm text-muted-foreground">
+            Navigators and providers receive a welcome email followed by their account invitation.
+          </p>
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <Button type="submit" size="lg" disabled={pending}>
-          {pending ? "Creating invitation..." : "Create invitation"}
-        </Button>
-      </div>
+      <Button type="submit" disabled={pending}>
+        {pending ? "Creating invitation..." : "Create invitation"}
+      </Button>
     </form>
   );
 }

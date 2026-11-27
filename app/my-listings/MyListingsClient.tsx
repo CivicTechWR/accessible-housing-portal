@@ -7,16 +7,20 @@ import { formatDistance } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/app/query-keys";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Image01Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons";
+import { Card, CardContent } from "@/components/ui/card";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   DuplicateListingDialog,
   type DuplicateListingSelection,
 } from "@/app/my-listings/DuplicateListingDialog";
-import { ListingArchiveButton } from "@/app/my-listings/ListingArchiveButton";
+import { ListingActionsMenu } from "@/app/my-listings/ListingActionsMenu";
+import { ListingStatusBadge } from "@/app/my-listings/ListingStatusBadge";
+import { formatArea, formatBaths, formatBeds, formatRent, RENT_PERIOD } from "@/lib/listing-format";
+import { cn } from "@/lib/utils";
 import type { DuplicateListingResponse } from "@/shared/schemas/listings";
 
 type MyListingItem = {
@@ -43,17 +47,32 @@ type MyListingsClientProps = {
   renderedAt: string;
 };
 
-const statusVariantByLabel = {
-  draft: "secondary",
-  published: "default",
-  archived: "outline",
-} as const;
+// The listings service fills these in when a draft has no address yet.
+const PENDING_ADDRESS = "Address pending";
+const PENDING_CITY = "Location pending";
 
-const statusLabelByValue = {
-  draft: "Draft",
-  published: "Published",
-  archived: "Archived",
-} as const;
+function listingLocation(listing: MyListingItem) {
+  const parts = [listing.address, listing.city].filter(
+    (part) => part !== PENDING_ADDRESS && part !== PENDING_CITY,
+  );
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
+/** Rent and rooms as display text, or null for each one a draft hasn't filled in (stored as 0). */
+function listingFacts(listing: MyListingItem) {
+  const isUnsetDraft = (value: number) => listing.status !== "published" && value === 0;
+  const rent = isUnsetDraft(listing.price) ? null : formatRent(listing.price);
+  // A real listing always has a bathroom, so 0 baths means the rooms haven't been entered.
+  // The parts of formatRooms, kept apart so a unit never wraps away from its number.
+  const rooms = isUnsetDraft(listing.baths)
+    ? null
+    : [
+        formatBeds(listing.beds),
+        formatBaths(listing.baths),
+        listing.sqft !== null ? formatArea(listing.sqft) : null,
+      ].filter((fact) => fact !== null);
+  return { rent, rooms };
+}
 
 export function MyListingsClient({ initialListings, renderedAt }: MyListingsClientProps) {
   const router = useRouter();
@@ -192,7 +211,12 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
         </AlertBanner>
       ) : null}
 
-      <div className="grid gap-4">
+      {/* From lg every row shares one set of columns (subgrid), so rent and rooms, the update
+          time and the actions line up down the list whatever each row's text. */}
+      <ul
+        className="grid gap-3 lg:grid-cols-[6rem_minmax(0,1fr)_fit-content(13rem)_fit-content(9rem)_auto] lg:gap-x-6"
+        aria-label="Your listings"
+      >
         {listings.map((listing) => {
           const isArchived = listing.status === "archived";
           const isMutating =
@@ -201,91 +225,124 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
             statusMutation.variables?.nextStatus === "archived" ? "Archiving..." : "Restoring...";
           const isDuplicating =
             duplicateMutation.isPending && duplicateMutation.variables?.listingId === listing.id;
+          const facts = listingFacts(listing);
 
           return (
-            <Card key={listing.id}>
-              <div className="grid gap-4 px-4 md:grid-cols-[220px_1fr]">
-                <div className="overflow-hidden rounded-lg bg-muted/30">
-                  <div className="h-full min-h-44">
-                    {listing.imageUrl ? (
-                      <img
-                        src={listing.imageUrl}
-                        alt={listing.title}
-                        className="h-full w-full object-cover"
+            <li key={listing.id} className="lg:col-span-5 lg:grid lg:grid-cols-subgrid">
+              <Card
+                className={cn(
+                  // Phones: photo and title side by side, the title and address using the full
+                  // width to wrap, then facts and the actions (Edit and the menu) on full-width
+                  // rows. From sm: photo, details, actions in a row. From lg: one row of
+                  // columns — photo, title, rent and rooms, updated, actions.
+                  "grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4 lg:col-span-5 lg:grid-cols-subgrid lg:items-center lg:gap-x-6",
+                  isArchived && "bg-muted/40",
+                )}
+              >
+                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/5 sm:row-span-2 sm:self-center lg:row-span-1">
+                  {listing.imageUrl ? (
+                    <img
+                      src={listing.imageUrl}
+                      alt=""
+                      className={cn("size-full object-cover", isArchived && "opacity-60")}
+                    />
+                  ) : (
+                    <div className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
+                      <HugeiconsIcon
+                        icon={Image01Icon}
+                        strokeWidth={2}
+                        className="size-5"
+                        aria-hidden
                       />
-                    ) : (
-                      <div className="flex h-full min-h-44 items-center justify-center text-sm text-muted-foreground">
-                        No image
-                      </div>
-                    )}
-                  </div>
+                      <span className="text-xs font-medium">No photo</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex min-h-44 flex-col">
-                  <CardHeader className="flex flex-row items-start justify-between gap-6 px-0">
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <CardTitle className="text-xl font-semibold tracking-tight">
-                          {listing.title}
-                        </CardTitle>
-                        <Badge variant={statusVariantByLabel[listing.status]}>
-                          {statusLabelByValue[listing.status]}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {listing.address}, {listing.city}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Updated{" "}
-                        {formatDistance(new Date(listing.updatedAt), now, { addSuffix: true })}
-                      </div>
-                    </div>
+                <div className="min-w-0 space-y-1 sm:self-end lg:self-center">
+                  {/* The chip gets its own line so the title can use the full width to wrap. */}
+                  <ListingStatusBadge status={listing.status} className="mb-1.5" />
+                  <h2 className="text-base text-pretty break-words">{listing.title}</h2>
+                  <p className="text-sm break-words text-muted-foreground sm:truncate">
+                    {listingLocation(listing) ?? "Address not set"}
+                  </p>
+                </div>
 
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">
-                        ${listing.price.toLocaleString("en-CA")}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {listing.beds} bd • {listing.baths} ba
-                        {listing.sqft !== null && <> • {listing.sqft} sqft</>}
-                      </div>
-                    </div>
-                  </CardHeader>
+                <div className="col-span-2 min-w-0 space-y-1 sm:col-span-1 sm:col-start-2 sm:self-start lg:contents">
+                  <p className="text-sm text-foreground lg:col-start-3 lg:row-start-1">
+                    {[
+                      facts.rent === null ? (
+                        <span key="rent" className="text-muted-foreground">
+                          Rent not set
+                        </span>
+                      ) : (
+                        <span key="rent">
+                          <span className="font-bold">{facts.rent}</span>
+                          <span className="text-muted-foreground">{RENT_PERIOD}</span>
+                        </span>
+                      ),
+                      ...(facts.rooms ?? [
+                        <span key="rooms" className="text-muted-foreground">
+                          Rooms not set
+                        </span>,
+                      ]),
+                    ].map((fact, index, all) => (
+                      // Each fact keeps its trailing " ·" and never splits, so a wrapped line
+                      // starts with a fact rather than a dot or an orphaned unit. The spaces
+                      // match the " · " on search cards. From lg the rent heads its column on a
+                      // line of its own, with the rooms underneath.
+                      <span key={index} className={cn(index === 0 && "lg:block lg:text-base")}>
+                        <span className="whitespace-nowrap">
+                          {fact}
+                          {index < all.length - 1 ? (
+                            <span
+                              className={cn("text-muted-foreground", index === 0 && "lg:hidden")}
+                            >
+                              <span aria-hidden> ·</span>
+                              <span className="sr-only">,</span>
+                            </span>
+                          ) : null}
+                        </span>{" "}
+                      </span>
+                    ))}
+                  </p>
+                  <p className="text-sm text-muted-foreground lg:col-start-4 lg:row-start-1">
+                    Updated {formatDistance(new Date(listing.updatedAt), now, { addSuffix: true })}
+                  </p>
+                </div>
 
-                  <CardContent className="mt-auto flex flex-wrap items-center justify-end gap-3 px-0 pt-4">
-                    {!isArchived ? (
-                      <>
-                        {listing.status === "published" ? (
-                          <Button asChild variant="outline">
-                            <Link href={listing.viewUrl}>View listing</Link>
-                          </Button>
-                        ) : null}
-                        <Button asChild>
-                          <Link href={listing.editUrl}>
-                            {listing.status === "draft" ? "Resume draft" : "Edit listing"}
-                          </Link>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={isDuplicating}
-                          onClick={() => {
-                            duplicateMutation.reset();
-                            setDuplicateTarget(listing);
-                          }}
-                        >
-                          {isDuplicating ? "Duplicating..." : "Duplicate"}
-                        </Button>
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        This listing is archived and is no longer publicly visible.
-                      </p>
-                    )}
-                    <ListingArchiveButton
+                <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:justify-end sm:self-center lg:col-start-5 lg:row-span-1">
+                  {isArchived ? (
+                    <p className="mr-auto text-sm text-muted-foreground sm:mr-2 sm:max-w-48 sm:text-right">
+                      This listing is archived and is no longer publicly visible.
+                    </p>
+                  ) : (
+                    // Only "New listing" is solid on this page; each row's Edit is outlined.
+                    <Button asChild variant="outline" className="max-sm:h-11 max-sm:flex-1">
+                      <Link href={listing.editUrl}>
+                        <HugeiconsIcon
+                          icon={PencilEdit02Icon}
+                          strokeWidth={2}
+                          data-icon="inline-start"
+                          aria-hidden
+                        />
+                        {listing.status === "draft" ? "Resume draft" : "Edit"}
+                      </Link>
+                    </Button>
+                  )}
+                  {/* Beside Edit, which takes the rest of the row on phones. */}
+                  <div className="shrink-0">
+                    <ListingActionsMenu
+                      listingTitle={listing.title}
+                      viewUrl={listing.status === "published" ? listing.viewUrl : undefined}
                       isArchived={isArchived}
                       isMutating={isMutating}
+                      isDuplicating={isDuplicating}
                       pendingLabel={pendingLabel}
+                      onDuplicate={() => {
+                        duplicateMutation.reset();
+                        setDuplicateTarget(listing);
+                      }}
                       onArchive={() =>
                         statusMutation.mutate({ listingId: listing.id, nextStatus: "archived" })
                       }
@@ -293,13 +350,13 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                         statusMutation.mutate({ listingId: listing.id, nextStatus: "draft" })
                       }
                     />
-                  </CardContent>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       {duplicateTarget ? (
         <DuplicateListingDialog
