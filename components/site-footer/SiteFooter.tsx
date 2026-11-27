@@ -59,11 +59,14 @@ export function SiteFooter({ className }: { className?: string }) {
             ))}
           </ul>
         </nav>
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <h2 className="text-sm font-semibold text-foreground">Get in touch</h2>
           <ul className="space-y-2">
             <li>
-              <a href={`mailto:${siteConfig.contactEmail}`} className={linkClass}>
+              <a
+                href={`mailto:${siteConfig.contactEmail}`}
+                className={cn(linkClass, "wrap-anywhere")}
+              >
                 {siteConfig.contactEmail}
               </a>
             </li>
