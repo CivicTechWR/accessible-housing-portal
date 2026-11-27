@@ -1,5 +1,12 @@
-import { Card, CardContent } from "../ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Bathtub01Icon,
+  BedDoubleIcon,
+  Image01Icon,
+  SquareArrowExpand01Icon,
+} from "@hugeicons/core-free-icons";
 import Image from "next/image";
 import Link from "next/link";
 import type { Ref } from "react";
@@ -29,45 +36,98 @@ interface ListingsCardProps {
   photoMayNeedSession?: boolean;
 }
 
-const variants = {
-  vertical: {
-    card: "w-full max-w-[320px] flex flex-col min-h-[300px]",
-    image: "w-full h-[160px] sm:h-[175px] lg:h-[190px] shrink-0",
-    imageSizes: "(max-width: 640px) 260px, (max-width: 1024px) 290px, 320px",
-    content: "p-4 flex flex-col flex-1",
-    price: "text-xl",
-    address: "text-sm",
-    stats: "text-sm gap-x-3",
-    statGap: "gap-1",
-    badge: "top-2 left-2 px-2 py-1 gap-1.5",
-    badgeDot: "w-2 h-2",
-    badgeText: "text-[10px]",
-    noImageText: "text-sm",
-  },
-  horizontal: {
-    card: "w-full min-h-[120px] flex flex-row",
-    image: "w-[100px] sm:w-[130px] shrink-0 rounded-l-lg overflow-hidden",
-    imageSizes: "(min-width: 640px) 130px, 100px",
-    content: "p-3 sm:p-4 flex-1 min-w-0 flex flex-col justify-center",
-    price: "text-lg",
-    address: "text-xs",
-    stats: "text-xs gap-x-2",
-    statGap: "gap-0.5",
-    badge: "top-1.5 left-1.5 px-1.5 py-0.5 gap-1",
-    badgeDot: "w-1.5 h-1.5",
-    badgeText: "text-[8px]",
-    noImageText: "text-xs",
-  },
+const MAX_FEATURES = 3;
+
+const TIME_UNITS: Record<string, string> = {
+  second: "s",
+  minute: "m",
+  hour: "h",
+  day: "d",
+  month: "mo",
+  year: "y",
 };
 
-function FeatureBadge({ children }: { children: string }) {
+/**
+ * Shortens date-fns' "about 6 hours ago" to "Posted 6h ago". Text it doesn't recognise, such as
+ * the listing form preview's availability date, is returned unchanged.
+ */
+export function formatPostedLabel(timeAgo: string) {
+  if (/^less than a minute ago$/.test(timeAgo)) return "Posted just now";
+  const match =
+    /^(?:about |over |almost )?(\d+|an?) (second|minute|hour|day|month|year)s? ago$/.exec(timeAgo);
+  if (!match) return timeAgo;
+  const [, amount, unit] = match;
+  const count = amount === "a" || amount === "an" ? "1" : amount;
+  return `Posted ${count}${TIME_UNITS[unit as keyof typeof TIME_UNITS]} ago`;
+}
+
+function plural(count: number, singular: string) {
+  return `${count.toLocaleString()} ${singular}${count === 1 ? "" : "s"}`;
+}
+
+function ListingStats({
+  beds,
+  baths,
+  sqft,
+  className,
+}: Pick<ListingsCardProps, "beds" | "baths" | "sqft"> & { className?: string }) {
+  const stats = [
+    { icon: BedDoubleIcon, label: plural(beds, "bed") },
+    { icon: Bathtub01Icon, label: plural(baths, "bath") },
+    ...(sqft !== null
+      ? [{ icon: SquareArrowExpand01Icon, label: `${sqft.toLocaleString()} sq ft` }]
+      : []),
+  ];
+
   return (
-    <Badge
-      variant="secondary"
-      className="border-transparent bg-secondary/60 px-1.5 py-0 text-[10px] font-normal"
+    <ul
+      role="list"
+      className={cn(
+        "flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-foreground",
+        className,
+      )}
     >
-      {children}
-    </Badge>
+      {stats.map((stat) => (
+        <li key={stat.label} className="flex items-center gap-1.5">
+          <HugeiconsIcon
+            icon={stat.icon}
+            strokeWidth={1.75}
+            className="size-4 text-muted-foreground"
+            aria-hidden
+          />
+          {stat.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function FeatureChips({ features, className }: { features: string[]; className?: string }) {
+  if (features.length === 0) return null;
+  const shown = features.slice(0, MAX_FEATURES);
+  const hiddenCount = features.length - shown.length;
+
+  return (
+    <ul
+      role="list"
+      aria-label="Accessibility features"
+      className={cn("flex flex-wrap gap-1.5", className)}
+    >
+      {shown.map((feature, index) => (
+        <li key={`${feature}-${index}`} className="max-w-full">
+          <Badge variant="secondary" className="max-w-full font-normal text-foreground">
+            <span className="truncate">{feature}</span>
+          </Badge>
+        </li>
+      ))}
+      {hiddenCount > 0 && (
+        <li>
+          <Badge variant="outline" className="font-normal text-muted-foreground">
+            +{hiddenCount} more
+          </Badge>
+        </li>
+      )}
+    </ul>
   );
 }
 
@@ -89,111 +149,88 @@ export function ListingsCard({
   buttonRef,
   photoMayNeedSession = false,
 }: ListingsCardProps) {
-  const v = variants[variant];
   const isHorizontal = variant === "horizontal";
-  const safeFeatures = accessibilityFeatures || [];
-  const MAX_FEATURES = 3;
-  const hasMoreFeatures = safeFeatures.length > MAX_FEATURES;
-  const baseFeatures = safeFeatures.slice(0, MAX_FEATURES);
-  const extraFeatures = safeFeatures.slice(MAX_FEATURES);
+  const features = accessibilityFeatures ?? [];
   const listingHref = href ?? `/listings/${id}`;
   const displayAddress = city ? `${address}, ${city}` : address;
   const ariaLabel = `View listing: ${title ? `${title} at ${displayAddress}` : displayAddress}`;
+  const posted = formatPostedLabel(timeAgo);
+  const overlayClassName =
+    "absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/60";
+
+  const photo = imageUrl ? (
+    <Image
+      src={imageUrl}
+      alt={displayAddress}
+      fill
+      sizes={isHorizontal ? "128px" : "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 360px"}
+      unoptimized={photoMayNeedSession && imageUrl.startsWith("/api/image-uploads/")}
+      className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+    />
+  ) : (
+    <div className="flex size-full flex-col items-center justify-center gap-1.5 text-sm text-muted-foreground">
+      <HugeiconsIcon icon={Image01Icon} strokeWidth={1.75} className="size-5" aria-hidden />
+      No photo
+    </div>
+  );
+
+  const priceLabel = (
+    <p className="text-lg font-semibold tracking-tight text-foreground">
+      ${price.toLocaleString()}
+      <span className="text-sm font-normal text-muted-foreground"> /mo</span>
+    </p>
+  );
 
   return (
-    <Card
-      className={`${v.card} relative overflow-hidden hover:shadow-md transition-all cursor-pointer group`}
+    <article
+      className={cn(
+        "group relative w-full",
+        isHorizontal
+          ? "flex min-h-28 overflow-hidden rounded-xl bg-card text-card-foreground shadow-lg ring-1 ring-foreground/10"
+          : "flex flex-col gap-3",
+      )}
     >
-      <div className={`relative ${v.image} bg-muted`}>
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={displayAddress}
-            fill
-            sizes={v.imageSizes}
-            unoptimized={photoMayNeedSession && imageUrl.startsWith("/api/image-uploads/")}
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div
-            className={`w-full h-full flex items-center justify-center text-muted-foreground ${v.noImageText}`}
-          >
-            {isHorizontal ? "No Image" : "No Image Available"}
-          </div>
+      <div
+        className={cn(
+          "relative shrink-0 overflow-hidden bg-muted",
+          isHorizontal ? "w-28 sm:w-32" : "aspect-[3/2] w-full rounded-xl",
         )}
-        <div
-          className={`absolute ${v.badge} bg-black/70 backdrop-blur-sm rounded flex items-center z-10`}
-        >
-          <div className={`${v.badgeDot} rounded-full bg-primary`} />
-          <span className={`${v.badgeText} text-white font-semibold tracking-wide uppercase`}>
-            {timeAgo}
-          </span>
-        </div>
+      >
+        {photo}
       </div>
 
-      <CardContent className={v.content}>
-        <div className={isHorizontal ? "mb-2" : "mb-3"}>
-          <div
-            className={`${v.price} font-bold text-foreground tracking-tight flex items-baseline gap-1`}
-          >
-            ${price.toLocaleString()}
-            <span className="text-sm font-normal text-muted-foreground">/mo</span>
-          </div>
-          <h3>{displayAddress}</h3>
-          {title && <h4>{title}</h4>}
-        </div>
-
-        <div className={`flex items-center ${v.stats} flex-wrap text-muted-foreground mb-auto`}>
-          <span className={`flex items-center ${v.statGap}`}>
-            <strong className="text-foreground">{beds}</strong> bds
-          </span>
-          <span className="text-border">|</span>
-          <span className={`flex items-center ${v.statGap}`}>
-            <strong className="text-foreground">{baths}</strong> ba
-          </span>
-          {sqft !== null && (
-            <>
-              <span className="text-border">|</span>
-              <span className={`flex items-center ${v.statGap}`}>
-                <strong className="text-foreground">{sqft}</strong> sqft
-              </span>
-            </>
-          )}
-        </div>
-
-        {safeFeatures.length > 0 && (
-          <div
-            className={`mt-3 pt-3 border-t relative z-20 ${isHorizontal ? "hidden sm:block" : ""}`}
-          >
-            <div className="flex flex-wrap gap-1.5 items-center">
-              {baseFeatures.map((f, idx) => (
-                <FeatureBadge key={`${f}-${idx}`}>{f}</FeatureBadge>
-              ))}
-
-              {hasMoreFeatures && (
-                <details className="group w-full">
-                  <summary className="list-none text-[10px] text-primary-text hover:underline font-medium px-1 cursor-pointer select-none [&::-webkit-details-marker]:hidden">
-                    <span className="group-open:hidden">{`+${extraFeatures.length} more`}</span>
-                    <span className="hidden group-open:inline">Show less</span>
-                  </summary>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {extraFeatures.map((f, idx) => (
-                      <FeatureBadge key={`${f}-${MAX_FEATURES + idx}`}>{f}</FeatureBadge>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </div>
-          </div>
+      <div
+        className={cn(
+          "flex min-w-0 flex-col gap-1",
+          isHorizontal ? "flex-1 justify-center p-3" : "px-0.5",
         )}
-      </CardContent>
+      >
+        <div className="flex items-baseline justify-between gap-3">
+          {priceLabel}
+          {!isHorizontal && <p className="shrink-0 text-[13px] text-muted-foreground">{posted}</p>}
+        </div>
+        <h3 className="truncate text-[15px] font-medium tracking-normal text-foreground">
+          {displayAddress}
+        </h3>
+        {title && <p className="truncate text-sm text-muted-foreground">{title}</p>}
+        <ListingStats
+          beds={beds}
+          baths={baths}
+          sqft={sqft}
+          className={isHorizontal ? "mt-0.5" : "mt-1"}
+        />
+        <FeatureChips
+          features={features}
+          className={isHorizontal ? "mt-1.5 hidden sm:flex" : "mt-2"}
+        />
+      </div>
 
       {onClick ? (
         <button
           ref={buttonRef}
           type="button"
           aria-label={ariaLabel}
-          className="absolute inset-0 z-10 cursor-pointer border-0 bg-transparent p-0"
+          className={cn(overlayClassName, "cursor-pointer border-0 bg-transparent p-0")}
           onClick={onClick}
         />
       ) : (
@@ -201,9 +238,9 @@ export function ListingsCard({
           href={listingHref}
           prefetch={false}
           aria-label={ariaLabel}
-          className="absolute inset-0 z-10"
+          className={overlayClassName}
         />
       )}
-    </Card>
+    </article>
   );
 }

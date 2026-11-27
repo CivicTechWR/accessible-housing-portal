@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import {
   SortOptions as SortOptionsType,
   SortOptions as SortOptionsComponent,
@@ -12,16 +14,26 @@ interface ListingsPanelHeaderProps {
   total: number;
   /** Loading stopped before every match was shown. */
   isPartial: boolean;
-  sortOptionProps: { sortOptions: SortOptionsType[]; onChange: (value: string) => void };
+  sortOptionProps: {
+    sortOptions: SortOptionsType[];
+    onChange: (value: string) => void;
+    value?: string;
+  };
   isLoading?: boolean;
+  /** The Split / List / Map switch, shown after the sort menu. */
+  viewSwitch?: ReactNode;
+  className?: string;
 }
 
+/** The results bar: match count on the left, sort and view controls on the right. */
 export function ListingsPanelHeader({
   shown,
   total,
   isPartial,
   sortOptionProps,
   isLoading = false,
+  viewSwitch,
+  className,
 }: ListingsPanelHeaderProps) {
   const summary = isLoading
     ? "Updating listings..."
@@ -30,11 +42,17 @@ export function ListingsPanelHeader({
       : `${total} listing${total !== 1 ? "s" : ""} found`;
 
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b bg-background p-4 sm:flex-nowrap">
-      <span className="text-sm text-muted-foreground sm:mr-auto">{summary}</span>
-      <div className="min-w-0 flex-1 sm:flex-none">
-        <SortOptionsComponent {...sortOptionProps} />
-      </div>
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-2 bg-background px-4 py-2 sm:gap-3 sm:px-6",
+        className,
+      )}
+    >
+      <p className="mr-auto min-w-0 truncate whitespace-nowrap text-sm font-medium text-foreground sm:text-[15px]">
+        {summary}
+      </p>
+      <SortOptionsComponent {...sortOptionProps} />
+      {viewSwitch}
     </div>
   );
 }

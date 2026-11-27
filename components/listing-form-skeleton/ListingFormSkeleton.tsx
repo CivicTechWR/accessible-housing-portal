@@ -5,15 +5,24 @@ import { CORE_FIELD_CATEGORIES } from "@/app/listing-form/fieldDefinitions";
 export function ListingFormSkeleton() {
   return (
     <ListingFormLayout
+      header={
+        <div className="space-y-3">
+          <Skeleton className="h-9 w-28" />
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-5 w-96 max-w-full" />
+        </div>
+      }
+      sectionNav={
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+      }
       formContent={
         <>
-          {CORE_FIELD_CATEGORIES.map((cat, index) => (
-            <FormSection
-              key={cat.key}
-              isSeparated={index > 0}
-              title={cat.displayName}
-              description={cat.description}
-            >
+          {CORE_FIELD_CATEGORIES.map((cat) => (
+            <FormSection key={cat.key} title={cat.displayName} description={cat.description}>
               {Array.from({ length: cat.key === "listing_details" ? 8 : 6 }).map((_, i) => (
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-4 w-24" />
@@ -22,26 +31,10 @@ export function ListingFormSkeleton() {
               ))}
             </FormSection>
           ))}
-          <FormSection isSeparated title="Listing Features">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-start space-x-3">
-                <Skeleton className="h-5 w-5 rounded shrink-0" />
-                <div className="space-y-2 w-full">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-full" />
-                </div>
-              </div>
-            ))}
-          </FormSection>
         </>
       }
-      previewContent={<Skeleton className="h-[600px] w-full rounded-xl bg-muted/60" />}
-      footer={
-        <>
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-32" />
-        </>
-      }
+      previewContent={<Skeleton className="h-[520px] w-full rounded-lg" />}
+      footer={<Skeleton className="h-10 w-32" />}
     />
   );
 }

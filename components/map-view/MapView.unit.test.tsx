@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen, cleanup, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import type { Listing } from "@/components/listing-card-list/ListingsCardList";
-import { MapView } from "./MapView";
+import { MapView, groupOverlappingPins } from "./MapView";
 
 jest.mock("@vis.gl/react-maplibre", () => ({
   Map: ({
@@ -176,5 +176,33 @@ describe("MapView", () => {
     expect(screen.getByRole("button", { name: /per month/ }).getAttribute("aria-expanded")).toBe(
       "false",
     );
+  });
+});
+
+describe("groupOverlappingPins", () => {
+  // Projects longitude straight to x pixels and latitude to y pixels.
+  const mapAt = (zoom: number) => ({
+    getZoom: () => zoom,
+    project: ([lng, lat]: [number, number]) => ({ x: lng, y: lat }),
+  });
+  const pinAt = (id: string, x: number, y: number) => ({ ...LISTING, id, lng: x, lat: y });
+  const near = pinAt("a", 0, 0);
+  const alsoNear = pinAt("b", 30, 10);
+  const far = pinAt("c", 300, 0);
+
+  it("merges pins that would overlap and leaves distant ones alone", () => {
+    const groups = groupOverlappingPins(mapAt(12), [near, alsoNear, far], null);
+
+    expect(groups?.map((group) => group.listings.map((l) => l.id))).toEqual([["a", "b"], ["c"]]);
+  });
+
+  it("keeps the selected listing as its own pin", () => {
+    const groups = groupOverlappingPins(mapAt(12), [near, alsoNear], "a");
+
+    expect(groups?.map((group) => group.listings.map((l) => l.id))).toEqual([["a"], ["b"]]);
+  });
+
+  it("stops clustering once zoomed in far enough", () => {
+    expect(groupOverlappingPins(mapAt(15), [near, alsoNear], null)).toBeNull();
   });
 });

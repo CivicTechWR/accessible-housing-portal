@@ -73,13 +73,13 @@ export type CoreFieldDefinition =
 export const CORE_FIELD_CATEGORIES = [
   {
     key: "listing_details",
-    displayName: "Listing Details",
-    description: "Core information about the listing.",
+    displayName: "Listing details",
+    description: "The unit, its rent and what's included.",
   },
   {
     key: "property_info",
-    displayName: "Property & Contact Info",
-    description: "Location and owner details for this building/property.",
+    displayName: "Property and contact",
+    description: "Where the building is and who renters can contact.",
   },
   {
     key: "application",
@@ -89,6 +89,13 @@ export const CORE_FIELD_CATEGORIES = [
   },
 ] as const;
 
+/** The section nav's anchor for each card in the form. */
+export function listingFormSectionId(
+  section: (typeof CORE_FIELD_CATEGORIES)[number]["key"] | "images" | "features",
+) {
+  return `section-${section}`;
+}
+
 export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   {
     key: "title",
@@ -97,7 +104,8 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 1,
-    placeholder: "E.g. Sunny 2BR Apartment",
+    colSpan: 2,
+    placeholder: "E.g. Sunny 2BR apartment",
   },
   {
     key: "description",
@@ -111,7 +119,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "buildingType",
-    displayName: "Building Type",
+    displayName: "Building type",
     fieldType: "select",
     category: "listing_details",
     isRequired: true,
@@ -125,7 +133,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "unitNumber",
-    displayName: "Unit Number",
+    displayName: "Unit number",
     fieldType: "text",
     category: "listing_details",
     isRequired: false,
@@ -152,7 +160,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "squareFeet",
-    displayName: "Square Feet",
+    displayName: "Square feet",
     fieldType: "number",
     category: "listing_details",
     isRequired: false,
@@ -160,7 +168,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "monthlyRentCents",
-    displayName: "Monthly Rent ($)",
+    displayName: "Monthly rent ($)",
     fieldType: "number",
     category: "listing_details",
     isRequired: true,
@@ -170,7 +178,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "depositInfo",
-    displayName: "Deposit Information",
+    displayName: "Deposit information",
     fieldType: "textarea",
     category: "listing_details",
     isRequired: false,
@@ -181,7 +189,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "leaseTerm",
-    displayName: "Initial Lease Term in Months",
+    displayName: "Initial lease term in months",
     fieldType: "number",
     category: "listing_details",
     isRequired: true,
@@ -206,7 +214,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "utilitiesIncluded",
-    displayName: "Utilities Included",
+    displayName: "Utilities included",
     fieldType: "checkbox-group",
     category: "listing_details",
     isRequired: false,
@@ -221,7 +229,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
 
   {
     key: "name",
-    displayName: "Property Name",
+    displayName: "Property name",
     fieldType: "text",
     category: "property_info",
     isRequired: true,
@@ -262,7 +270,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "postalCode",
-    displayName: "Postal Code",
+    displayName: "Postal code",
     fieldType: "text",
     category: "property_info",
     isRequired: true,
@@ -270,7 +278,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "contactName",
-    displayName: "Contact Name",
+    displayName: "Contact name",
     fieldType: "text",
     category: "property_info",
     isRequired: true,
@@ -278,7 +286,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "contactRole",
-    displayName: "Contact Role",
+    displayName: "Contact role",
     fieldType: "text",
     category: "property_info",
     isRequired: false,
@@ -287,7 +295,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "contactEmail",
-    displayName: "Contact Email",
+    displayName: "Contact email",
     fieldType: "email",
     category: "property_info",
     isRequired: true,
@@ -295,7 +303,7 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
   },
   {
     key: "contactPhone",
-    displayName: "Contact Phone",
+    displayName: "Contact phone",
     fieldType: "tel",
     category: "property_info",
     isRequired: true,

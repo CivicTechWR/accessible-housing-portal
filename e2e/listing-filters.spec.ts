@@ -1,14 +1,14 @@
 import { expect, test } from "./fixtures.ts";
 import { storageStatePath } from "./settings.ts";
 
-// Every view on the listings page must keep every filter reachable. Phones open a bottom sheet
-// from the "Filters" icon button; wider screens open a side panel from "All Filters".
+// Every view on the listings page must keep every filter reachable. The "Filters" button opens a
+// bottom sheet on phones and a side panel on wider screens.
 // PR #526 hid the search-bar price on phones while the sheet only rendered beside the list,
 // so Map view on a phone had no filters at all. This loops over views so that can't recur.
 
 test.use({ storageState: storageStatePath("searcher") });
 
-const FILTER_LABELS = ["Min Price", "Max Price", "Bedrooms", "Bathrooms"];
+const FILTER_LABELS = ["Min price", "Max price", "Bedrooms", "Bathrooms"];
 
 for (const view of ["List", "Map", "Split"] as const) {
   test(`filters are reachable in ${view} view`, async ({ page, isMobile }) => {
@@ -22,9 +22,7 @@ for (const view of ["List", "Map", "Split"] as const) {
       await expect(viewOption).toBeChecked({ timeout: 1_000 });
     }).toPass();
 
-    const openButton = isMobile
-      ? page.getByRole("button", { name: "Filters", exact: true })
-      : page.getByRole("button", { name: /All Filters/ });
+    const openButton = page.getByRole("button", { name: "Filters", exact: true });
     await expect(openButton).toBeVisible();
     await openButton.click();
 

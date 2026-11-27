@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragEvent } from "react";
+import { type DragEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -31,7 +31,6 @@ type CategoryStat = {
 
 export function CustomListingFieldsTable({
   categories,
-  categoryOptions,
   categoryFilter,
   visibilityFilter,
   search,
@@ -63,7 +62,6 @@ export function CustomListingFieldsTable({
   onRequiredChange,
 }: {
   categories: CategoryStat[];
-  categoryOptions: string[];
   categoryFilter: string;
   visibilityFilter: VisibilityFilter;
   search: string;
@@ -98,13 +96,15 @@ export function CustomListingFieldsTable({
   onFilterableChange: (fieldId: string, filterableOnly: boolean) => void;
   onRequiredChange: (fieldId: string, required: boolean) => void;
 }) {
+  const hasFilters = search !== "" || categoryFilter !== "all" || visibilityFilter !== "all";
+
   return (
-    <>
-      <div className="mt-8 border-b border-border">
-        <div className="flex gap-7 overflow-x-auto">
+    <div className="space-y-4">
+      <ScrollFadeRow className="hidden border-b border-border md:block">
+        <div className="flex gap-6">
           <CategoryTab
             isActive={categoryFilter === "all"}
-            label="All Fields"
+            label="All fields"
             onClick={() => onCategoryFilterChange("all")}
           />
           {categories.map((category) => (
@@ -117,81 +117,82 @@ export function CustomListingFieldsTable({
             />
           ))}
         </div>
-      </div>
+      </ScrollFadeRow>
 
-      <div className="mt-6 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-          <label className="relative block w-full xl:w-80">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <label className="relative block w-full md:w-72">
             <span className="sr-only">Search fields</span>
             <HugeiconsIcon
               icon={Search01Icon}
-              strokeWidth={2}
-              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              strokeWidth={1.75}
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
             />
             <Input
+              type="search"
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search fields..."
-              className="h-10 rounded-md bg-background pl-11 text-sm"
+              placeholder="Search fields"
+              className="pl-9"
             />
           </label>
 
-          <FilterSelect
-            ariaLabel="Filter by category"
-            value={categoryFilter}
-            onChange={onCategoryFilterChange}
-          >
-            <option value="all">Category: All</option>
-            {categories.map((category) => (
-              <option key={category.category} value={category.category}>
-                Category: {category.label}
-              </option>
-            ))}
-          </FilterSelect>
+          <div className="grid grid-cols-2 gap-3 md:flex">
+            {/* The tabs pick a category on wider screens. */}
+            <FilterSelect
+              ariaLabel="Filter by category"
+              className="md:hidden"
+              value={categoryFilter}
+              onChange={onCategoryFilterChange}
+            >
+              <option value="all">All categories</option>
+              {categories.map((category) => (
+                <option key={category.category} value={category.category}>
+                  {category.label} ({category.count})
+                </option>
+              ))}
+            </FilterSelect>
 
-          <FilterSelect
-            ariaLabel="Filter by visibility"
-            value={visibilityFilter}
-            onChange={(value) => onVisibilityFilterChange(value as VisibilityFilter)}
-          >
-            <option value="all">Visibility: All</option>
-            <option value="public">Visibility: Public</option>
-            <option value="internal">Visibility: Internal</option>
-          </FilterSelect>
+            <FilterSelect
+              ariaLabel="Filter by visibility"
+              value={visibilityFilter}
+              onChange={(value) => onVisibilityFilterChange(value as VisibilityFilter)}
+            >
+              <option value="all">Any visibility</option>
+              <option value="public">Public</option>
+              <option value="internal">Internal</option>
+            </FilterSelect>
+          </div>
 
-          <button
-            type="button"
-            className="h-10 px-3 text-left text-sm font-medium text-foreground/80 hover:text-primary-text"
-            onClick={onClearFilters}
-          >
-            Clear filters
-          </button>
+          {hasFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="self-start md:self-auto"
+              onClick={onClearFilters}
+            >
+              Clear filters
+            </Button>
+          ) : null}
         </div>
 
         {selectedFieldCount > 0 ? (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center xl:justify-end">
-            <span className="text-sm font-medium text-foreground">
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <span className="mr-1 text-sm font-medium text-foreground" role="status">
               {selectedFieldCount} {selectedFieldCount === 1 ? "field" : "fields"} selected
             </span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="bg-background"
-                onClick={onClearSelection}
-              >
-                Clear selection
-              </Button>
-              <Button type="button" size="lg" onClick={onOpenBulkEdit}>
-                Bulk Edit
-              </Button>
-            </div>
+            <Button type="button" variant="ghost" onClick={onClearSelection}>
+              Clear selection
+            </Button>
+            <Button type="button" variant="outline" onClick={onOpenBulkEdit}>
+              Bulk edit
+            </Button>
           </div>
         ) : null}
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-md border border-border bg-background">
+      <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
         <div className="overflow-x-auto">
           <div
             className={cn(
@@ -201,9 +202,9 @@ export function CustomListingFieldsTable({
             )}
           >
             <div />
-            <div className="py-4 pr-3 text-xs font-medium text-foreground/80">Order</div>
+            <div className="py-3 pr-3 text-xs font-medium text-muted-foreground">Order</div>
             <SortHeader
-              label="Label"
+              label="Field"
               sortKey="label"
               helperText={FIELD_HELP_TEXT.label}
               activeSortKey={sortKey}
@@ -211,23 +212,7 @@ export function CustomListingFieldsTable({
               onSort={onSort}
             />
             <SortHeader
-              label="Key"
-              sortKey="key"
-              helperText={FIELD_HELP_TEXT.key}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Category"
-              sortKey="category"
-              helperText={FIELD_HELP_TEXT.category}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Applies To"
+              label="Applies to"
               sortKey="appliesTo"
               helperText={FIELD_HELP_TEXT.appliesTo}
               activeSortKey={sortKey}
@@ -235,17 +220,9 @@ export function CustomListingFieldsTable({
               onSort={onSort}
             />
             <SortHeader
-              label="Description"
+              label="Description and help text"
               sortKey="description"
-              helperText={FIELD_HELP_TEXT.description}
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
-            <SortHeader
-              label="Help Text"
-              sortKey="helpText"
-              helperText={FIELD_HELP_TEXT.helpText}
+              helperText={`${FIELD_HELP_TEXT.description} Help text: ${FIELD_HELP_TEXT.helpText}`}
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
@@ -274,7 +251,7 @@ export function CustomListingFieldsTable({
               direction={sortDirection}
               onSort={onSort}
             />
-            <div className="px-4 py-4 text-xs font-medium text-foreground/80">Actions</div>
+            <div className="sr-only">Actions</div>
           </div>
 
           <div className={TABLE_MIN_WIDTH}>
@@ -286,10 +263,8 @@ export function CustomListingFieldsTable({
               displayGroups.map((group) => {
                 return (
                   <div key={group.category}>
-                    <div className="flex h-10 items-center gap-3 border-y border-border bg-muted/20 pl-[84px] pr-4">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-foreground/80">
-                        {group.label}
-                      </span>
+                    <div className="flex h-10 items-center gap-2 border-b border-border bg-muted/30 pr-4 pl-[104px]">
+                      <h2 className="text-sm font-semibold text-foreground">{group.label}</h2>
                       <span className="text-xs text-muted-foreground">
                         {group.fields.length} {group.fields.length === 1 ? "field" : "fields"}
                       </span>
@@ -304,7 +279,6 @@ export function CustomListingFieldsTable({
                           field={field}
                           isPending={pendingFieldId === field.id}
                           isSelected={selectedFieldIds.has(field.id)}
-                          categoryOptions={categoryOptions}
                           onSelectToggle={(event) => onRowSelectToggle(field.id, event.shiftKey)}
                           onDragStart={(event, rowElement) =>
                             onRowDragStart(event, field, rowElement)
@@ -334,11 +308,16 @@ export function CustomListingFieldsTable({
                     {group.hiddenCount > 0 ? (
                       <button
                         type="button"
-                        className="flex h-9 w-full items-center justify-center gap-2 border-b border-border text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+                        className="flex h-10 w-full items-center justify-center gap-2 border-b border-border text-sm font-medium text-primary-text transition-colors hover:bg-muted/30"
                         onClick={() => onExpandCategory(group.category)}
                       >
                         Show more in this category ({group.hiddenCount} more)
-                        <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} className="size-4" />
+                        <HugeiconsIcon
+                          icon={ArrowDown01Icon}
+                          strokeWidth={1.75}
+                          className="size-4"
+                          aria-hidden
+                        />
                       </button>
                     ) : null}
                   </div>
@@ -348,6 +327,47 @@ export function CustomListingFieldsTable({
           </div>
         </div>
       </div>
-    </>
+    </div>
+  );
+}
+
+/**
+ * A row that scrolls sideways, fading whichever edge has more content past it so a clipped tab
+ * reads as "there's more" instead of looking cut off.
+ */
+function ScrollFadeRow({ className, children }: { className?: string; children: ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ start: false, end: false });
+
+  const updateEdges = useCallback(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const maxScroll = element.scrollWidth - element.clientWidth;
+    setEdges({ start: element.scrollLeft > 1, end: element.scrollLeft < maxScroll - 1 });
+  }, []);
+
+  useEffect(() => {
+    updateEdges();
+    const element = scrollRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(updateEdges);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [updateEdges]);
+
+  const fade = "2.5rem";
+  const maskImage = `linear-gradient(to right, ${edges.start ? "transparent" : "black"}, black ${fade}, black calc(100% - ${fade}), ${edges.end ? "transparent" : "black"})`;
+
+  return (
+    <div className={className}>
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ maskImage, WebkitMaskImage: maskImage }}
+        onScroll={updateEdges}
+      >
+        {children}
+      </div>
+    </div>
   );
 }

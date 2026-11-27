@@ -1,36 +1,41 @@
 import type { ReactNode } from "react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { BrandMark } from "@/components/brand/BrandMark";
 import { cn } from "@/lib/utils";
 
 type AuthCardProps = {
   title: ReactNode;
   description?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
   footer?: ReactNode;
   className?: string;
 };
 
+/** The card every sign-in, reset and invite screen uses. */
 export function AuthCard({ title, description, children, footer, className }: AuthCardProps) {
   return (
-    <Card
-      className={cn("w-full max-w-md border border-border/80 shadow-xl shadow-black/5", className)}
+    <div
+      className={cn(
+        "flex h-fit w-full max-w-md flex-col gap-6 rounded-2xl border bg-card p-6 text-card-foreground shadow-sm sm:p-8",
+        className,
+      )}
     >
-      <CardHeader className="border-b border-border/60">
-        <CardTitle>
-          <h1>{title}</h1>
-        </CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
-      </CardHeader>
-      <CardContent className="space-y-4 pt-4">{children}</CardContent>
-      {footer ? <CardFooter className="border-t border-border/60 pt-4">{footer}</CardFooter> : null}
-    </Card>
+      <div className="space-y-2">
+        <BrandMark className="mb-5 size-10" />
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {description ? <p className="text-base text-muted-foreground">{description}</p> : null}
+      </div>
+      {children ? <div className="space-y-5">{children}</div> : null}
+      {footer ? <div className="space-y-3">{footer}</div> : null}
+    </div>
+  );
+}
+
+/** A label and input stacked with consistent spacing inside an AuthCard. */
+export function AuthField({ children }: { children: ReactNode }) {
+  return (
+    <div className="space-y-2 [&>label]:block [&>label]:text-sm [&>label]:font-medium">
+      {children}
+    </div>
   );
 }

@@ -504,7 +504,6 @@ export function useCustomListingFieldsDashboard(initialFields: AdminCustomListin
     handleDeleteField,
     tableProps: {
       categories,
-      categoryOptions,
       categoryFilter,
       visibilityFilter,
       search,

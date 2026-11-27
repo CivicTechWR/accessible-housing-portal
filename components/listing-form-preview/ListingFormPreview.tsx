@@ -38,8 +38,8 @@ export function ListingFormPreview({
   const previewCityValue = formData.city?.trim();
   const previewPostalCodeValue = formData.postalCode?.trim();
   const previewUnitNumberValue = formData.unitNumber?.trim();
-  const previewTitle = previewTitleValue || "Title Here";
-  const previewStreet1 = previewStreet1Value || "Address Here";
+  const previewTitle = previewTitleValue || "Listing title";
+  const previewStreet1 = previewStreet1Value || "Street address";
   const previewCardAddress = formatListingAddress(previewStreet1, previewUnitNumberValue);
   const previewCardFeatures = Array.from(
     new Set((formData.customFeatures ?? []).map((feature) => feature.name)),
@@ -79,13 +79,12 @@ export function ListingFormPreview({
           ref={backButtonRef}
           type="button"
           variant="outline"
-          size="lg"
           onClick={onCloseDetails}
-          className="h-11 text-sm lg:hidden"
+          className="max-lg:h-11 lg:hidden"
         >
           <HugeiconsIcon
             icon={ArrowLeft01Icon}
-            strokeWidth={2}
+            strokeWidth={1.75}
             data-icon="inline-start"
             aria-hidden
           />
@@ -145,8 +144,8 @@ export function ListingFormPreview({
         buttonRef={cardButtonRef}
         photoMayNeedSession
       />
-      <p className="text-xs text-muted-foreground px-1">
-        Click the listing card to preview full listing details.
+      <p className="px-1 text-sm text-muted-foreground">
+        Select the card to preview the full listing page.
       </p>
     </div>
   );

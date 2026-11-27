@@ -45,7 +45,7 @@ export function PriceRangeInput({
   return (
     <FieldSet className={cn("flex-row", className)}>
       <Field className={fieldClassName}>
-        <FieldLabel className={labelClassName}>Min Price</FieldLabel>
+        <FieldLabel className={labelClassName}>Min price</FieldLabel>
         <Input
           min={0}
           type="number"
@@ -65,7 +65,7 @@ export function PriceRangeInput({
       </Field>
 
       <Field className={fieldClassName}>
-        <FieldLabel className={labelClassName}>Max Price</FieldLabel>
+        <FieldLabel className={labelClassName}>Max price</FieldLabel>
 
         <Input
           min={0}

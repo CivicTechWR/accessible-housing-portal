@@ -64,7 +64,7 @@ describe("ListingForm hydration", () => {
   it("keeps the persisted building type selected after the listing loads", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
-    await screen.findByText("Building Type *");
+    await screen.findByText("Building type *");
 
     const buildingType = () =>
       document.querySelector('[data-field-name="buildingType"] [role="combobox"]');
@@ -145,15 +145,18 @@ describe("ListingForm hydration", () => {
 
     const firstRender = render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
     await screen.findByText(feature.name);
-    fireEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    fireEvent.click(screen.getByRole("switch", { name: feature.name }));
     await waitFor(() => expect(savedSelections).toContain(true), { timeout: 3000 });
     firstRender.unmount();
 
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
     await waitFor(() =>
-      expect(screen.getByRole("radio", { name: "Yes" }).getAttribute("aria-checked")).toBe("true"),
+      expect(screen.getByRole("switch", { name: feature.name })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      ),
     );
-    fireEvent.click(screen.getByRole("radio", { name: "No" }));
+    fireEvent.click(screen.getByRole("switch", { name: feature.name }));
     await waitFor(() => expect(savedSelections).toEqual([true, false]), { timeout: 3000 });
   });
 
@@ -258,7 +261,7 @@ describe("ListingForm hydration", () => {
     const city = screen.getByRole("textbox", { name: (name) => name.startsWith("City") });
     await waitFor(() => expect(editorRequests).toBe(1));
 
-    fireEvent.click(screen.getByRole("button", { name: "Publish Listing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish listing" }));
     await waitFor(() => expect(title).toBeInvalid());
     expect(city).toBeInvalid();
 
@@ -486,7 +489,7 @@ describe("ListingForm publishing", () => {
     fireEvent.change(title, { target: { value: "Renamed" } });
     await waitFor(() => expect(requests).toEqual(["PATCH started"]), { timeout: 3000 });
 
-    const publish = screen.getByRole("button", { name: "Publish Listing" });
+    const publish = screen.getByRole("button", { name: "Publish listing" });
     expect(publish).toBeEnabled();
     fireEvent.click(publish);
     // The publish waits for the save that is in flight.
@@ -520,7 +523,7 @@ describe("ListingForm publishing", () => {
 
     // Publish before the autosave for this edit has fired.
     fireEvent.change(title, { target: { value: "Renamed" } });
-    fireEvent.click(screen.getByRole("button", { name: "Publish Listing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish listing" }));
     await waitFor(() => expect(requests).toEqual(["PUT"]), { timeout: 3000 });
 
     // The listing page has not replaced the form yet. Longer than the autosave delay.

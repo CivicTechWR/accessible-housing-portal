@@ -19,7 +19,9 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCustomListingFieldCategoryLabel } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
@@ -32,10 +34,11 @@ import {
   TABLE_COLUMNS,
   type SortDirection,
   type SortKey,
-  getCanonicalCategoryValue,
   nullableTrim,
 } from "../custom-listing-fields-dashboard-utils";
-import { CategoryCombobox } from "./CategoryCombobox";
+
+const compactSelectClass =
+  "h-9 rounded-md border border-input bg-background text-sm font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60 dark:bg-input/10";
 
 export function CategoryTab({
   isActive,
@@ -51,17 +54,23 @@ export function CategoryTab({
   return (
     <button
       type="button"
+      aria-pressed={isActive}
       className={cn(
-        "flex h-11 shrink-0 items-center gap-2 border-b-2 px-5 text-sm font-medium transition-colors",
+        "flex h-11 shrink-0 items-center gap-2 border-b-2 px-1 text-sm font-medium whitespace-nowrap transition-colors",
         isActive
-          ? "border-primary-text text-primary-text"
-          : "border-transparent text-foreground/75 hover:text-foreground",
+          ? "border-primary-text text-foreground"
+          : "border-transparent text-muted-foreground hover:text-foreground",
       )}
       onClick={onClick}
     >
       {label}
       {count !== undefined ? (
-        <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+            isActive ? "bg-primary/10 text-primary-text" : "bg-muted text-muted-foreground",
+          )}
+        >
           {count}
         </span>
       ) : null}
@@ -74,21 +83,23 @@ export function FilterSelect({
   children,
   value,
   onChange,
+  className,
 }: {
   ariaLabel: string;
   children: ReactNode;
   value: string;
   onChange: (value: string) => void;
+  className?: string;
 }) {
   return (
-    <select
+    <NativeSelect
       aria-label={ariaLabel}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 min-w-36 rounded-md border border-input bg-background px-4 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+      className={cn("md:w-44", className)}
     >
       {children}
-    </select>
+    </NativeSelect>
   );
 }
 
@@ -114,15 +125,15 @@ export function SortHeader({
       type="button"
       title={helperText}
       aria-label={`${label}: ${helperText}`}
-      className="flex items-center gap-1 px-4 py-4 text-left text-xs font-medium text-foreground/80"
+      className="flex items-center gap-1 px-4 py-3 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
       onClick={() => onSort(sortKey)}
     >
       {label}
       {isActive ? (
         <HugeiconsIcon
           icon={direction === "asc" ? ArrowUp01Icon : ArrowDown01Icon}
-          strokeWidth={2}
-          className="size-3 text-primary-text"
+          strokeWidth={1.75}
+          className="size-3.5 text-primary-text"
         />
       ) : null}
     </button>
@@ -144,7 +155,6 @@ export function FieldRow({
   field,
   isPending,
   isSelected,
-  categoryOptions,
   onSelectToggle,
   onDragStart,
   onDragEnd,
@@ -160,7 +170,6 @@ export function FieldRow({
   field: AdminCustomListingField;
   isPending: boolean;
   isSelected: boolean;
-  categoryOptions: string[];
   onSelectToggle: (event: MouseEvent<HTMLButtonElement>) => void;
   onDragStart: (event: DragEvent<HTMLButtonElement>, rowElement: HTMLDivElement | null) => void;
   onDragEnd: () => void;
@@ -183,7 +192,7 @@ export function FieldRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid min-h-16 items-center border-b border-border text-sm transition-colors last:border-b-0",
+        "grid min-h-16 items-start border-b border-border text-sm transition-colors last:border-b-0 hover:bg-muted/20",
         TABLE_COLUMNS,
         isSelected && "bg-primary/5",
         isPending && "opacity-60",
@@ -191,7 +200,7 @@ export function FieldRow({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      <div className="flex justify-end pr-1">
+      <div className="flex justify-end pt-3 pr-1">
         <button
           type="button"
           draggable={!isPending}
@@ -220,33 +229,22 @@ export function FieldRow({
       <div className="py-3 pr-3 font-mono text-xs tabular-nums text-muted-foreground">
         {field.sortOrder}
       </div>
-      <EditableTextCell
-        value={field.label}
-        className="font-medium text-foreground"
-        disabled={isPending}
-        required
-        ariaLabel={`Edit label for ${field.label}`}
-        onCommit={(label) => onTextChange({ label })}
-      />
-      <div
-        className="cursor-not-allowed px-4 py-3 font-mono text-xs text-muted-foreground"
-        title="Field keys are fixed after creation."
-      >
-        {field.key}
+      <div className="flex min-w-0 flex-col">
+        <EditableTextCell
+          value={field.label}
+          className="pb-0.5 font-medium text-foreground"
+          disabled={isPending}
+          required
+          ariaLabel={`Edit label for ${field.label}`}
+          onCommit={(label) => onTextChange({ label })}
+        />
+        <p
+          className="cursor-default truncate px-4 pb-3 font-mono text-xs text-muted-foreground"
+          title={`${field.key} (field keys are fixed after creation)`}
+        >
+          {field.key}
+        </p>
       </div>
-      <EditableTextCell
-        value={formatCustomListingFieldCategoryLabel(field.category)}
-        displayValue={formatCustomListingFieldCategoryLabel(field.category)}
-        className="text-foreground/80"
-        disabled={isPending}
-        required
-        ariaLabel={`Edit category for ${field.label}`}
-        datalistId={`field-category-options-${field.id}`}
-        datalistOptions={categoryOptions}
-        onCommit={(category) =>
-          onTextChange({ category: getCanonicalCategoryValue(category, categoryOptions) })
-        }
-      />
       <div className="px-4 py-3">
         <select
           aria-label={`Edit applicability for ${field.label}`}
@@ -256,38 +254,42 @@ export function FieldRow({
             onApplicabilityChange(event.target.value as AdminCustomListingField["appliesTo"])
           }
           disabled={isPending}
-          className="h-8 w-28 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60"
+          className={cn(compactSelectClass, "w-26 px-2.5 text-foreground")}
         >
           <option value="building">Building</option>
           <option value="unit">Unit</option>
         </select>
       </div>
-      <EditableTextCell
-        value={field.description ?? ""}
-        displayValue={field.description || "No description."}
-        className="text-foreground/90"
-        disabled={isPending}
-        ariaLabel={`Edit description for ${field.label}`}
-        multiline
-        onCommit={(description) => onTextChange({ description: nullableTrim(description) })}
-      />
-      <EditableTextCell
-        value={field.helpText ?? ""}
-        displayValue={field.helpText || "No help text."}
-        className="text-foreground/90"
-        disabled={isPending}
-        ariaLabel={`Edit help text for ${field.label}`}
-        multiline
-        onCommit={(helpText) => onTextChange({ helpText: nullableTrim(helpText) })}
-      />
-      <div className="px-4 py-3">
+      <div className="min-w-0 py-1.5">
+        <EditableTextCell
+          label="Description"
+          value={field.description ?? ""}
+          displayValue={field.description || "No description"}
+          className={cn("py-1", field.description ? "text-foreground" : "text-muted-foreground")}
+          disabled={isPending}
+          ariaLabel={`Edit description for ${field.label}`}
+          multiline
+          onCommit={(description) => onTextChange({ description: nullableTrim(description) })}
+        />
+        <EditableTextCell
+          label="Help text"
+          value={field.helpText ?? ""}
+          displayValue={field.helpText || "No help text"}
+          className="py-1 text-muted-foreground"
+          disabled={isPending}
+          ariaLabel={`Edit help text for ${field.label}`}
+          multiline
+          onCommit={(helpText) => onTextChange({ helpText: nullableTrim(helpText) })}
+        />
+      </div>
+      <div className="px-3 py-3">
         <label className="relative inline-flex">
           <span className="sr-only">Visibility for {field.label}</span>
           <HugeiconsIcon
             icon={visibilityIcon}
-            strokeWidth={2}
+            strokeWidth={1.75}
             className={cn(
-              "pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2",
+              "pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2",
               visibilityToneClass,
             )}
           />
@@ -295,17 +297,14 @@ export function FieldRow({
             value={field.publicOnly ? "public" : "internal"}
             onChange={(event) => onVisibilityChange(event.target.value === "public")}
             disabled={isPending}
-            className={cn(
-              "h-8 w-28 rounded-md border border-input bg-background py-1 pl-8 pr-2 text-xs font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60",
-              visibilityToneClass,
-            )}
+            className={cn(compactSelectClass, "w-28 pl-8 pr-2", visibilityToneClass)}
           >
             <option value="public">Public</option>
             <option value="internal">Internal</option>
           </select>
         </label>
       </div>
-      <div className="px-4 py-3">
+      <div className="px-4 pt-4 pb-3">
         <Checkbox
           aria-label={`Toggle filterable for ${field.label}`}
           checked={field.filterableOnly}
@@ -313,7 +312,7 @@ export function FieldRow({
           onCheckedChange={(checked) => onFilterableChange(checked === true)}
         />
       </div>
-      <div className="px-4 py-3">
+      <div className="px-4 pt-4 pb-3">
         <Checkbox
           aria-label={`Toggle required for ${field.label}`}
           checked={field.required}
@@ -321,22 +320,26 @@ export function FieldRow({
           onCheckedChange={(checked) => onRequiredChange(checked === true)}
         />
       </div>
-      <div className="flex items-center gap-3 px-4 py-3">
-        <button
+      <div className="flex items-center justify-center py-3">
+        <Button
           type="button"
-          className="text-destructive transition-colors hover:text-destructive/80 disabled:opacity-50"
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
           aria-label={`Delete ${field.label}`}
+          title={`Delete ${field.label}`}
           disabled={isPending}
           onClick={onDelete}
         >
-          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-4" />
-        </button>
+          <HugeiconsIcon icon={Delete02Icon} strokeWidth={1.75} className="size-4" aria-hidden />
+        </Button>
       </div>
     </div>
   );
 }
 
 function EditableTextCell({
+  label,
   value,
   displayValue,
   className,
@@ -344,10 +347,10 @@ function EditableTextCell({
   required,
   multiline,
   ariaLabel,
-  datalistId,
-  datalistOptions,
   onCommit,
 }: {
+  /** A small caption above the value, for cells that stack several fields. */
+  label?: string;
   value: string;
   displayValue?: string;
   className?: string;
@@ -355,8 +358,6 @@ function EditableTextCell({
   required?: boolean;
   multiline?: boolean;
   ariaLabel: string;
-  datalistId?: string;
-  datalistOptions?: string[];
   onCommit: (value: string) => Promise<void>;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -413,6 +414,9 @@ function EditableTextCell({
   if (isEditing) {
     return (
       <div className="px-3 py-2">
+        {label ? (
+          <span className="mb-1 block px-1 text-xs font-medium text-muted-foreground">{label}</span>
+        ) : null}
         {multiline ? (
           <Textarea
             aria-label={ariaLabel}
@@ -423,17 +427,6 @@ function EditableTextCell({
             autoFocus
             rows={3}
             className="min-h-20 bg-background text-sm"
-          />
-        ) : datalistId && datalistOptions ? (
-          <CategoryCombobox
-            id={datalistId}
-            value={draft}
-            options={datalistOptions}
-            onValueChange={setDraft}
-            onValueCommit={(nextValue) => void commit(nextValue)}
-            onBlur={() => void commit()}
-            onKeyDown={handleKeyDown}
-            required={required}
           />
         ) : (
           <Input
@@ -455,13 +448,18 @@ function EditableTextCell({
     <button
       type="button"
       className={cn(
-        "h-full w-full cursor-text px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+        "w-full cursor-text rounded-md px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
         className,
       )}
       disabled={disabled}
       onClick={beginEditing}
     >
-      {shownValue}
+      {label ? (
+        <span className="block text-xs font-medium text-muted-foreground">{label}</span>
+      ) : null}
+      <span className="line-clamp-2" title={shownValue}>
+        {shownValue}
+      </span>
     </button>
   );
 }

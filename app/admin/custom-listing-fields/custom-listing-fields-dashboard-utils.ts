@@ -20,10 +20,12 @@ export type SortKey =
   | "required";
 export type SortDirection = "asc" | "desc";
 
+// Drag handle, order, field (label and key), applies to, description and help text, visibility,
+// filterable, required, actions. The minimum fits inside the wide page width at 1440px.
 export const TABLE_COLUMNS =
-  "grid-cols-[36px_48px_minmax(180px,1.1fr)_minmax(190px,1.15fr)_minmax(150px,0.85fr)_minmax(140px,0.8fr)_minmax(260px,1.35fr)_minmax(260px,1.35fr)_minmax(132px,0.7fr)_96px_96px_94px]";
+  "grid-cols-[40px_48px_minmax(200px,1fr)_136px_minmax(300px,1.8fr)_136px_88px_88px_56px]";
 
-export const TABLE_MIN_WIDTH = "min-w-[1700px]";
+export const TABLE_MIN_WIDTH = "min-w-[1100px]";
 
 export const FIELD_HELP_TEXT = {
   label: "Human-readable field name shown to partners and renters.",

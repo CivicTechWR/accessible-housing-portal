@@ -5,17 +5,13 @@ import { cn } from "@/lib/utils";
 type AuthPageShellProps = {
   children: ReactNode;
   className?: string;
-  variant?: "default" | "gradient";
 };
 
-export function AuthPageShell({ children, className, variant = "gradient" }: AuthPageShellProps) {
+export function AuthPageShell({ children, className }: AuthPageShellProps) {
   return (
     <main
       className={cn(
-        "flex min-h-screen items-center justify-center px-6 py-20",
-        variant === "gradient"
-          ? "bg-[radial-gradient(circle_at_top,_var(--color-muted)_0%,_transparent_45%),linear-gradient(180deg,_var(--color-background)_0%,_color-mix(in_oklab,var(--color-background),black_4%)_100%)]"
-          : "bg-background",
+        "flex min-h-[calc(100dvh-4rem)] justify-center bg-muted/40 px-4 py-10 sm:items-center sm:py-16",
         className,
       )}
     >

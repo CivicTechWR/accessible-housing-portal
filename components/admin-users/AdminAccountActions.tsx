@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { saveAccountAction, manageAccountAction } from "@/app/admin/users/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { inviteRoleOptions } from "@/components/admin-invite/types";
 import {
   DialogOverlay,
   DialogPanel,
@@ -59,56 +62,60 @@ export function AdminAccountActions({ account }: { account: AccountListResponse[
                 </p>
               )}
               <form
-                className="space-y-3"
+                className="space-y-4"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const data = new FormData(event.currentTarget);
                   void run(() => saveAccountAction(account.id, data));
                 }}
               >
-                <label htmlFor={`${id}-name`}>Name</label>
-                <Input id={`${id}-name`} name="name" defaultValue={account.name ?? ""} required />
-                <label htmlFor={`${id}-organization`}>Organization</label>
-                <Input
-                  id={`${id}-organization`}
-                  name="organization"
-                  defaultValue={account.organization ?? ""}
-                />
-                <label htmlFor={`${id}-role`}>Role</label>
-                <select
-                  id={`${id}-role`}
-                  name="role"
-                  defaultValue={account.role ?? "user"}
-                  className="w-full rounded-md border bg-background p-2"
-                >
-                  <option value="user">Housing Searcher</option>
-                  <option value="partner">Housing Lister</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <label htmlFor={`${id}-status`}>Status</label>
-                <select
-                  id={`${id}-status`}
-                  name="status"
-                  defaultValue={account.status ?? "invited"}
-                  className="w-full rounded-md border bg-background p-2"
-                >
-                  {/** Accepted invitations are terminal: returning to invited
+                <div className="space-y-2">
+                  <Label htmlFor={`${id}-name`}>Name</Label>
+                  <Input id={`${id}-name`} name="name" defaultValue={account.name ?? ""} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`${id}-organization`}>Organization</Label>
+                  <Input
+                    id={`${id}-organization`}
+                    name="organization"
+                    defaultValue={account.organization ?? ""}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`${id}-role`}>Role</Label>
+                  <NativeSelect id={`${id}-role`} name="role" defaultValue={account.role ?? "user"}>
+                    {inviteRoleOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`${id}-status`}>Status</Label>
+                  <NativeSelect
+                    id={`${id}-status`}
+                    name="status"
+                    defaultValue={account.status ?? "invited"}
+                  >
+                    {/** Accepted invitations are terminal: returning to invited
                       leaves sign-in and recovery disabled with re-invitation
                       rejected, so hide the option once inviteAcceptedAt is set. */}
-                  {(account.status === "invited" || !account.inviteAcceptedAt) && (
-                    <option value="invited">Invited</option>
-                  )}
-                  <option value="active">Active</option>
-                  <option value="suspended">Suspended</option>
-                  <option value="deactivated">Deactivated</option>
-                </select>
+                    {(account.status === "invited" || !account.inviteAcceptedAt) && (
+                      <option value="invited">Invited</option>
+                    )}
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="deactivated">Deactivated</option>
+                  </NativeSelect>
+                </div>
                 {account.status !== "invited" && Boolean(account.inviteAcceptedAt) && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     This account already accepted its invitation and cannot return to invited.
                     Restore active instead.
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Suspending or deactivating this account signs out its devices. You cannot remove
                   your own admin access.
                 </p>

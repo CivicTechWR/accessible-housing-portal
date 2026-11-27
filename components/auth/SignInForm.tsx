@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
-import { AuthCard } from "@/components/auth/AuthCard";
+import { FingerPrintIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { AuthCard, AuthField } from "@/components/auth/AuthCard";
+import { siteConfig } from "@/lib/site-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -69,57 +72,99 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
     <form onSubmit={submit}>
       <AuthCard
         title={secondFactor ? "Verify your sign-in" : "Sign in"}
-        description={secondFactor ? "Enter a code to finish signing in." : undefined}
+        description={
+          secondFactor
+            ? "Enter a code to finish signing in."
+            : `Welcome back to ${siteConfig.name}.`
+        }
         footer={
-          <div className="w-full space-y-4">
-            <Button className="w-full" type="submit" disabled={pending}>
+          <>
+            <Button className="w-full" size="lg" type="submit" disabled={pending}>
               {pending ? "Please wait..." : secondFactor ? "Verify" : "Sign in"}
             </Button>
             {!secondFactor && (
-              <div className="border-t border-border/60 pt-4">
+              <>
+                <div
+                  className="flex items-center gap-3 text-sm text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  <span className="h-px flex-1 bg-border" />
+                  or
+                  <span className="h-px flex-1 bg-border" />
+                </div>
                 <Button
                   className="w-full"
+                  size="lg"
                   type="button"
                   variant="outline"
                   disabled={pending}
                   onClick={signInWithPasskey}
                 >
+                  <HugeiconsIcon
+                    icon={FingerPrintIcon}
+                    strokeWidth={1.75}
+                    data-icon="inline-start"
+                  />
                   Sign in with a passkey
                 </Button>
-              </div>
+              </>
             )}
-          </div>
+          </>
         }
       >
         {secondFactor ? (
           <>
-            <label htmlFor="code">{backupCode ? "Recovery code" : "Authenticator code"}</label>
-            <Input
-              id="code"
-              name="code"
-              autoComplete="one-time-code"
-              inputMode={backupCode ? "text" : "numeric"}
-              required
-            />
-            <Button type="button" variant="link" onClick={() => setBackupCode(!backupCode)}>
+            <AuthField>
+              <label htmlFor="code">{backupCode ? "Recovery code" : "Authenticator code"}</label>
+              <Input
+                id="code"
+                name="code"
+                autoComplete="one-time-code"
+                inputMode={backupCode ? "text" : "numeric"}
+                required
+              />
+            </AuthField>
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto px-0"
+              onClick={() => setBackupCode(!backupCode)}
+            >
               {backupCode ? "Use authenticator app" : "Use a recovery code"}
             </Button>
           </>
         ) : (
           <>
-            <label htmlFor="email">Email</label>
-            <Input id="email" name="email" type="email" autoComplete="username webauthn" required />
-            <label htmlFor="password">Password</label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-            <Link className="block text-right text-sm underline" href="/forgot-password">
-              Forgot password?
-            </Link>
+            <AuthField>
+              <label htmlFor="email">Email</label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="username webauthn"
+                required
+              />
+            </AuthField>
+            <AuthField>
+              <div className="flex items-baseline justify-between gap-3">
+                <label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </label>
+                <Link
+                  className="text-sm font-medium text-primary-text underline-offset-4 hover:underline"
+                  href="/forgot-password"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+              />
+            </AuthField>
           </>
         )}
         {error && (

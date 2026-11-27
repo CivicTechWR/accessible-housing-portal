@@ -2,32 +2,55 @@
 
 import { ReactNode, Ref, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export interface FormSectionProps {
+  /** The section's anchor, used by the section nav. */
+  id?: string;
   title: string;
   description?: string;
-  isSeparated?: boolean;
+  /** Extra content beside the heading, such as a count. */
+  headerAside?: ReactNode;
   children: ReactNode;
 }
 
-export function FormSection({ title, description, isSeparated, children }: FormSectionProps) {
+/** One card in the listing form, with an 18px heading and a one-line description. */
+export function FormSection({ id, title, description, headerAside, children }: FormSectionProps) {
+  const headingId = id ? `${id}-heading` : undefined;
+
   return (
-    <div className={isSeparated ? "pt-6 border-t mt-8" : undefined}>
-      <h3 className="text-lg font-medium">{title}</h3>
-      {description && <p className="mb-4 text-sm text-muted-foreground">{description}</p>}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">{children}</div>
-    </div>
+    <section
+      id={id}
+      aria-labelledby={headingId}
+      // Leaves room for the sticky tab bar below lg when the nav scrolls a section into view.
+      className="scroll-mt-24 rounded-xl bg-card p-5 text-card-foreground shadow-xs ring-1 ring-foreground/10 sm:p-6 lg:scroll-mt-6"
+    >
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="min-w-0 space-y-1">
+          {/* tabIndex lets the section nav move focus here after scrolling. */}
+          <h2 id={headingId} tabIndex={-1} className="text-lg font-semibold outline-none">
+            {title}
+          </h2>
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        </div>
+        {headerAside}
+      </div>
+      <div className="grid grid-cols-1 gap-x-4 gap-y-5 md:grid-cols-2">{children}</div>
+    </section>
   );
 }
 
 export interface ListingFormLayoutProps {
-  formPaneHeader?: ReactNode;
+  /** The page title block shown above the form. */
+  header?: ReactNode;
+  /** The section list shown in a left rail on wide screens. */
+  sectionNav?: ReactNode;
+  /** A compact section picker shown where the rail doesn't fit. */
+  sectionJump?: ReactNode;
   previewPaneHeader?: ReactNode;
-  dividerControl?: ReactNode;
   formContent: ReactNode;
   previewContent?: ReactNode;
+  /** The sticky bar at the bottom of the screen with save state and the primary action. */
   footer?: ReactNode;
   isPreviewExpanded?: boolean;
 }
@@ -39,87 +62,31 @@ const PANES: { value: Pane; label: string }[] = [
   { value: "preview", label: "Preview" },
 ];
 
-function PaneHeader({ children }: { children: ReactNode }) {
-  return <div className="border-b border-foreground/10 px-4 py-3 md:px-6">{children}</div>;
-}
-
-function PaneFooter({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className={cn(
-        "flex justify-end gap-4 border-t border-foreground/10",
-        // Below lg the footer sticks to the bottom of the screen, so Save stays in reach.
-        "sticky bottom-0 z-10 -mx-4 -mb-5 mt-8 bg-background px-4 py-3 md:-mx-6 md:-mb-6 md:px-6",
-        "lg:static lg:z-auto lg:mx-0 lg:mb-0 lg:mt-10 lg:bg-transparent lg:px-0 lg:pt-8 lg:pb-0",
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
-function PaneBody({
-  children,
-  footer,
-  isSticky = false,
+/** Tab list shown below lg to pick which pane is visible, with the section picker beside it. */
+function PaneTabs({
+  ref,
+  sectionJump,
+  isFormActive,
 }: {
-  children: ReactNode;
-  footer?: ReactNode;
-  isSticky?: boolean;
+  ref: Ref<HTMLDivElement>;
+  sectionJump?: ReactNode;
+  isFormActive: boolean;
 }) {
-  return (
-    <div className={cn("px-4 py-5 md:px-6 md:py-6", isSticky && "lg:sticky lg:top-0")}>
-      {children}
-      {footer ? <PaneFooter>{footer}</PaneFooter> : null}
-    </div>
-  );
-}
-
-function StickyPaneScroll({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
-  return (
-    <ScrollArea
-      type="always"
-      // Below lg the pane scrolls with the page; a visible viewport lets the footer stick to the
-      // window. Radix wraps the content in a display:table div, which grows to fit a long
-      // unbreakable string and would then widen the page, so it is a block here and the
-      // text wraps at the pane's width.
-      className={cn(
-        "lg:sticky lg:top-0 lg:h-[calc(100vh-10rem)]",
-        "max-lg:[&>[data-slot=scroll-area-viewport]]:overflow-visible! max-lg:[&>[data-slot=scroll-area-viewport]>div]:block! max-lg:[&>[data-slot=scroll-area-scrollbar]]:hidden",
-      )}
-    >
-      <PaneBody footer={footer}>{children}</PaneBody>
-    </ScrollArea>
-  );
-}
-
-function PreviewDivider({ dividerControl }: { dividerControl?: ReactNode }) {
-  return (
-    <div className="order-1 hidden bg-background lg:order-2 lg:flex lg:border-x lg:border-foreground/10">
-      <div className="sticky top-0 flex h-full min-h-[calc(100vh-10rem)] w-full items-stretch justify-center">
-        {dividerControl ?? <div className="h-full w-full" />}
-      </div>
-    </div>
-  );
-}
-
-/** Tab list shown below lg to pick which pane is visible. */
-function PaneTabs({ ref }: { ref: Ref<HTMLDivElement> }) {
   return (
     <div
       ref={ref}
-      className="sticky top-0 z-20 border-b border-foreground/10 bg-background px-4 py-2 md:px-6 lg:hidden"
+      className="sticky top-0 z-20 -mx-4 flex items-center gap-2 border-b border-foreground/10 bg-background px-4 py-2 sm:-mx-6 sm:px-6 lg:hidden"
     >
       <TabsList
         aria-label="Listing editor view"
-        className="grid w-full grid-cols-2 gap-1 p-1 group-data-horizontal/tabs:h-auto"
+        className="grid shrink-0 grid-cols-2 gap-1 p-1 group-data-horizontal/tabs:h-auto"
       >
         {PANES.map(({ value, label }) => (
           <TabsTrigger
             key={value}
             value={value}
             className={cn(
-              "h-11 border-2 px-3 text-sm",
+              "h-11 border-2 px-4 text-sm",
               // The selected tab gets a border and bold text, not just a color change.
               "data-active:border-foreground data-active:font-semibold data-active:shadow-sm dark:data-active:border-foreground",
             )}
@@ -128,6 +95,7 @@ function PaneTabs({ ref }: { ref: Ref<HTMLDivElement> }) {
           </TabsTrigger>
         ))}
       </TabsList>
+      {sectionJump && isFormActive ? <div className="min-w-0 flex-1">{sectionJump}</div> : null}
     </div>
   );
 }
@@ -205,10 +173,20 @@ function usePaneSwitcher() {
   return { activePane, switchPane, containerRef };
 }
 
+/** The bar pinned to the bottom of the screen. It spans the page shell's side padding. */
+function StickyFooter({ children }: { children: ReactNode }) {
+  return (
+    <div className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-foreground/10 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-end gap-4">{children}</div>
+    </div>
+  );
+}
+
 export function ListingFormLayout({
-  formPaneHeader,
+  header,
+  sectionNav,
+  sectionJump,
   previewPaneHeader,
-  dividerControl,
   formContent,
   previewContent,
   footer,
@@ -218,47 +196,63 @@ export function ListingFormLayout({
   const isExpandedWithPreview = isPreviewExpanded && hasPreview;
   const { activePane, switchPane, containerRef } = usePaneSwitcher();
   const tabBarRef = useRef<HTMLDivElement>(null);
+  // The rail shows at xl unless the expanded preview needs the room. Elsewhere the compact
+  // picker takes its place: in the tab bar below lg, above the form from lg up.
+  const showsRail = Boolean(sectionNav) && !isExpandedWithPreview;
 
   const panes = (
     <div
       className={cn(
-        "grid grid-cols-1 lg:min-h-[calc(100vh-14rem)]",
-        isExpandedWithPreview
-          ? "lg:grid-cols-[320px_44px_minmax(0,1fr)] xl:grid-cols-[360px_44px_minmax(0,1fr)]"
-          : "lg:grid-cols-[1fr_44px_400px] xl:grid-cols-[1fr_44px_450px]",
+        "mx-auto grid max-w-[1440px] grid-cols-1 gap-6 lg:items-start xl:gap-8",
+        !hasPreview
+          ? showsRail && "xl:grid-cols-[13rem_minmax(0,1fr)]"
+          : isExpandedWithPreview
+            ? "lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(0,1fr)]"
+            : cn(
+                "lg:grid-cols-[minmax(0,1fr)_22rem]",
+                showsRail
+                  ? "xl:grid-cols-[13rem_minmax(0,1fr)_24rem]"
+                  : "xl:grid-cols-[minmax(0,1fr)_24rem]",
+              ),
       )}
     >
-      <PaneSection
-        value="form"
-        hasTabs={hasPreview}
-        className="order-2 min-w-0 bg-muted/60 lg:order-1"
-      >
-        {formPaneHeader && <PaneHeader>{formPaneHeader}</PaneHeader>}
-        {isExpandedWithPreview ? (
-          <StickyPaneScroll footer={footer}>{formContent}</StickyPaneScroll>
-        ) : (
-          <PaneBody footer={footer}>{formContent}</PaneBody>
-        )}
+      {showsRail ? (
+        <aside className="sticky top-6 hidden self-start xl:block">{sectionNav}</aside>
+      ) : null}
+
+      <PaneSection value="form" hasTabs={hasPreview} className="min-w-0">
+        {sectionJump ? (
+          <div className={cn("mb-4 hidden lg:block", showsRail && "xl:hidden")}>{sectionJump}</div>
+        ) : null}
+        <div className="space-y-6">{formContent}</div>
       </PaneSection>
 
       {previewContent && (
-        <>
-          <PreviewDivider dividerControl={dividerControl} />
-          <PaneSection value="preview" hasTabs className="order-1 min-w-0 lg:order-3">
-            {previewPaneHeader && <PaneHeader>{previewPaneHeader}</PaneHeader>}
-            {isExpandedWithPreview ? (
-              <StickyPaneScroll>{previewContent}</StickyPaneScroll>
-            ) : (
-              <PaneBody isSticky>{previewContent}</PaneBody>
+        <PaneSection value="preview" hasTabs className="min-w-0 lg:sticky lg:top-6">
+          <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
+            {previewPaneHeader && (
+              <div className="border-b border-foreground/10 px-4 py-3">{previewPaneHeader}</div>
             )}
-          </PaneSection>
-        </>
+            {/* Scrolls on its own at lg, so the preview stays beside the field being edited. */}
+            <div className="p-4 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto">
+              {previewContent}
+            </div>
+          </div>
+        </PaneSection>
       )}
     </div>
   );
 
+  const body = (
+    <>
+      {header ? <div className="mx-auto mb-6 max-w-[1440px]">{header}</div> : null}
+      {panes}
+      {footer ? <StickyFooter>{footer}</StickyFooter> : null}
+    </>
+  );
+
   if (!hasPreview) {
-    return <div className="w-full">{panes}</div>;
+    return <div className="w-full">{body}</div>;
   }
 
   return (
@@ -272,8 +266,8 @@ export function ListingFormLayout({
       data-listing-form-tabs=""
       // Chrome scrolls a focused textarea only far enough to show the caret, which can leave
       // most of it under the sticky Save bar. "nearest" respects the scroll padding and is a
-      // no-op when the field is already fully visible. The sticky bars only exist while the
-      // tab bar shows (below lg), so skip it otherwise.
+      // no-op when the field is already fully visible. The sticky tab bar only exists below
+      // lg, where the scroll padding is set, so skip it otherwise.
       onFocus={(event) => {
         const tabBar = tabBarRef.current;
         if (
@@ -286,8 +280,10 @@ export function ListingFormLayout({
       }}
       className="block w-full"
     >
-      <PaneTabs ref={tabBarRef} />
-      {panes}
+      {header ? <div className="mx-auto mb-4 max-w-[1440px] lg:mb-6">{header}</div> : null}
+      <PaneTabs ref={tabBarRef} sectionJump={sectionJump} isFormActive={activePane === "form"} />
+      <div className="pt-4 lg:pt-0">{panes}</div>
+      {footer ? <StickyFooter>{footer}</StickyFooter> : null}
     </Tabs>
   );
 }

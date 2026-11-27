@@ -45,7 +45,7 @@ export function DeleteFieldDialog({
         onInteractOutside={handleDismiss}
       >
         <DialogHeader>
-          <DialogTitle>Delete Custom Field</DialogTitle>
+          <DialogTitle>Delete custom field</DialogTitle>
           <DialogDescription className="mt-2">
             Delete {field.label}? Existing listing values with this key will no longer be managed by
             the custom field dashboard.
@@ -62,7 +62,7 @@ export function DeleteFieldDialog({
             onClick={onConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? "Deleting..." : "Delete Field"}
+            {isDeleting ? "Deleting..." : "Delete field"}
           </Button>
         </DialogFooter>
       </DialogPanel>

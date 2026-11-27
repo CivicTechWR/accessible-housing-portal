@@ -5,7 +5,7 @@ import { CustomListingFieldsDashboard } from "@/app/admin/custom-listing-fields/
 import { getAdminCustomListingFieldsService } from "@/lib/custom-listing-fields/custom-listing-field-admin.service";
 
 export const metadata: Metadata = {
-  title: "Custom Listing Fields",
+  title: "Custom listing fields",
 };
 
 export const dynamic = "force-dynamic";

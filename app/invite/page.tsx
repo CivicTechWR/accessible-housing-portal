@@ -34,17 +34,16 @@ export default async function InvitePage({ searchParams }: InvitePageProps) {
 
 function InvalidInviteState() {
   return (
-    <AuthPageShell variant="default">
+    <AuthPageShell>
       <AuthCard
         title="Invite unavailable"
         description="This invite link is missing, expired, or has already been used."
-      >
-        <div className="pt-0">
-          <Button asChild size="sm" className="rounded-full px-4">
+        footer={
+          <Button asChild size="lg" className="w-full">
             <Link href="/sign-in">Go to sign in</Link>
           </Button>
-        </div>
-      </AuthCard>
+        }
+      />
     </AuthPageShell>
   );
 }

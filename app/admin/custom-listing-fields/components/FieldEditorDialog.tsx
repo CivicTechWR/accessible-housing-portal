@@ -168,7 +168,7 @@ export function FieldEditorDialog({
         >
           <DialogHeader className="flex items-start justify-between">
             <div>
-              <DialogTitle>Add Custom Field</DialogTitle>
+              <DialogTitle>Add custom field</DialogTitle>
               <DialogDescription>
                 Configure how this field appears on listing forms, listing pages, and filters.
               </DialogDescription>
@@ -305,7 +305,7 @@ export function FieldEditorDialog({
             <FormTextArea
               control={form.control}
               name="helpText"
-              label="Partner Help Text"
+              label="Partner help text"
               helpText={FIELD_HELP_TEXT.helpText}
               disabled={isSaving}
             />
@@ -344,7 +344,7 @@ export function FieldEditorDialog({
               Cancel
             </Button>
             <Button type="submit" size="lg" disabled={isSaving}>
-              {isSaving ? "Saving..." : "Add Field"}
+              {isSaving ? "Saving..." : "Add field"}
             </Button>
           </DialogFooter>
         </DialogFormPanel>

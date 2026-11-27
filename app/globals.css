@@ -155,7 +155,7 @@
   --card-foreground: oklch(0.987 0.002 197.1);
   --popover: oklch(0.218 0.008 223.9);
   --popover-foreground: oklch(0.987 0.002 197.1);
-  --primary: oklch(0.443 0.11 240.79);
+  --primary: oklch(0.5 0.134 242.749);
   --primary-foreground: oklch(0.977 0.013 236.62);
   --primary-text: oklch(0.685 0.169 237.323);
   --secondary: oklch(0.274 0.006 286.033);
@@ -244,14 +244,17 @@
 
 @layer base {
   /*
-   * Below lg the listing form has a sticky tab bar (about 69px) at the top and a sticky
-   * Save bar (about 57px) at the bottom. Scroll padding keeps a focused field from landing
-   * under either one (WCAG 2.4.11). Scoped to pages that render the tabs, so anchor links
-   * elsewhere don't move.
+   * The listing form has a sticky Save bar (about 72px) at the bottom at every width, and
+   * below lg a sticky tab bar (about 69px) at the top. Scroll padding keeps a focused field
+   * from landing under either one (WCAG 2.4.11). Scoped to pages that render the tabs, so
+   * anchor links elsewhere don't move.
    */
+  html:has([data-listing-form-tabs]) {
+    scroll-padding-block: 1rem 5.5rem;
+  }
   @media (width < 64rem) {
     html:has([data-listing-form-tabs]) {
-      scroll-padding-block: 5rem 4.5rem;
+      scroll-padding-block: 5rem 5.5rem;
     }
   }
   * {

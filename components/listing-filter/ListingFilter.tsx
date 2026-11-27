@@ -40,7 +40,7 @@ export function ListingFilters({
 }: ListingFiltersProps) {
   return (
     <div className={cn("w-full max-w-sm border p-4 space-y-6", className)}>
-      <h2 className="text-lg">Filters</h2>
+      <h2 className="text-xl font-semibold">Filters</h2>
 
       <PriceRangeInput {...priceRangeProps} />
 

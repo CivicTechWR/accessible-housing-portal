@@ -46,12 +46,19 @@ function mockPendingFetch() {
   return { fetchMock, respond: (response: FetchResponse) => respond(response) };
 }
 
+const actionsMenuName = `More actions for ${listing.title}`;
+
+function openActionsMenu() {
+  fireEvent.keyDown(screen.getByRole("button", { name: actionsMenuName }), { key: "Enter" });
+}
+
 async function confirmArchive() {
   render(<MyListingsClient initialListings={[listing]} renderedAt="2026-05-02T12:00:00.000Z" />, {
     wrapper: Wrapper,
   });
 
-  fireEvent.click(screen.getByRole("button", { name: "Archive" }));
+  openActionsMenu();
+  fireEvent.click(screen.getByRole("menuitem", { name: "Archive" }));
   const dialog = screen.getByRole("alertdialog", { name: "Archive this listing?" });
   fireEvent.click(within(dialog).getByRole("button", { name: "Archive" }));
 
@@ -76,13 +83,15 @@ describe("MyListingsClient archive confirmation", () => {
     );
   });
 
-  it("returns focus to Archive when the request fails", async () => {
+  it("returns focus to the actions menu button when the request fails", async () => {
     const { respond } = mockPendingFetch();
 
     await confirmArchive();
     respond({ ok: false, json: async () => ({ message: "Archive failed." }) });
 
     await screen.findByText("Archive failed.");
-    await waitFor(() => expect(screen.getByRole("button", { name: "Archive" })).toHaveFocus());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: actionsMenuName })).toHaveFocus(),
+    );
   });
 });

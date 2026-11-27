@@ -36,9 +36,9 @@ test("at lg and up, focus moves to the divider and stays there", async ({ page }
   await openListingForm(page);
 
   await page.getByRole("button", { name: /^View listing:/ }).click();
-  const hideDetails = page.getByRole("button", { name: "Hide Listing Details Page Preview" });
+  const hideDetails = page.getByRole("button", { name: "Show card preview" });
   await expect(hideDetails).toBeFocused();
 
   await hideDetails.click();
-  await expect(page.getByRole("button", { name: "Show Listing Page Preview" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Show full page" })).toBeFocused();
 });

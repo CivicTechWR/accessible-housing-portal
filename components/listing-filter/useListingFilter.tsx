@@ -25,9 +25,10 @@ export function useListingFilters() {
       sortOptions: [
         { value: "newest", label: "Newest" },
         { value: "oldest", label: "Oldest" },
-        { value: "price_asc", label: "Price: Low to High" },
-        { value: "price_desc", label: "Price: High to Low" },
+        { value: "price_asc", label: "Price: low to high" },
+        { value: "price_desc", label: "Price: high to low" },
       ],
+      value: filters.sort,
       // An unknown value parses to null, which resets the sort to its default.
       onChange: async (value: string) =>
         await setFilters({ sort: listingSearchParamsParsers.sort.parse(value) }),

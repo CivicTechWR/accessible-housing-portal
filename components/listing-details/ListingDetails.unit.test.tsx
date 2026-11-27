@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "@jest/globals";
 
 import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
@@ -22,20 +22,25 @@ const contactProps = {
   contactPhone: "519-555-0100",
 };
 
+/** The contact card, which holds the Apply button and every contact link. */
+function contactCard() {
+  return within(screen.getByRole("complementary", { name: "Contact and applications" }));
+}
+
 const NO_DETAILS_MESSAGE = /hasn't provided contact or application details/;
 
 describe("ListingDetails rental details", () => {
   it("renders the included utilities in a consistent order", () => {
     render(<ListingDetails {...baseProps} utilitiesIncluded={["internet", "water", "heat"]} />);
 
-    screen.getByText("Utilities Included");
+    screen.getByText("Utilities included");
     screen.getByText("Heat, Water, Internet");
   });
 
   it("shows an explicit empty state when no utilities are included", () => {
     render(<ListingDetails {...baseProps} utilitiesIncluded={[]} />);
 
-    screen.getByText("Utilities Included");
+    screen.getByText("Utilities included");
     screen.getByText("None listed");
   });
 
@@ -56,22 +61,30 @@ describe("ListingDetails rental details", () => {
     for (const text of [
       "Description",
       "Bright corner unit near the LRT.",
-      "Building Type",
+      "Building type",
       "Apartment",
       "Deposit",
       "First and last month's rent, refundable",
       "Electric heat pump",
       "Water",
-      "Initial Lease Term",
+      "Initial lease term",
       "12-month lease",
-      "Available",
-      "September 1, 2026",
     ]) {
       screen.getByText(text);
     }
-    const labels = screen.getAllByRole("term").map((node) => node.textContent);
-    expect(labels.indexOf("Deposit")).toBeLessThan(labels.indexOf("Rental Cost"));
-    expect(labels.indexOf("Primary heating type") + 1).toBe(labels.indexOf("Utilities Included"));
+    within(screen.getByRole("list", { name: "Key facts" })).getByText(
+      "Available September 1, 2026",
+    );
+    // The first child is the label text; the lease term's info button follows it.
+    const labels = screen.getAllByRole("term").map((node) => node.firstChild?.textContent);
+    expect(labels).toEqual([
+      "Deposit",
+      "Building type",
+      "Primary heating type",
+      "Utilities included",
+      "Initial lease term",
+      "Posted",
+    ]);
   });
 
   it("explains the initial lease term with the shared definition and a note for searchers", () => {
@@ -88,11 +101,11 @@ describe("ListingDetails rental details", () => {
 
     for (const label of [
       "Description",
-      "Square Feet",
-      "Building Type",
+      /sq ft/,
+      "Building type",
       "Primary heating type",
-      "Initial Lease Term",
-      "Available",
+      "Initial lease term",
+      /^Available/,
       "Deposit",
     ]) {
       expect(screen.queryByText(label)).toBeNull();
@@ -132,7 +145,9 @@ describe("ListingDetails rental features", () => {
       />,
     );
 
-    const [withDescription, emptyDescription, nameAsDescription] = screen.getAllByRole("listitem");
+    const [withDescription, emptyDescription, nameAsDescription] = within(
+      screen.getByRole("region", { name: "Accessibility features" }),
+    ).getAllByRole("listitem");
     expect(withDescription).toHaveTextContent("Step-free entrance");
     expect(withDescription).toHaveTextContent("The main entrance has no steps.");
     expect(emptyDescription).toHaveTextContent(/^Custom feature$/);
@@ -151,7 +166,7 @@ describe("ListingDetails apply section", () => {
       />,
     );
 
-    screen.getByRole("button", { name: "Apply" });
+    contactCard().getByRole("button", { name: "Apply" });
     screen.getByText("Property manager");
   });
 
@@ -216,7 +231,7 @@ describe("ListingDetails apply section", () => {
     );
 
     screen.getByRole("heading", { name: "For questions and applications" });
-    expect(screen.getAllByRole("link")).toHaveLength(2);
+    expect(contactCard().getAllByRole("link")).toHaveLength(2);
     screen.getByRole("link", { name: contactProps.contactEmail });
     screen.getByRole("link", { name: contactProps.contactPhone });
     expect(screen.queryByRole("heading", { name: "Applications" })).toBeNull();
@@ -238,7 +253,7 @@ describe("ListingDetails apply section", () => {
     (application) => {
       render(<ListingDetails {...baseProps} {...contactProps} {...application} />);
 
-      expect(screen.getAllByRole("link")).toHaveLength(3);
+      expect(contactCard().getAllByRole("link")).toHaveLength(3);
       screen.getByRole("heading", { name: "Applications" });
       screen.getByRole("link", { name: application.different });
       screen.getByText("Also for applications");

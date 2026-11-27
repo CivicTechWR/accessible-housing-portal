@@ -22,23 +22,20 @@ export function AdminInvitePanel({
   });
 
   return (
-    <section className="mx-auto w-full max-w-3xl space-y-4">
-      <header className="space-y-1">
-        <h1 className="font-heading text-2xl font-semibold text-foreground">{copy.heading}</h1>
-        <p className="text-sm text-muted-foreground">{copy.subheading}</p>
-      </header>
-
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{copy.formTitle}</CardTitle>
+          <CardTitle>
+            <h2 className="text-lg">{copy.formTitle}</h2>
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           <AdminInviteForm onResult={handleInviteResult} />
           <InviteResultBanner result={lastResult} />
         </CardContent>
       </Card>
 
       <RecentInvitesList invites={invites} />
-    </section>
+    </div>
   );
 }

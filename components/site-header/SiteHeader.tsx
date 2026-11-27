@@ -4,8 +4,8 @@ import { BrandMark } from "@/components/brand/BrandMark";
 import { HeaderAccountMenu } from "@/components/site-header/HeaderAccountMenu";
 import { HeaderMobileMenu } from "@/components/site-header/HeaderMobileMenu";
 import { HeaderNavLink } from "@/components/site-header/HeaderNavLink";
+import { HeaderSignInButton } from "@/components/site-header/HeaderSignInButton";
 import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
-import { Button } from "@/components/ui/button";
 import { getOptionalSession } from "@/lib/auth/session";
 import { siteConfig } from "@/lib/site-config";
 
@@ -47,9 +47,7 @@ export async function SiteHeader() {
             <>
               {/* Signed-in users find the theme control in the account menu. */}
               <ThemeToggle />
-              <Button asChild>
-                <Link href="/sign-in">Sign in</Link>
-              </Button>
+              <HeaderSignInButton />
             </>
           )}
         </div>

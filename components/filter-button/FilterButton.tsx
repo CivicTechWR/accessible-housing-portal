@@ -1,9 +1,10 @@
 "use client";
 
-import { ToggleIconButton } from "@/components/toggle-icon-button/ToggleIconButton";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { FilterMailIcon } from "@hugeicons/core-free-icons";
+import { FilterHorizontalIcon } from "@hugeicons/core-free-icons";
 import type { Ref } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export interface FilterButtonProps {
   activeFilterCount: number;
@@ -13,6 +14,20 @@ export interface FilterButtonProps {
   mobileButtonRef?: Ref<HTMLButtonElement>;
 }
 
+function CountBadge({ count, className }: { count: number; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground",
+        className,
+      )}
+    >
+      {count}
+    </span>
+  );
+}
+
 export function FilterButton({
   activeFilterCount,
   isFilterOpen,
@@ -20,47 +35,44 @@ export function FilterButton({
   viewport = "both",
   mobileButtonRef,
 }: FilterButtonProps) {
+  const label = activeFilterCount > 0 ? `Filters, ${activeFilterCount} applied` : "Filters";
+  const icon = (
+    <HugeiconsIcon icon={FilterHorizontalIcon} strokeWidth={1.75} className="size-5" aria-hidden />
+  );
+
   return (
     <>
       {(viewport === "both" || viewport === "mobile") && (
-        <div className="sm:hidden">
-          <div className="relative">
-            <ToggleIconButton
-              ref={mobileButtonRef}
-              isActive={isFilterOpen}
-              icon={<HugeiconsIcon icon={FilterMailIcon} strokeWidth={2} className="size-5" />}
-              onClick={onFilterClick}
-              aria-label="Filters"
-              aria-expanded={isFilterOpen}
-              className="size-11"
-            />
-            {activeFilterCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                {activeFilterCount}
-              </span>
-            )}
-          </div>
-        </div>
+        <Button
+          ref={mobileButtonRef}
+          variant="outline"
+          size="icon-lg"
+          onClick={onFilterClick}
+          aria-label={label}
+          aria-expanded={isFilterOpen}
+          className="relative shrink-0 sm:hidden"
+        >
+          {icon}
+          {activeFilterCount > 0 && (
+            <CountBadge count={activeFilterCount} className="absolute -top-1.5 -right-1.5" />
+          )}
+        </Button>
       )}
       {(viewport === "both" || viewport === "desktop") && (
-        <div className="hidden sm:block">
-          <button
-            onClick={onFilterClick}
-            aria-expanded={isFilterOpen}
-            className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-              isFilterOpen
-                ? "border-primary/30 bg-primary/10 text-primary-text hover:bg-primary/20"
-                : "border-border bg-background hover:bg-accent"
-            }`}
-          >
-            All Filters
-            {activeFilterCount > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-        </div>
+        <Button
+          variant="outline"
+          onClick={onFilterClick}
+          aria-label={label}
+          aria-expanded={isFilterOpen}
+          className={cn(
+            "hidden shrink-0 gap-2 sm:inline-flex",
+            activeFilterCount > 0 && "border-primary-text/60 bg-primary/5 dark:bg-primary/15",
+          )}
+        >
+          {icon}
+          Filters
+          {activeFilterCount > 0 && <CountBadge count={activeFilterCount} />}
+        </Button>
       )}
     </>
   );

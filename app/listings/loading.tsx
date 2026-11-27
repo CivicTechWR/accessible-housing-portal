@@ -1,3 +1,11 @@
+import ListingsSkeleton from "@/components/listings-skeleton/ListingsSkeleton";
+
 export default function ListingsLoading() {
-  return <div className="h-screen bg-background" />;
+  return (
+    <>
+      {/* Matches the loaded page, which hides the site footer. */}
+      <div data-hide-site-footer hidden />
+      <ListingsSkeleton />
+    </>
+  );
 }

@@ -3,8 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { SubmitErrorHandler } from "react-hook-form";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Alert02Icon,
+  ArrowExpand01Icon,
+  ArrowLeft01Icon,
+  ArrowShrink02Icon,
+  CheckmarkCircle02Icon,
+  Loading03Icon,
+  PencilEdit02Icon,
+} from "@hugeicons/core-free-icons";
 import { useListingForm, type AutosaveStatus } from "./useListingForm";
-import { CORE_FIELD_DEFINITIONS } from "./fieldDefinitions";
+import {
+  CORE_FIELD_CATEGORIES,
+  CORE_FIELD_DEFINITIONS,
+  listingFormSectionId,
+} from "./fieldDefinitions";
 import type { ListingFormInput } from "./types";
 import type { ListingLoadError } from "./useGetListingQuery";
 import { ListingFormFields } from "@/components/listing-form-fields/ListingFormFields";
@@ -12,11 +26,18 @@ import { ListingFormFeatures } from "@/components/listing-form-features/ListingF
 import { ListingFormImages } from "@/components/listing-form-images/ListingFormImages";
 import { ListingFormLayout } from "@/components/listing-form-layout/ListingFormLayout";
 import {
+  ListingFormSectionJump,
+  ListingFormSectionNav,
+  type ListingFormSectionLink,
+} from "@/components/listing-form-layout/ListingFormSectionNav";
+import {
   ListingFormPreview,
   type ListingFormPreviewMode,
 } from "@/components/listing-form-preview/ListingFormPreview";
 import { ListingFormSkeleton } from "@/components/listing-form-skeleton/ListingFormSkeleton";
+import { PageHeader } from "@/components/page-shell/AppPageShell";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
@@ -48,7 +69,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     setPreviewMode("card");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const handleDividerToggle = () => {
+  const handlePreviewToggle = () => {
     if (previewMode === "card") {
       handleOpenDetails();
       return;
@@ -59,10 +80,10 @@ export default function ListingForm({ listingId }: ListingFormProps) {
 
   // The preview card and the "Back to card preview" button unmount when they switch the preview,
   // which would drop focus to <body>. Focus moves to the control that reverses the switch instead.
-  // The divider stays mounted and keeps focus, so it never asks for this.
+  // The preview header's toggle stays mounted and keeps focus, so it never asks for this.
   const previewCardButtonRef = useRef<HTMLButtonElement>(null);
   const previewBackButtonRef = useRef<HTMLButtonElement>(null);
-  const dividerButtonRef = useRef<HTMLButtonElement>(null);
+  const previewToggleRef = useRef<HTMLButtonElement>(null);
   const isPreviewFocusWanted = useRef(false);
   const handlePreviewOpenDetails = () => {
     isPreviewFocusWanted.current = true;
@@ -82,12 +103,12 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       return;
     }
 
-    // The Back button is hidden at lg and up, where focus() on it does nothing and the divider
-    // is the control that returns to the card.
+    // The Back button is hidden at lg and up, where focus() on it does nothing and the preview
+    // header's toggle is the control that returns to the card.
     const backButton = previewBackButtonRef.current;
     backButton?.focus({ preventScroll: true });
     if (document.activeElement !== backButton) {
-      dividerButtonRef.current?.focus({ preventScroll: true });
+      previewToggleRef.current?.focus({ preventScroll: true });
     }
   }, [previewMode]);
   const handleInvalidSubmit: SubmitErrorHandler<ListingFormInput> = (errors) => {
@@ -122,22 +143,15 @@ export default function ListingForm({ listingId }: ListingFormProps) {
   };
 
   const liveFormData = form.watch();
+  const isDirty = form.formState.isDirty;
   const isPreviewExpanded = previewMode === "details";
-  const previewToggleLabel = isPreviewExpanded
-    ? "Hide Listing Details Page Preview"
-    : "Show Listing Page Preview";
-  const formHeading =
-    liveFormData.status === "draft"
-      ? "Draft Listing"
-      : isEditMode
-        ? "Update Listing"
-        : "Create New Listing";
-  const submitLabel =
-    liveFormData.status === "draft"
-      ? "Publish Listing"
-      : isEditMode
-        ? "Save Changes"
-        : "Create Listing";
+  const isDraft = liveFormData.status === "draft";
+  const formHeading = !isEditMode ? "New listing" : isDraft ? "Edit draft" : "Edit listing";
+  const formDescription = isDraft
+    ? "Your draft saves automatically. Publish it when the listing is ready."
+    : "Changes go live when you save them.";
+  const submitLabel = isDraft ? "Publish listing" : isEditMode ? "Save changes" : "Create listing";
+  const sections = listingFormSections(liveFormData);
 
   if (isLoading) {
     return <ListingFormSkeleton />;
@@ -158,49 +172,64 @@ export default function ListingForm({ listingId }: ListingFormProps) {
   return (
     <ListingFormLayout
       isPreviewExpanded={isPreviewExpanded}
-      formPaneHeader={
-        <div>
-          <h2>{formHeading}</h2>
-          <p className="text-xs text-muted-foreground">
-            Enter listing details, images, and accessibility information.
-          </p>
+      header={
+        <div className="space-y-3">
+          <Button asChild variant="ghost" size="sm" className="-ml-2.5 text-muted-foreground">
+            <Link href="/my-listings">
+              <HugeiconsIcon
+                icon={ArrowLeft01Icon}
+                strokeWidth={1.75}
+                data-icon="inline-start"
+                aria-hidden
+              />
+              My listings
+            </Link>
+          </Button>
+          <PageHeader
+            title={
+              <span className="flex flex-wrap items-center gap-3">
+                {formHeading}
+                {isEditMode ? <ListingStatusBadge status={liveFormData.status} /> : null}
+              </span>
+            }
+            description={formDescription}
+          />
         </div>
       }
+      sectionNav={<ListingFormSectionNav sections={sections} />}
+      sectionJump={<ListingFormSectionJump sections={sections} />}
       previewPaneHeader={
-        <div>
-          <h2>Live Preview</h2>
-          <p className="text-xs text-muted-foreground">
-            Read-only view of how this listing appears to housing searchers.
-          </p>
-        </div>
-      }
-      dividerControl={
-        <Button
-          ref={dividerButtonRef}
-          type="button"
-          variant="secondary"
-          onClick={handleDividerToggle}
-          aria-label={previewToggleLabel}
-          className="h-full min-h-[460px] w-full rounded-none border-0 px-0 py-0 hover:bg-muted/40"
-        >
-          <div className="h-full w-full">
-            <div className="sticky top-1/2 flex -translate-y-1/2 flex-col items-center gap-3">
-              <span className="text-xs leading-none text-muted-foreground" aria-hidden>
-                {isPreviewExpanded ? ">>" : "<<"}
-              </span>
-              <span className="text-[10px] uppercase tracking-[0.14em] [writing-mode:vertical-rl] rotate-180">
-                {previewToggleLabel}
-              </span>
-              <span className="text-xs leading-none text-muted-foreground" aria-hidden>
-                {isPreviewExpanded ? ">>" : "<<"}
-              </span>
-            </div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">Live preview</h2>
+            <p className="text-sm text-muted-foreground">How searchers will see this listing.</p>
           </div>
-        </Button>
+          {/* Below lg the preview's own Back button returns to the card. */}
+          <Button
+            ref={previewToggleRef}
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handlePreviewToggle}
+            className="hidden shrink-0 lg:inline-flex"
+          >
+            <HugeiconsIcon
+              icon={isPreviewExpanded ? ArrowShrink02Icon : ArrowExpand01Icon}
+              strokeWidth={1.75}
+              data-icon="inline-start"
+              aria-hidden
+            />
+            {isPreviewExpanded ? "Show card preview" : "Show full page"}
+          </Button>
+        </div>
       }
       formContent={
         <Form {...form}>
-          <form id="listing-form" onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}>
+          <form
+            id="listing-form"
+            className="space-y-6"
+            onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}
+          >
             <ListingFormFields control={form.control} />
             <ListingFormImages
               control={form.control}
@@ -224,37 +253,130 @@ export default function ListingForm({ listingId }: ListingFormProps) {
         />
       }
       footer={
-        <div className="flex min-w-0 items-center gap-3">
-          {/* Always rendered so screen readers pick up the first change. Two lines of text-xs/4
-              match the button's height, so a long error never makes the sticky bar taller. */}
+        <>
+          {/* Always rendered so screen readers pick up the first change. Two lines of text at
+              most, so a long error never makes the sticky bar taller than its button. */}
           <p
             className={cn(
-              "line-clamp-2 min-w-0 text-xs/4",
+              "mr-auto flex min-w-0 items-center gap-2 text-sm",
               autosaveStatus?.status === "error" ? "text-destructive" : "text-muted-foreground",
             )}
             role="status"
             aria-live="polite"
           >
-            {autosaveStatus ? autosaveStatusText(autosaveStatus) : null}
+            <SaveStateIcon status={autosaveStatus?.status ?? (isDirty ? "dirty" : null)} />
+            <span className="line-clamp-2">
+              {autosaveStatus
+                ? autosaveStatusText(autosaveStatus)
+                : isDirty && !isDraft
+                  ? "Unsaved changes"
+                  : null}
+            </span>
           </p>
           {submitFeedback && (
             <p
-              className={
+              className={cn(
+                "hidden text-sm sm:block",
                 submitFeedback.status === "success"
-                  ? "text-sm text-emerald-700 dark:text-emerald-400"
-                  : "text-sm text-destructive"
-              }
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-destructive",
+              )}
               role="status"
               aria-live="polite"
             >
               {submitFeedback.message}
             </p>
           )}
-          <Button type="submit" form="listing-form" size="lg" disabled={isSubmitting}>
+          <Button type="submit" form="listing-form" disabled={isSubmitting} className="shrink-0">
             {isSubmitting ? "Saving..." : submitLabel}
           </Button>
-        </div>
+        </>
       }
+    />
+  );
+}
+
+/** The section nav's entries, with how much of each section is filled in. */
+function listingFormSections(values: ListingFormInput): ListingFormSectionLink[] {
+  const coreSections = CORE_FIELD_CATEGORIES.map((category) => {
+    const required = CORE_FIELD_DEFINITIONS.filter(
+      (definition) => definition.category === category.key && definition.isRequired,
+    );
+    const filled = required.filter((definition) => hasValue(values[definition.key])).length;
+    return {
+      id: listingFormSectionId(category.key),
+      label: category.displayName,
+      meta: required.length > 0 ? `${filled} of ${required.length} required` : "Optional",
+      isComplete: required.length > 0 && filled === required.length,
+    };
+  });
+  const photoCount = values.images?.length ?? 0;
+  const featureCount = values.customFeatures?.length ?? 0;
+
+  return [
+    ...coreSections,
+    {
+      id: listingFormSectionId("images"),
+      label: "Photos",
+      meta:
+        photoCount === 0 ? "None yet" : `${photoCount} ${photoCount === 1 ? "photo" : "photos"}`,
+      isComplete: photoCount > 0,
+    },
+    {
+      id: listingFormSectionId("features"),
+      label: "Features and accessibility",
+      meta: `${featureCount} selected`,
+    },
+  ];
+}
+
+function hasValue(value: unknown) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim() !== "";
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+}
+
+function ListingStatusBadge({ status }: { status: ListingFormInput["status"] }) {
+  if (status === "published") {
+    return (
+      <Badge className="text-sm">
+        <span aria-hidden className="size-1.5 rounded-full bg-current" />
+        Published
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge
+      variant="outline"
+      className="border-amber-600/30 bg-amber-50 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200"
+    >
+      {status === "archived" ? "Archived" : "Draft"}
+    </Badge>
+  );
+}
+
+function SaveStateIcon({ status }: { status: AutosaveStatus["status"] | "dirty" | null }) {
+  if (!status) return null;
+  const icon =
+    status === "saving"
+      ? Loading03Icon
+      : status === "saved"
+        ? CheckmarkCircle02Icon
+        : status === "error"
+          ? Alert02Icon
+          : PencilEdit02Icon;
+  return (
+    <HugeiconsIcon
+      icon={icon}
+      strokeWidth={1.75}
+      className={cn(
+        "size-4 shrink-0",
+        status === "saving" && "animate-spin",
+        status === "saved" && "text-emerald-700 dark:text-emerald-400",
+      )}
+      aria-hidden
     />
   );
 }
@@ -267,7 +389,7 @@ function ListingLoadErrorMessage({ error }: { error: ListingLoadError }): React.
           <h3 className="mb-2">Listing not found</h3>
           <p>This listing doesn't exist or belongs to another account.</p>
           <Button asChild size="lg" className="mt-4">
-            <Link href="/my-listings">Back to My Listings</Link>
+            <Link href="/my-listings">Back to my listings</Link>
           </Button>
         </>
       );

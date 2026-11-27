@@ -89,7 +89,7 @@ export function BulkEditDialog({
           onInteractOutside={handleDismiss}
         >
           <DialogHeader>
-            <DialogTitle>Bulk Edit Fields</DialogTitle>
+            <DialogTitle>Bulk edit fields</DialogTitle>
             <DialogDescription>
               Apply changes to {selectedCount} selected {selectedCount === 1 ? "field" : "fields"}.
               Applicability changes affect future duplications; existing duplicated listings are
@@ -240,7 +240,7 @@ export function BulkEditDialog({
               Cancel
             </Button>
             <Button type="submit" size="lg" disabled={isSaving}>
-              {isSaving ? "Applying..." : "Apply Bulk Edit"}
+              {isSaving ? "Applying..." : "Apply bulk edit"}
             </Button>
           </DialogFooter>
         </DialogFormPanel>

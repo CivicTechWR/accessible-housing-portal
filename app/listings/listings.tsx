@@ -6,10 +6,12 @@ import { useListingFilters } from "@/components/listing-filter/useListingFilter"
 import {
   DisplayMode,
   ListingFilterSearchBar,
+  ViewSwitch,
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
 import { useMemo, useRef, useState } from "react";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
+import { ListingsPanelHeader } from "@/components/listings-panel-header/ListingsPanelHeader";
 import type { ListingListResponse, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
 import { toListingSearchFilters } from "./query";
@@ -39,7 +41,7 @@ function MapLoadingPlaceholder() {
   );
 }
 
-const LazyMapView = dynamic<{ listings: ListingSummary[] }>(
+const LazyMapView = dynamic<{ listings: ListingSummary[]; highlightedId?: string | null }>(
   () => import("../../components/map-view/MapView.tsx").then((mod) => mod.MapView),
   { ssr: false, loading: MapLoadingPlaceholder },
 );
@@ -66,6 +68,8 @@ export default function ListingsDashboard({
   // This is `false` until hydration, so nothing that affects first paint may depend on it.
   const isSplitViewAvailable = useMediaQuery(atLeastBreakpoint("lg"));
   const [displayMode, setDisplayMode] = useState<DisplayMode>(DisplayMode.MAP_LIST);
+  // The listing whose card is hovered or focused, so the map can highlight its pin.
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
   // Below `lg`, split view shows as List. The stored choice stays Split, so widening past `lg`
   // brings it back.
   const effectiveDisplayMode =
@@ -110,20 +114,34 @@ export default function ListingsDashboard({
     // data-fullscreen opts into the root layout's full-screen mode, which sizes this page to fill
     // the screen below the site header (see app/layout.tsx).
     <div data-fullscreen className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <header className="shrink-0 border-b bg-background px-4 py-3 sm:flex sm:h-16 sm:items-center sm:gap-4 sm:py-0 lg:gap-6">
-        <ListingFilterSearchBar
-          searchInputProps={searchInputProps}
-          priceRangeProps={priceRangeProps}
-          bedroomToggleProps={bedroomToggleProps}
-          bathroomToggleProps={bathroomToggleProps}
-          displayModeProps={{
-            displayModes,
-            onChange: (value: string) => setDisplayMode(value as DisplayMode),
-            value: effectiveDisplayMode,
-          }}
-          mobileFilterButton={<FilterButton {...filterButtonProps} viewport="mobile" />}
+      <h1 className="sr-only">Search listings</h1>
+      {/* Two rows (filters, then results) until `xl`, where both fit on one row and leave more
+          room for listings. */}
+      <header className="flex shrink-0 flex-col border-b bg-background xl:h-16 xl:flex-row xl:items-center xl:gap-6 xl:px-6">
+        <div className="flex items-center px-4 py-3 sm:h-16 sm:px-6 sm:py-0 xl:min-w-0 xl:flex-1 xl:px-0">
+          <ListingFilterSearchBar
+            searchInputProps={searchInputProps}
+            priceRangeProps={priceRangeProps}
+            bedroomToggleProps={bedroomToggleProps}
+            bathroomToggleProps={bathroomToggleProps}
+            filterButton={<FilterButton {...filterButtonProps} />}
+          />
+        </div>
+        <ListingsPanelHeader
+          shown={listings.length}
+          total={total}
+          isPartial={isPartial}
+          sortOptionProps={sortOptionProps}
+          isLoading={isLoading}
+          className="border-t xl:border-0 xl:p-0"
+          viewSwitch={
+            <ViewSwitch
+              displayModes={displayModes}
+              value={effectiveDisplayMode}
+              onChange={setDisplayMode}
+            />
+          }
         />
-        <FilterButton {...filterButtonProps} viewport="desktop" />
       </header>
       {error ? (
         <AlertBanner
@@ -141,13 +159,10 @@ export default function ListingsDashboard({
         {displayMode !== DisplayMode.MAP ? (
           <ListingsPanel
             listings={listings}
-            total={total}
             isLoadingMore={isLoadingMore}
-            isPartial={isPartial}
             isCapped={isCapped}
             displayMode={displayMode}
-            sortOptionProps={sortOptionProps}
-            isLoading={isLoading}
+            onHighlightChange={setHighlightedId}
           />
         ) : null}
         {[DisplayMode.MAP, DisplayMode.MAP_LIST].includes(displayMode) && (
@@ -162,15 +177,8 @@ export default function ListingsDashboard({
             {isSplitView && !isSplitViewAvailable ? (
               <MapLoadingPlaceholder />
             ) : (
-              <LazyMapView listings={listings} />
+              <LazyMapView listings={listings} highlightedId={highlightedId} />
             )}
-            {/* Map view has no list header to show the count, so say here when pins are missing.
-                Bottom left stays clear of the attribution and the selected-listing card. */}
-            {displayMode === DisplayMode.MAP && isPartial ? (
-              <p className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm">
-                Showing {listings.length} of {total} listings
-              </p>
-            ) : null}
           </div>
         )}
         {/* Rendered outside the list panel so phones can filter in Map view too. */}

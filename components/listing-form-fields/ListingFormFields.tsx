@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormSection } from "@/components/listing-form-layout/ListingFormLayout";
+import { listingFormSectionId } from "@/app/listing-form/fieldDefinitions";
 import { LabelledCheckbox } from "@/components/labelled-checkbox/LabelledCheckbox";
 import { InfoPopover } from "@/components/info-popover/InfoPopover";
 import { HOUSING_DEFINITIONS } from "@/shared/housing-definitions";
@@ -233,7 +234,10 @@ function FieldRenderer({
       control={control}
       name={def.key}
       render={({ field }) => (
-        <FormItem data-field-name={def.key}>
+        <FormItem
+          className={def.colSpan === 2 ? "md:col-span-2" : undefined}
+          data-field-name={def.key}
+        >
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input
@@ -261,10 +265,10 @@ export function ListingFormFields({ control }: ListingFormFieldsProps) {
 
   return (
     <>
-      {fieldsByCategory.map((cat, index) => (
+      {fieldsByCategory.map((cat) => (
         <FormSection
           key={cat.key}
-          isSeparated={index > 0}
+          id={listingFormSectionId(cat.key)}
           title={cat.displayName}
           description={cat.description}
         >
