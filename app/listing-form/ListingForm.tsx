@@ -178,7 +178,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
             <Link href="/my-listings">
               <HugeiconsIcon
                 icon={ArrowLeft01Icon}
-                strokeWidth={1.75}
+                strokeWidth={2}
                 data-icon="inline-start"
                 aria-hidden
               />
@@ -215,7 +215,7 @@ export default function ListingForm({ listingId }: ListingFormProps) {
           >
             <HugeiconsIcon
               icon={isPreviewExpanded ? ArrowShrink02Icon : ArrowExpand01Icon}
-              strokeWidth={1.75}
+              strokeWidth={2}
               data-icon="inline-start"
               aria-hidden
             />
@@ -370,7 +370,7 @@ function SaveStateIcon({ status }: { status: AutosaveStatus["status"] | "dirty" 
   return (
     <HugeiconsIcon
       icon={icon}
-      strokeWidth={1.75}
+      strokeWidth={2}
       className={cn(
         "size-4 shrink-0",
         status === "saving" && "animate-spin",

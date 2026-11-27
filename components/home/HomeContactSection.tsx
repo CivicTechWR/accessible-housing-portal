@@ -17,12 +17,15 @@ export function HomeContactSection() {
         </h2>
         <p className="mt-3 text-lg text-primary-foreground/90">{homeContent.access}</p>
       </div>
-      <Button asChild size="lg" className="shrink-0 bg-white text-neutral-950 hover:bg-white/90">
-        <a href={`mailto:${siteConfig.contactEmail}`}>
-          <HugeiconsIcon icon={Mail01Icon} strokeWidth={1.75} data-icon="inline-start" />
-          {siteConfig.contactEmail}
-        </a>
-      </Button>
+      <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
+        <Button asChild size="lg" className="bg-white text-neutral-950 hover:bg-white/90">
+          <a href={`mailto:${siteConfig.contactEmail}`}>
+            <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} data-icon="inline-start" />
+            Request access
+          </a>
+        </Button>
+        <p className="text-sm text-primary-foreground/85">{siteConfig.contactEmail}</p>
+      </div>
     </section>
   );
 }

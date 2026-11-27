@@ -32,7 +32,9 @@ export async function SiteHeader() {
           {canCreateListing ? <HeaderNavLink href="/my-listings">My listings</HeaderNavLink> : null}
           {role === "admin" ? (
             <>
-              <HeaderNavLink href="/admin/users">Users</HeaderNavLink>
+              <HeaderNavLink href="/admin/users" alsoActiveFor={["/admin/invite"]}>
+                Users
+              </HeaderNavLink>
               <HeaderNavLink href="/admin/custom-listing-fields">Custom fields</HeaderNavLink>
             </>
           ) : null}

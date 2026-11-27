@@ -22,7 +22,7 @@ export default function ListingsError({
     <AppPageShell className="flex items-center justify-center">
       <div className="mx-auto w-full max-w-md rounded-xl border bg-card p-6 text-center shadow-xs sm:p-8">
         <span className="mx-auto mb-4 flex size-11 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-          <HugeiconsIcon icon={Alert02Icon} strokeWidth={1.75} className="size-5" aria-hidden />
+          <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} className="size-5" aria-hidden />
         </span>
         <h1 className="text-xl font-semibold sm:text-2xl">We couldn&apos;t load listings</h1>
         <p className="mt-2 text-base text-muted-foreground">

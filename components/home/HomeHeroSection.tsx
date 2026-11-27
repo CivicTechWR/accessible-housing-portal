@@ -19,11 +19,15 @@ export function HomeHeroSection() {
         fill
         preload
         sizes="(max-aspect-ratio: 116/100) 116vh, 100vw"
-        className="-z-10 object-cover"
+        className="-z-20 object-cover dark:brightness-75"
       />
-      {/* Keeps at least 70% black behind every line of text however it wraps, so white text
-          meets WCAG AA over any part of the photo, then fades out above the heading. */}
-      <div className="w-full bg-[linear-gradient(to_top,rgb(0_0_0/0.8),rgb(0_0_0/0.7)_calc(100%_-_10rem),transparent)] pt-40">
+      {/* Darkens the left side, where the text sits, and the bottom, so white text meets WCAG
+          AA over any part of the photo however it wraps. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(0_0_0/0.82),rgb(0_0_0/0.62)_55%,rgb(0_0_0/0.25)),linear-gradient(to_top,rgb(0_0_0/0.55),transparent_55%)]"
+      />
+      <div className="w-full pt-40">
         <div className="mx-auto max-w-6xl px-4 pb-14 text-white sm:px-6 sm:pb-20">
           <p className="mb-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-sm font-medium backdrop-blur-sm">
             Invitation-only pilot in {siteConfig.region}

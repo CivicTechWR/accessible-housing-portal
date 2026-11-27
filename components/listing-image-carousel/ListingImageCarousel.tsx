@@ -102,7 +102,7 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
             onClick={() => openLightbox(0)}
             className="absolute right-4 bottom-4 inline-flex h-10 items-center gap-2 rounded-lg border border-foreground/15 bg-background px-3.5 text-sm font-medium text-foreground shadow-md hover:bg-muted"
           >
-            <HugeiconsIcon icon={GridViewIcon} strokeWidth={1.75} className="size-4" aria-hidden />
+            <HugeiconsIcon icon={GridViewIcon} strokeWidth={2} className="size-4" aria-hidden />
             Show all {images.length} photos
           </button>
         </div>

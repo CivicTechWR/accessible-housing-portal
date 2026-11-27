@@ -100,11 +100,7 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
                   disabled={pending}
                   onClick={signInWithPasskey}
                 >
-                  <HugeiconsIcon
-                    icon={FingerPrintIcon}
-                    strokeWidth={1.75}
-                    data-icon="inline-start"
-                  />
+                  <HugeiconsIcon icon={FingerPrintIcon} strokeWidth={2} data-icon="inline-start" />
                   Sign in with a passkey
                 </Button>
               </>

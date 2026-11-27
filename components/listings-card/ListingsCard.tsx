@@ -91,7 +91,7 @@ function ListingStats({
         <li key={stat.label} className="flex items-center gap-1.5">
           <HugeiconsIcon
             icon={stat.icon}
-            strokeWidth={1.75}
+            strokeWidth={2}
             className="size-4 text-muted-foreground"
             aria-hidden
           />
@@ -169,7 +169,7 @@ export function ListingsCard({
     />
   ) : (
     <div className="flex size-full flex-col items-center justify-center gap-1.5 text-sm text-muted-foreground">
-      <HugeiconsIcon icon={Image01Icon} strokeWidth={1.75} className="size-5" aria-hidden />
+      <HugeiconsIcon icon={Image01Icon} strokeWidth={2} className="size-5" aria-hidden />
       No photo
     </div>
   );

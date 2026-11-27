@@ -47,12 +47,12 @@ export function HeaderAccountMenu({ user }: HeaderAccountMenuProps) {
             aria-hidden="true"
             className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary-text dark:bg-primary-text/15"
           >
-            <HugeiconsIcon icon={UserIcon} strokeWidth={1.75} size={18} />
+            <HugeiconsIcon icon={UserIcon} strokeWidth={2} size={18} />
           </span>
           <span className="truncate">{accountLabel}</span>
           <HugeiconsIcon
             icon={ArrowDown01Icon}
-            strokeWidth={1.75}
+            strokeWidth={2}
             size={16}
             aria-hidden="true"
             className={cn("text-muted-foreground transition-transform", isOpen && "rotate-180")}

@@ -272,7 +272,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                     <div className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
                       <HugeiconsIcon
                         icon={Image01Icon}
-                        strokeWidth={1.75}
+                        strokeWidth={2}
                         className="size-5"
                         aria-hidden
                       />

@@ -17,8 +17,8 @@ const linkClass =
 export function SiteFooter({ className }: { className?: string }) {
   return (
     <footer className={cn("border-t bg-muted/50 text-sm", className)}>
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
-        <div className="space-y-3">
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="col-span-2 space-y-3 md:col-span-1">
           <p className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-foreground">
             <BrandMark className="size-7" />
             {siteConfig.name}

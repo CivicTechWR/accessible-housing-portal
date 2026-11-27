@@ -71,7 +71,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
         <div className="relative md:flex-1">
           <HugeiconsIcon
             icon={Search01Icon}
-            strokeWidth={1.75}
+            strokeWidth={2}
             className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden
           />

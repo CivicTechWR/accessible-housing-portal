@@ -30,7 +30,7 @@ export default async function AdminInvitePage() {
             <Link href="/admin/users">
               <HugeiconsIcon
                 icon={ArrowLeft01Icon}
-                strokeWidth={1.75}
+                strokeWidth={2}
                 data-icon="inline-start"
                 aria-hidden
               />

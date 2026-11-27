@@ -163,7 +163,7 @@ export function AccountSecurity() {
                   <span className="flex min-w-0 items-center gap-2.5 text-sm font-medium">
                     <HugeiconsIcon
                       icon={Key01Icon}
-                      strokeWidth={1.75}
+                      strokeWidth={2}
                       className="size-4 shrink-0 text-muted-foreground"
                       aria-hidden
                     />

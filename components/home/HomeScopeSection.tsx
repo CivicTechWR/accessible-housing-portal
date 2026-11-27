@@ -21,7 +21,7 @@ export function HomeScopeSection() {
               <li key={item} className="flex gap-3 leading-relaxed">
                 <HugeiconsIcon
                   icon={list.included ? CheckmarkCircle02Icon : CancelCircleIcon}
-                  strokeWidth={1.75}
+                  strokeWidth={2}
                   size={20}
                   aria-hidden="true"
                   className={cn(

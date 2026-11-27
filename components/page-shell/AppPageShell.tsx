@@ -10,7 +10,7 @@ type AppPageShellProps = {
 export function AppPageShell({ children, className }: AppPageShellProps) {
   return (
     <main
-      className={cn("min-h-[calc(100vh-7rem)] bg-muted/40 px-4 py-8 sm:px-6 sm:py-10", className)}
+      className={cn("min-h-[calc(100vh-7rem)] bg-background px-4 py-8 sm:px-6 sm:py-10", className)}
     >
       {children}
     </main>

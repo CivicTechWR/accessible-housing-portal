@@ -73,19 +73,19 @@ export function AdminInviteActions({
             aria-label={`Actions for the invitation to ${inviteeLabel}`}
             disabled={pending}
           >
-            <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={1.75} aria-hidden />
+            <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={2} aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {available && (
             <DropdownMenuItem onSelect={() => void run("copy")}>
-              <HugeiconsIcon icon={Link01Icon} strokeWidth={1.75} aria-hidden />
+              <HugeiconsIcon icon={Link01Icon} strokeWidth={2} aria-hidden />
               Copy link
             </DropdownMenuItem>
           )}
           {canResend && (
             <DropdownMenuItem onSelect={() => void run("resend")}>
-              <HugeiconsIcon icon={MailSend01Icon} strokeWidth={1.75} aria-hidden />
+              <HugeiconsIcon icon={MailSend01Icon} strokeWidth={2} aria-hidden />
               Send new invite
             </DropdownMenuItem>
           )}
@@ -93,7 +93,7 @@ export function AdminInviteActions({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onSelect={() => void run("revoke")}>
-                <HugeiconsIcon icon={Cancel01Icon} strokeWidth={1.75} aria-hidden />
+                <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} aria-hidden />
                 Revoke
               </DropdownMenuItem>
             </>

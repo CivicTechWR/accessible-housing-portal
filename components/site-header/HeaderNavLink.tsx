@@ -6,9 +6,18 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-export function HeaderNavLink({ href, children }: { href: string; children: ReactNode }) {
+type HeaderNavLinkProps = {
+  href: string;
+  children: ReactNode;
+  /** Other paths that belong to this section, such as /admin/invite for Users. */
+  alsoActiveFor?: string[];
+};
+
+export function HeaderNavLink({ href, children, alsoActiveFor = [] }: HeaderNavLinkProps) {
   const pathname = usePathname();
-  const isActive = pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = [href, ...alsoActiveFor].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
 
   return (
     <Link

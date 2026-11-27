@@ -73,7 +73,7 @@ function FilterPopover({
           {value ?? label}
           <HugeiconsIcon
             icon={ArrowDown01Icon}
-            strokeWidth={1.75}
+            strokeWidth={2}
             className="size-4 text-muted-foreground"
             aria-hidden
           />
@@ -98,7 +98,7 @@ export function ListingFilterSearchBar({
       <div className="relative min-w-0 flex-1 sm:max-w-sm sm:min-w-40">
         <HugeiconsIcon
           icon={Search01Icon}
-          strokeWidth={1.75}
+          strokeWidth={2}
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden
         />
@@ -166,7 +166,7 @@ export function ViewSwitch({
         >
           <HugeiconsIcon
             icon={VIEW_ICONS[option.value]}
-            strokeWidth={1.75}
+            strokeWidth={2}
             className="size-4 max-sm:hidden"
             aria-hidden
           />

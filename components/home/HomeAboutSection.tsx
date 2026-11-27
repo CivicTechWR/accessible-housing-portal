@@ -36,7 +36,7 @@ export function HomeAboutSection() {
             <li key={aim} className="flex gap-3">
               <HugeiconsIcon
                 icon={CheckmarkCircle02Icon}
-                strokeWidth={1.75}
+                strokeWidth={2}
                 size={20}
                 aria-hidden="true"
                 className="mt-0.5 shrink-0 text-primary-text"

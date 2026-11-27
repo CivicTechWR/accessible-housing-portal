@@ -45,7 +45,7 @@ export const ListingCardGallery = memo(function ListingCardGallery({
         <div className="mx-4 mt-6 rounded-xl border border-dashed px-6 py-12 text-center sm:mx-6">
           <HugeiconsIcon
             icon={PropertySearchIcon}
-            strokeWidth={1.75}
+            strokeWidth={2}
             className="mx-auto mb-3 size-6 text-muted-foreground"
             aria-hidden
           />

@@ -23,7 +23,7 @@ export function RoleBadge({ role, className }: { role: InviteRole; className?: s
       variant={role === "admin" ? "default" : role === "user" ? "outline" : "secondary"}
       className={cn(style.className, className)}
     >
-      <HugeiconsIcon icon={style.icon} strokeWidth={1.75} data-icon="inline-start" aria-hidden />
+      <HugeiconsIcon icon={style.icon} strokeWidth={2} data-icon="inline-start" aria-hidden />
       {inviteRoleLabels[role]}
     </Badge>
   );

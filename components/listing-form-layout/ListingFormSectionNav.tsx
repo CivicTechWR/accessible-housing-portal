@@ -92,7 +92,7 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                   <>
                     <HugeiconsIcon
                       icon={CheckmarkCircle02Icon}
-                      strokeWidth={1.75}
+                      strokeWidth={2}
                       className="size-4 shrink-0 text-emerald-700 dark:text-emerald-400"
                       aria-hidden
                     />

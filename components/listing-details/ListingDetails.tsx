@@ -133,12 +133,7 @@ function ContactLink({
       href={href}
       className="inline-flex min-h-6 items-start gap-2 text-sm text-primary-text underline-offset-4 hover:underline"
     >
-      <HugeiconsIcon
-        icon={icon}
-        strokeWidth={1.75}
-        className="mt-0.5 size-4 shrink-0"
-        aria-hidden
-      />
+      <HugeiconsIcon icon={icon} strokeWidth={2} className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span className="wrap-anywhere">{children}</span>
     </a>
   );
@@ -300,7 +295,7 @@ export function ListingDetails({
           editUrl ? (
             <Button asChild variant="outline">
               <Link href={editUrl}>
-                <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={1.75} aria-hidden />
+                <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
                 Edit listing
               </Link>
             </Button>
@@ -319,7 +314,7 @@ export function ListingDetails({
           <li key={fact.label} className="flex items-center gap-2">
             <HugeiconsIcon
               icon={fact.icon}
-              strokeWidth={1.75}
+              strokeWidth={2}
               className="size-5 text-muted-foreground"
               aria-hidden
             />
@@ -353,7 +348,7 @@ export function ListingDetails({
                       <li key={feature.name} className="flex gap-3 wrap-anywhere">
                         <HugeiconsIcon
                           icon={CheckmarkCircle02Icon}
-                          strokeWidth={1.75}
+                          strokeWidth={2}
                           className="mt-px size-5 shrink-0 text-primary-text"
                           aria-hidden
                         />

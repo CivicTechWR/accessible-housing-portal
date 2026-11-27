@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { HomeFeaturesSection } from "@/components/home/HomeFeaturesSection";
 import { HomeAboutSection } from "@/components/home/HomeAboutSection";
 import { HomeContactSection } from "@/components/home/HomeContactSection";
 import { HomeHeroSection } from "@/components/home/HomeHeroSection";
@@ -28,6 +29,7 @@ export default async function Home() {
       <HomeHeroSection />
       <div className="mx-auto max-w-6xl space-y-16 px-4 py-16 sm:space-y-20 sm:px-6 sm:py-20">
         <HomeAboutSection />
+        <HomeFeaturesSection />
         <HomeInfoSection />
         <HomeScopeSection />
         <HomeContactSection />

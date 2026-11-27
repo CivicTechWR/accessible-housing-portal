@@ -37,7 +37,7 @@ export function FilterButton({
 }: FilterButtonProps) {
   const label = activeFilterCount > 0 ? `Filters, ${activeFilterCount} applied` : "Filters";
   const icon = (
-    <HugeiconsIcon icon={FilterHorizontalIcon} strokeWidth={1.75} className="size-5" aria-hidden />
+    <HugeiconsIcon icon={FilterHorizontalIcon} strokeWidth={2} className="size-5" aria-hidden />
   );
 
   return (

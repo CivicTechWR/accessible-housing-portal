@@ -125,7 +125,7 @@ export function CustomListingFieldsTable({
             <span className="sr-only">Search fields</span>
             <HugeiconsIcon
               icon={Search01Icon}
-              strokeWidth={1.75}
+              strokeWidth={2}
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden
             />
@@ -314,7 +314,7 @@ export function CustomListingFieldsTable({
                         Show more in this category ({group.hiddenCount} more)
                         <HugeiconsIcon
                           icon={ArrowDown01Icon}
-                          strokeWidth={1.75}
+                          strokeWidth={2}
                           className="size-4"
                           aria-hidden
                         />

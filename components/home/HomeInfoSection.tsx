@@ -17,7 +17,7 @@ function AudienceCard({
   return (
     <div className="rounded-xl border bg-card p-6 shadow-xs sm:p-8">
       <span className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary-text dark:bg-primary-text/15">
-        <HugeiconsIcon icon={icon} strokeWidth={1.75} size={22} aria-hidden="true" />
+        <HugeiconsIcon icon={icon} strokeWidth={2} size={22} aria-hidden="true" />
       </span>
       <h3 className="mt-5 text-xl">{title}</h3>
       <p className="mt-3 leading-relaxed">{children}</p>

@@ -29,7 +29,7 @@ export default async function MyListingsPage() {
               <Link href="/listing-form">
                 <HugeiconsIcon
                   icon={Add01Icon}
-                  strokeWidth={1.75}
+                  strokeWidth={2}
                   data-icon="inline-start"
                   aria-hidden
                 />

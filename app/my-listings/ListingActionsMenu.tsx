@@ -91,7 +91,7 @@ export function ListingActionsMenu({
             aria-label={`More actions for ${listingTitle}`}
             disabled={isMutating}
           >
-            <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={1.75} aria-hidden />
+            <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={2} aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -103,12 +103,12 @@ export function ListingActionsMenu({
               onDuplicate();
             }}
           >
-            <HugeiconsIcon icon={Copy01Icon} strokeWidth={1.75} aria-hidden />
+            <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} aria-hidden />
             {isDuplicating ? "Duplicating..." : "Duplicate"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onSelect={() => setIsConfirmOpen(true)}>
-            <HugeiconsIcon icon={Archive02Icon} strokeWidth={1.75} aria-hidden />
+            <HugeiconsIcon icon={Archive02Icon} strokeWidth={2} aria-hidden />
             Archive
           </DropdownMenuItem>
         </DropdownMenuContent>

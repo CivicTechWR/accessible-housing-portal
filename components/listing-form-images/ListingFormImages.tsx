@@ -155,7 +155,7 @@ export function ListingFormImages({
                 <span className="flex size-11 items-center justify-center rounded-full bg-background shadow-xs ring-1 ring-foreground/10">
                   <HugeiconsIcon
                     icon={uploadMutation.isPending ? Loading03Icon : ImageUploadIcon}
-                    strokeWidth={1.75}
+                    strokeWidth={2}
                     className={cn(
                       "size-5 text-muted-foreground",
                       uploadMutation.isPending && "animate-spin",
@@ -243,11 +243,7 @@ export function ListingFormImages({
                               disabled={index === 0}
                               onClick={() => moveImage(index, index - 1)}
                             >
-                              <HugeiconsIcon
-                                icon={ArrowLeft01Icon}
-                                strokeWidth={1.75}
-                                aria-hidden
-                              />
+                              <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} aria-hidden />
                             </Button>
                             <Button
                               type="button"
@@ -258,11 +254,7 @@ export function ListingFormImages({
                               disabled={index === images.length - 1}
                               onClick={() => moveImage(index, index + 1)}
                             >
-                              <HugeiconsIcon
-                                icon={ArrowRight01Icon}
-                                strokeWidth={1.75}
-                                aria-hidden
-                              />
+                              <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} aria-hidden />
                             </Button>
                             <Button
                               type="button"
@@ -277,7 +269,7 @@ export function ListingFormImages({
                                 );
                               }}
                             >
-                              <HugeiconsIcon icon={Delete02Icon} strokeWidth={1.75} aria-hidden />
+                              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} aria-hidden />
                             </Button>
                           </div>
                         </div>

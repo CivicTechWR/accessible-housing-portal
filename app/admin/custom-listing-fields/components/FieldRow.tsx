@@ -132,7 +132,7 @@ export function SortHeader({
       {isActive ? (
         <HugeiconsIcon
           icon={direction === "asc" ? ArrowUp01Icon : ArrowDown01Icon}
-          strokeWidth={1.75}
+          strokeWidth={2}
           className="size-3.5 text-primary-text"
         />
       ) : null}
@@ -287,7 +287,7 @@ export function FieldRow({
           <span className="sr-only">Visibility for {field.label}</span>
           <HugeiconsIcon
             icon={visibilityIcon}
-            strokeWidth={1.75}
+            strokeWidth={2}
             className={cn(
               "pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2",
               visibilityToneClass,
@@ -331,7 +331,7 @@ export function FieldRow({
           disabled={isPending}
           onClick={onDelete}
         >
-          <HugeiconsIcon icon={Delete02Icon} strokeWidth={1.75} className="size-4" aria-hidden />
+          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-4" aria-hidden />
         </Button>
       </div>
     </div>
