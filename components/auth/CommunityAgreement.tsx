@@ -32,11 +32,24 @@ export function CommunityAgreement({ onAccept }: CommunityAgreementProps) {
             checked={agreed}
             onCheckedChange={(checked) => setAgreed(checked === true)}
           />
-          <label htmlFor="community-agreement" className="text-base leading-snug font-medium">
-            I agree to the terms above
-          </label>
+          <div>
+            <label htmlFor="community-agreement" className="text-base leading-snug font-medium">
+              I agree to the terms above
+            </label>
+            {!agreed ? (
+              <p id="community-agreement-hint" className="text-sm text-muted-foreground">
+                Tick the box to continue.
+              </p>
+            ) : null}
+          </div>
         </div>
-        <Button type="button" className="shrink-0" disabled={!agreed} onClick={onAccept}>
+        <Button
+          type="button"
+          className="shrink-0"
+          disabled={!agreed}
+          aria-describedby={agreed ? undefined : "community-agreement-hint"}
+          onClick={onAccept}
+        >
           Continue
         </Button>
       </div>

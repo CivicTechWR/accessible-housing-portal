@@ -15,6 +15,7 @@ export function AuthPageShell({ children, className }: AuthPageShellProps) {
         className,
       )}
     >
+      <div data-compact-footer hidden />
       {children}
     </main>
   );
