@@ -167,13 +167,17 @@ describe("ListingForm hydration", () => {
     }) as unknown as typeof fetch;
 
     const firstRender = render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
-    // Categories with nothing selected start collapsed.
+    // Every category starts collapsed.
     fireEvent.click(await screen.findByRole("button", { name: /^Other/ }));
     fireEvent.click(screen.getByRole("switch", { name: switchName }));
     await waitFor(() => expect(savedSelections).toContain(true), { timeout: 3000 });
     firstRender.unmount();
 
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
+    // The collapsed category lists the saved feature, and opening it shows the switch on.
+    const category = await screen.findByRole("button", { name: /^Other/ });
+    await waitFor(() => expect(category).toHaveTextContent(switchName));
+    fireEvent.click(category);
     await waitFor(() =>
       expect(screen.getByRole("switch", { name: switchName })).toHaveAttribute(
         "aria-checked",

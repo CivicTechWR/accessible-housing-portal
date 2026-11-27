@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
-import { cn } from "@/lib/utils";
+import { BackLink } from "@/components/ui/back-link";
 
 /** The search page saves its query string here, so "Back to results" returns to the same search. */
 export const LAST_SEARCH_STORAGE_KEY = "listings:last-search";
@@ -18,17 +15,8 @@ export function rememberListingSearch(queryString: string) {
   }
 }
 
-/**
- * Links back to the search page, with the filters the reader last used there. `overlay` is a round
- * icon button for placing over the photo on phones.
- */
-export function BackToResults({
-  variant = "link",
-  className,
-}: {
-  variant?: "link" | "overlay";
-  className?: string;
-}) {
+/** Links back to the search page, with the filters the reader last used there. */
+export function BackToResults({ className }: { className?: string }) {
   const [href, setHref] = useState("/listings");
   useEffect(() => {
     try {
@@ -39,34 +27,9 @@ export function BackToResults({
     }
   }, []);
 
-  if (variant === "overlay") {
-    return (
-      // A 44px touch target around a 36px visible circle, like the carousel arrows.
-      <Link
-        href={href}
-        aria-label="Back to results"
-        className={cn(
-          "flex size-11 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring",
-          className,
-        )}
-      >
-        <span className="flex size-9 items-center justify-center rounded-full bg-white/95 text-neutral-900 shadow-md">
-          <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={2} className="size-5" aria-hidden />
-        </span>
-      </Link>
-    );
-  }
-
   return (
-    <Link
-      href={href}
-      className={cn(
-        "-ml-1 inline-flex min-h-11 items-center gap-1.5 self-start rounded-md px-1 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:outline-none",
-        className,
-      )}
-    >
-      <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={2} className="size-4" aria-hidden />
+    <BackLink href={href} className={className}>
       Back to results
-    </Link>
+    </BackLink>
   );
 }

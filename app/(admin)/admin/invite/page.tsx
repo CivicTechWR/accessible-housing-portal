@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 
 import verbiage from "@/content/verbiage.json";
 import { buildInviteRecordFromAccountInvite } from "@/components/admin-invite/invite-records";
 import { AdminInvitePanel } from "@/components/admin-invite/AdminInvitePanel";
 import { AppPageShell, PageHeader, pageWidths } from "@/components/page-shell/AppPageShell";
-import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/ui/back-link";
 import { getRecentAccountInvitesService } from "@/lib/accounts/account.service";
 import { cn } from "@/lib/utils";
 
@@ -25,18 +22,8 @@ export default async function AdminInvitePage() {
   return (
     <AppPageShell>
       <div className={cn("mx-auto space-y-6", pageWidths.content)}>
-        <div className="space-y-3">
-          <Button asChild variant="ghost" size="sm" className="-ml-2.5 text-muted-foreground">
-            <Link href="/admin/users">
-              <HugeiconsIcon
-                icon={ArrowLeft01Icon}
-                strokeWidth={2}
-                data-icon="inline-start"
-                aria-hidden
-              />
-              Users
-            </Link>
-          </Button>
+        <div className="space-y-2">
+          <BackLink href="/admin/users">Users</BackLink>
           <PageHeader
             title={verbiage.adminInvite.heading}
             description={verbiage.adminInvite.subheading}

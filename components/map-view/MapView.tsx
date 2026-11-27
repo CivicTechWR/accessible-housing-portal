@@ -88,26 +88,28 @@ export function groupOverlappingPins(
 }
 
 /**
- * Prices and clusters share one pill, so the map has one marker family. Light mode uses white pills
- * with near-black text, and dark mode near-black pills with white text, each with a thin border so
- * they hold their edge on the basemap. The hovered, highlighted or selected pin is filled: brand
- * blue in light mode, white in dark mode.
+ * Price pins are light in both themes, so they read the same way on the pale and the dark basemap.
+ * Clusters are brand blue with white text, so "3 homes" never looks like a price. The hovered,
+ * highlighted or selected price turns brand blue in light mode, and gets a white ring in dark mode,
+ * where a blue pill would sink into the dark ground.
  */
 const pillClassName =
-  "flex h-7.5 items-center rounded-full border px-3 text-sm font-semibold whitespace-nowrap tabular-nums shadow-[0_1px_4px_rgba(15,23,42,0.18)] transition-[transform,background-color,color,border-color] group-hover:scale-105 group-focus-visible:ring-3 group-focus-visible:ring-ring dark:shadow-[0_2px_6px_rgba(0,0,0,0.6)]";
+  "flex h-8 items-center rounded-full border px-3 text-sm font-bold whitespace-nowrap tabular-nums transition-[transform,background-color,color,border-color,box-shadow] group-focus-visible:ring-3 group-focus-visible:ring-ring";
 
-const restingPill =
-  "border-[rgba(15,23,42,0.2)] bg-white text-[#1f262c] dark:border-white/25 dark:bg-[#1f262b] dark:text-white";
+const restingPrice =
+  "border-black/14 bg-white text-[#09090B] shadow-[0_2px_8px_rgba(0,0,0,0.18)] dark:border-transparent dark:bg-[#F4F4F5] dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
 
-const filledPill =
-  "border-primary bg-primary text-primary-foreground dark:border-white dark:bg-white dark:text-[#1f262c]";
+const emphasisedPrice =
+  "scale-105 border-primary bg-primary text-white dark:scale-110 dark:border-transparent dark:bg-[#F4F4F5] dark:text-[#09090B] dark:ring-2 dark:ring-white";
 
-const hoverFilledPill =
-  "group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground dark:group-hover:border-white dark:group-hover:bg-white dark:group-hover:text-[#1f262c]";
+const hoverPrice =
+  "group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-white dark:group-hover:scale-110 dark:group-hover:border-transparent dark:group-hover:bg-[#F4F4F5] dark:group-hover:text-[#09090B] dark:group-hover:ring-2 dark:group-hover:ring-white";
 
-function pillTone(emphasised: boolean) {
-  return emphasised ? cn("scale-105", filledPill) : cn(restingPill, hoverFilledPill);
-}
+const clusterPill =
+  "border-primary bg-primary text-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] group-hover:scale-105 dark:border-transparent dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
+
+/** A cluster holding the hovered card's listing grows and gets a ring in the text colour. */
+const emphasisedCluster = "scale-110 ring-2 ring-foreground";
 
 /** Zooms the map in or out by one step. 40px, in the map's top-right corner. */
 function ZoomControls({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -400,7 +402,13 @@ export const MapView = memo(function MapView({
                     aria-label={`${count} listings here. Zoom in to see them.`}
                     className="group flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full outline-none"
                   >
-                    <span className={cn(pillClassName, pillTone(containsHighlighted))}>
+                    <span
+                      className={cn(
+                        pillClassName,
+                        clusterPill,
+                        containsHighlighted && emphasisedCluster,
+                      )}
+                    >
                       {count} homes
                     </span>
                   </button>
@@ -442,7 +450,12 @@ export const MapView = memo(function MapView({
                   }}
                   className="group flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full outline-none"
                 >
-                  <span className={cn(pillClassName, pillTone(emphasised))}>
+                  <span
+                    className={cn(
+                      pillClassName,
+                      emphasised ? emphasisedPrice : cn(restingPrice, hoverPrice),
+                    )}
+                  >
                     {formatRent(listing.price)}
                   </span>
                 </button>

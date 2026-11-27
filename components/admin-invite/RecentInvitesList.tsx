@@ -1,6 +1,7 @@
 import verbiage from "@/content/verbiage.json";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CopyInviteLinkButton } from "@/components/admin-invite/CopyInviteLinkButton";
 import { InviteEmailStatusSummary } from "@/components/admin-invite/InviteEmailStatusSummary";
 import { RoleLabel } from "@/components/admin-invite/RoleLabel";
 import type { InviteRecord } from "@/components/admin-invite/types";
@@ -41,6 +42,7 @@ export function RecentInvitesList({ invites }: RecentInvitesListProps) {
                   </p>
                 </div>
                 {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
+                <CopyInviteLinkButton inviteId={invite.id} email={invite.email} />
               </li>
             ))}
           </ul>

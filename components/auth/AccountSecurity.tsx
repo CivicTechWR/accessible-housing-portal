@@ -413,7 +413,9 @@ export function AccountSecurity() {
                 </p>
               )}
             </div>
-            <Button disabled={pending}>Change password</Button>
+            <Button variant="outline" disabled={pending}>
+              Change password
+            </Button>
           </form>
         </CardContent>
       </Card>

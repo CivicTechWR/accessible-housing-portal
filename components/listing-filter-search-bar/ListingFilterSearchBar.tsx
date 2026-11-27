@@ -271,8 +271,9 @@ function useScrollFade<T extends HTMLElement>() {
 
 /**
  * The phone filter row under the search field: one chip per common filter, scrolling sideways.
- * Price, Beds and Baths open their own popover; Accessibility opens the filter sheet at the
- * accessibility features, because they are too many for a popover.
+ * Accessibility comes first, as the filter this portal exists for, and opens the filter sheet at
+ * the accessibility features, because they are too many for a popover. Price, Beds and Baths open
+ * their own popover.
  */
 export function QuickFilterChips({
   priceRangeProps,
@@ -300,23 +301,10 @@ export function QuickFilterChips({
       role="group"
       aria-label="Quick filters"
       className={cn(
-        "flex gap-2 overflow-x-auto overflow-y-hidden px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "flex gap-3 overflow-x-auto overflow-y-hidden px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className,
       )}
     >
-      <FilterPopover
-        chip
-        label="Price"
-        value={priceSummary(priceRangeProps.min, priceRangeProps.max)}
-      >
-        <PriceRangeInput {...priceRangeProps} className="w-72 max-w-full gap-3" />
-      </FilterPopover>
-      <FilterPopover chip label="Beds" value={roomSummary(bedroomToggleProps.value, "bed")}>
-        <ToggleField {...bedroomToggleProps} allowEmpty />
-      </FilterPopover>
-      <FilterPopover chip label="Baths" value={roomSummary(bathroomToggleProps.value, "bath")}>
-        <ToggleField {...bathroomToggleProps} allowEmpty />
-      </FilterPopover>
       <Button
         ref={accessibilityRef}
         variant="outline"
@@ -332,6 +320,19 @@ export function QuickFilterChips({
         Accessibility
         {accessibilityCount > 0 && <CountBadge count={accessibilityCount} />}
       </Button>
+      <FilterPopover
+        chip
+        label="Price"
+        value={priceSummary(priceRangeProps.min, priceRangeProps.max)}
+      >
+        <PriceRangeInput {...priceRangeProps} className="w-72 max-w-full gap-3" />
+      </FilterPopover>
+      <FilterPopover chip label="Beds" value={roomSummary(bedroomToggleProps.value, "bed")}>
+        <ToggleField {...bedroomToggleProps} allowEmpty />
+      </FilterPopover>
+      <FilterPopover chip label="Baths" value={roomSummary(bathroomToggleProps.value, "bath")}>
+        <ToggleField {...bathroomToggleProps} allowEmpty />
+      </FilterPopover>
     </div>
   );
 }
@@ -355,7 +356,7 @@ export function FloatingViewToggle({
       onClick={() => onChange(showsMap ? DisplayMode.LIST : DisplayMode.MAP)}
       aria-label={showsMap ? "Show list" : "Show map"}
       className={cn(
-        "h-11 gap-2 rounded-full bg-[#1f262c] px-5 text-white shadow-[0_4px_12px_rgba(0,0,0,0.3)] hover:bg-[#1f262c]/90 dark:bg-white dark:text-[#1f262c] dark:hover:bg-white/90",
+        "h-11 gap-2 rounded-full border border-white/20 bg-[#1f262c] px-5 text-white shadow-[0_6px_20px_rgba(0,0,0,0.35)] hover:bg-[#1f262c]/90 dark:border-black/15 dark:bg-white dark:text-[#1f262c] dark:hover:bg-white/90",
         className,
       )}
     >

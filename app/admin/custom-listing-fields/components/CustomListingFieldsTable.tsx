@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
+import { useEdgeFade } from "@/lib/useEdgeFade";
 import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fields";
 import {
   FIELD_HELP_TEXT,
@@ -87,11 +88,19 @@ export function CustomListingFieldsTable({
   onDeleteField: (field: AdminCustomListingField) => void;
 }) {
   const hasFilters = search !== "" || categoryFilter !== "all" || visibilityFilter !== "all";
+  const categoryRow = useEdgeFade<HTMLDivElement>();
 
   return (
     <div className="space-y-4">
-      {/* Wraps onto a second line rather than scrolling, so every category stays in view. */}
-      <div role="group" aria-label="Category" className="hidden flex-wrap gap-2 md:flex">
+      {/* One row that scrolls sideways, with faded edges while more chips sit past them. */}
+      <div
+        ref={categoryRow.ref}
+        onScroll={categoryRow.onScroll}
+        style={categoryRow.style}
+        role="group"
+        aria-label="Category"
+        className="hidden gap-2 overflow-x-auto [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden"
+      >
         <CategoryTab
           isActive={categoryFilter === "all"}
           label="All fields"
@@ -269,7 +278,9 @@ export function CustomListingFieldsTable({
                     {group.hiddenCount > 0 ? (
                       <button
                         type="button"
-                        className="flex h-10 w-full items-center justify-center gap-2 border-b border-border text-sm font-medium text-primary-text transition-colors hover:bg-muted/30"
+                        // pl-15 lines the text up with the Field column: the 48px handle
+                        // column plus the cells' 12px padding.
+                        className="flex h-10 w-full items-center gap-2 border-b border-border pl-15 text-sm font-medium text-primary-text transition-colors hover:bg-muted/30"
                         onClick={() => onExpandCategory(group.category)}
                       >
                         Show more in this category ({group.hiddenCount} more)

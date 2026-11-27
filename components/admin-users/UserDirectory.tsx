@@ -215,17 +215,19 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                         >
                           {account.email ?? "No email"}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex min-w-0 flex-col">
-                        {account.role ? <RoleLabel role={account.role} /> : "—"}
+                        {/* One line, never broken at a hyphen ("Co-op"). */}
                         {account.organization ? (
-                          <span className="line-clamp-2 text-sm break-words text-muted-foreground">
+                          <span
+                            className="truncate text-sm text-muted-foreground"
+                            title={account.organization}
+                          >
                             {account.organization}
                           </span>
                         ) : null}
                       </div>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {account.role ? <RoleLabel role={account.role} /> : "—"}
                     </td>
                     <td className="px-4 py-3.5">
                       <AccountStatusText status={account.status} />

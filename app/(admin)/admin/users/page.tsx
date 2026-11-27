@@ -145,12 +145,18 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
             {invites.map((invite) => (
               <tr key={invite.id} className="align-top">
                 <td className="px-4 py-3.5">
-                  <p className="font-medium break-words text-foreground">{invite.name}</p>
-                  <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
+                  {/* One line each, like the All users table, so nothing breaks at a hyphen. */}
+                  <p className="truncate font-medium text-foreground" title={invite.name}>
+                    {invite.name}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground" title={invite.email}>
                     {invite.email}
                   </p>
                   {invite.organization ? (
-                    <p className="text-sm break-words text-muted-foreground">
+                    <p
+                      className="truncate text-sm text-muted-foreground"
+                      title={invite.organization}
+                    >
                       {invite.organization}
                     </p>
                   ) : null}

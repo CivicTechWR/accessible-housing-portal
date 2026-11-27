@@ -207,7 +207,7 @@ export default function ListingsDashboard({
           <div
             // In split view, CSS hides the map below `lg`, so the server HTML is right at every width.
             className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${
-              isSplitView ? "hidden lg:block lg:basis-1/2" : ""
+              isSplitView ? "hidden lg:block lg:basis-[44%]" : ""
             }`}
           >
             {/* Server and hydration renders both take the placeholder branch, so they match, and

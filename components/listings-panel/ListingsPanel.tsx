@@ -29,7 +29,7 @@ export function ListingsPanel({
   return (
     <div
       className={`flex min-h-0 flex-col overflow-hidden bg-background ${
-        displayMode === DisplayMode.LIST ? "flex-1" : "w-full min-w-0 flex-1 lg:basis-1/2"
+        displayMode === DisplayMode.LIST ? "flex-1" : "w-full min-w-0 flex-1 lg:basis-[56%]"
       }`}
     >
       {header}

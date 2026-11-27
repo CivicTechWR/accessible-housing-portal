@@ -312,8 +312,13 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                     <>
                       {listing.status === "published" ? (
                         // Edit leads, but "New listing" holds the page's one filled button, so
-                        // Edit is outlined and View drops to ghost.
-                        <Button asChild variant="ghost" className="max-sm:h-11 max-sm:flex-1">
+                        // Edit is outlined and View drops to ghost. On phones the three
+                        // buttons share a row, so View takes the same outline as Edit and "…".
+                        <Button
+                          asChild
+                          variant="ghost"
+                          className="max-sm:h-11 max-sm:flex-1 max-sm:border-input max-sm:bg-background max-sm:shadow-xs dark:max-sm:bg-input/10"
+                        >
                           <Link href={listing.viewUrl}>View</Link>
                         </Button>
                       ) : null}

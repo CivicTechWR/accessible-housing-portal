@@ -108,7 +108,7 @@ function Price({ price, className }: { price: number; className?: string }) {
   return (
     <span className={cn("font-semibold tracking-tight text-foreground", className)}>
       {formatRent(price)}
-      <span className="text-[0.7em] font-normal text-muted-foreground"> {RENT_PERIOD}</span>
+      <span className="text-[0.7em] font-normal text-muted-foreground">{RENT_PERIOD}</span>
     </span>
   );
 }
@@ -289,21 +289,15 @@ export function ListingDetails({
   const availableDate = availableOn ? formatListingDate(availableOn) : undefined;
   const trimmedDescription = description?.trim();
 
-  // Rent sits beside the title on desktop and in the bottom bar on phones. The embedded preview
-  // has neither, so rent joins the facts there. On desktop the move-in date sits in the contact
-  // card instead, under rent and over Apply.
+  // Rent is in the contact card on desktop and in the bottom bar on phones. The embedded preview
+  // has neither, so rent joins the facts there.
   const keyFacts = [
     { icon: BedDoubleIcon, label: formatBeds(beds) },
     { icon: Bathtub01Icon, label: formatBaths(baths) },
     ...(sqft !== null ? [{ icon: FloorPlanIcon, label: formatArea(sqft) }] : []),
+    // Too long for half a phone's width, so it takes a row of its own there.
     ...(availableDate
-      ? [
-          {
-            icon: Calendar03Icon,
-            label: `Available ${availableDate}`,
-            className: embedded ? undefined : "lg:hidden",
-          },
-        ]
+      ? [{ icon: Calendar03Icon, label: `Available ${availableDate}`, className: "col-span-2" }]
       : []),
   ];
   const trimmedDeposit = depositInfo?.trim();
@@ -408,9 +402,6 @@ export function ListingDetails({
   const canReachLister = hasContactMethod || applicationRows.length > 0;
 
   const hasPhotos = images.length > 0;
-  // Phones put the photos first and full-bleed, with the back button over them, so the text link
-  // above the title is for wider screens there.
-  const backLink = !embedded && <BackToResults className={cn(hasPhotos && "max-sm:hidden")} />;
 
   const header = (
     <div className="space-y-4">
@@ -431,37 +422,21 @@ export function ListingDetails({
           ) : undefined
         }
         actions={
-          !embedded || editUrl ? (
-            <>
-              {/* Phones and tablets show rent in the bottom bar instead. pt-1 lines its baseline
-                  up with the title's. */}
-              {!embedded && (
-                <p className="pt-1 text-2xl leading-8 font-bold tracking-tight whitespace-nowrap max-lg:hidden">
-                  {formatRent(price)}
-                  <span className="text-base font-normal text-muted-foreground">
-                    {" "}
-                    {RENT_PERIOD}
-                  </span>
-                </p>
-              )}
-              {editUrl && (
-                <Button asChild variant="outline">
-                  <Link href={editUrl}>
-                    <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
-                    Edit listing
-                  </Link>
-                </Button>
-              )}
-            </>
-          ) : null
+          editUrl ? (
+            <Button asChild variant="outline">
+              <Link href={editUrl}>
+                <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
+                Edit listing
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
-      {/* Two columns of facts on phones, so a long fact never wraps onto a line by itself. The
-          first column takes its content's width, leaving the second room for the move-in date. */}
+      {/* Two equal columns of facts on phones, so a long fact never wraps onto a line by itself. */}
       <ul
         role="list"
         aria-label="Key facts"
-        className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-base text-foreground sm:flex sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-2"
+        className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-base text-foreground sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2"
       >
         {embedded && (
           <li className="col-span-2">
@@ -469,11 +444,11 @@ export function ListingDetails({
           </li>
         )}
         {keyFacts.map((fact) => (
-          <li key={fact.label} className={cn("flex items-center gap-2", fact.className)}>
+          <li key={fact.label} className={cn("flex min-w-0 items-center gap-2", fact.className)}>
             <HugeiconsIcon
               icon={fact.icon}
               strokeWidth={2}
-              className="size-4.5 text-foreground/70"
+              className="size-5 shrink-0 text-foreground/70"
               aria-hidden
             />
             {fact.label}
@@ -580,26 +555,10 @@ export function ListingDetails({
       )}
     >
       <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
-        {/* Desktop leads with rent and the move-in date, beside Apply. Phones have them in the
-            bottom bar and the key facts. */}
+        {/* Desktop leads with rent, over Apply; it is the only place rent shows there. Phones
+            have it in the bottom bar. */}
         {twoColumns && (
-          <div className="space-y-2 max-lg:hidden">
-            <p className="text-2xl leading-8 font-bold tracking-tight">
-              {formatRent(price)}
-              <span className="text-base font-normal text-muted-foreground"> {RENT_PERIOD}</span>
-            </p>
-            {availableDate && (
-              <p className="flex items-center gap-2 text-[15px] text-foreground">
-                <HugeiconsIcon
-                  icon={Calendar03Icon}
-                  strokeWidth={2}
-                  className="size-4 shrink-0 text-foreground/70"
-                  aria-hidden
-                />
-                Available {availableDate}
-              </p>
-            )}
-          </div>
+          <Price price={price} className="block text-2xl leading-8 font-bold max-lg:hidden" />
         )}
         <h2
           id={`${CONTACT_SECTION_ID}-heading`}
@@ -702,19 +661,21 @@ export function ListingDetails({
 
   const body = (
     <div className={cn("mx-auto flex w-full flex-col gap-6 sm:gap-8", pageWidths.content)}>
-      <div className="flex flex-col gap-2">
-        {backLink}
+      {/* On phones this wrapper dissolves, so the back link can sit above the photos, which come
+          before the title there. */}
+      <div className={cn("flex flex-col gap-2", hasPhotos && !embedded && "max-sm:contents")}>
+        {!embedded && (
+          <BackToResults
+            className={cn(hasPhotos && "max-sm:order-first max-sm:-mt-5 max-sm:-mb-4")}
+          />
+        )}
         {header}
       </div>
       {hasPhotos && (
-        // Phones show the photos first, edge to edge, by cancelling the page shell's padding.
-        <div
-          className={cn("relative", !embedded && "max-sm:order-first max-sm:-mx-4 max-sm:-mt-8")}
-        >
+        // Phones show the photos before the title, edge to edge, by cancelling the page shell's
+        // padding.
+        <div className={cn(!embedded && "max-sm:order-first max-sm:-mx-4")}>
           <ListingImageCarousel images={images} altPrefix={address} edgeToEdge={!embedded} />
-          {!embedded && (
-            <BackToResults variant="overlay" className="absolute top-1.5 left-1.5 z-10 sm:hidden" />
-          )}
         </div>
       )}
       <div

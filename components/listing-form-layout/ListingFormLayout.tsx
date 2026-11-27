@@ -16,7 +16,7 @@ export interface FormSectionProps {
 
 /**
  * One card in the listing form, with an 18px heading and a one-line description. On phones it
- * drops the card for a full-width block with a divider underneath.
+ * drops the card and the visible heading for a full-width block with a divider underneath.
  */
 export function FormSection({ id, title, description, headerAside, children }: FormSectionProps) {
   const headingId = id ? `${id}-heading` : undefined;
@@ -34,8 +34,14 @@ export function FormSection({ id, title, description, headerAside, children }: F
     >
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
-          {/* tabIndex lets the section nav move focus here after scrolling. */}
-          <h2 id={headingId} tabIndex={-1} className="text-lg font-semibold outline-none">
+          {/* tabIndex lets the section nav move focus here after scrolling. On phones the
+              pinned section strip right above already names the section, so the heading is
+              only for screen readers there. */}
+          <h2
+            id={headingId}
+            tabIndex={-1}
+            className="text-lg font-semibold outline-none max-sm:sr-only"
+          >
             {title}
           </h2>
           {description && <p className="text-sm text-muted-foreground">{description}</p>}
@@ -269,7 +275,7 @@ export function ListingFormLayout({
           ) : null}
         </div>
       </div>
-      <div className="pt-4 sm:pt-6">{panes}</div>
+      <div className="sm:pt-6">{panes}</div>
       {footerBar}
     </Tabs>
   );

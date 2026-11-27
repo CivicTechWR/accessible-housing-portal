@@ -7,7 +7,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Alert02Icon,
   ArrowExpand01Icon,
-  ArrowLeft01Icon,
   ArrowShrink02Icon,
   CheckmarkCircle02Icon,
   Loading03Icon,
@@ -36,6 +35,7 @@ import {
 import { ListingFormSkeleton } from "@/components/listing-form-skeleton/ListingFormSkeleton";
 import { PageHeader } from "@/components/page-shell/AppPageShell";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { BackLink } from "@/components/ui/back-link";
 import { ListingStatusBadge } from "@/app/my-listings/ListingStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -179,19 +179,11 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     <ListingFormLayout
       isPreviewExpanded={isPreviewExpanded}
       header={
-        <div className="space-y-3">
-          <Button asChild variant="ghost" size="sm" className="-ml-2.5 text-muted-foreground">
-            <Link href="/my-listings">
-              <HugeiconsIcon
-                icon={ArrowLeft01Icon}
-                strokeWidth={2}
-                data-icon="inline-start"
-                aria-hidden
-              />
-              My listings
-            </Link>
-          </Button>
+        <div className="space-y-2">
+          <BackLink href="/my-listings">My listings</BackLink>
           <PageHeader
+            // On phones the sticky bar already says how saving works, so the subtitle goes.
+            className="max-sm:[&_p]:hidden"
             title={
               <span className="flex flex-wrap items-center gap-3">
                 {formHeading}
@@ -236,10 +228,8 @@ export default function ListingForm({ listingId }: ListingFormProps) {
             className="space-y-6 max-sm:space-y-0"
             onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}
           >
-            <p className="text-sm text-muted-foreground">
-              <span aria-hidden>* Required</span>
-              <span className="sr-only">Fields marked with an asterisk are required.</span>
-            </p>
+            {/* Sighted users read the asterisks and the section strip's counts. */}
+            <p className="sr-only">Fields marked with an asterisk are required.</p>
             <ListingFormFields control={form.control} />
             <ListingFormImages
               control={form.control}
@@ -308,16 +298,21 @@ export default function ListingForm({ listingId }: ListingFormProps) {
 
 /** The section nav's entries, with how much of each section is filled in. */
 function listingFormSections(values: ListingFormInput): ListingFormSectionLink[] {
-  const coreSections = CORE_FIELD_CATEGORIES.map((category) => {
+  const coreSections = CORE_FIELD_CATEGORIES.map((category): ListingFormSectionLink => {
     const required = CORE_FIELD_DEFINITIONS.filter(
       (definition) => definition.category === category.key && definition.isRequired,
     );
     const filled = required.filter((definition) => hasValue(values[definition.key])).length;
+    const id = listingFormSectionId(category.key);
+    if (required.length === 0) {
+      return { id, label: category.displayName, meta: "Optional", status: "optional" };
+    }
     return {
-      id: listingFormSectionId(category.key),
+      id,
       label: category.displayName,
-      meta: required.length > 0 ? `${filled} of ${required.length} required` : "Optional",
-      isComplete: required.length > 0 && filled === required.length,
+      meta: `${filled} of ${required.length} required`,
+      count: `${filled}/${required.length}`,
+      status: filled === required.length ? "complete" : "incomplete",
     };
   });
   const photoCount = values.images?.length ?? 0;
@@ -330,12 +325,15 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
       label: "Photos",
       meta:
         photoCount === 0 ? "None yet" : `${photoCount} ${photoCount === 1 ? "photo" : "photos"}`,
-      isComplete: photoCount > 0,
+      count: String(photoCount),
+      status: photoCount > 0 ? "complete" : "incomplete",
     },
     {
       id: listingFormSectionId("features"),
       label: "Features and accessibility",
       meta: `${featureCount} selected`,
+      count: String(featureCount),
+      status: "optional",
     },
   ];
 }

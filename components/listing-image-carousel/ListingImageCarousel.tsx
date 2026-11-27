@@ -28,7 +28,7 @@ function gridLayout(total: number) {
     : { shown: 3, className: "aspect-[5/2] grid-cols-[66fr_34fr]" };
 }
 
-/** A 36px circle over the photo, with an invisible 44px hit area around it for touch. */
+/** A 36px circle over the photo, with an invisible 44px hit area around it. */
 const arrowClassName =
   "pointer-events-auto size-9 border-0 bg-white/95 text-neutral-900 shadow-md after:absolute after:-inset-1 hover:bg-white hover:text-neutral-900 dark:bg-white/95 dark:hover:bg-white";
 
@@ -146,7 +146,7 @@ export function ListingImageCarousel({
                 }}
                 type="button"
                 className={cn(
-                  "block w-full cursor-zoom-in overflow-hidden rounded-xl bg-muted focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-primary",
+                  "relative block w-full cursor-zoom-in overflow-hidden rounded-xl bg-muted focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-primary",
                   edgeToEdge && "max-sm:rounded-none",
                 )}
                 aria-label={`View image ${index + 1} of ${images.length} larger`}
@@ -157,25 +157,28 @@ export function ListingImageCarousel({
                   alt={image.caption || `${altPrefix} image ${index + 1}`}
                   className="aspect-[4/3] w-full object-cover md:aspect-[2/1] lg:aspect-auto lg:h-100"
                 />
+                {/* Over the bottom of the photo, so it reads as the photo's caption. Hidden from
+                    screen readers, which get it as the photo's alt text. */}
+                {image.caption && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent px-4 pt-10 pb-3 text-left text-sm text-white"
+                  >
+                    {image.caption}
+                  </span>
+                )}
               </button>
-              {image.caption && (
-                <p
-                  className={cn("mt-2 text-sm text-muted-foreground", edgeToEdge && "max-sm:px-4")}
-                >
-                  {image.caption}
-                </p>
-              )}
             </CarouselItem>
           ))}
         </CarouselContent>
         {images.length > 1 && (
-          // An overlay the size of the photo, so the arrows centre on the photo, not the caption.
-          <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[4/3] md:aspect-[2/1] lg:aspect-auto lg:h-100">
+          // Phones swipe between photos, so they get only the counter.
+          <div className="pointer-events-none absolute inset-0">
             <span className="absolute top-3 right-3 rounded-full bg-black/65 px-2.5 py-1 text-[13px] font-medium text-white tabular-nums">
               {current + 1} / {images.length}
             </span>
-            <CarouselPrevious size="icon" className={cn("left-3", arrowClassName)} />
-            <CarouselNext size="icon" className={cn("right-3", arrowClassName)} />
+            <CarouselPrevious size="icon" className={cn("left-3 max-sm:hidden", arrowClassName)} />
+            <CarouselNext size="icon" className={cn("right-3 max-sm:hidden", arrowClassName)} />
           </div>
         )}
       </Carousel>

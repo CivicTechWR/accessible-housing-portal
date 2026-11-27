@@ -58,9 +58,12 @@ function FeatureSwitch({
     <label
       htmlFor={id}
       className={cn(
-        "flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 transition-colors",
-        // A tinted row makes the few features that are on easy to find among the many that are off.
-        checked ? "border-primary/30 bg-primary/5" : "border-transparent hover:bg-muted/50",
+        "flex min-h-11 cursor-pointer items-start gap-3 rounded-r-lg border-l-2 px-3 py-3 transition-colors",
+        // A tinted row with a blue edge makes the few features that are on easy to find among
+        // the many that are off.
+        checked
+          ? "border-primary bg-primary/5 dark:border-primary-text dark:bg-primary-text/10"
+          : "border-transparent hover:bg-muted/50",
       )}
     >
       <span className="min-w-0 flex-1 space-y-0.5">
@@ -89,6 +92,34 @@ function FeatureSwitch({
         aria-describedby={definition || quotesPublicText ? descriptionId : undefined}
       />
     </label>
+  );
+}
+
+const MAX_CHIPS = 2;
+
+/**
+ * What's on in a collapsed category, as small chips ("Elevator in building", "+3"), so the
+ * state shows without opening it. Hidden while the category is open, where the rows say it.
+ */
+function SelectedChips({ names }: { names: string[] }) {
+  if (names.length === 0) return null;
+  const shown = names.slice(0, MAX_CHIPS);
+  const more = names.length - shown.length;
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 group-aria-expanded/accordion-trigger:hidden">
+      {shown.map((name) => (
+        <span
+          key={name}
+          title={name}
+          className="min-w-0 truncate rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground"
+        >
+          {name}
+        </span>
+      ))}
+      {more > 0 ? (
+        <span className="shrink-0 text-xs font-medium text-muted-foreground">+{more}</span>
+      ) : null}
+    </span>
   );
 }
 
@@ -177,16 +208,13 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
             <FormItem className="col-span-2">
               <Accordion
                 type="multiple"
-                // Only categories with features already on start open.
-                defaultValue={featureGroups
-                  .filter((group) => group.options.some((option) => selectedIds.has(option.id)))
-                  .map((group) => group.groupId)}
+                // Every category starts closed; each closed row lists what's on in it.
                 className="overflow-visible rounded-none border-t"
               >
                 {featureGroups.map((group) => {
-                  const groupSelectedCount = group.options.filter((option) =>
-                    selectedIds.has(option.id),
-                  ).length;
+                  const groupSelectedNames = group.options
+                    .filter((option) => selectedIds.has(option.id))
+                    .map((option) => toSentenceCase(option.label));
 
                   return (
                     <AccordionItem
@@ -194,9 +222,15 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
                       value={group.groupId}
                       className="mb-0 rounded-none border-0 border-b data-[state=open]:bg-transparent"
                     >
-                      <AccordionTrigger className="-mx-2 gap-3 rounded-lg px-2 py-4 text-left text-base font-semibold hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30">
-                        <span className="min-w-0 flex-1">{toSentenceCase(group.groupLabel)}</span>
-                        <SelectedCount count={groupSelectedCount} total={group.options.length} />
+                      <AccordionTrigger className="-mx-2 min-w-0 gap-3 rounded-lg px-2 py-4 text-left text-base font-semibold hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30">
+                        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                          {toSentenceCase(group.groupLabel)}
+                          <SelectedChips names={groupSelectedNames} />
+                        </span>
+                        <SelectedCount
+                          count={groupSelectedNames.length}
+                          total={group.options.length}
+                        />
                       </AccordionTrigger>
                       <AccordionContent className="-mx-2 pb-4">
                         {/* One column, so each feature's definition sits under its name. */}

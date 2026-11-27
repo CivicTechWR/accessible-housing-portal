@@ -2,10 +2,17 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Image01Icon, WheelchairIcon } from "@hugeicons/core-free-icons";
-import { RENT_PERIOD, formatListingDate, formatRent, formatRooms } from "@/lib/listing-format";
+import {
+  RENT_PERIOD,
+  formatArea,
+  formatBaths,
+  formatBeds,
+  formatListingDate,
+  formatRent,
+} from "@/lib/listing-format";
 import Image from "next/image";
 import Link from "next/link";
-import type { Ref } from "react";
+import { Fragment, type ReactNode, type Ref } from "react";
 
 interface ListingsCardProps {
   id: string;
@@ -59,26 +66,44 @@ export function formatPostedLabel(timeAgo: string) {
 }
 
 /**
- * Always the count, never feature names, so every card's chip reads the same way. Cards with no
- * features keep the slot with a muted note, so cards in a row stay the same height.
+ * Always the count, never feature names, so every card's pill reads the same way. Cards with no
+ * features get a muted pill of the same size, so every card has the same structure.
  */
 function AccessibilitySummary({ count, className }: { count: number; className?: string }) {
   return (
-    <div className={cn("flex h-7 min-w-0 items-center", className)}>
-      {count > 0 ? (
-        <Badge className="h-7 max-w-full gap-1.5 px-2.5 text-xs md:text-sm [&>svg]:size-4!">
-          <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="shrink-0" aria-hidden />
-          <span className="truncate">
-            {count} accessibility {count === 1 ? "feature" : "features"}
-          </span>
-        </Badge>
-      ) : (
-        <p className="truncate text-xs text-muted-foreground md:text-sm">
-          No accessibility details yet
-        </p>
-      )}
+    <div className={cn("flex min-w-0", className)}>
+      <Badge
+        variant={count > 0 ? "default" : "secondary"}
+        className={cn(
+          "h-7 max-w-full gap-1.5 px-2.5 text-xs md:text-sm [&>svg]:size-4!",
+          count === 0 && "bg-muted text-muted-foreground",
+        )}
+      >
+        <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="shrink-0" aria-hidden />
+        <span className="truncate">
+          {count === 0
+            ? "No accessibility info"
+            : `${count} accessibility ${count === 1 ? "feature" : "features"}`}
+        </span>
+      </Badge>
     </div>
   );
+}
+
+/**
+ * Items joined by " · ". Each separator stays with the item after it, so a wrapped line never
+ * starts or ends on a lone dot.
+ */
+function DotSeparated({ items }: { items: ReactNode[] }) {
+  return items.map((item, index) => (
+    <Fragment key={index}>
+      {index > 0 && " "}
+      <span className="whitespace-nowrap">
+        {index > 0 && "· "}
+        {item}
+      </span>
+    </Fragment>
+  ));
 }
 
 export function ListingsCard({
@@ -125,9 +150,10 @@ export function ListingsCard({
   );
 
   // The building name leads, as on the detail page and My listings. Without one, the street
-  // address takes its place and the city goes underneath, so every card has two lines here.
+  // address takes its place and the grey line starts with the city instead.
   const heading = title || address;
-  const subheading = title ? displayAddress : city;
+  const place = title ? displayAddress : city;
+  const metaItems = [place, posted].filter(Boolean);
 
   return (
     <article
@@ -150,37 +176,34 @@ export function ListingsCard({
       <div
         className={cn(
           "flex min-w-0 flex-1 flex-col",
-          isHorizontal ? "justify-center gap-0.5 p-3" : "gap-0.5",
+          isHorizontal ? "justify-center gap-0.5 p-3" : "gap-1",
         )}
       >
-        {/* Rent is the strongest text on the card, so it holds the right of the first row and
-            the name gives way to it instead of pushing it out. */}
-        <div className="flex items-start justify-between gap-3">
-          {/* One line in the grid, so every card in a row lines up. */}
-          <h3
-            className={cn(
-              "min-w-0 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground md:text-[17px]",
-              isHorizontal ? "line-clamp-2" : "line-clamp-1",
-            )}
-          >
-            {heading}
-          </h3>
-          <p className="shrink-0 text-lg leading-snug font-semibold tracking-normal whitespace-nowrap text-foreground tabular-nums">
-            {formatRent(price)}
-            <span className="text-sm font-normal text-muted-foreground">{RENT_PERIOD}</span>
+        {/* The name gets its own lines, so it is never cut short by the rent. */}
+        <h3 className="line-clamp-2 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground md:text-[17px]">
+          {heading}
+        </h3>
+        <p className="mt-0.5 text-[15px] leading-snug text-foreground">
+          <DotSeparated
+            items={[
+              <>
+                <span className="text-lg font-bold tabular-nums">{formatRent(price)}</span>
+                {RENT_PERIOD}
+              </>,
+              formatBeds(beds),
+              formatBaths(baths),
+              ...(sqft === null ? [] : [formatArea(sqft)]),
+            ]}
+          />
+        </p>
+        {metaItems.length > 0 && (
+          <p className="text-sm leading-snug text-muted-foreground md:text-[15px]">
+            <DotSeparated items={metaItems} />
           </p>
-        </div>
-        {subheading && (
-          <p className="truncate text-sm text-muted-foreground md:text-[15px]">{subheading}</p>
-        )}
-        <p className="text-sm text-foreground md:text-[15px]">{formatRooms(beds, baths, sqft)}</p>
-        {/* Its own line, so it never wraps to a line that starts with a separator. */}
-        {posted && (
-          <p className="truncate text-sm text-muted-foreground md:text-[15px]">{posted}</p>
         )}
         <AccessibilitySummary
           count={featureCount}
-          className={isHorizontal ? "mt-1.5 hidden sm:flex" : "mt-2"}
+          className={isHorizontal ? "mt-2 hidden sm:flex" : "mt-3"}
         />
       </div>
 

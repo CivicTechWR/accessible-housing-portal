@@ -63,10 +63,22 @@ const LIGHT_PAINT: PaintOverrides = [
   [["park"], "fill-outline-color", "#e2ecdc"],
   [["park_outline"], "line-color", "#e2ecdc"],
   [["landcover_wood"], "fill-color", "#dce8d4"],
+  // Land use (housing, schools, hospitals, sand) blends into the ground, so the map has one
+  // neutral behind the pins instead of a patchwork of tinted blocks. Parks keep their green.
   [
-    ["landuse_pitch", "landuse_track", "landuse_cemetery", "landuse_school", "landuse_hospital"],
+    [
+      "landuse_residential",
+      "landuse_pitch",
+      "landuse_track",
+      "landuse_cemetery",
+      "landuse_school",
+      "landuse_hospital",
+      "landcover_sand",
+      "landcover_ice",
+      "aeroway_fill",
+    ],
     "fill-color",
-    "#ecede8",
+    "#f6f6f4",
   ],
   [["building"], "fill-color", "#e8e8e5"],
   [["building"], "fill-outline-color", "#dfdfdb"],
