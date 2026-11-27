@@ -234,8 +234,20 @@ export default async function AdminUsersPage() {
 
   // Loaded only after `getAllAccounts` has confirmed an administrator.
   const invites = await findAccountInvites();
-  const accounts = result.value.data;
+  // Someone who hasn't accepted an invitation is listed once, under Invitations.
+  const invitedEmails = new Set(invites.map((invite) => invite.email.toLowerCase()));
+  const isListedAsInvite = (account: (typeof result.value.data)[number]) =>
+    account.status === "invited" &&
+    account.email !== null &&
+    invitedEmails.has(account.email.toLowerCase());
+  const accounts = result.value.data.filter((account) => !isListedAsInvite(account));
+  const hasHiddenInvitees = accounts.length < result.value.data.length;
   const hasInvitedAccounts = accounts.some((account) => account.status === "invited");
+  const directoryNote = hasInvitedAccounts
+    ? "Includes people who haven't accepted their invite yet."
+    : hasHiddenInvitees
+      ? "People who haven't accepted their invite yet are under Invitations."
+      : null;
 
   return (
     <AppPageShell>
@@ -266,13 +278,13 @@ export default async function AdminUsersPage() {
         <section
           className="space-y-3"
           aria-labelledby="directory-heading"
-          aria-describedby={hasInvitedAccounts ? "directory-note" : undefined}
+          aria-describedby={directoryNote ? "directory-note" : undefined}
         >
           <div className="space-y-1">
             <SectionHeading id="directory-heading" title="All users" count={accounts.length} />
-            {hasInvitedAccounts ? (
+            {directoryNote ? (
               <p id="directory-note" className="text-sm text-muted-foreground">
-                Includes people who haven't accepted their invite yet.
+                {directoryNote}
               </p>
             ) : null}
           </div>

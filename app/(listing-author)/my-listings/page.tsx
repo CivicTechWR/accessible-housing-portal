@@ -5,10 +5,9 @@ import { Add01Icon } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
 import { AlertBanner } from "@/components/ui/alert-banner";
-import { AppPageShell, PageHeader, pageWidths } from "@/components/page-shell/AppPageShell";
+import { AppPageShell, PageHeader } from "@/components/page-shell/AppPageShell";
 import { getMyListingsService } from "@/lib/listings/listing.service";
 import { MyListingsClient } from "@/app/my-listings/MyListingsClient";
-import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "My listings",
@@ -20,12 +19,14 @@ export default async function MyListingsPage() {
 
   return (
     <AppPageShell>
-      <div className={cn("mx-auto space-y-6", pageWidths.content)}>
+      {/* Narrower than the usual content column, so the rows' columns sit together without an empty
+          band before the actions. */}
+      <div className="mx-auto w-full max-w-4xl space-y-6">
         <PageHeader
           title="My listings"
           description="Drafts save automatically as you build them. Publish when the listing is ready."
           actions={
-            <Button asChild>
+            <Button asChild className="max-sm:w-full max-sm:text-base">
               <Link href="/listing-form">
                 <HugeiconsIcon
                   icon={Add01Icon}

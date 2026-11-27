@@ -1,8 +1,3 @@
-import Image from "next/image";
-
-import { AccessibilityChips } from "@/components/listings-card/AccessibilityChips";
-import { formatRent, formatRooms, RENT_PERIOD } from "@/lib/listing-format";
-
 const features = [
   {
     title: "Accessibility, item by item",
@@ -18,67 +13,20 @@ const features = [
   },
 ];
 
-const exampleFeatures = [
-  "Barrier-free main entrance",
-  "Elevator in building",
-  "Lowered kitchen counters",
-];
-
-/** A made-up listing that shows what a real one looks like. */
-function ExampleListing() {
-  return (
-    <figure className="overflow-hidden rounded-xl border bg-card shadow-xl shadow-black/8 dark:shadow-black/40">
-      <div className="relative aspect-[3/2]">
-        <Image
-          // A different photo from the hero, so the example reads as a listing rather than a repeat.
-          src="https://images.pexels.com/photos/7746646/pexels-photo-7746646.jpeg?cs=srgb&fm=jpg"
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 420px, 100vw"
-          className="object-cover"
-        />
-        <span className="absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-medium text-white">
-          Example listing
-        </span>
-      </div>
-      {/* The same order and styles as a search result card. */}
-      <div className="space-y-1 p-5">
-        <p className="text-base font-semibold">Maple Court Apartments</p>
-        <p className="text-xl font-bold">
-          {formatRent(1450)}
-          <span className="text-sm font-normal text-muted-foreground">{RENT_PERIOD}</span>
-        </p>
-        <p className="text-[0.9375rem] text-foreground/80">{formatRooms(1, 1, 620)}</p>
-        <p className="text-sm text-muted-foreground">King St W, Kitchener · Available now</p>
-        <AccessibilityChips features={exampleFeatures} className="pt-2" />
-      </div>
-      <figcaption className="sr-only">
-        An example of how a listing appears to navigators.
-      </figcaption>
-    </figure>
-  );
-}
-
 export function HomeFeaturesSection() {
   return (
-    <section
-      aria-labelledby="features-title"
-      className="grid items-center gap-12 lg:grid-cols-[1fr_420px] lg:gap-16"
-    >
-      <div>
-        <h2 id="features-title" className="text-[1.75rem] sm:text-4xl">
-          What every listing shows
-        </h2>
-        <ul role="list" className="mt-8 divide-y border-y">
-          {features.map((feature) => (
-            <li key={feature.title} className="py-5">
-              <h3 className="text-lg">{feature.title}</h3>
-              <p className="mt-1.5 max-w-xl text-base leading-relaxed">{feature.body}</p>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <ExampleListing />
+    <section aria-labelledby="features-title">
+      <h2 id="features-title" className="text-[1.75rem] sm:text-4xl">
+        What every listing shows
+      </h2>
+      <ul role="list" className="mt-10 grid gap-8 md:grid-cols-3 md:gap-10">
+        {features.map((feature) => (
+          <li key={feature.title} className="border-t-2 border-foreground pt-5">
+            <h3 className="text-lg">{feature.title}</h3>
+            <p className="mt-2 text-[1.0625rem] leading-relaxed">{feature.body}</p>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

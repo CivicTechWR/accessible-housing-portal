@@ -1,8 +1,11 @@
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
 type AuthCardProps = {
+  /** A sign-style tile above the title, for states such as an expired link. */
+  icon?: IconSvgElement;
   title: ReactNode;
   description?: ReactNode;
   children?: ReactNode;
@@ -11,7 +14,7 @@ type AuthCardProps = {
 };
 
 /** The card every sign-in, reset and invite screen uses. */
-export function AuthCard({ title, description, children, footer, className }: AuthCardProps) {
+export function AuthCard({ icon, title, description, children, footer, className }: AuthCardProps) {
   return (
     <div
       className={cn(
@@ -22,6 +25,11 @@ export function AuthCard({ title, description, children, footer, className }: Au
       )}
     >
       <div className="space-y-2">
+        {icon ? (
+          <span className="mb-4 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <HugeiconsIcon icon={icon} strokeWidth={2} size={24} aria-hidden="true" />
+          </span>
+        ) : null}
         <h1 className="text-2xl">{title}</h1>
         {description ? <p className="text-base text-muted-foreground">{description}</p> : null}
       </div>

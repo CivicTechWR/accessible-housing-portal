@@ -10,7 +10,6 @@ import {
   MapsIcon,
   Search01Icon,
 } from "@hugeicons/core-free-icons";
-import { AccessibilityMark } from "@/components/ui/accessibility-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -69,32 +68,33 @@ export const activeFilterClassName =
   "border-transparent bg-primary/10 font-medium text-primary-text hover:bg-primary/15 hover:text-primary-text aria-expanded:bg-primary/15 aria-expanded:text-primary-text dark:border-transparent dark:bg-primary-text/15 dark:hover:bg-primary-text/20";
 
 /**
- * The Accessibility filter in use keeps its outline and shows the yellow accessibility mark and the
- * count instead, because yellow marks accessibility information and blue is for the other filters.
+ * The Accessibility filter is the one this portal exists for, so it always wears the soft
+ * accessibility yellow with a darker yellow edge. The other filters stay neutral until used.
  */
-const activeAccessibilityClassName = "border-foreground/60 dark:border-white/50";
+const accessibilityTriggerClassName =
+  "border-signal bg-signal-soft text-signal-soft-foreground hover:bg-signal/40 hover:text-signal-soft-foreground aria-expanded:bg-signal/40 aria-expanded:text-signal-soft-foreground dark:border-signal/45 dark:bg-signal-soft dark:hover:bg-signal/25 dark:aria-expanded:bg-signal/25";
 
 /** The phone quick-filter chips: the desktop filter buttons' shape, 40px tall, in a scrolling row. */
 const chipClassName = "h-10 shrink-0 rounded-lg px-3.5 text-sm";
 
-/** The number of selected accessibility features, beside the yellow mark. */
-function CountBadge({ count }: { count: number }) {
+/** The Accessibility trigger's contents: the access symbol, the label, then a solid yellow count
+ * once features are selected (a chevron until then). */
+function AccessibilityTriggerContent({ count }: { count: number }) {
   return (
-    <span
-      aria-hidden
-      className="flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-xs font-medium text-background"
-    >
-      {count}
-    </span>
-  );
-}
-
-/** The accessibility icon, which turns into the yellow mark once features are selected. */
-function AccessibilityIcon({ active }: { active: boolean }) {
-  return active ? (
-    <AccessibilityMark size="sm" />
-  ) : (
-    <HugeiconsIcon icon={UniversalAccessIcon} strokeWidth={2} className="size-4" aria-hidden />
+    <>
+      <HugeiconsIcon icon={UniversalAccessIcon} strokeWidth={2} className="size-4" aria-hidden />
+      Accessibility
+      {count > 0 ? (
+        <span
+          aria-hidden
+          className="flex h-5 min-w-5 items-center justify-center rounded-full bg-signal px-1.5 text-xs font-medium text-signal-foreground"
+        >
+          {count}
+        </span>
+      ) : (
+        <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} className="size-4" aria-hidden />
+      )}
+    </>
   );
 }
 
@@ -194,20 +194,9 @@ function AccessibilityPopover({ groups, getCheckboxProps, count }: Accessibility
         <Button
           variant="outline"
           aria-label={accessibilityLabel(count)}
-          className={cn("gap-1.5 max-lg:hidden", count > 0 && activeAccessibilityClassName)}
+          className={cn("gap-1.5 max-lg:hidden", accessibilityTriggerClassName)}
         >
-          <AccessibilityIcon active={count > 0} />
-          Accessibility
-          {count > 0 ? (
-            <CountBadge count={count} />
-          ) : (
-            <HugeiconsIcon
-              icon={ArrowDown01Icon}
-              strokeWidth={2}
-              className="size-4 text-muted-foreground"
-              aria-hidden
-            />
-          )}
+          <AccessibilityTriggerContent count={count} />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -282,24 +271,9 @@ export function QuickFilterChips({
         variant="outline"
         onClick={onAccessibilityClick}
         aria-label={accessibilityLabel(accessibilityCount)}
-        className={cn(
-          "gap-1.5",
-          chipClassName,
-          accessibilityCount > 0 && activeAccessibilityClassName,
-        )}
+        className={cn("gap-1.5", chipClassName, accessibilityTriggerClassName)}
       >
-        <AccessibilityIcon active={accessibilityCount > 0} />
-        Accessibility
-        {accessibilityCount > 0 ? (
-          <CountBadge count={accessibilityCount} />
-        ) : (
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            strokeWidth={2}
-            className="size-4 text-muted-foreground"
-            aria-hidden
-          />
-        )}
+        <AccessibilityTriggerContent count={accessibilityCount} />
       </Button>
       <FilterPopover
         chip

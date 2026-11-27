@@ -216,10 +216,11 @@ export function CustomListingFieldsTable({
               const rowsId = `${groupIdPrefix}-group-${groupIndex}`;
               return (
                 <div key={group.category}>
-                  {/* A heading with space above, rather than a shaded band, so each group
-                        reads as a section of one list. The first group needs no top rule. The
-                        heading folds the group away so a long list can be scanned. */}
-                  <h2 className="border-b border-border px-2 pt-6 pb-1.5 [:not(:first-child)>&]:border-t">
+                  {/* A heading row between rules, rather than a shaded band, so each group reads
+                        as a section of one list. Every group, the first included, gets the same
+                        space above; the first needs no top rule. The heading folds the group away
+                        so a long list can be scanned. */}
+                  <h2 className="border-b border-border px-2 py-1.5 [:not(:first-child)>&]:border-t">
                     <button
                       type="button"
                       aria-expanded={isOpen}

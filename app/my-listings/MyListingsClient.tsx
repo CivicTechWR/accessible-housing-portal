@@ -211,7 +211,12 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
         </AlertBanner>
       ) : null}
 
-      <ul className="grid gap-3" aria-label="Your listings">
+      {/* From lg every row shares one set of columns (subgrid), so rent and rooms, the update
+          time and the actions line up down the list whatever each row's text. */}
+      <ul
+        className="grid gap-3 lg:grid-cols-[6rem_minmax(0,1fr)_fit-content(13rem)_fit-content(9rem)_auto] lg:gap-x-6"
+        aria-label="Your listings"
+      >
         {listings.map((listing) => {
           const isArchived = listing.status === "archived";
           const isMutating =
@@ -223,17 +228,18 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
           const facts = listingFacts(listing);
 
           return (
-            <li key={listing.id}>
+            <li key={listing.id} className="lg:col-span-5 lg:grid lg:grid-cols-subgrid">
               <Card
                 className={cn(
                   // Phones: photo and title side by side, the title and address using the full
                   // width to wrap, then facts and the actions (Edit and the menu) on full-width
-                  // rows. From sm: photo, details, actions in a row.
-                  "grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4",
+                  // rows. From sm: photo, details, actions in a row. From lg: one row of
+                  // columns — photo, title, rent and rooms, updated, actions.
+                  "grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4 lg:col-span-5 lg:grid-cols-subgrid lg:items-center lg:gap-x-6",
                   isArchived && "bg-muted/40",
                 )}
               >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/5 sm:row-span-2 sm:self-center">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/5 sm:row-span-2 sm:self-center lg:row-span-1">
                   {listing.imageUrl ? (
                     <img
                       src={listing.imageUrl}
@@ -253,7 +259,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   )}
                 </div>
 
-                <div className="min-w-0 space-y-1 sm:self-end">
+                <div className="min-w-0 space-y-1 sm:self-end lg:self-center">
                   {/* The chip gets its own line so the title can use the full width to wrap. */}
                   <ListingStatusBadge status={listing.status} className="mb-1.5" />
                   <h2 className="text-base text-pretty break-words">{listing.title}</h2>
@@ -262,8 +268,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   </p>
                 </div>
 
-                <div className="col-span-2 min-w-0 space-y-1 sm:col-span-1 sm:col-start-2 sm:self-start">
-                  <p className="text-sm text-foreground">
+                <div className="col-span-2 min-w-0 space-y-1 sm:col-span-1 sm:col-start-2 sm:self-start lg:contents">
+                  <p className="text-sm text-foreground lg:col-start-3 lg:row-start-1">
                     {[
                       facts.rent === null ? (
                         <span key="rent" className="text-muted-foreground">
@@ -283,12 +289,15 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                     ].map((fact, index, all) => (
                       // Each fact keeps its trailing " ·" and never splits, so a wrapped line
                       // starts with a fact rather than a dot or an orphaned unit. The spaces
-                      // match the " · " on search cards.
-                      <span key={index}>
+                      // match the " · " on search cards. From lg the rent heads its column on a
+                      // line of its own, with the rooms underneath.
+                      <span key={index} className={cn(index === 0 && "lg:block lg:text-base")}>
                         <span className="whitespace-nowrap">
                           {fact}
                           {index < all.length - 1 ? (
-                            <span className="text-muted-foreground">
+                            <span
+                              className={cn("text-muted-foreground", index === 0 && "lg:hidden")}
+                            >
                               <span aria-hidden> ·</span>
                               <span className="sr-only">,</span>
                             </span>
@@ -297,12 +306,12 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                       </span>
                     ))}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground lg:col-start-4 lg:row-start-1">
                     Updated {formatDistance(new Date(listing.updatedAt), now, { addSuffix: true })}
                   </p>
                 </div>
 
-                <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:justify-end sm:self-center">
+                <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:justify-end sm:self-center lg:col-start-5 lg:row-span-1">
                   {isArchived ? (
                     <p className="mr-auto text-sm text-muted-foreground sm:mr-2 sm:max-w-48 sm:text-right">
                       This listing is archived and is no longer publicly visible.

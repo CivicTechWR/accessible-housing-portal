@@ -10,7 +10,7 @@ const lists = [
   { title: `${siteConfig.name} is not`, items: homeContent.scope.isNot, included: false },
 ];
 
-/** What the service is and isn't, side by side so the two lists read as a comparison. */
+/** What the service is and isn't, in two panels side by side so the lists read as a comparison. */
 export function HomeScopeSection() {
   return (
     <section
@@ -18,7 +18,7 @@ export function HomeScopeSection() {
       className="grid gap-10 md:grid-cols-2 md:gap-12"
     >
       {lists.map((list) => (
-        <div key={list.title}>
+        <div key={list.title} className="rounded-xl border bg-card p-6 sm:p-8">
           <h2 className="text-2xl">{list.title}</h2>
           <ul role="list" className="mt-4 divide-y">
             {list.items.map((item) => (

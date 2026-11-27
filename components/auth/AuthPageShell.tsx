@@ -1,3 +1,5 @@
+import { Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -15,12 +17,11 @@ export function AuthPageShell({ children, withPanel = true, className }: AuthPag
   return (
     <main
       className={cn(
-        "flex flex-col items-center bg-background px-4 pt-8 pb-16 sm:flex-row sm:items-start sm:justify-center sm:pt-20 sm:pb-24",
+        "flex items-start justify-center bg-background px-4 pt-8 pb-16 sm:pt-20 sm:pb-24",
         className,
       )}
     >
       <div data-compact-footer hidden />
-      {withPanel ? <AuthSignBand /> : null}
       {withPanel ? (
         // On wide screens the panel and the card join into one box of equal height; the card
         // drops its own border there. Below lg only the card shows.
@@ -38,28 +39,13 @@ export function AuthPageShell({ children, withPanel = true, className }: AuthPag
   );
 }
 
-/** Phones: a slim version of the sign panel above the card, so signing in still looks like Home Hub. */
-function AuthSignBand() {
-  return (
-    <div
-      aria-hidden="true"
-      className="-mx-4 -mt-8 mb-8 self-stretch overflow-hidden bg-primary text-primary-foreground sm:hidden dark:bg-[#17478f]"
-    >
-      <p className="px-4 pt-4 pb-3.5 text-[0.9375rem] font-medium">
-        Affordable, accessible rentals in {siteConfig.region}
-      </p>
-      <div className="tactile-strip h-2.5" />
-    </div>
-  );
-}
-
 /** The home page's sign panel, smaller, so signing in looks like the same product. Decorative
  * on top of the card's own heading, so it is hidden from assistive technology. */
 function AuthSignPanel() {
   return (
     <div
       aria-hidden="true"
-      className="hidden w-[420px] shrink-0 flex-col justify-between bg-primary text-primary-foreground lg:flex dark:bg-[#17478f]"
+      className="hidden w-[420px] shrink-0 flex-col justify-center bg-primary text-primary-foreground lg:flex dark:bg-[#17478f]"
     >
       <div className="px-10 pt-10 pb-12">
         <p className="text-[2rem] leading-[1.1] font-bold tracking-[-0.02em] text-balance">
@@ -68,8 +54,19 @@ function AuthSignPanel() {
         <p className="mt-5 text-lg leading-relaxed text-white/90">
           For housing navigators and the providers who list with them. Invitation only.
         </p>
+        <ul className="mt-8 space-y-3 border-t border-white/25 pt-6 text-base text-white">
+          {[
+            "Accessibility features, item by item",
+            "Rent and terms up front",
+            "Every unit on one map",
+          ].map((item) => (
+            <li key={item} className="flex items-center gap-3">
+              <HugeiconsIcon icon={Tick02Icon} strokeWidth={2.5} size={18} className="shrink-0" />
+              {item}
+            </li>
+          ))}
+        </ul>
       </div>
-      <div className="tactile-strip h-4" />
     </div>
   );
 }

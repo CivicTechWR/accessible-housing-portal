@@ -25,7 +25,7 @@ export function ThemeToggle({ surface = "default" }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [isMounted, setIsMounted] = useState(false);
   const { group: groupClass, item } = surfaceClasses[surface];
-  const itemClass = cn("h-8 min-w-9 gap-1.5 rounded-full px-2", item);
+  const itemClass = cn("h-10 min-w-10 gap-1.5 rounded-full px-2.5", item);
 
   // next-themes only knows the stored theme on the client, so render without a
   // selection until mounted to keep server and client markup identical.

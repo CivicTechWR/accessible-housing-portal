@@ -125,7 +125,10 @@ export function ListingImageCarousel({
             className="absolute right-4 bottom-4 inline-flex h-10 items-center gap-2 rounded-lg border border-foreground/15 bg-background px-3.5 text-sm font-medium text-foreground shadow-md hover:bg-muted"
           >
             <HugeiconsIcon icon={GridViewIcon} strokeWidth={2} className="size-4" aria-hidden />
-            Show all {images.length} photos
+            {/* When the grid already shows every photo, the button only enlarges them. */}
+            {images.length <= grid.shown
+              ? "View photos full size"
+              : `Show all ${images.length} photos`}
           </button>
         </div>
       )}
@@ -175,13 +178,13 @@ export function ListingImageCarousel({
           </div>
         )}
       </Carousel>
-      {/* The shown photo's caption, under the photo rather than over it. Hidden from screen
+      {/* The shown photo's caption, 8px under the photo rather than over it. Hidden from screen
           readers, which get it as the photo's alt text. */}
       {images[current]?.caption && (
         <p
           aria-hidden
           className={cn(
-            "mt-2 text-sm text-muted-foreground",
+            "mt-2 text-xs text-muted-foreground",
             edgeToEdge && "max-sm:px-4",
             showsGrid && "md:hidden",
           )}

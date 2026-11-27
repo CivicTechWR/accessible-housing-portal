@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowDown01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
@@ -98,9 +98,9 @@ function StepCircle({
 }
 
 /**
- * Phones: one full-width button naming the current section ("Section 1 of 5 · Listing details")
- * that opens a menu of every section, and a five-part bar underneath: finished sections are solid
- * blue, the current one is outlined in blue, and the rest are grey.
+ * Phones: a "Jump to section" menu button naming the current section ("1 of 5 · Listing details")
+ * that opens a menu of every section, and a five-part bar underneath: finished sections and the
+ * current one are solid blue, the current one also ringed, and the rest are grey.
  */
 function SectionMenu({
   sections,
@@ -116,17 +116,25 @@ function SectionMenu({
     sections.findIndex((section) => section.id === activeId),
   );
   const active = sections[activeIndex];
+  const labelId = useId();
+  const valueId = useId();
   // Radix keeps the page from scrolling while the menu is open and then returns focus to the
   // trigger, so the jump waits until the menu has closed.
   const pendingId = useRef<string | null>(null);
 
   return (
-    <div className="flex flex-col gap-2 py-2 sm:hidden">
+    <div className="flex flex-col gap-1 pt-2 pb-2.5 sm:hidden">
+      <span id={labelId} className="text-sm text-muted-foreground">
+        Jump to section
+      </span>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-input bg-card px-3 text-left text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-          <span className="min-w-0 flex-1 truncate">
+        <DropdownMenuTrigger
+          aria-labelledby={`${labelId} ${valueId}`}
+          className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-input bg-card px-3 text-left text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <span id={valueId} className="min-w-0 flex-1 truncate">
             <span className="text-muted-foreground">
-              Section {activeIndex + 1} of {sections.length} ·{" "}
+              {activeIndex + 1} of {sections.length} ·{" "}
             </span>
             <span className="font-medium text-foreground">{active?.label}</span>
           </span>
@@ -179,15 +187,16 @@ function SectionMenu({
         </DropdownMenuContent>
       </DropdownMenu>
       {/* The counts are in the menu; this repeats them as a picture. */}
-      <div aria-hidden className="flex gap-1">
+      <div aria-hidden className="mt-1 flex gap-1.5">
         {sections.map((section) => (
           <span
             key={section.id}
             className={cn(
               "h-1.5 flex-1 rounded-full",
-              // The outline marks where you are even when every section is finished.
+              // The current section is never emptier than a finished one: solid, plus a ring that
+              // marks where you are even when every section is finished.
               section.id === activeId
-                ? "ring-2 ring-primary ring-inset dark:ring-primary-text"
+                ? "bg-primary ring-2 ring-primary/40 ring-offset-1 ring-offset-background dark:ring-primary-text/60"
                 : section.status === "complete"
                   ? "bg-primary"
                   : "bg-muted dark:bg-foreground/15",

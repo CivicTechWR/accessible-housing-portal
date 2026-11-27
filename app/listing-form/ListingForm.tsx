@@ -285,8 +285,9 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       footerAction={
         <>
           {isUpToDate && activeListingId ? (
-            // Opens the public page in a new tab, so the editor stays where it was.
-            <Button asChild variant="outline" className="max-sm:h-11">
+            // Opens the public page in a new tab, so the editor stays where it was. With nothing to
+            // publish it's the bar's main action, so it's the solid button.
+            <Button asChild className="max-sm:h-11">
               <Link
                 ref={viewListingRef}
                 href={`/listings/${activeListingId}`}
@@ -398,9 +399,8 @@ function SaveStateIcon({ status }: { status: AutosaveStatus["status"] | "dirty" 
   );
 }
 
-/** One short line: 13px on phones, where it sits above the buttons, and 14px beside them from sm. */
-const SAVE_STATE_CLASS =
-  "mr-auto flex min-h-5 min-w-0 max-w-full items-center gap-2 text-xs sm:text-sm";
+/** One short 13px line at the bar's left edge, so the buttons keep the row on phones. */
+const SAVE_STATE_CLASS = "mr-auto flex min-h-5 min-w-0 max-w-full items-center gap-2 text-xs";
 
 /** The sticky bar's state for a published listing, which only changes when it's published. */
 function PublishState({ isDirty }: { isDirty: boolean }) {

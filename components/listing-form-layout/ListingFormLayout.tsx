@@ -26,9 +26,9 @@ export function FormSection({ id, title, description, headerAside, children }: F
       id={id}
       aria-labelledby={headingId}
       // Leaves room for the sticky bars when the section strip scrolls a section into view. Adds
-      // to the page's scroll padding in globals.css (5rem below lg, 1rem from lg).
+      // to the page's scroll padding in globals.css; phones add 2rem for the taller section menu.
       className={cn(
-        "text-card-foreground",
+        "text-card-foreground max-sm:scroll-mt-8",
         "border-b border-border pt-7 pb-8 last-of-type:border-b-0 sm:rounded-xl sm:border sm:bg-card sm:p-6 sm:last-of-type:border-b",
       )}
     >
@@ -39,7 +39,7 @@ export function FormSection({ id, title, description, headerAside, children }: F
             {title}
           </h2>
           {description && (
-            <p className="text-[15px] text-muted-foreground sm:text-sm">{description}</p>
+            <p className="text-base text-muted-foreground sm:text-sm">{description}</p>
           )}
         </div>
         {/* A count beside the heading keeps to one line and leaves the rest to the description. */}

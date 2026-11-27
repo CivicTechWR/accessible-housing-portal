@@ -2,7 +2,12 @@
 
 import { useDeferredValue, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowRight01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import {
+  Mail01Icon,
+  MoreHorizontalIcon,
+  Search01Icon,
+  UserEdit01Icon,
+} from "@hugeicons/core-free-icons";
 
 import { AccountTableColumns } from "@/components/admin-users/AccountTableColumns";
 import { ManageAccountDialog } from "@/components/admin-users/ManageAccountDialog";
@@ -18,6 +23,12 @@ import { inviteRoleOptions, type InviteRole } from "@/components/admin-invite/ty
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,16 +60,13 @@ function accountName(account: AccountListItem) {
   return account.name ?? account.email ?? "Unnamed user";
 }
 
-/** The name opens the manage dialog for keyboard and screen reader users; the row does for pointers. */
+/** The name opens the manage dialog, like the menu's first item. */
 function ManageButton({ account, onManage }: { account: AccountListItem; onManage: () => void }) {
   return (
     <button
       type="button"
       className="max-w-full truncate rounded-sm text-left font-medium text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-      onClick={(event) => {
-        event.stopPropagation();
-        onManage();
-      }}
+      onClick={onManage}
     >
       <span className="sr-only">Manage </span>
       {accountName(account)}
@@ -66,14 +74,35 @@ function ManageButton({ account, onManage }: { account: AccountListItem; onManag
   );
 }
 
-function RowChevron() {
+/** The row's "…" menu, the same pattern as the invitations table. */
+function UserRowActions({ account, onManage }: { account: AccountListItem; onManage: () => void }) {
   return (
-    <HugeiconsIcon
-      icon={ArrowRight01Icon}
-      strokeWidth={2}
-      className="size-4 shrink-0 text-muted-foreground"
-      aria-hidden
-    />
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="max-sm:size-11"
+          aria-label={`Actions for ${accountName(account)}`}
+        >
+          <HugeiconsIcon icon={MoreHorizontalIcon} strokeWidth={2} aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={onManage}>
+          <HugeiconsIcon icon={UserEdit01Icon} strokeWidth={2} aria-hidden />
+          Manage user
+        </DropdownMenuItem>
+        {account.email ? (
+          <DropdownMenuItem asChild>
+            <a href={`mailto:${account.email}`}>
+              <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} aria-hidden />
+              Email user
+            </a>
+          </DropdownMenuItem>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -192,18 +221,14 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                   <th className="px-4 py-3">Created</th>
                   <th className="px-4 py-3">Last sign-in</th>
                   <th className="px-4 py-3">
-                    <span className="sr-only">Manage</span>
+                    <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {visible.map((account) => (
-                  <tr
-                    key={account.id}
-                    // Top-aligned like the invitations table, so the two line up.
-                    className="cursor-pointer align-top transition-colors hover:bg-muted"
-                    onClick={() => setManagingId(account.id)}
-                  >
+                  // Top-aligned like the invitations table, so the two line up.
+                  <tr key={account.id} className="align-top">
                     <td className="px-4 py-3.5">
                       <div className="flex min-w-0 flex-col">
                         <ManageButton
@@ -236,11 +261,11 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                     <td className="px-4 py-3.5 text-muted-foreground">
                       <DateText value={account.lastLoginAt} />
                     </td>
-                    <td className="py-2.5 pr-3">
-                      {/* Sized like the invitations' menu button so the two columns line up. */}
-                      <div className="ml-auto flex size-10 items-center justify-center">
-                        <RowChevron />
-                      </div>
+                    <td className="py-2.5 pr-3 text-right">
+                      <UserRowActions
+                        account={account}
+                        onManage={() => setManagingId(account.id)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -250,11 +275,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
 
           <ul className="divide-y lg:hidden">
             {visible.map((account) => (
-              <li
-                key={account.id}
-                className="flex min-w-0 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-muted"
-                onClick={() => setManagingId(account.id)}
-              >
+              <li key={account.id} className="flex min-w-0 items-start gap-3 p-4">
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <ManageButton account={account} onManage={() => setManagingId(account.id)} />
                   <span
@@ -271,7 +292,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                     <AccountStatusText status={account.status} />
                   </p>
                 </div>
-                <RowChevron />
+                <UserRowActions account={account} onManage={() => setManagingId(account.id)} />
               </li>
             ))}
           </ul>

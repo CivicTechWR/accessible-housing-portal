@@ -14,7 +14,8 @@ export default async function ManageAccountPage() {
   if (!session) redirect("/sign-in?callbackUrl=/manage-account");
   return (
     <AppPageShell>
-      <div className={cn("mx-auto space-y-6", pageWidths.form)}>
+      {/* A single column of cards on phones; from lg, settings rows with their titles on the left. */}
+      <div className={cn("mx-auto space-y-6 lg:max-w-5xl", pageWidths.form)}>
         <PageHeader
           title="Manage account"
           description={

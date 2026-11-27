@@ -14,7 +14,6 @@ import {
 
 import { ListingImageCarousel } from "../listing-image-carousel/ListingImageCarousel";
 import { formatAvailability } from "../listings-card/ListingsCard";
-import { AccessibilityMark } from "@/components/ui/accessibility-mark";
 import { Button } from "../ui/button";
 import { AppPageShell, PageHeader, pageWidths } from "@/components/page-shell/AppPageShell";
 import { buildAddress } from "@/lib/address";
@@ -125,7 +124,7 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
       <HugeiconsIcon
         icon={Tick02Icon}
         strokeWidth={2}
-        className="mt-0.5 size-5 shrink-0 text-foreground"
+        className="mt-[3px] size-[18px] shrink-0 text-foreground"
         aria-hidden
       />
       <div className="min-w-0">
@@ -141,9 +140,9 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
 }
 
 /**
- * The most important block after the photos, and the page's signature: a card with the dotted
- * tactile strip along its top edge and the accessibility mark by its heading. Features sit under
- * a label for their category, with a rule between them.
+ * The most important block after the photos, and the page's signature: the only card in the main
+ * column, with the dotted tactile strip along its top edge. Features sit under a label for their
+ * category, with a rule between them.
  */
 function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
   const count = categories.reduce((total, category) => total + category.features.length, 0);
@@ -155,17 +154,16 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
       className="relative overflow-hidden rounded-xl border bg-card p-4 pt-6 text-card-foreground sm:p-6 sm:pt-8 dark:border-white/12"
     >
       <span aria-hidden className="tactile-strip absolute inset-x-0 top-0 h-2" />
-      <div className="mb-5 flex items-center gap-3">
-        <AccessibilityMark size="lg" />
-        <h2 id={headingId} className="min-w-0 text-[22px] leading-7 font-bold">
-          Accessibility features
-        </h2>
+      <h2 id={headingId} className="mb-5 text-[22px] leading-7 font-bold">
+        Accessibility features
         {count > 0 && (
-          <p className="ml-auto shrink-0 text-sm text-muted-foreground max-sm:hidden">
-            {count} {count === 1 ? "feature" : "features"}
-          </p>
+          // Screen readers count the features from the lists below.
+          <span aria-hidden className="font-normal text-muted-foreground">
+            {" "}
+            ({count})
+          </span>
         )}
-      </div>
+      </h2>
       {count === 0 ? (
         <p className="text-base text-foreground">No accessibility features listed.</p>
       ) : (
@@ -191,7 +189,10 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
   );
 }
 
-/** A plain titled block below the accessibility panel, 40px below the one before it. */
+/**
+ * A plain titled block after the accessibility card: a 1px rule 40px below the block before it,
+ * then the heading 40px under the rule. Every section but the accessibility card looks like this.
+ */
 function Section({
   id,
   title,
@@ -204,7 +205,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className={cn("pt-10", className)}>
+    <section aria-labelledby={id} className={cn("mt-10 border-t pt-10", className)}>
       <h2 id={id} className="mb-3 text-[22px] leading-7 font-bold">
         {title}
       </h2>
@@ -451,7 +452,7 @@ export function ListingDetails({
             <HugeiconsIcon
               icon={fact.icon}
               strokeWidth={2}
-              className="size-5 shrink-0 text-foreground/70"
+              className="size-5 shrink-0 text-foreground/80"
               aria-hidden
             />
             <span>{fact.label}</span>
@@ -469,13 +470,14 @@ export function ListingDetails({
   // Below both columns at the full content width, so the map has room; its text keeps the reading
   // measure of the sections above.
   const location = (coordinates || walkScore) && (
-    <Section id="listing-location" title="Location" className="pt-4 sm:pt-2">
+    // The page column's 24px (32px on wider screens) gap plus this margin make the 40px.
+    <Section id="listing-location" title="Location" className="mt-4 sm:mt-2">
       <div className="space-y-4">
         <p className="flex max-w-[40rem] items-start gap-2.5 text-base wrap-anywhere text-foreground">
           <HugeiconsIcon
             icon={Location01Icon}
             strokeWidth={2}
-            className="mt-0.5 size-5 shrink-0 text-foreground/70"
+            className="mt-0.5 size-5 shrink-0 text-foreground/80"
             aria-hidden
           />
           {address}
@@ -551,10 +553,11 @@ export function ListingDetails({
       id={CONTACT_SECTION_ID}
       aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
       className={cn(
-        "order-2 min-w-0 scroll-mt-6 pt-10",
+        // In one column, a section like the others: a rule, then 40px of space each side.
+        "order-2 mt-10 min-w-0 scroll-mt-6 border-t pt-10",
         // Sticky on desktop, so rent and Apply follow the reader down the page, clear of the site
         // header's height.
-        twoColumns && "lg:sticky lg:top-6 lg:pt-0",
+        twoColumns && "lg:sticky lg:top-6 lg:mt-0 lg:border-t-0 lg:pt-0",
       )}
     >
       <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
@@ -669,9 +672,13 @@ export function ListingDetails({
       </div>
       {hasPhotos && (
         // Phones show the photos before the title, edge to edge, by cancelling the page shell's
-        // padding, with a round back button over the top-left corner.
+        // padding, with a round back button over the top-left corner. The title follows 16px
+        // below the photo's caption.
         <div
-          className={cn("relative", !embedded && "max-sm:order-first max-sm:-mx-4 max-sm:-mt-8")}
+          className={cn(
+            "relative",
+            !embedded && "max-sm:order-first max-sm:-mx-4 max-sm:-mt-8 max-sm:-mb-2",
+          )}
         >
           <ListingImageCarousel images={images} altPrefix={address} edgeToEdge={!embedded} />
           {!embedded && <BackToResults iconOnly className="absolute top-3 left-3 z-10 sm:hidden" />}

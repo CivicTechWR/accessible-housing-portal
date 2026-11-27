@@ -88,24 +88,23 @@ export function groupOverlappingPins(
 }
 
 /**
- * Pins are small sign plates: solid signage blue with white text and a 2px white edge on the light
- * basemap, white with near-black text and a dark edge on the dark one. Clusters are the same plate
- * in a deeper blue (primary blue in dark mode), so "3 homes" never looks like a price. The hovered
- * or selected pin, and the pin of the card hovered in the list, swap the edge for tactile yellow.
- * Focus shows as an outline, since the ring is the plate's edge.
+ * Pins are small sign plates in signage blue with white text: a 2px white edge on the light
+ * basemap, a faint light edge on the dark one. Clusters are exactly the same plate in a deeper
+ * blue, reading "3 homes". The hovered or selected pin, and the pin of the card hovered in the
+ * list, swap the edge for tactile yellow in both themes. Focus shows as an outline, since the ring
+ * is the plate's edge.
  */
 const pillClassName =
   "relative flex h-8 items-center rounded-md px-2.5 text-sm font-semibold whitespace-nowrap shadow-[0_2px_6px_rgb(0_0_0/0.3)] ring-2 transition-[transform,box-shadow] group-focus-visible:outline-3 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring";
 
-const restingPrice =
-  "bg-primary text-primary-foreground ring-white dark:bg-white dark:text-background dark:ring-background";
+const restingPrice = "bg-primary text-primary-foreground ring-white dark:ring-white/25";
 
 /** Hovered, selected or matching the hovered card. */
 const emphasisedPin = "scale-105 ring-signal dark:ring-signal";
 
 const hoverPin = "group-hover:scale-105 group-hover:ring-signal dark:group-hover:ring-signal";
 
-const clusterPill = "bg-[#08397a] text-white ring-white dark:bg-primary dark:ring-background";
+const clusterPill = "bg-[#08397a] text-white ring-white dark:bg-[#173a7a] dark:ring-white/25";
 
 /**
  * The yellow accessibility dot at a pin's top-right corner, shown while the Accessibility filter is
