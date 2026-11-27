@@ -229,7 +229,7 @@ export function ListingFormImages({
                           />
                           {/* The Cover badge keeps a dark scrim so it reads on any photo. */}
                           {index === 0 ? (
-                            <Badge className="absolute top-2 left-2 h-7 border-white/15 bg-black/75 px-3 text-white backdrop-blur">
+                            <Badge className="absolute top-2 left-2 h-7 border-white/15 bg-black/75 px-3 text-white backdrop-blur dark:bg-black/75 dark:text-white">
                               Cover
                             </Badge>
                           ) : null}

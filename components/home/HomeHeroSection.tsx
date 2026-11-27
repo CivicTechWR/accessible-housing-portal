@@ -5,32 +5,31 @@ import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/lib/site-config";
 
 /**
- * The headline sits on a blue panel styled like a wayfinding sign, beside an example of what a
- * listing looks like, so the first screen shows the product rather than describing it.
+ * A full-width signage-blue band, like a wayfinding sign, with an example of what a listing looks
+ * like beside the headline, so the first screen shows the product rather than describing it.
  */
 export function HomeHeroSection() {
   return (
     <section
       aria-labelledby="home-title"
-      className="border-b bg-muted/70 px-4 py-10 sm:px-6 sm:py-16 lg:py-20"
+      className="bg-primary px-4 pt-8 pb-10 text-primary-foreground sm:px-6 sm:py-16 lg:py-20 dark:bg-[#123f86]"
     >
-      <div className="mx-auto grid max-w-5xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-12">
-        <div className="rounded-xl bg-primary px-6 pt-7 pb-8 text-primary-foreground sm:px-10 sm:pt-10 sm:pb-10 dark:bg-[#17478f]">
+      <div className="mx-auto grid max-w-5xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
+        <div>
           <h1
             id="home-title"
-            className="text-[2.125rem] leading-[1.05] font-bold tracking-[-0.03em] sm:text-[3.25rem]"
+            className="text-[1.875rem] leading-[1.1] font-bold tracking-[-0.03em] sm:text-[3.25rem] sm:leading-[1.05]"
           >
             Affordable, accessible rentals in {siteConfig.region}
           </h1>
-          <p className="mt-5 text-lg leading-relaxed text-white sm:text-xl">
-            One place for housing navigators to find units from values-aligned providers, with the
-            accessibility details that matter.
+          <p className="mt-4 text-lg leading-relaxed text-white sm:mt-5 sm:text-xl">
+            Listings for housing navigators, with the accessibility details that matter.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row">
             <Button
               asChild
               size="lg"
-              className="h-12 bg-white px-6 text-primary hover:bg-white/90 dark:bg-white dark:text-[#17478f] dark:hover:bg-white/90"
+              className="h-12 bg-white px-6 text-primary hover:bg-white/90 dark:bg-white dark:text-[#123f86] dark:hover:bg-white/90"
             >
               <Link href="/sign-in">Sign in to browse listings</Link>
             </Button>
@@ -43,9 +42,6 @@ export function HomeHeroSection() {
               <a href={`mailto:${siteConfig.contactEmail}`}>Request access</a>
             </Button>
           </div>
-          <p className="mt-6 text-base text-white/85">
-            Invitation-only while we pilot in {siteConfig.region}.
-          </p>
         </div>
         <HomeExampleListing />
       </div>

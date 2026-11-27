@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type AuthCardProps = {
-  /** A sign-style tile above the title, for states such as an expired link. */
+  /** A muted tile above the title, for states such as an expired link. */
   icon?: IconSvgElement;
   title: ReactNode;
   description?: ReactNode;
@@ -26,8 +26,8 @@ export function AuthCard({ icon, title, description, children, footer, className
     >
       <div className="space-y-2">
         {icon ? (
-          <span className="mb-4 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <HugeiconsIcon icon={icon} strokeWidth={2} size={24} aria-hidden="true" />
+          <span className="mb-4 flex size-11 items-center justify-center rounded-lg border bg-muted text-foreground">
+            <HugeiconsIcon icon={icon} strokeWidth={2} size={22} aria-hidden="true" />
           </span>
         ) : null}
         <h1 className="text-2xl">{title}</h1>

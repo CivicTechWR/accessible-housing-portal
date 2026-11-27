@@ -1,6 +1,3 @@
-import { UniversalAccessIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-
 import { AccessibilityBadge } from "@/components/ui/accessibility-mark";
 import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
@@ -16,8 +13,8 @@ function MoreChip({ count, className }: { count: number; className?: string }) {
 }
 
 /**
- * The access symbol once, then a listing's accessibility features as chips and the rest as a "+2"
- * chip. The row never wraps, so every card's chip row is the same height. A container query
+ * A listing's accessibility features as chips, the access symbol inside the first, and the rest
+ * as a "+2" chip. The row never wraps, so every card's chip row is the same height. A container query
  * decides how many names fit: one on a narrow card, two once the row is 26rem wide, so a second
  * name is never cut down to a few letters. Listings with none get a muted pill in the same place.
  */
@@ -32,24 +29,11 @@ export function AccessibilityChips({
   return (
     <div className={cn("@container min-w-0", className)}>
       <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
-        <HugeiconsIcon
-          icon={UniversalAccessIcon}
-          strokeWidth={2}
-          aria-hidden
-          className={cn(
-            "size-4 shrink-0",
-            first === undefined ? "text-muted-foreground" : "text-foreground",
-          )}
-        />
         {first === undefined ? (
-          <AccessibilityBadge empty icon={false}>
-            No accessibility info
-          </AccessibilityBadge>
+          <AccessibilityBadge empty>No accessibility info</AccessibilityBadge>
         ) : (
           <>
-            <AccessibilityBadge icon={false} className="min-w-0">
-              {toSentenceCase(first)}
-            </AccessibilityBadge>
+            <AccessibilityBadge className="min-w-0">{toSentenceCase(first)}</AccessibilityBadge>
             {second !== undefined && (
               <AccessibilityBadge icon={false} className="hidden shrink-0 @[26rem]:inline-flex">
                 {toSentenceCase(second)}

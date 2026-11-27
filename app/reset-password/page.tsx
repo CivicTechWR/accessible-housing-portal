@@ -12,7 +12,8 @@ export default async function ResetPasswordPage({
 }) {
   const { token, error } = await searchParams;
   return (
-    <AuthPageShell>
+    // The expired-link state is a single card; the sign panel would only be decoration there.
+    <AuthPageShell withPanel={Boolean(token && !error)}>
       {token && !error ? (
         <AcceptInviteForm token={token} />
       ) : (

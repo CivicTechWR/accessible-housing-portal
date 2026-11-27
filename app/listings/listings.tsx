@@ -228,7 +228,7 @@ export default function ListingsDashboard({
         <FloatingViewToggle
           value={effectiveDisplayMode}
           onChange={setDisplayMode}
-          className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 md:hidden"
+          className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2 md:hidden"
         />
         {/* Rendered outside the list panel so phones can filter in Map view too. */}
         {isMobileViewport ? (

@@ -36,7 +36,7 @@ export default async function InvitePage({ searchParams }: InvitePageProps) {
 
 function InvalidInviteState() {
   return (
-    <AuthPageShell>
+    <AuthPageShell withPanel={false}>
       <AuthCard
         icon={Unlink01Icon}
         title="Invite unavailable"

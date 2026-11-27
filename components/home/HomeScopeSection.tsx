@@ -1,44 +1,26 @@
-import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-
-import { homeContent } from "@/content/home";
 import { siteConfig } from "@/lib/site-config";
-import { cn } from "@/lib/utils";
 
-const lists = [
-  { title: `${siteConfig.name} is`, items: homeContent.scope.is, included: true },
-  { title: `${siteConfig.name} is not`, items: homeContent.scope.isNot, included: false },
-];
-
-/** What the service is and isn't, in two panels side by side so the lists read as a comparison. */
+/** What the service is and isn't, in two short paragraphs. */
 export function HomeScopeSection() {
   return (
-    <section
-      aria-label={`What ${siteConfig.name} is and is not`}
-      className="grid gap-10 md:grid-cols-2 md:gap-12"
-    >
-      {lists.map((list) => (
-        <div key={list.title} className="rounded-xl border bg-card p-6 sm:p-8">
-          <h2 className="text-2xl">{list.title}</h2>
-          <ul role="list" className="mt-4 divide-y">
-            {list.items.map((item) => (
-              <li key={item} className="flex gap-3 py-3.5 text-[1.0625rem] leading-relaxed">
-                <HugeiconsIcon
-                  icon={list.included ? Tick02Icon : Cancel01Icon}
-                  strokeWidth={2.5}
-                  size={18}
-                  aria-hidden="true"
-                  className={cn(
-                    "mt-1 shrink-0",
-                    list.included ? "text-primary-text" : "text-muted-foreground",
-                  )}
-                />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+    <section aria-labelledby="scope-title" className="max-w-3xl">
+      <h2 id="scope-title" className="text-2xl sm:text-[1.75rem]">
+        What {siteConfig.name} is, and isn&apos;t
+      </h2>
+      <p className="mt-4 text-[1.0625rem] leading-relaxed">
+        {siteConfig.name} is a free listing site for affordable and accessible units in{" "}
+        {siteConfig.region}, a bit like Realtor.ca for specific types of units. It&apos;s for
+        housing navigators, case workers and social support organizations, and for understanding,
+        flexible housing providers who work with support organizations and tenants to keep housing
+        stable.
+      </p>
+      <p className="mt-4 text-[1.0625rem] leading-relaxed">
+        It isn&apos;t an alternative to CHAC or the PATHS List, and it isn&apos;t open to the
+        public.
+        {siteConfig.name} doesn&apos;t give direct support, referrals or guidance on finding
+        housing, and it doesn&apos;t mediate between organizations, individuals and housing
+        providers.
+      </p>
     </section>
   );
 }

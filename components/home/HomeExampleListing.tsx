@@ -12,7 +12,7 @@ const exampleFeatures = [
 /** A made-up listing that shows what a real one looks like. */
 export function HomeExampleListing() {
   return (
-    <figure className="overflow-hidden rounded-xl border bg-card shadow-xl shadow-black/8 dark:shadow-black/40">
+    <figure className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xl shadow-black/8 dark:shadow-black/40">
       <div className="relative aspect-[3/2]">
         <Image
           src="https://images.pexels.com/photos/7746646/pexels-photo-7746646.jpeg?cs=srgb&fm=jpg"

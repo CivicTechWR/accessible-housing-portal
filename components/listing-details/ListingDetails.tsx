@@ -441,18 +441,18 @@ export function ListingDetails({
           <Price price={price} className="text-2xl leading-8" />
         </p>
       )}
-      {/* A 2×2 grid of facts on phones, so a long fact never wraps onto a line by itself. */}
+      {/* One wrapping row of facts; quieter on phones, where the title is close above. */}
       <ul
         role="list"
         aria-label="Key facts"
-        className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-lg font-medium text-foreground sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2"
+        className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px] text-foreground/80 sm:gap-x-6 sm:text-lg sm:font-medium sm:text-foreground"
       >
         {keyFacts.map((fact) => (
           <li key={fact.key} className="flex min-w-0 items-center gap-2">
             <HugeiconsIcon
               icon={fact.icon}
               strokeWidth={2}
-              className="size-5 shrink-0 text-foreground/80"
+              className="size-4 shrink-0 text-foreground/80 sm:size-5"
               aria-hidden
             />
             <span>{fact.label}</span>
@@ -494,6 +494,43 @@ export function ListingDetails({
     </Section>
   );
 
+  // In the main column on phones and the form preview; on desktop it sits under the contact card in
+  // the sidebar, so the facts navigators compare stay beside the description.
+  const rentalDetails = (
+    <Section
+      id="listing-rental-details"
+      title="Rental details"
+      className={cn("order-4", twoColumns && "lg:mt-10 lg:border-t-0 lg:pt-0")}
+    >
+      {/* One label and value per row, so any number of details looks complete and long values
+          like the deposit wrap in place. Rules only between rows. */}
+      <dl className="divide-y">
+        {rentalDetailRows.map((row) => (
+          <div
+            key={row.label}
+            className={cn(
+              "grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] items-baseline gap-4 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]",
+              // The desktop sidebar is 360px wide, so the label column narrows again there.
+              twoColumns && "lg:grid-cols-[minmax(0,9rem)_minmax(0,1fr)]",
+            )}
+          >
+            <dt className="text-[15px] text-muted-foreground">
+              {row.info ? <LabelWithInfo label={row.label} info={row.info} /> : row.label}
+            </dt>
+            <dd
+              className={cn(
+                "text-base wrap-anywhere text-foreground",
+                row.preserveWhitespace && "whitespace-pre-line",
+              )}
+            >
+              {row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </Section>
+  );
+
   const mainColumn = (
     <div className={cn("contents", twoColumns && "lg:flex lg:min-w-0 lg:flex-col")}>
       <div className="order-1">
@@ -507,31 +544,6 @@ export function ListingDetails({
           </p>
         </Section>
       )}
-
-      <Section id="listing-rental-details" title="Rental details" className="order-4">
-        {/* One label and value per row, so any number of details looks complete and long values
-            like the deposit wrap in place. Rules only between rows. */}
-        <dl className="divide-y">
-          {rentalDetailRows.map((row) => (
-            <div
-              key={row.label}
-              className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] items-baseline gap-4 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]"
-            >
-              <dt className="text-[15px] text-muted-foreground">
-                {row.info ? <LabelWithInfo label={row.label} info={row.info} /> : row.label}
-              </dt>
-              <dd
-                className={cn(
-                  "text-base wrap-anywhere text-foreground",
-                  row.preserveWhitespace && "whitespace-pre-line",
-                )}
-              >
-                {row.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
 
       {instructions && (
         <Section id="listing-how-to-apply" title="How to apply" className="order-5">
@@ -555,9 +567,7 @@ export function ListingDetails({
       className={cn(
         // In one column, a section like the others: a rule, then 40px of space each side.
         "order-2 mt-10 min-w-0 scroll-mt-6 border-t pt-10",
-        // Sticky on desktop, so rent and Apply follow the reader down the page, clear of the site
-        // header's height.
-        twoColumns && "lg:sticky lg:top-6 lg:mt-0 lg:border-t-0 lg:pt-0",
+        twoColumns && "lg:mt-0 lg:border-t-0 lg:pt-0",
       )}
     >
       <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
@@ -691,7 +701,17 @@ export function ListingDetails({
         )}
       >
         {mainColumn}
-        {contactCard}
+        {/* Sticky on desktop, so rent, Apply and the rental details follow the reader down the
+            page. In one column `display: contents` dissolves it, and `order` places its parts. */}
+        <div
+          className={cn(
+            "contents",
+            twoColumns && "lg:sticky lg:top-6 lg:flex lg:min-w-0 lg:flex-col",
+          )}
+        >
+          {contactCard}
+          {rentalDetails}
+        </div>
       </div>
       {location}
     </div>

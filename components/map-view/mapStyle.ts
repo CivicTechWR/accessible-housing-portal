@@ -57,12 +57,13 @@ const DARK_PAINT: PaintOverrides = [
  */
 const LIGHT_PAINT: PaintOverrides = [
   [["background"], "background-color", "#f6f6f4"],
-  [["water"], "fill-color", "#cfdde8"],
-  [["waterway_river", "waterway_other", "waterway_tunnel"], "line-color", "#cfdde8"],
-  [["park", "landcover_grass"], "fill-color", "#e2ecdc"],
-  [["park"], "fill-outline-color", "#e2ecdc"],
-  [["park_outline"], "line-color", "#e2ecdc"],
-  [["landcover_wood"], "fill-color", "#dce8d4"],
+  // Water and parks keep a clear tint: with the price pins, they are the landmarks people
+  // orient by against the pale page.
+  [["water"], "fill-color", "#cfe0f5"],
+  [["waterway_river", "waterway_other", "waterway_tunnel"], "line-color", "#cfe0f5"],
+  [["park", "landcover_grass", "landcover_wood"], "fill-color", "#e3efe0"],
+  [["park"], "fill-outline-color", "#e3efe0"],
+  [["park_outline"], "line-color", "#e3efe0"],
   // Land use (housing, schools, hospitals, sand) blends into the ground, so the map has one
   // neutral behind the pins instead of a patchwork of tinted blocks. Parks keep their green.
   [
@@ -164,19 +165,20 @@ function applyPaint(map: MaplibreMap, overrides: PaintOverrides) {
   }
 }
 
+/** Side streets, service roads and tracks, whose thin lines need a darker casing to show. */
+const MINOR_ROAD = /_(minor|street|service_track)/;
+
 /**
- * Every road is white with a grey casing, whatever its class, dark enough that the street grid
- * reads against the pale ground. Rail keeps its grey.
+ * Every road is white with a grey casing, dark enough that the street grid reads against the pale
+ * ground. Minor roads get a casing a step darker, since their lines are thinner. Rail keeps its
+ * grey.
  */
 function quietLightRoads(map: MaplibreMap) {
   for (const layer of map.getStyle().layers) {
     if (layer.type !== "line" || !/^(road|tunnel|bridge)_/.test(layer.id)) continue;
     if (/rail/.test(layer.id)) continue;
-    map.setPaintProperty(
-      layer.id,
-      "line-color",
-      layer.id.includes("casing") ? "#b4b4ad" : "#ffffff",
-    );
+    const casing = MINOR_ROAD.test(layer.id) ? "#9e9e97" : "#b4b4ad";
+    map.setPaintProperty(layer.id, "line-color", layer.id.includes("casing") ? casing : "#ffffff");
   }
 }
 

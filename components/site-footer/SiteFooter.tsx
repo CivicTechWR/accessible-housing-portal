@@ -4,7 +4,6 @@ import { siteConfig } from "@/lib/site-config";
 
 import { BrandMark } from "@/components/brand/BrandMark";
 import { ThemeToggle } from "@/components/theme-toggle/ThemeToggle";
-import { WALK_SCORE_ATTRIBUTION_URL } from "@/components/listing-details/WalkScore";
 
 const siteMap = [
   { href: "/", label: "Home" },
@@ -102,17 +101,6 @@ export function SiteFooter({ className }: { className?: string }) {
               <ThemeToggle />
             </div>
           </div>
-          <p>
-            Location scores:{" "}
-            <a
-              href={WALK_SCORE_ATTRIBUTION_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-4 transition-colors hover:text-foreground"
-            >
-              Walk Score® by Redfin
-            </a>
-          </p>
         </div>
       </div>
     </footer>

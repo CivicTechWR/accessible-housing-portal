@@ -193,12 +193,12 @@ function SectionMenu({
             key={section.id}
             className={cn(
               "h-1.5 flex-1 rounded-full",
-              // The current section is never emptier than a finished one: solid, plus a ring that
-              // marks where you are even when every section is finished.
+              // Blue is where you are, green is finished (as on the desktop step circles), grey is
+              // not started yet.
               section.id === activeId
-                ? "bg-primary ring-2 ring-primary/40 ring-offset-1 ring-offset-background dark:ring-primary-text/60"
+                ? "bg-primary dark:bg-primary-text"
                 : section.status === "complete"
-                  ? "bg-primary"
+                  ? "bg-emerald-600 dark:bg-emerald-500"
                   : "bg-muted dark:bg-foreground/15",
             )}
           />

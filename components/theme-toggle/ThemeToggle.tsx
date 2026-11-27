@@ -12,7 +12,7 @@ const surfaceClasses = {
   // The site header, mobile menu and popover menus such as the account menu.
   default: {
     group: "bg-muted",
-    item: "text-muted-foreground hover:text-foreground data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:ring-1 data-[state=on]:ring-input",
+    item: "text-muted-foreground hover:text-foreground data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-sm dark:data-[state=on]:bg-white/15",
   },
 };
 
@@ -25,7 +25,7 @@ export function ThemeToggle({ surface = "default" }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [isMounted, setIsMounted] = useState(false);
   const { group: groupClass, item } = surfaceClasses[surface];
-  const itemClass = cn("h-10 min-w-10 gap-1.5 rounded-full px-2.5", item);
+  const itemClass = cn("h-8 min-w-8 gap-1.5 rounded-full px-2", item);
 
   // next-themes only knows the stored theme on the client, so render without a
   // selection until mounted to keep server and client markup identical.

@@ -219,7 +219,7 @@ export function FieldRow({
         </span>
       </div>
       <div className="min-w-0 px-3 py-2.5">
-        <p className="line-clamp-2 text-muted-foreground" title={field.description || undefined}>
+        <p className="line-clamp-1 text-muted-foreground" title={field.description || undefined}>
           {field.description || "No description"}
         </p>
       </div>

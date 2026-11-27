@@ -21,7 +21,7 @@ export default async function MyListingsPage() {
     <AppPageShell>
       {/* Narrower than the usual content column, so the rows' columns sit together without an empty
           band before the actions. */}
-      <div className="mx-auto w-full max-w-4xl space-y-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6">
         <PageHeader
           title="My listings"
           description="Drafts save automatically as you build them. Publish when the listing is ready."
