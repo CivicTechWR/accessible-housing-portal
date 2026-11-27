@@ -18,7 +18,7 @@ const linkClass =
 export function SiteFooter({ className }: { className?: string }) {
   return (
     <footer className={cn("border-t bg-muted/50 text-sm", className)}>
-      <div className="site-container grid grid-cols-1 gap-x-6 gap-y-8 py-8 sm:grid-cols-2 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="site-container grid grid-cols-1 gap-x-6 gap-y-4 py-8 sm:grid-cols-2 sm:gap-y-8 sm:py-10 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="space-y-3 sm:col-span-2 md:col-span-1">
           <p className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-foreground">
             <BrandMark className="size-7" />
@@ -46,11 +46,11 @@ export function SiteFooter({ className }: { className?: string }) {
             .
           </p>
         </div>
-        <nav aria-labelledby="footer-site-map" className="space-y-3">
-          <h2 id="footer-site-map" className="text-sm font-semibold text-foreground">
+        <nav aria-labelledby="footer-site-map" className="space-y-3 max-sm:space-y-0">
+          <h2 id="footer-site-map" className="text-sm font-semibold text-foreground max-sm:sr-only">
             Site map
           </h2>
-          <ul className="space-y-2">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 sm:block sm:space-y-2">
             {siteMap.map((page) => (
               <li key={page.href}>
                 <Link href={page.href} className={linkClass}>
@@ -60,9 +60,9 @@ export function SiteFooter({ className }: { className?: string }) {
             ))}
           </ul>
         </nav>
-        <div className="min-w-0 space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Get in touch</h2>
-          <ul className="space-y-2">
+        <div className="min-w-0 space-y-3 max-sm:space-y-0">
+          <h2 className="text-sm font-semibold text-foreground max-sm:sr-only">Get in touch</h2>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 sm:block sm:space-y-2">
             <li>
               <a
                 href={`mailto:${siteConfig.contactEmail}`}

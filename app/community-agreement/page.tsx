@@ -4,7 +4,7 @@ import { CommunityAgreementTerms } from "@/components/community-agreement/Commun
 import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Community Agreement & Terms of Use",
+  title: "Community agreement and terms of use",
   description: `Community expectations and terms of use for the ${siteConfig.name} housing platform.`,
 };
 
@@ -15,7 +15,7 @@ export default function CommunityAgreementPage() {
         <header className="space-y-3 border-b pb-8">
           <p className="text-sm font-medium text-primary-text">{siteConfig.name} platform</p>
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Community Agreement & Terms of Use
+            Community agreement and terms of use
           </h1>
         </header>
         <CommunityAgreementTerms />

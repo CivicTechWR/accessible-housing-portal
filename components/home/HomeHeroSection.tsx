@@ -25,7 +25,7 @@ export function HomeHeroSection() {
           AA over any part of the photo however it wraps. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-black/65 sm:bg-transparent sm:bg-[linear-gradient(90deg,rgb(0_0_0/0.85),rgb(0_0_0/0.7)_45%,rgb(0_0_0/0.3)),linear-gradient(to_top,rgb(0_0_0/0.6),transparent_60%)]"
+        className="absolute inset-0 -z-10 bg-black/70 sm:bg-transparent sm:bg-[linear-gradient(90deg,rgb(0_0_0/0.85),rgb(0_0_0/0.7)_45%,rgb(0_0_0/0.3)),linear-gradient(to_top,rgb(0_0_0/0.6),transparent_60%)]"
       />
       <div className="w-full px-4 pt-28 sm:px-6">
         <div className="mx-auto max-w-5xl pb-12 text-white sm:pb-16">
@@ -40,7 +40,7 @@ export function HomeHeroSection() {
             accessibility details that matter.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="bg-white text-neutral-950 hover:bg-white/90">
+            <Button asChild size="lg">
               <Link href="/sign-in">Sign in to browse listings</Link>
             </Button>
             <Button

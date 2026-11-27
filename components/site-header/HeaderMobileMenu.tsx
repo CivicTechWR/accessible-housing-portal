@@ -50,7 +50,7 @@ export function HeaderMobileMenu({
           <button
             type="button"
             aria-label="Open navigation menu"
-            className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:bg-muted"
+            className="-mr-2 flex size-11 cursor-pointer items-center justify-center rounded-lg text-foreground transition-colors hover:bg-muted"
           >
             <span className="flex flex-col gap-1" aria-hidden="true">
               <span className="block h-0.5 w-4 rounded-full bg-current" />

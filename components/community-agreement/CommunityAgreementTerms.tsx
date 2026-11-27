@@ -2,8 +2,8 @@ import { communityAgreement } from "@/content/community-agreement";
 
 export function CommunityAgreementTerms() {
   return (
-    <div className="space-y-8 text-base leading-7">
-      <p className="text-lg leading-8">{communityAgreement.introduction}</p>
+    <div className="space-y-8 text-base leading-relaxed">
+      <p>{communityAgreement.introduction}</p>
 
       {communityAgreement.sections.map((section) => (
         <section key={section.title} className="space-y-4">

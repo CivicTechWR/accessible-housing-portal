@@ -17,7 +17,7 @@ export function CommunityAgreement({ onAccept }: CommunityAgreementProps) {
 
   return (
     <AuthCard
-      title="Community Agreement & Terms of Use"
+      title="Community agreement and terms of use"
       description={`Read the agreement below, then confirm to continue setting up your ${siteConfig.name} account.`}
       className="max-w-3xl"
     >
@@ -33,7 +33,7 @@ export function CommunityAgreement({ onAccept }: CommunityAgreementProps) {
             onCheckedChange={(checked) => setAgreed(checked === true)}
           />
           <label htmlFor="community-agreement" className="text-base leading-6 font-medium">
-            I have read and agree to the Community Agreement & Terms of Use.
+            I have read and agree to the community agreement and terms of use.
           </label>
         </div>
         <div className="flex shrink-0 flex-col gap-1.5 sm:items-end">

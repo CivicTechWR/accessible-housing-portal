@@ -19,7 +19,9 @@ it("moves from the community agreement to account setup in order", () => {
   render(<AccountActivationFlow token="invite-token" email="person@example.com" />);
 
   expect(screen.getByText("Step 1 of 2: Community agreement")).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Community Agreement & Terms of Use" })).toBeVisible();
+  expect(
+    screen.getByRole("heading", { name: "Community agreement and terms of use" }),
+  ).toBeVisible();
   expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
 
   const continueButton = screen.getByRole("button", { name: "Agree and continue" });
@@ -27,7 +29,7 @@ it("moves from the community agreement to account setup in order", () => {
 
   fireEvent.click(
     screen.getByRole("checkbox", {
-      name: "I have read and agree to the Community Agreement & Terms of Use.",
+      name: "I have read and agree to the community agreement and terms of use.",
     }),
   );
   expect(continueButton).toBeEnabled();
@@ -37,7 +39,7 @@ it("moves from the community agreement to account setup in order", () => {
   expect(screen.queryByText("Step 1 of 2: Community agreement")).not.toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Activate your account" })).toBeVisible();
   expect(screen.getByLabelText("New password")).toBeVisible();
-  expect(screen.queryByText("Community Agreement & Terms of Use")).not.toBeInTheDocument();
+  expect(screen.queryByText("Community agreement and terms of use")).not.toBeInTheDocument();
   expect(authClient.resetPassword).not.toHaveBeenCalled();
 });
 
@@ -45,5 +47,5 @@ it("keeps password reset independent from the account activation steps", () => {
   render(<AcceptInviteForm token="reset-token" />);
 
   expect(screen.getByRole("heading", { name: "Reset your password" })).toBeVisible();
-  expect(screen.queryByText("Community Agreement & Terms of Use")).not.toBeInTheDocument();
+  expect(screen.queryByText("Community agreement and terms of use")).not.toBeInTheDocument();
 });
