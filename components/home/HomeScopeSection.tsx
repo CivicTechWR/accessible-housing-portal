@@ -16,8 +16,7 @@ export function HomeScopeSection() {
       </p>
       <p className="mt-4 text-[1.0625rem] leading-relaxed">
         It isn&apos;t an alternative to CHAC or the PATHS List, and it isn&apos;t open to the
-        public.
-        {siteConfig.name} doesn&apos;t give direct support, referrals or guidance on finding
+        public. {siteConfig.name} doesn&apos;t give direct support, referrals or guidance on finding
         housing, and it doesn&apos;t mediate between organizations, individuals and housing
         providers.
       </p>
