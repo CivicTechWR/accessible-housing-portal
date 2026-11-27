@@ -12,6 +12,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Key01Icon } from "@hugeicons/core-free-icons";
 
+/** A card from sm up. On phones, a full-width block with a divider underneath. */
+const SECTION_CARD =
+  "max-sm:gap-4 max-sm:rounded-none max-sm:border-b max-sm:border-border max-sm:bg-transparent max-sm:py-6 max-sm:shadow-none max-sm:ring-0";
+
 export function AccountSecurity() {
   const { data: session } = authClient.useSession();
   const { data: passkeys, refetch } = authClient.useListPasskeys();
@@ -139,14 +143,14 @@ export function AccountSecurity() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-sm:space-y-0">
       {message && (
         <AlertBanner variant="info" role="status">
           {message}
         </AlertBanner>
       )}
-      <Card>
-        <CardHeader>
+      <Card className={SECTION_CARD}>
+        <CardHeader className="max-sm:px-0">
           <CardTitle>
             <h2 className="text-lg">Passkeys</h2>
           </CardTitle>
@@ -155,7 +159,7 @@ export function AccountSecurity() {
             only on the domain where you add them.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 max-sm:px-0">
           {passkeys && passkeys.length > 0 ? (
             <ul className="divide-y rounded-lg border">
               {passkeys.map((key) => (
@@ -210,8 +214,8 @@ export function AccountSecurity() {
           )}
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
+      <Card className={SECTION_CARD}>
+        <CardHeader className="max-sm:px-0">
           <CardTitle>
             <h2 className="text-lg">Authenticator app</h2>
           </CardTitle>
@@ -221,7 +225,7 @@ export function AccountSecurity() {
               : "Use an authenticator app to verify password sign-ins."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 max-sm:px-0">
           <form onSubmit={configureTwoFactor} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="two-factor-password">Current password</Label>
@@ -337,14 +341,14 @@ export function AccountSecurity() {
           )}
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
+      <Card className={SECTION_CARD}>
+        <CardHeader className="max-sm:px-0">
           <CardTitle>
             <h2 className="text-lg">Password</h2>
           </CardTitle>
           <CardDescription>Changing your password signs out your other devices.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="max-sm:px-0">
           <form onSubmit={changePassword} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="current-password">Current password</Label>
@@ -413,8 +417,8 @@ export function AccountSecurity() {
           </form>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
+      <Card className={SECTION_CARD}>
+        <CardHeader className="max-sm:px-0">
           <CardTitle>
             <h2 className="text-lg">Signed-in devices</h2>
           </CardTitle>
@@ -422,7 +426,7 @@ export function AccountSecurity() {
             See where your account is signed in, and sign out devices you don't recognize.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 max-sm:px-0">
           {sessions ? (
             <ul className="divide-y rounded-lg border">
               {sessions.map((item) => (

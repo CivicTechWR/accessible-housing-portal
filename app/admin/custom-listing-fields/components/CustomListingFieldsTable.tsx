@@ -1,12 +1,7 @@
 "use client";
 
-import { type DragEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import {
-  ArrowDown01Icon,
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
-  Search01Icon,
-} from "@hugeicons/core-free-icons";
+import type { DragEvent } from "react";
+import { ArrowDown01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
@@ -95,24 +90,23 @@ export function CustomListingFieldsTable({
 
   return (
     <div className="space-y-4">
-      <ScrollFadeRow className="hidden border-b border-border md:block">
-        <div className="flex gap-6">
+      {/* Wraps onto a second line rather than scrolling, so every category stays in view. */}
+      <div role="group" aria-label="Category" className="hidden flex-wrap gap-2 md:flex">
+        <CategoryTab
+          isActive={categoryFilter === "all"}
+          label="All fields"
+          onClick={() => onCategoryFilterChange("all")}
+        />
+        {categories.map((category) => (
           <CategoryTab
-            isActive={categoryFilter === "all"}
-            label="All fields"
-            onClick={() => onCategoryFilterChange("all")}
+            key={category.category}
+            isActive={categoryFilter === category.category}
+            label={toSentenceCase(category.label)}
+            count={category.count}
+            onClick={() => onCategoryFilterChange(category.category)}
           />
-          {categories.map((category) => (
-            <CategoryTab
-              key={category.category}
-              isActive={categoryFilter === category.category}
-              label={toSentenceCase(category.label)}
-              count={category.count}
-              onClick={() => onCategoryFilterChange(category.category)}
-            />
-          ))}
-        </div>
-      </ScrollFadeRow>
+        ))}
+      </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
@@ -134,7 +128,7 @@ export function CustomListingFieldsTable({
           </label>
 
           <div className="grid grid-cols-2 gap-3 md:flex">
-            {/* The tabs pick a category on wider screens. */}
+            {/* The category chips pick a category on wider screens. */}
             <FilterSelect
               ariaLabel="Filter by category"
               className="md:hidden"
@@ -224,14 +218,6 @@ export function CustomListingFieldsTable({
               direction={sortDirection}
               onSort={onSort}
             />
-            <SortHeader
-              label="Status"
-              sortKey="visibility"
-              helperText="Fields are public and filterable unless marked Internal or Not filterable."
-              activeSortKey={sortKey}
-              direction={sortDirection}
-              onSort={onSort}
-            />
             <div>
               <span className="sr-only">Actions</span>
             </div>
@@ -303,97 +289,5 @@ export function CustomListingFieldsTable({
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * A row that scrolls sideways. Whichever edge has more content past it fades and gets a chevron
- * button, so a clipped tab reads as "there's more" and stays reachable without a trackpad.
- */
-function ScrollFadeRow({ className, children }: { className?: string; children: ReactNode }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [edges, setEdges] = useState({ start: false, end: false });
-
-  const updateEdges = useCallback(() => {
-    const element = scrollRef.current;
-    if (!element) return;
-    const maxScroll = element.scrollWidth - element.clientWidth;
-    setEdges({ start: element.scrollLeft > 1, end: element.scrollLeft < maxScroll - 1 });
-  }, []);
-
-  useEffect(() => {
-    updateEdges();
-    const element = scrollRef.current;
-    if (!element) return;
-    const observer = new ResizeObserver(updateEdges);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [updateEdges]);
-
-  const scrollBy = (direction: 1 | -1) => {
-    const element = scrollRef.current;
-    if (!element) return;
-    element.scrollBy({ left: direction * element.clientWidth * 0.6, behavior: "smooth" });
-  };
-
-  // Content under a scroll button is fully hidden, then fades in over the next 3rem, so the
-  // button never sits on top of a tab or its count.
-  const button = "2.5rem";
-  const fade = "5.5rem";
-  const startMask = edges.start ? `transparent ${button}, black ${fade}` : "black 0";
-  const endMask = edges.end
-    ? `black calc(100% - ${fade}), transparent calc(100% - ${button})`
-    : "black 100%";
-  const maskImage = `linear-gradient(to right, ${startMask}, ${endMask})`;
-
-  return (
-    <div className={cn("relative", className)}>
-      <div
-        ref={scrollRef}
-        className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ maskImage, WebkitMaskImage: maskImage }}
-        onScroll={updateEdges}
-      >
-        {children}
-      </div>
-      {edges.start ? (
-        <ScrollButton direction={-1} label="Show earlier categories" onClick={scrollBy} />
-      ) : null}
-      {edges.end ? (
-        <ScrollButton direction={1} label="Show more categories" onClick={scrollBy} />
-      ) : null}
-    </div>
-  );
-}
-
-function ScrollButton({
-  direction,
-  label,
-  onClick,
-}: {
-  direction: 1 | -1;
-  label: string;
-  onClick: (direction: 1 | -1) => void;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="icon-sm"
-      aria-label={label}
-      // Mouse and touch users need it; keyboard users already reach every tab with Tab.
-      tabIndex={-1}
-      className={cn(
-        "absolute top-1/2 -translate-y-1/2 rounded-full bg-background shadow-sm",
-        direction === 1 ? "right-0" : "left-0",
-      )}
-      onClick={() => onClick(direction)}
-    >
-      <HugeiconsIcon
-        icon={direction === 1 ? ArrowRight01Icon : ArrowLeft01Icon}
-        strokeWidth={2}
-        aria-hidden
-      />
-    </Button>
   );
 }

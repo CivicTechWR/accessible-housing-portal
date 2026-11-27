@@ -1,10 +1,19 @@
 "use client";
 
-import { memo, useState, useCallback, useEffect, useMemo, useRef, type Ref } from "react";
+import {
+  memo,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type Ref,
+  type RefObject,
+} from "react";
 import { Map, Marker, Popup, type ErrorEvent, type MapRef } from "@vis.gl/react-maplibre";
 import { useTheme } from "next-themes";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, MinusSignIcon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import type { Listing } from "@/components/listing-card-list/ListingsCardList";
 import { Button } from "@/components/ui/button";
 import { formatRent } from "@/lib/listing-format";
@@ -12,6 +21,7 @@ import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { ListingsCard } from "../listings-card/ListingsCard";
 import { MAP_STYLE_URLS, applyMapStyleOverrides, foldAttribution } from "./mapStyle";
+import "./mapControls.css";
 
 const DEFAULT_VIEW = { ...siteConfig.mapCenter, zoom: 12 } as const;
 
@@ -78,28 +88,55 @@ export function groupOverlappingPins(
 }
 
 /**
- * Price pins are light with near-black text in both themes, so they read the same on either
- * basemap; dark mode uses a soft grey rather than pure white, which glares. The hovered, highlighted or selected pin flips to a dark fill in light mode and to
- * brand blue in dark mode, where a near-black pill would sink into the map.
+ * Prices and clusters share one pill, so the map has one marker family. Light mode uses white pills
+ * with near-black text, and dark mode near-black pills with white text, each with a thin border so
+ * they hold their edge on the basemap. The hovered, highlighted or selected pin is filled: brand
+ * blue in light mode, white in dark mode.
  */
 const pillClassName =
-  "flex h-7.5 items-center rounded-full px-3 text-sm font-semibold whitespace-nowrap tabular-nums shadow-[0_1px_4px_rgba(0,0,0,0.28)] ring-1 transition-[transform,background-color,color] group-hover:scale-110 group-focus-visible:ring-3 group-focus-visible:ring-ring dark:shadow-[0_2px_6px_rgba(0,0,0,0.6)]";
+  "flex h-7.5 items-center rounded-full border px-3 text-sm font-semibold whitespace-nowrap tabular-nums shadow-[0_1px_4px_rgba(15,23,42,0.18)] transition-[transform,background-color,color,border-color] group-hover:scale-105 group-focus-visible:ring-3 group-focus-visible:ring-ring dark:shadow-[0_2px_6px_rgba(0,0,0,0.6)]";
 
-const emphasisedPill =
-  "bg-[#1f262c] text-white ring-[#1f262c] dark:bg-primary dark:text-primary-foreground dark:ring-primary";
+const restingPill =
+  "border-[rgba(15,23,42,0.2)] bg-white text-[#1f262c] dark:border-white/25 dark:bg-[#1f262b] dark:text-white";
+
+const filledPill =
+  "border-primary bg-primary text-primary-foreground dark:border-white dark:bg-white dark:text-[#1f262c]";
+
+const hoverFilledPill =
+  "group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground dark:group-hover:border-white dark:group-hover:bg-white dark:group-hover:text-[#1f262c]";
 
 function pillTone(emphasised: boolean) {
-  return emphasised
-    ? cn("scale-110", emphasisedPill)
-    : "bg-white text-[#1f262c] ring-black/10 dark:bg-[#e6eaec] group-hover:bg-[#1f262c] group-hover:text-white group-hover:ring-[#1f262c] dark:ring-black/30 dark:group-hover:bg-primary dark:group-hover:text-primary-foreground dark:group-hover:ring-primary";
+  return emphasised ? cn("scale-105", filledPill) : cn(restingPill, hoverFilledPill);
 }
 
-/**
- * A cluster is a brand-blue circle with its count, so it reads as a group rather than one more
- * price. It grows a little with the count, up to 44px.
- */
-function clusterSize(count: number) {
-  return Math.min(44, 32 + Math.round(Math.log2(count) * 3));
+/** Zooms the map in or out by one step. 40px, in the map's top-right corner. */
+function ZoomControls({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
+  const buttonClassName =
+    "flex size-10 items-center justify-center text-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:ring-inset";
+  return (
+    <div
+      role="group"
+      aria-label="Zoom"
+      className="absolute top-3 right-3 z-10 flex flex-col divide-y overflow-hidden rounded-xl border bg-background shadow-md dark:border-white/15"
+    >
+      <button
+        type="button"
+        aria-label="Zoom in"
+        className={buttonClassName}
+        onClick={() => mapRef.current?.zoomIn()}
+      >
+        <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="size-5" aria-hidden />
+      </button>
+      <button
+        type="button"
+        aria-label="Zoom out"
+        className={buttonClassName}
+        onClick={() => mapRef.current?.zoomOut()}
+      >
+        <HugeiconsIcon icon={MinusSignIcon} strokeWidth={2} className="size-5" aria-hidden />
+      </button>
+    </div>
+  );
 }
 
 function displayAddress(listing: Listing) {
@@ -363,15 +400,8 @@ export const MapView = memo(function MapView({
                     aria-label={`${count} listings here. Zoom in to see them.`}
                     className="group flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full outline-none"
                   >
-                    <span
-                      style={{ width: clusterSize(count), height: clusterSize(count) }}
-                      className={cn(
-                        "flex items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground tabular-nums shadow-[0_1px_4px_rgba(0,0,0,0.3)] ring-2 ring-white transition-transform group-hover:scale-110 group-focus-visible:ring-3 group-focus-visible:ring-ring dark:shadow-[0_2px_6px_rgba(0,0,0,0.6)]",
-                        containsHighlighted &&
-                          "scale-110 bg-[#1f262c] dark:bg-white dark:text-[#1f262c]",
-                      )}
-                    >
-                      {count}
+                    <span className={cn(pillClassName, pillTone(containsHighlighted))}>
+                      {count} homes
                     </span>
                   </button>
                 </Marker>
@@ -445,6 +475,7 @@ export const MapView = memo(function MapView({
           )}
         </Map>
       </div>
+      <ZoomControls mapRef={mapRef} />
 
       {selectedListing && (
         <SelectedListing

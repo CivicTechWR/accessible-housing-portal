@@ -11,16 +11,16 @@ import {
   ViewSwitch,
 } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 import { FilterButton } from "@/components/filter-button/FilterButton";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createSerializer } from "nuqs";
+import { rememberListingSearch } from "@/components/listing-details/BackToResults";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
-import {
-  ListingsPanelHeader,
-  listingsSummary,
-} from "@/components/listings-panel-header/ListingsPanelHeader";
+import { ListingsPanelHeader } from "@/components/listings-panel-header/ListingsPanelHeader";
 import { SortOptions } from "@/components/sort-options/SortOptions";
 import type { ListingListResponse, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
 import { toListingSearchFilters } from "./query";
+import { listingSearchParamsParsers } from "./searchParams";
 import { useListingsQuery } from "./useListingsQuery";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,8 @@ const LazyMapView = dynamic<{ listings: ListingSummary[]; highlightedId?: string
   () => import("../../components/map-view/MapView.tsx").then((mod) => mod.MapView),
   { ssr: false, loading: MapLoadingPlaceholder },
 );
+
+const serializeSearch = createSerializer(listingSearchParamsParsers);
 
 interface ListingsDashboardProps {
   initialData: ListingListResponse;
@@ -105,6 +107,10 @@ export default function ListingsDashboard({
     buttonRef: filterButtonRef,
   };
   const query = useMemo(() => toListingSearchFilters(filters), [filters]);
+  // Lets "Back to results" on a listing return to this search.
+  useEffect(() => {
+    rememberListingSearch(serializeSearch(filters));
+  }, [filters]);
   const { listings, total, error, retry, isLoading, isLoadingMore, isPartial, isCapped } =
     useListingsQuery(query, {
       data: initialData,
@@ -127,12 +133,12 @@ export default function ListingsDashboard({
     // the screen below the site header (see app/layout.tsx).
     <div data-fullscreen className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <h1 className="sr-only">Search listings</h1>
-      {/* Two rows (filters, then results) until `xl`, where both fit on one row and leave more
-          room for listings. Phones get the search field and a row of quick-filter chips; the
-          count moves above the first card, sort into the filter sheet, and the view switch to
-          a floating button, to keep the first listing photo high on the screen. */}
-      <header className="flex shrink-0 flex-col border-b bg-background xl:h-16 xl:flex-row xl:items-center xl:gap-6 xl:px-6">
-        <div className="flex items-center px-4 pt-3 pb-2 sm:h-16 sm:px-6 sm:py-0 xl:min-w-0 xl:flex-1 xl:px-0">
+      {/* The toolbar holds the search, the filters and the view switch; the count and sort sit
+          over the results. Phones get the search field and a row of quick-filter chips, sort in
+          the filter sheet, and the view switch as a floating button, to keep the first listing
+          photo high on the screen. */}
+      <header className="flex shrink-0 flex-col border-b bg-background">
+        <div className="flex items-center gap-3 px-4 pt-3 pb-2 sm:h-16 sm:px-6 sm:py-0">
           <ListingFilterSearchBar
             searchInputProps={searchInputProps}
             priceRangeProps={priceRangeProps}
@@ -145,6 +151,13 @@ export default function ListingsDashboard({
               count: filters.features.length,
             }}
           />
+          <div className="ml-auto shrink-0 max-md:hidden">
+            <ViewSwitch
+              displayModes={displayModes}
+              value={effectiveDisplayMode}
+              onChange={setDisplayMode}
+            />
+          </div>
         </div>
         <QuickFilterChips
           priceRangeProps={priceRangeProps}
@@ -157,21 +170,6 @@ export default function ListingsDashboard({
             setIsFilterOpen(true);
           }}
           className="pb-2 sm:hidden"
-        />
-        <ListingsPanelHeader
-          shown={listings.length}
-          total={total}
-          isPartial={isPartial}
-          sortOptionProps={sortOptionProps}
-          isLoading={isLoading}
-          className="max-sm:hidden sm:border-t sm:py-2 xl:border-0 xl:p-0"
-          viewSwitch={
-            <ViewSwitch
-              displayModes={displayModes}
-              value={effectiveDisplayMode}
-              onChange={setDisplayMode}
-            />
-          }
         />
       </header>
       {error ? (
@@ -194,7 +192,15 @@ export default function ListingsDashboard({
             isCapped={isCapped}
             displayMode={displayMode}
             onHighlightChange={setHighlightedId}
-            summary={listingsSummary({ shown: listings.length, total, isPartial, isLoading })}
+            header={
+              <ListingsPanelHeader
+                shown={listings.length}
+                total={total}
+                isPartial={isPartial}
+                sortOptionProps={sortOptionProps}
+                isLoading={isLoading}
+              />
+            }
           />
         ) : null}
         {[DisplayMode.MAP, DisplayMode.MAP_LIST].includes(displayMode) && (
@@ -216,7 +222,7 @@ export default function ListingsDashboard({
         <FloatingViewToggle
           value={effectiveDisplayMode}
           onChange={setDisplayMode}
-          className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 sm:hidden"
+          className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 md:hidden"
         />
         {/* Rendered outside the list panel so phones can filter in Map view too. */}
         {isMobileViewport ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, Ref, useLayoutEffect, useRef, useState } from "react";
+import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -14,7 +14,10 @@ export interface FormSectionProps {
   children: ReactNode;
 }
 
-/** One card in the listing form, with an 18px heading and a one-line description. */
+/**
+ * One card in the listing form, with an 18px heading and a one-line description. On phones it
+ * drops the card for a full-width block with a divider underneath.
+ */
 export function FormSection({ id, title, description, headerAside, children }: FormSectionProps) {
   const headingId = id ? `${id}-heading` : undefined;
 
@@ -22,8 +25,12 @@ export function FormSection({ id, title, description, headerAside, children }: F
     <section
       id={id}
       aria-labelledby={headingId}
-      // Leaves room for the sticky tab bar below lg when the nav scrolls a section into view.
-      className="scroll-mt-24 rounded-xl bg-card p-5 text-card-foreground shadow-xs ring-1 ring-foreground/10 sm:p-6 lg:scroll-mt-6"
+      // Leaves room for the sticky bars when the section strip scrolls a section into view. Adds
+      // to the page's scroll padding in globals.css (5rem below lg, 1rem from lg).
+      className={cn(
+        "text-card-foreground",
+        "border-b border-border py-6 sm:rounded-xl sm:border-0 sm:bg-card sm:p-6 sm:shadow-xs sm:ring-1 sm:ring-foreground/10",
+      )}
     >
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
@@ -45,10 +52,8 @@ export function FormSection({ id, title, description, headerAside, children }: F
 export interface ListingFormLayoutProps {
   /** The page title block shown above the form. */
   header?: ReactNode;
-  /** The section list shown in a left rail on wide screens. */
+  /** The section strip, pinned above the form. */
   sectionNav?: ReactNode;
-  /** A compact section picker shown where the rail doesn't fit. */
-  sectionJump?: ReactNode;
   previewPaneHeader?: ReactNode;
   formContent: ReactNode;
   previewContent?: ReactNode;
@@ -66,41 +71,20 @@ const PANES: { value: Pane; label: string }[] = [
   { value: "preview", label: "Preview" },
 ];
 
-/** Tab list shown below lg to pick which pane is visible, with the section picker beside it. */
-function PaneTabs({
-  ref,
-  sectionJump,
-  isFormActive,
-}: {
-  ref: Ref<HTMLDivElement>;
-  sectionJump?: ReactNode;
-  isFormActive: boolean;
-}) {
+/** The Form/Preview switch shown below lg, where only one pane fits. */
+function PaneTabs() {
   return (
-    <div
-      ref={ref}
-      className="sticky top-0 z-20 -mx-4 flex items-center gap-2 border-b border-foreground/10 bg-background px-4 py-2 sm:-mx-6 sm:px-6 lg:hidden"
-    >
+    <div className="py-2 lg:hidden">
       <TabsList
         aria-label="Listing editor view"
-        className="grid h-11 shrink-0 grid-cols-2 gap-1 rounded-lg p-1 group-data-horizontal/tabs:h-11"
+        className="grid h-11 w-full grid-cols-2 gap-1 rounded-lg p-1 group-data-horizontal/tabs:h-11"
       >
         {PANES.map(({ value, label }) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className={cn(
-              "h-9 rounded-md px-4 text-sm",
-              // The selected tab is raised and bold, not just a colour change, matching the
-              // List/Map switch on the search page.
-              "data-active:font-semibold data-active:shadow-sm dark:data-active:bg-input/40",
-            )}
-          >
+          <TabsTrigger key={value} value={value} className="h-9 rounded-md px-4 text-sm">
             {label}
           </TabsTrigger>
         ))}
       </TabsList>
-      {sectionJump && isFormActive ? <div className="min-w-0 flex-1">{sectionJump}</div> : null}
     </div>
   );
 }
@@ -182,21 +166,11 @@ function usePaneSwitcher() {
  * The bar pinned to the bottom of the screen. The bar spans the page, but its contents sit on the
  * same grid as the panes, so the save state and button line up with the form column.
  */
-function StickyFooter({
-  gridClassName,
-  showsRail,
-  children,
-}: {
-  gridClassName: string;
-  showsRail: boolean;
-  children: ReactNode;
-}) {
+function StickyFooter({ gridClassName, children }: { gridClassName: string; children: ReactNode }) {
   return (
     <div className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-border bg-background px-4 py-3 sm:-mx-6 sm:px-6">
       <div className={gridClassName}>
-        {/* Holds the rail's column so the contents start where the form does. */}
-        {showsRail ? <div aria-hidden className="hidden xl:block" /> : null}
-        <div className="flex min-w-0 items-center justify-end gap-4">{children}</div>
+        <div className="flex min-w-0 items-center justify-end gap-3">{children}</div>
       </div>
     </div>
   );
@@ -205,7 +179,6 @@ function StickyFooter({
 export function ListingFormLayout({
   header,
   sectionNav,
-  sectionJump,
   previewPaneHeader,
   formContent,
   previewContent,
@@ -213,56 +186,41 @@ export function ListingFormLayout({
   isPreviewExpanded = false,
 }: ListingFormLayoutProps) {
   const hasPreview = Boolean(previewContent);
-  const isExpandedWithPreview = isPreviewExpanded && hasPreview;
   const { activePane, switchPane, containerRef } = usePaneSwitcher();
-  const tabBarRef = useRef<HTMLDivElement>(null);
-  // The rail shows at xl unless the expanded preview needs the room. Elsewhere the compact
-  // picker takes its place: in the tab bar below lg, above the form from lg up.
-  const showsRail = Boolean(sectionNav) && !isExpandedWithPreview;
 
   // The same 1024px column as every other page, so the header, footer and page edges line up.
+  // The form gets about 670px and the preview 320px, or the other way round when the preview
+  // shows the full listing page.
   const gridClassName = cn(
     PAGE_COLUMN,
-    "grid grid-cols-1 gap-6",
-    // At xl the rail and preview stay narrow so the form column keeps about 530px.
-    !hasPreview
-      ? showsRail && "xl:grid-cols-[11rem_minmax(0,1fr)]"
-      : isExpandedWithPreview
+    "grid grid-cols-1 gap-8",
+    hasPreview &&
+      (isPreviewExpanded
         ? "lg:grid-cols-[20rem_minmax(0,1fr)]"
-        : cn(
-            "lg:grid-cols-[minmax(0,1fr)_18.75rem]",
-            showsRail
-              ? "xl:grid-cols-[11rem_minmax(0,1fr)_17rem]"
-              : "xl:grid-cols-[minmax(0,1fr)_17rem]",
-          ),
+        : "lg:grid-cols-[minmax(0,1fr)_20rem]"),
   );
   const footerBar = footer ? (
-    <StickyFooter gridClassName={gridClassName} showsRail={showsRail}>
-      {footer}
-    </StickyFooter>
+    <StickyFooter gridClassName={gridClassName}>{footer}</StickyFooter>
   ) : null;
 
   const panes = (
     <div className={cn(gridClassName, "lg:items-start")}>
-      {showsRail ? (
-        <aside className="sticky top-6 hidden self-start xl:block">{sectionNav}</aside>
-      ) : null}
-
       <PaneSection value="form" hasTabs={hasPreview} className="min-w-0">
-        {sectionJump ? (
-          <div className={cn("mb-4 hidden lg:block", showsRail && "xl:hidden")}>{sectionJump}</div>
-        ) : null}
         <div className="space-y-6">{formContent}</div>
       </PaneSection>
 
       {previewContent && (
-        <PaneSection value="preview" hasTabs className="min-w-0 lg:sticky lg:top-6">
-          <div className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-foreground/10">
+        // Sits below the sticky section strip at lg.
+        <PaneSection value="preview" hasTabs className="min-w-0 lg:sticky lg:top-20">
+          {/* On phones the pane is the whole screen, so it drops the card frame. */}
+          <div className="sm:overflow-hidden sm:rounded-xl sm:bg-card sm:shadow-xs sm:ring-1 sm:ring-foreground/10">
             {previewPaneHeader && (
-              <div className="border-b border-foreground/10 px-4 py-3">{previewPaneHeader}</div>
+              <div className="border-b border-foreground/10 pb-3 sm:px-4 sm:pt-3">
+                {previewPaneHeader}
+              </div>
             )}
             {/* Scrolls on its own at lg, so the preview stays beside the field being edited. */}
-            <div className="p-4 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto">
+            <div className="pt-4 sm:p-4 lg:max-h-[calc(100vh-16rem)] lg:overflow-y-auto">
               {previewContent}
             </div>
           </div>
@@ -271,16 +229,14 @@ export function ListingFormLayout({
     </div>
   );
 
-  const body = (
-    <>
-      {header ? <div className={cn(PAGE_COLUMN, "mb-6")}>{header}</div> : null}
-      {panes}
-      {footerBar}
-    </>
-  );
-
   if (!hasPreview) {
-    return <div className="w-full">{body}</div>;
+    return (
+      <div className="w-full">
+        {header ? <div className={cn(PAGE_COLUMN, "mb-6")}>{header}</div> : null}
+        {panes}
+        {footerBar}
+      </div>
+    );
   }
 
   return (
@@ -293,24 +249,27 @@ export function ListingFormLayout({
       // globals.css keys the page's scroll padding off this attribute.
       data-listing-form-tabs=""
       // Chrome scrolls a focused textarea only far enough to show the caret, which can leave
-      // most of it under the sticky Save bar. "nearest" respects the scroll padding and is a
-      // no-op when the field is already fully visible. The sticky tab bar only exists below
-      // lg, where the scroll padding is set, so skip it otherwise.
+      // most of it under the sticky bars. "nearest" respects the scroll padding and is a no-op
+      // when the field is already fully visible.
       onFocus={(event) => {
-        const tabBar = tabBarRef.current;
-        if (
-          event.target instanceof HTMLTextAreaElement &&
-          tabBar &&
-          getComputedStyle(tabBar).display !== "none"
-        ) {
+        if (event.target instanceof HTMLTextAreaElement) {
           event.target.scrollIntoView({ block: "nearest" });
         }
       }}
       className="block w-full"
     >
       {header ? <div className={cn(PAGE_COLUMN, "mb-4 lg:mb-6")}>{header}</div> : null}
-      <PaneTabs ref={tabBarRef} sectionJump={sectionJump} isFormActive={activePane === "form"} />
-      <div className="pt-4 lg:pt-0">{panes}</div>
+      {/* Pinned to the top: the Form/Preview switch below lg, then the section strip while the
+          form shows. Full bleed, like the site header, with its contents in the page column. */}
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background px-4 sm:-mx-6 sm:px-6">
+        <div className={PAGE_COLUMN}>
+          <PaneTabs />
+          {sectionNav ? (
+            <div className={cn(activePane !== "form" && "max-lg:hidden")}>{sectionNav}</div>
+          ) : null}
+        </div>
+      </div>
+      <div className="pt-4 sm:pt-6">{panes}</div>
       {footerBar}
     </Tabs>
   );

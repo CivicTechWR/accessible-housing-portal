@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import {
   SortOptions as SortOptionsType,
@@ -20,12 +19,10 @@ interface ListingsPanelHeaderProps {
     value?: string;
   };
   isLoading?: boolean;
-  /** The Split / List / Map switch, shown after the sort menu. */
-  viewSwitch?: ReactNode;
   className?: string;
 }
 
-/** "61 listings found", or progress while loading. Phones show it above the first card. */
+/** "61 listings", or progress while loading. */
 export function listingsSummary({
   shown,
   total,
@@ -34,31 +31,32 @@ export function listingsSummary({
 }: Pick<ListingsPanelHeaderProps, "shown" | "total" | "isPartial" | "isLoading">) {
   if (isLoading) return "Updating listings...";
   if (isPartial) return `Showing ${shown} of ${total} listings`;
-  return `${total} listing${total !== 1 ? "s" : ""} found`;
+  return `${total} listing${total !== 1 ? "s" : ""}`;
 }
 
-/** The results bar: match count on the left, sort and view controls on the right. */
+/**
+ * The heading over the results: the match count, and the sort menu on wider screens. Phones sort
+ * in the filter sheet, so there it's just the count, tight above the first card.
+ */
 export function ListingsPanelHeader({
   shown,
   total,
   isPartial,
   sortOptionProps,
   isLoading = false,
-  viewSwitch,
   className,
 }: ListingsPanelHeaderProps) {
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center gap-2 bg-background px-4 py-2 sm:gap-3 sm:px-6",
+        "flex shrink-0 items-center justify-between gap-3 bg-background px-4 pt-3 sm:px-6 sm:pt-4",
         className,
       )}
     >
-      <p className="mr-auto min-w-0 truncate text-sm whitespace-nowrap text-muted-foreground">
+      <p className="min-w-0 truncate text-[15px] font-semibold text-foreground sm:text-lg">
         {listingsSummary({ shown, total, isPartial, isLoading })}
       </p>
-      <SortOptionsComponent {...sortOptionProps} />
-      {viewSwitch}
+      <SortOptionsComponent {...sortOptionProps} className="max-sm:hidden" />
     </div>
   );
 }

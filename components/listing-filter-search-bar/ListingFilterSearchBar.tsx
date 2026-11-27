@@ -1,6 +1,14 @@
 "use client";
 
-import type { ComponentProps, ReactNode, Ref } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+  type Ref,
+} from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   WheelchairIcon,
@@ -62,7 +70,9 @@ function roomSummary(value: string | null | undefined, noun: string) {
   return `${value} ${noun}${value === "1" ? "" : "s"}`;
 }
 
-const activeFilterClassName = "border-primary-text/60 bg-primary/5 font-medium dark:bg-primary/15";
+/** A filter in use is filled with the brand tint, so applied filters stand out from the rest. */
+export const activeFilterClassName =
+  "border-transparent bg-primary/10 font-medium text-primary-text hover:bg-primary/15 hover:text-primary-text aria-expanded:bg-primary/15 aria-expanded:text-primary-text dark:border-transparent dark:bg-primary-text/15 dark:hover:bg-primary-text/20";
 
 /** The phone quick-filter chips: fully rounded, so the row reads as chips, and 44px to tap. */
 const chipClassName = "h-11 shrink-0 rounded-full px-4";
@@ -112,7 +122,7 @@ function FilterPopover({
           <HugeiconsIcon
             icon={ArrowDown01Icon}
             strokeWidth={2}
-            className="size-4 text-muted-foreground"
+            className={cn("size-4", !value && "text-muted-foreground")}
             aria-hidden
           />
         </Button>
@@ -133,7 +143,7 @@ export function ListingFilterSearchBar({
   accessibilityFilter,
 }: ListingFilterSearchBarProps) {
   return (
-    <div className="flex w-full items-center gap-2">
+    <div className="flex min-w-0 flex-1 items-center gap-2">
       <div className="relative min-w-0 flex-1 sm:max-w-75 sm:min-w-40">
         <HugeiconsIcon
           icon={Search01Icon}
@@ -225,6 +235,40 @@ function AccessibilityPopover({ groups, getCheckboxProps, count }: Accessibility
   );
 }
 
+/** How wide the fade is on an edge of the chip row that has more chips past it. */
+const FADE_WIDTH = "24px";
+
+/**
+ * Fades whichever ends of a sideways-scrolling row have more content past them, so a clipped chip
+ * reads as "scroll for more" rather than as a cut-off word.
+ */
+function useScrollFade<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [edges, setEdges] = useState({ start: false, end: false });
+  const update = useCallback(() => {
+    const node = ref.current;
+    if (!node) return;
+    const start = node.scrollLeft > 1;
+    const end = node.scrollLeft + node.clientWidth < node.scrollWidth - 1;
+    setEdges((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+  }, []);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [update]);
+  const maskImage =
+    edges.start || edges.end
+      ? `linear-gradient(to right, ${edges.start ? `transparent, black ${FADE_WIDTH}` : "black"}, ${
+          edges.end ? `black calc(100% - ${FADE_WIDTH}), transparent` : "black"
+        })`
+      : undefined;
+  return { ref, onScroll: update, style: { maskImage } };
+}
+
 /**
  * The phone filter row under the search field: one chip per common filter, scrolling sideways.
  * Price, Beds and Baths open their own popover; Accessibility opens the filter sheet at the
@@ -249,8 +293,10 @@ export function QuickFilterChips({
   accessibilityRef?: Ref<HTMLButtonElement>;
   className?: string;
 }) {
+  const fade = useScrollFade<HTMLDivElement>();
   return (
     <div
+      {...fade}
       role="group"
       aria-label="Quick filters"
       className={cn(

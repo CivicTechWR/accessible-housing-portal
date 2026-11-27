@@ -129,7 +129,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: true,
     sortOrder: 3,
-    pairOnMobile: true,
     options: [
       { label: "Apartment", value: LISTING_BUILDING_TYPE_VALUES[0] },
       { label: "House", value: LISTING_BUILDING_TYPE_VALUES[1] },
@@ -144,7 +143,6 @@ export const CORE_FIELD_DEFINITIONS: CoreFieldDefinition[] = [
     category: "listing_details",
     isRequired: false,
     sortOrder: 4,
-    pairOnMobile: true,
   },
   {
     key: "bedrooms",

@@ -152,7 +152,10 @@ function applyPaint(map: MaplibreMap, overrides: PaintOverrides) {
   }
 }
 
-/** Every road is white with a grey casing, whatever its class. Rail keeps its grey. */
+/**
+ * Every road is white with a grey casing, whatever its class, dark enough that the street grid
+ * reads against the pale ground. Rail keeps its grey.
+ */
 function quietLightRoads(map: MaplibreMap) {
   for (const layer of map.getStyle().layers) {
     if (layer.type !== "line" || !/^(road|tunnel|bridge)_/.test(layer.id)) continue;
@@ -160,7 +163,7 @@ function quietLightRoads(map: MaplibreMap) {
     map.setPaintProperty(
       layer.id,
       "line-color",
-      layer.id.includes("casing") ? "#c8c8c2" : "#ffffff",
+      layer.id.includes("casing") ? "#b4b4ad" : "#ffffff",
     );
   }
 }

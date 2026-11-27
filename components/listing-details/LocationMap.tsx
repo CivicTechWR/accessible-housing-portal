@@ -10,6 +10,7 @@ import {
   applyMapStyleOverrides,
   foldAttribution,
 } from "@/components/map-view/mapStyle";
+import "@/components/map-view/mapControls.css";
 
 /** A still map of the building's position, in the same restyled basemap as search. */
 export function LocationMap({ lat, lng }: { lat: number; lng: number }) {

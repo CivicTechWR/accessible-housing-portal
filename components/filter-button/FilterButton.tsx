@@ -5,6 +5,7 @@ import { FilterHorizontalIcon } from "@hugeicons/core-free-icons";
 import type { Ref } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { activeFilterClassName } from "@/components/listing-filter-search-bar/ListingFilterSearchBar";
 
 export interface FilterButtonProps {
   activeFilterCount: number;
@@ -34,8 +35,9 @@ export function FilterButton({
       aria-label={isActive ? `Filters, ${activeFilterCount} applied` : "Filters"}
       aria-expanded={isFilterOpen}
       className={cn(
-        "relative shrink-0 gap-2 max-md:h-11 max-sm:w-11 max-sm:px-0",
-        isActive && "border-primary-text/60 bg-primary/5 dark:bg-primary/15",
+        // Phones show it as a round icon button, matching the quick-filter chips beside it.
+        "relative shrink-0 gap-2 max-md:h-11 max-sm:w-11 max-sm:rounded-full max-sm:px-0",
+        isActive && activeFilterClassName,
       )}
     >
       <HugeiconsIcon icon={FilterHorizontalIcon} strokeWidth={2} className="size-5" aria-hidden />

@@ -1,15 +1,11 @@
-import { useId, useState } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { useId } from "react";
 
 import { ListingFormControl, type ListingFormInput } from "@/app/listing-form/types";
 import { listingFormSectionId } from "@/app/listing-form/fieldDefinitions";
 import { useAccessibilityFeaturesQuery } from "@/app/listing-form/useAccessibilityFeaturesQuery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { FormField, FormItem } from "@/components/ui/form";
 import {
   Accordion,
@@ -28,8 +24,7 @@ export interface ListingFormFeaturesProps {
 type SelectedFeature = NonNullable<ListingFormInput["customFeatures"]>[number];
 
 const SECTION_TITLE = "Features and accessibility";
-const SECTION_DESCRIPTION =
-  "Turn on each feature or rental condition that applies. Use the info button to see what a feature means.";
+const SECTION_DESCRIPTION = "Turn on each feature or rental condition that applies.";
 
 function FeatureSwitch({
   label,
@@ -46,64 +41,67 @@ function FeatureSwitch({
   onCheckedChange: (checked: boolean) => void;
 }) {
   const id = useId();
-  const detailsId = `${id}-details`;
-  const [isExpanded, setIsExpanded] = useState(false);
+  const labelId = `${id}-label`;
+  const descriptionId = `${id}-description`;
   // The listings API falls back to the feature's name when it has no description.
-  const showPublicText = Boolean(
+  const hasPublicText = Boolean(
     publicText?.trim() && publicText.trim().toLowerCase() !== label.toLowerCase(),
   );
-  const hasDetails = Boolean(helpText) || showPublicText;
-  // Details stay out of the way until a feature is on, so a category reads as a short list of
-  // names. Providers can still open them on any row to decide whether a feature applies.
-  const showDetails = hasDetails && (checked || isExpanded);
+  // The one-line definition under the name: the provider-facing help, or else what the listing
+  // will say.
+  const definition = helpText || (hasPublicText ? publicText : undefined);
+  // Once a feature is on, the row also quotes what the listing will show, if that differs.
+  const quotesPublicText = checked && hasPublicText && definition !== publicText;
 
   return (
-    <div
+    // The whole row is the switch's label, so tapping anywhere on it toggles the feature.
+    <label
+      htmlFor={id}
       className={cn(
-        "rounded-lg border px-3 transition-colors",
+        "flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 transition-colors",
         // A tinted row makes the few features that are on easy to find among the many that are off.
-        checked ? "border-primary/30 bg-primary/5" : "border-transparent",
+        checked ? "border-primary/30 bg-primary/5" : "border-transparent hover:bg-muted/50",
       )}
     >
-      <div className="flex min-h-11 items-center gap-1">
-        <Label htmlFor={id} className="min-w-0 flex-1 cursor-pointer py-2.5 text-base font-medium">
+      <span className="min-w-0 flex-1 space-y-0.5">
+        <span id={labelId} className="block text-base font-medium">
           {label}
-        </Label>
-        {hasDetails && !checked ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground max-md:size-10"
-            aria-label={`${label} details`}
-            aria-expanded={isExpanded}
-            aria-controls={isExpanded ? detailsId : undefined}
-            onClick={() => setIsExpanded((value) => !value)}
-          >
-            <HugeiconsIcon icon={InformationCircleIcon} strokeWidth={2} aria-hidden />
-          </Button>
+        </span>
+        {definition || quotesPublicText ? (
+          <span id={descriptionId} className="block space-y-1 text-sm text-muted-foreground">
+            {definition ? <span className="block">{definition}</span> : null}
+            {quotesPublicText ? (
+              <span className="block">
+                <span className="font-medium text-foreground">Listing shows:</span> &ldquo;
+                {publicText}
+                &rdquo;
+              </span>
+            ) : null}
+          </span>
         ) : null}
-        <Switch
-          id={id}
-          className="ml-2"
-          checked={checked}
-          onCheckedChange={onCheckedChange}
-          aria-describedby={showDetails ? detailsId : undefined}
-        />
-      </div>
-      {showDetails ? (
-        <div id={detailsId} className="space-y-1 pb-3 text-sm text-muted-foreground">
-          {helpText ? <p>{helpText}</p> : null}
-          {showPublicText ? (
-            <p>
-              <span className="font-medium text-foreground">Listing shows:</span> &ldquo;
-              {publicText}
-              &rdquo;
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+      </span>
+      <Switch
+        id={id}
+        className="mt-0.5"
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        aria-labelledby={labelId}
+        aria-describedby={definition || quotesPublicText ? descriptionId : undefined}
+      />
+    </label>
+  );
+}
+
+/** "N of M selected": plain muted text, or a tinted pill once anything is selected. */
+function SelectedCount({ count, total }: { count: number; total?: number }) {
+  const text = total === undefined ? `${count} selected` : `${count} of ${total} selected`;
+  if (count === 0) {
+    return <span className="shrink-0 text-sm font-normal text-muted-foreground">{text}</span>;
+  }
+  return (
+    <Badge variant="default" className="shrink-0 font-medium">
+      {text}
+    </Badge>
   );
 }
 
@@ -171,9 +169,9 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
             title={SECTION_TITLE}
             description={SECTION_DESCRIPTION}
             headerAside={
-              <Badge variant={selectedIds.size > 0 ? "default" : "secondary"} className="mt-1">
-                {selectedIds.size} selected
-              </Badge>
+              <span className="mt-1">
+                <SelectedCount count={selectedIds.size} />
+              </span>
             }
           >
             <FormItem className="col-span-2">
@@ -198,20 +196,10 @@ export function ListingFormFeatures({ control }: ListingFormFeaturesProps) {
                     >
                       <AccordionTrigger className="-mx-2 gap-3 rounded-lg px-2 py-4 text-left text-base font-semibold hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30">
                         <span className="min-w-0 flex-1">{toSentenceCase(group.groupLabel)}</span>
-                        <span
-                          className={cn(
-                            "shrink-0 text-sm font-normal",
-                            groupSelectedCount > 0
-                              ? "font-medium text-primary-text"
-                              : "text-muted-foreground",
-                          )}
-                        >
-                          {groupSelectedCount} of {group.options.length} selected
-                        </span>
+                        <SelectedCount count={groupSelectedCount} total={group.options.length} />
                       </AccordionTrigger>
                       <AccordionContent className="-mx-2 pb-4">
-                        {/* One column, so a feature's details open under it without moving the
-                            rows beside it. */}
+                        {/* One column, so each feature's definition sits under its name. */}
                         <div className="flex max-w-2xl flex-col gap-1">
                           {group.options.map((option) => (
                             <FeatureSwitch

@@ -64,7 +64,7 @@ describe("ListingForm hydration", () => {
   it("keeps the persisted building type selected after the listing loads", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
-    await screen.findByText("Building type *");
+    await screen.findByText("Building type");
 
     const buildingType = () =>
       document.querySelector('[data-field-name="buildingType"] [role="combobox"]');
@@ -82,7 +82,7 @@ describe("ListingForm hydration", () => {
   it("hydrates the remaining core fields from the editor payload", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
-    await screen.findByText("Title *");
+    await screen.findByText("Title");
 
     const valueOf = (fieldName: string) =>
       (document.querySelector(`[data-field-name="${fieldName}"] input`) as HTMLInputElement | null)
@@ -105,18 +105,21 @@ describe("ListingForm hydration", () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
     const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
     await waitFor(() => expect(title).toHaveValue("123 Main St Apartments"));
-    const publish = screen.getByRole("button", { name: "Publish changes" });
+    const publish = () => screen.queryByRole("button", { name: "Publish changes" });
+    const viewListing = () => screen.queryByRole("link", { name: "View listing" });
 
-    expect(screen.getByRole("status")).toHaveTextContent("Published and up to date");
-    expect(publish).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Up to date");
+    expect(publish()).toBeNull();
+    expect(viewListing()).toHaveAttribute("href", `/listings/${LISTING_ID}`);
 
     fireEvent.change(title, { target: { value: "Renamed" } });
     expect(screen.getByRole("status")).toHaveTextContent("Unpublished changes");
-    expect(publish).toBeEnabled();
+    expect(publish()).toBeEnabled();
+    expect(viewListing()).toBeNull();
 
     fireEvent.change(title, { target: { value: "123 Main St Apartments" } });
-    expect(screen.getByRole("status")).toHaveTextContent("Published and up to date");
-    expect(publish).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Up to date");
+    expect(publish()).toBeNull();
   });
 
   it("selects, autosaves, reloads, and clears a public non-filterable feature", async () => {
@@ -466,17 +469,16 @@ describe("ListingForm live preview", () => {
     window.scrollTo = jest.fn() as unknown as typeof window.scrollTo;
   });
 
-  // Below lg the layout divider is hidden, so this button is the only way back to the card.
   it("returns from the details preview to the card preview", async () => {
     render(<ListingForm listingId={LISTING_ID} />, { wrapper: Wrapper });
 
     fireEvent.click(await screen.findByRole("button", { name: /^View listing:/ }));
     expect(screen.queryByRole("button", { name: /^View listing:/ })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Back to card preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show card preview" }));
 
     expect(screen.getByRole("button", { name: /^View listing:/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Back to card preview" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Show full page" })).toBeTruthy();
   });
 });
 

@@ -89,7 +89,8 @@ export function ListingActionsMenu({
             type="button"
             variant="ghost"
             size="icon"
-            className="max-sm:size-11"
+            // On phones it sits in a row of full-height outlined buttons, so it matches them.
+            className="max-sm:size-11 max-sm:border-input max-sm:bg-background max-sm:shadow-xs dark:max-sm:bg-input/10"
             aria-label={`More actions for ${listingTitle}`}
             disabled={isMutating}
           >

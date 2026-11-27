@@ -1,16 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export type ListingFormSectionLink = {
@@ -47,7 +40,7 @@ function useActiveSection(ids: string[]) {
         if (first) setActiveId(first);
       },
       // A band across the upper part of the screen: the section crossing it is the current one.
-      { rootMargin: "-15% 0px -70% 0px" },
+      { rootMargin: "-20% 0px -65% 0px" },
     );
     for (const id of sectionIds) {
       const element = document.getElementById(id);
@@ -59,18 +52,36 @@ function useActiveSection(ids: string[]) {
   return [activeId, setActiveId] as const;
 }
 
-/** The left rail: every section of the form, where you are, and what's left to fill in. */
+/**
+ * A horizontal strip of the form's sections, pinned above the form: where you are, and what's
+ * left to fill in. It scrolls sideways when the sections don't fit.
+ */
 export function ListingFormSectionNav({ sections }: { sections: ListingFormSectionLink[] }) {
   const [activeId, setActiveId] = useActiveSection(sections.map((section) => section.id));
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // Keep the current section in view when the strip scrolls sideways. Sets scrollLeft rather
+  // than calling scrollIntoView, which could also scroll the page.
+  useEffect(() => {
+    const list = listRef.current;
+    const item = list?.querySelector<HTMLElement>(`[data-section-id="${activeId}"]`);
+    if (!list || !item) return;
+    const start = item.offsetLeft - list.offsetLeft;
+    const end = start + item.offsetWidth;
+    if (start < list.scrollLeft) list.scrollLeft = start;
+    else if (end > list.scrollLeft + list.clientWidth) list.scrollLeft = end - list.clientWidth;
+  }, [activeId]);
 
   return (
     <nav aria-label="Form sections">
-      <p className="mb-2 px-3 text-sm font-medium text-muted-foreground">Sections</p>
-      <ul className="space-y-0.5">
+      <ul
+        ref={listRef}
+        className="relative -mb-px flex gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {sections.map((section) => {
           const isActive = section.id === activeId;
           return (
-            <li key={section.id}>
+            <li key={section.id} data-section-id={section.id} className="shrink-0">
               <a
                 href={`#${section.id}`}
                 aria-current={isActive ? "location" : undefined}
@@ -80,21 +91,12 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                   scrollToSection(section.id);
                 }}
                 className={cn(
-                  "flex min-h-10 items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                  "flex min-h-11 items-center gap-2 rounded-t-md border-b-2 px-3 py-1.5 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   isActive
-                    ? "bg-background font-medium text-foreground shadow-xs ring-1 ring-foreground/10"
-                    : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
-                <span className="min-w-0 flex-1">
-                  {/* Wraps rather than truncates: the rail is narrow at xl. */}
-                  <span className="block text-pretty">{section.label}</span>
-                  {section.meta ? (
-                    <span className="block text-sm font-normal text-muted-foreground">
-                      {section.meta}
-                    </span>
-                  ) : null}
-                </span>
                 {section.isComplete ? (
                   <>
                     <HugeiconsIcon
@@ -106,37 +108,17 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                     <span className="sr-only">(complete)</span>
                   </>
                 ) : null}
+                <span className="flex flex-col leading-tight">
+                  <span className="font-medium">{section.label}</span>
+                  {section.meta ? (
+                    <span className="text-sm text-muted-foreground">{section.meta}</span>
+                  ) : null}
+                </span>
               </a>
             </li>
           );
         })}
       </ul>
     </nav>
-  );
-}
-
-/** A compact section picker for screens without room for the rail. */
-export function ListingFormSectionJump({ sections }: { sections: ListingFormSectionLink[] }) {
-  return (
-    // Always empty, so it reads "Sections" and choosing the current section again still jumps.
-    <Select value="" onValueChange={(id) => id && scrollToSection(id)}>
-      <SelectTrigger aria-label="Jump to section">
-        <SelectValue placeholder="Sections" />
-      </SelectTrigger>
-      <SelectContent position="popper">
-        {sections.map((section) => (
-          <SelectItem key={section.id} value={section.id} className="pr-8">
-            <span className="flex flex-col">
-              <span>{section.label}</span>
-              {section.meta ? (
-                <span className="text-sm text-muted-foreground">
-                  {section.isComplete ? "Done" : section.meta}
-                </span>
-              ) : null}
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }

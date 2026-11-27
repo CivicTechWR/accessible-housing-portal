@@ -18,7 +18,6 @@ describe("ListingFormPreview card", () => {
           postalCode: "N2G 2T8",
         }}
         onOpenDetails={() => {}}
-        onCloseDetails={() => {}}
       />,
     );
 
@@ -38,10 +37,24 @@ describe("ListingFormPreview card", () => {
           images: [{ id: "0b7f2a64-3c8e-4d1a-9f5b-2e6c1d8a4b90", url: photoUrl, caption: "" }],
         }}
         onOpenDetails={() => {}}
-        onCloseDetails={() => {}}
       />,
     );
 
     expect(screen.getByRole("img").getAttribute("src")).toBe(photoUrl);
+  });
+
+  it("prompts for missing rent and rooms instead of showing zeros", () => {
+    render(
+      <ListingFormPreview
+        mode="card"
+        formData={{ ...CREATE_FORM_DEFAULTS, bedrooms: 2 }}
+        onOpenDetails={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("Add rent")).toBeInTheDocument();
+    expect(screen.getByText("Add bathrooms")).toBeInTheDocument();
+    expect(screen.getByText(/2 beds/)).toBeInTheDocument();
+    expect(screen.queryByText(/\$0/)).toBeNull();
   });
 });

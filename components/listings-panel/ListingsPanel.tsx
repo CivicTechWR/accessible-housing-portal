@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   Listing,
   ListingsDisplayMode,
@@ -13,7 +14,8 @@ interface ListingsPanelProps {
   isCapped: boolean;
   displayMode: DisplayMode;
   onHighlightChange?: (id: string | null) => void;
-  summary?: string;
+  /** The results header, with the count and sort, above the cards. */
+  header?: ReactNode;
 }
 
 export function ListingsPanel({
@@ -22,7 +24,7 @@ export function ListingsPanel({
   isCapped,
   displayMode,
   onHighlightChange,
-  summary,
+  header,
 }: ListingsPanelProps) {
   return (
     <div
@@ -30,12 +32,12 @@ export function ListingsPanel({
         displayMode === DisplayMode.LIST ? "flex-1" : "w-full min-w-0 flex-1 lg:basis-1/2"
       }`}
     >
+      {header}
       <ListingCardGallery
         listings={listings}
         isLoadingMore={isLoadingMore}
         isCapped={isCapped}
         onHighlightChange={onHighlightChange}
-        summary={summary}
         mode={
           [DisplayMode.LIST, DisplayMode.MAP_LIST].includes(displayMode)
             ? ListingsDisplayMode.FULLSCREEN

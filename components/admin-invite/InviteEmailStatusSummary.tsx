@@ -17,7 +17,7 @@ type State = InviteEmailStatus["state"];
 type FailureReason = Extract<InviteEmailStatus, { state: "failed" }>["reason"];
 
 const labels: Record<State, string> = {
-  not_requested: "No email requested",
+  not_requested: "Link only, no email sent",
   queued: "Email queued",
   submitted: "Email sent",
   delayed: "Email delayed",

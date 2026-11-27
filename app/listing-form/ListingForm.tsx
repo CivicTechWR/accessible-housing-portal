@@ -26,7 +26,6 @@ import { ListingFormFeatures } from "@/components/listing-form-features/ListingF
 import { ListingFormImages } from "@/components/listing-form-images/ListingFormImages";
 import { ListingFormLayout } from "@/components/listing-form-layout/ListingFormLayout";
 import {
-  ListingFormSectionJump,
   ListingFormSectionNav,
   type ListingFormSectionLink,
 } from "@/components/listing-form-layout/ListingFormSectionNav";
@@ -78,38 +77,20 @@ export default function ListingForm({ listingId }: ListingFormProps) {
     handleCloseDetails();
   };
 
-  // The preview card and the "Back to card preview" button unmount when they switch the preview,
-  // which would drop focus to <body>. Focus moves to the control that reverses the switch instead.
-  // The preview header's toggle stays mounted and keeps focus, so it never asks for this.
-  const previewCardButtonRef = useRef<HTMLButtonElement>(null);
-  const previewBackButtonRef = useRef<HTMLButtonElement>(null);
+  // The preview card unmounts when it opens the full page, which would drop focus to <body>.
+  // Focus moves to the preview header's toggle instead, which switches back. The toggle stays
+  // mounted and keeps focus when it's the control pressed.
   const previewToggleRef = useRef<HTMLButtonElement>(null);
   const isPreviewFocusWanted = useRef(false);
   const handlePreviewOpenDetails = () => {
     isPreviewFocusWanted.current = true;
     handleOpenDetails();
   };
-  const handlePreviewCloseDetails = () => {
-    isPreviewFocusWanted.current = true;
-    handleCloseDetails();
-  };
   useEffect(() => {
     if (!isPreviewFocusWanted.current) return;
     isPreviewFocusWanted.current = false;
-
     // preventScroll keeps the focus move from cutting short the smooth scroll to the top.
-    if (previewMode === "card") {
-      previewCardButtonRef.current?.focus({ preventScroll: true });
-      return;
-    }
-
-    // The Back button is hidden at lg and up, where focus() on it does nothing and the preview
-    // header's toggle is the control that returns to the card.
-    const backButton = previewBackButtonRef.current;
-    backButton?.focus({ preventScroll: true });
-    if (document.activeElement !== backButton) {
-      previewToggleRef.current?.focus({ preventScroll: true });
-    }
+    previewToggleRef.current?.focus({ preventScroll: true });
   }, [previewMode]);
   const handleInvalidSubmit: SubmitErrorHandler<ListingFormInput> = (errors) => {
     const firstInvalidField =
@@ -159,7 +140,24 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       ? "Your draft saves automatically. Publish it when the listing is ready."
       : "Changes save automatically. Publish the listing to show it on the site again.";
   const submitLabel = isPublished ? "Publish changes" : "Publish listing";
+  // A published listing with nothing new has nothing to publish, so the bar links to it instead.
+  const isUpToDate = isPublished && !hasUnpublishedChanges;
   const sections = listingFormSections(liveFormData);
+
+  // Publishing swaps the focused Publish button for the View listing link. Focus follows it
+  // instead of dropping to <body>.
+  const viewListingRef = useRef<HTMLAnchorElement>(null);
+  const hasPublished = useRef(false);
+  useEffect(() => {
+    if (isSubmitting) hasPublished.current = true;
+  }, [isSubmitting]);
+  useEffect(() => {
+    if (!isUpToDate || !hasPublished.current) return;
+    hasPublished.current = false;
+    if (!document.activeElement || document.activeElement === document.body) {
+      viewListingRef.current?.focus({ preventScroll: true });
+    }
+  }, [isUpToDate]);
 
   if (isLoading) {
     return <ListingFormSkeleton />;
@@ -205,20 +203,18 @@ export default function ListingForm({ listingId }: ListingFormProps) {
         </div>
       }
       sectionNav={<ListingFormSectionNav sections={sections} />}
-      sectionJump={<ListingFormSectionJump sections={sections} />}
       previewPaneHeader={
         // The description sits under the title and button so the narrow preview column doesn't
         // squeeze it into a tall stack.
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <h2 className="text-base font-semibold">Live preview</h2>
-          {/* Below lg the preview's own Back button returns to the card. */}
           <Button
             ref={previewToggleRef}
             type="button"
             variant="outline"
             size="sm"
             onClick={handlePreviewToggle}
-            className="hidden shrink-0 lg:inline-flex"
+            className="shrink-0 max-lg:h-11"
           >
             <HugeiconsIcon
               icon={isPreviewExpanded ? ArrowShrink02Icon : ArrowExpand01Icon}
@@ -237,9 +233,13 @@ export default function ListingForm({ listingId }: ListingFormProps) {
         <Form {...form}>
           <form
             id="listing-form"
-            className="space-y-6"
+            className="space-y-6 max-sm:space-y-0"
             onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}
           >
+            <p className="text-sm text-muted-foreground">
+              <span aria-hidden>* Required</span>
+              <span className="sr-only">Fields marked with an asterisk are required.</span>
+            </p>
             <ListingFormFields control={form.control} />
             <ListingFormImages
               control={form.control}
@@ -257,9 +257,6 @@ export default function ListingForm({ listingId }: ListingFormProps) {
           formData={liveFormData}
           listingId={activeListingId}
           onOpenDetails={handlePreviewOpenDetails}
-          onCloseDetails={handlePreviewCloseDetails}
-          cardButtonRef={previewCardButtonRef}
-          backButtonRef={previewBackButtonRef}
         />
       }
       footer={
@@ -287,15 +284,22 @@ export default function ListingForm({ listingId }: ListingFormProps) {
               {submitFeedback.message}
             </p>
           )}
-          <Button
-            type="submit"
-            form="listing-form"
-            // A published listing with nothing new has nothing to publish.
-            disabled={isSubmitting || (isPublished && !hasUnpublishedChanges)}
-            className="shrink-0"
-          >
-            {isSubmitting ? "Publishing..." : submitLabel}
-          </Button>
+          {isUpToDate && activeListingId ? (
+            <Button asChild variant="outline" className="shrink-0 max-sm:h-11">
+              <Link ref={viewListingRef} href={`/listings/${activeListingId}`}>
+                View listing
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              form="listing-form"
+              disabled={isSubmitting}
+              className="shrink-0 max-sm:h-11"
+            >
+              {isSubmitting ? "Publishing..." : submitLabel}
+            </Button>
+          )}
         </>
       }
     />
@@ -378,7 +382,7 @@ function PublishState({ isDirty }: { isDirty: boolean }) {
     >
       <SaveStateIcon status={isDirty ? "dirty" : "saved"} />
       <p role="status" aria-live="polite">
-        {isDirty ? "Unpublished changes" : "Published and up to date"}
+        {isDirty ? "Unpublished changes" : "Up to date"}
       </p>
     </div>
   );

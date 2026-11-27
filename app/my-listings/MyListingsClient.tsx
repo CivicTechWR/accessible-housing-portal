@@ -311,7 +311,9 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   ) : (
                     <>
                       {listing.status === "published" ? (
-                        <Button asChild variant="outline" className="max-sm:h-11 max-sm:flex-1">
+                        // Edit leads, but "New listing" holds the page's one filled button, so
+                        // Edit is outlined and View drops to ghost.
+                        <Button asChild variant="ghost" className="max-sm:h-11 max-sm:flex-1">
                           <Link href={listing.viewUrl}>View</Link>
                         </Button>
                       ) : null}

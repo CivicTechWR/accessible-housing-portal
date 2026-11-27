@@ -13,7 +13,7 @@ describe("ListingsPanelHeader", () => {
     const { rerender } = render(
       <ListingsPanelHeader {...props} shown={100} total={812} isPartial={false} />,
     );
-    screen.getByText("812 listings found");
+    screen.getByText("812 listings");
 
     rerender(<ListingsPanelHeader {...props} shown={500} total={812} isPartial />);
     screen.getByText("Showing 500 of 812 listings");

@@ -38,9 +38,9 @@ import {
   toSentenceCase,
 } from "@/lib/listing-format";
 import Link from "next/link";
+import { BackToResults } from "./BackToResults";
 import { ListingApplyButton } from "./ListingApplyButton";
 import { ListingLocationMap } from "./ListingLocationMap";
-import { featureIcon } from "./featureIcon";
 
 type ListingFeature = {
   name: string;
@@ -97,9 +97,12 @@ export interface ListingDetailProps {
 
 const CONTACT_SECTION_ID = "listing-contact";
 
-/** The cards in the desktop sidebar: contact and location. */
-const sideCardClassName =
-  "rounded-xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6 dark:border-white/12";
+/**
+ * The contact card in the desktop sidebar, the page's only card. Phones and the form preview show
+ * the same content as a plain section.
+ */
+const contactCardClassName =
+  "lg:rounded-xl lg:border lg:bg-card lg:p-6 lg:text-card-foreground lg:shadow-sm lg:dark:border-white/12";
 
 function Price({ price, className }: { price: number; className?: string }) {
   return (
@@ -110,10 +113,7 @@ function Price({ price, className }: { price: number; className?: string }) {
   );
 }
 
-/** Below this many features, grouping by category adds more headings than it saves. */
-const MIN_FEATURES_TO_GROUP = 5;
-
-function FeatureItem({ feature, category }: { feature: ListingFeature; category?: string }) {
+function FeatureItem({ feature }: { feature: ListingFeature }) {
   // The listings API sends a feature's name as its description when it has none.
   const featureDescription = feature.description.trim();
   const hasDescription = featureDescription !== "" && featureDescription !== feature.name;
@@ -128,14 +128,7 @@ function FeatureItem({ feature, category }: { feature: ListingFeature; category?
       <div className="min-w-0">
         <p className="text-base font-semibold text-foreground">{toSentenceCase(feature.name)}</p>
         {hasDescription && (
-          <p className="mt-0.5 max-w-prose text-[15px] leading-6 text-foreground/80">
-            {featureDescription}
-          </p>
-        )}
-        {category && (
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
-            {toSentenceCase(category)}
-          </p>
+          <p className="mt-0.5 max-w-prose text-base text-foreground/80">{featureDescription}</p>
         )}
       </div>
     </li>
@@ -143,50 +136,40 @@ function FeatureItem({ feature, category }: { feature: ListingFeature; category?
 }
 
 /**
- * The most important block after the photos, so it sits on its own panel. With enough features,
- * each category gets a small muted label over its rows; with only a few, one flat list reads
- * better, and the category shows under each feature instead.
+ * The most important block after the photos, and the page's one tinted panel. Features sit under
+ * a small muted label for their category.
  */
 function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
   const count = categories.reduce((total, category) => total + category.features.length, 0);
-  const grouped = count >= MIN_FEATURES_TO_GROUP;
-  // In the flat list, each feature names its category, unless they all share one.
-  const labelCategories = categories.filter((category) => category.features.length > 0).length > 1;
   const headingId = "listing-accessibility";
 
   return (
-    <section aria-labelledby={headingId}>
-      {/* Light mode tints the panel; dark mode keeps the shared card surface and carries the
-          brand colour in the border only, so it matches the contact card beside it. */}
-      <div className="rounded-xl border border-primary/15 bg-primary/4 p-5 sm:p-7 dark:border-primary-text/35 dark:bg-card">
-        <div className="mb-6 flex items-center gap-3.5">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-5" aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <h2 id={headingId} className="text-xl font-semibold tracking-tight">
-              Accessibility features
-            </h2>
-            {count > 0 && (
-              <p className="text-sm text-muted-foreground">
-                {count} {count === 1 ? "feature" : "features"}
-              </p>
-            )}
-          </div>
-        </div>
-        {count === 0 ? (
-          <p className="text-base text-foreground">No accessibility features listed.</p>
-        ) : grouped ? (
-          <div className="space-y-7">
-            {categories.map((category) => (
+    <section
+      aria-labelledby={headingId}
+      className="rounded-xl bg-primary/5 p-5 sm:p-6 dark:bg-primary-text/10"
+    >
+      <div className="mb-5 flex items-center gap-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-5" aria-hidden />
+        </span>
+        <h2 id={headingId} className="min-w-0 text-xl font-semibold tracking-tight">
+          Accessibility features
+        </h2>
+        {count > 0 && (
+          <p className="ml-auto shrink-0 text-sm text-muted-foreground max-sm:hidden">
+            {count} {count === 1 ? "feature" : "features"}
+          </p>
+        )}
+      </div>
+      {count === 0 ? (
+        <p className="text-base text-foreground">No accessibility features listed.</p>
+      ) : (
+        <div className="space-y-6">
+          {categories
+            .filter((category) => category.features.length > 0)
+            .map((category) => (
               <div key={category.categoryName}>
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-medium tracking-normal text-muted-foreground">
-                  <HugeiconsIcon
-                    icon={featureIcon(category.categoryName)}
-                    strokeWidth={2}
-                    className="size-4 shrink-0"
-                    aria-hidden
-                  />
+                <h3 className="mb-3 text-xs font-semibold tracking-normal text-muted-foreground">
                   {toSentenceCase(category.categoryName)}
                 </h3>
                 {/* Safari drops list semantics from a list without markers unless the role is set. */}
@@ -197,26 +180,13 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
                 </ul>
               </div>
             ))}
-          </div>
-        ) : (
-          <ul role="list" className="space-y-5">
-            {categories.flatMap((category) =>
-              category.features.map((feature) => (
-                <FeatureItem
-                  key={`${category.categoryName}-${feature.name}`}
-                  feature={feature}
-                  category={labelCategories ? category.categoryName : undefined}
-                />
-              )),
-            )}
-          </ul>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
 
-/** A titled block below the accessibility panel. A rule above it separates it from the last. */
+/** A plain titled block below the accessibility panel. A rule above it separates it from the last. */
 function Section({
   id,
   title,
@@ -229,8 +199,8 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className={cn("border-t pt-8", className)}>
-      <h2 id={id} className="mb-3 text-xl font-semibold tracking-tight">
+    <section aria-labelledby={id} className={cn("border-t py-8", className)}>
+      <h2 id={id} className="mb-4 text-xl font-semibold tracking-tight">
         {title}
       </h2>
       {children}
@@ -320,8 +290,8 @@ export function ListingDetails({
   const trimmedDescription = description?.trim();
 
   // Rent sits beside the title on desktop and in the bottom bar on phones. The embedded preview
-  // has neither, so rent joins the facts there. On desktop the move-in date leads the contact
-  // card instead, beside Apply.
+  // has neither, so rent joins the facts there. On desktop the move-in date sits in the contact
+  // card instead, under rent and over Apply.
   const keyFacts = [
     { icon: BedDoubleIcon, label: formatBeds(beds) },
     { icon: Bathtub01Icon, label: formatBaths(baths) },
@@ -437,17 +407,26 @@ export function ListingDetails({
   const hasApplicationMethod = Boolean(applyUrl || applyEmail || applyPhone);
   const canReachLister = hasContactMethod || applicationRows.length > 0;
 
+  const hasPhotos = images.length > 0;
+  // Phones put the photos first and full-bleed, with the back button over them, so the text link
+  // above the title is for wider screens there.
+  const backLink = !embedded && <BackToResults className={cn(hasPhotos && "max-sm:hidden")} />;
+
   const header = (
     <div className="space-y-4">
       <PageHeader
         title={<span className="wrap-anywhere">{heading}</span>}
         description={
           title || posted ? (
-            // Phones put the posting date on its own line, so it never wraps mid-phrase.
-            <span className="wrap-anywhere">
-              {title && address}
-              {title && posted && <span className="max-sm:hidden"> · </span>}
-              {posted && <span className="whitespace-nowrap max-sm:block">Posted {posted}</span>}
+            // On phones the posting date drops its dot and wraps under the address as a whole.
+            <span className="flex flex-wrap items-baseline gap-x-2 wrap-anywhere sm:gap-x-0">
+              {title && <span>{address}</span>}
+              {posted && (
+                <span className="whitespace-nowrap max-sm:text-sm">
+                  {title && <span className="max-sm:hidden">&nbsp;·&nbsp;</span>}
+                  Posted {posted}
+                </span>
+              )}
             </span>
           ) : undefined
         }
@@ -504,19 +483,14 @@ export function ListingDetails({
     </div>
   );
 
-  // On desktop the page has two columns: the reading content on the left, and the contact card
-  // with the location under it on the right. Phones and the embedded preview have one column, where
-  // `display: contents` dissolves both column wrappers and `order` interleaves their blocks, so
-  // contact comes straight after the accessibility panel.
+  // On desktop the page has two columns: plain sections on the left, and the contact card on the
+  // right. Phones and the embedded preview have one column, where `display: contents` dissolves
+  // the left column's wrapper and `order` puts contact straight after the accessibility panel.
   const twoColumns = !embedded;
 
-  // A card like the contact card, so the two stack as one column on desktop.
   const location = (coordinates || walkScore) && (
-    <section aria-labelledby="listing-location" className="order-5 min-w-0">
-      <div className={cn(sideCardClassName, "space-y-3")}>
-        <h2 id="listing-location" className="text-xl font-semibold tracking-tight">
-          Location
-        </h2>
+    <Section id="listing-location" title="Location" className="order-6">
+      <div className="space-y-4">
         <p className="flex items-start gap-2.5 text-base wrap-anywhere text-foreground">
           <HugeiconsIcon
             icon={Location01Icon}
@@ -526,15 +500,21 @@ export function ListingDetails({
           />
           {address}
         </p>
-        {coordinates && <ListingLocationMap lat={coordinates.lat} lng={coordinates.lng} />}
+        {coordinates && (
+          <ListingLocationMap
+            lat={coordinates.lat}
+            lng={coordinates.lng}
+            className="aspect-[4/3] sm:aspect-[2/1]"
+          />
+        )}
         {walkScore}
       </div>
-    </section>
+    </Section>
   );
 
   const mainColumn = (
-    <div className={cn("contents", twoColumns && "lg:flex lg:min-w-0 lg:flex-col lg:gap-8")}>
-      <div className="order-1">
+    <div className={cn("contents", twoColumns && "lg:flex lg:min-w-0 lg:flex-col")}>
+      <div className="order-1 pb-8">
         <AccessibilityFeatures categories={features} />
       </div>
 
@@ -572,7 +552,7 @@ export function ListingDetails({
       </Section>
 
       {instructions && (
-        <Section id="listing-how-to-apply" title="How to apply" className="order-6">
+        <Section id="listing-how-to-apply" title="How to apply" className="order-5">
           <figure className="space-y-2">
             <figcaption className="text-sm text-muted-foreground">
               From the housing provider
@@ -583,6 +563,8 @@ export function ListingDetails({
           </figure>
         </Section>
       )}
+
+      {location}
     </div>
   );
 
@@ -590,35 +572,48 @@ export function ListingDetails({
     <aside
       id={CONTACT_SECTION_ID}
       aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
-      className="order-2 min-w-0 scroll-mt-24"
+      className={cn(
+        "order-2 min-w-0 scroll-mt-6 border-t py-8",
+        // Sticky on desktop, so rent and Apply follow the reader down the page. The site header
+        // isn't sticky, so the card can stick close to the top.
+        twoColumns && "lg:sticky lg:top-6 lg:border-t-0 lg:py-0",
+      )}
     >
-      <div className={cn(sideCardClassName, "space-y-5")}>
-        {/* Rent is beside the title on desktop, in the same screen, so the card leads with the
-            move-in date and Apply. */}
-        {!embedded && availableDate && (
-          <p className="hidden items-center gap-2.5 text-lg font-semibold tracking-tight lg:flex">
-            <HugeiconsIcon
-              icon={Calendar03Icon}
-              strokeWidth={2}
-              className="size-5 shrink-0 text-foreground/70"
-              aria-hidden
-            />
-            Available {availableDate}
-          </p>
+      <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
+        {/* Desktop leads with rent and the move-in date, beside Apply. Phones have them in the
+            bottom bar and the key facts. */}
+        {twoColumns && (
+          <div className="space-y-2 max-lg:hidden">
+            <p className="text-2xl leading-8 font-bold tracking-tight">
+              {formatRent(price)}
+              <span className="text-base font-normal text-muted-foreground"> {RENT_PERIOD}</span>
+            </p>
+            {availableDate && (
+              <p className="flex items-center gap-2 text-[15px] text-foreground">
+                <HugeiconsIcon
+                  icon={Calendar03Icon}
+                  strokeWidth={2}
+                  className="size-4 shrink-0 text-foreground/70"
+                  aria-hidden
+                />
+                Available {availableDate}
+              </p>
+            )}
+          </div>
         )}
         <h2
           id={`${CONTACT_SECTION_ID}-heading`}
-          className={cn("text-xl font-semibold tracking-tight", !embedded && "lg:sr-only")}
+          className={cn("text-xl font-semibold tracking-tight", twoColumns && "lg:sr-only")}
         >
           Contact and applications
         </h2>
         {(applyUrl || hasContactMethod || hasApplicationMethod || instructions) && (
           <div className="space-y-2">
-            {/* Phones have Apply in the bottom bar, so the card keeps only the contacts there. */}
+            {/* Phones have Apply in the bottom bar, so the section keeps only the contacts there. */}
             {applyUrl && (
               <ListingApplyButton
                 applicationUrl={applyUrl}
-                className={cn("w-full", !embedded && "max-lg:hidden")}
+                className={cn("w-full", twoColumns && "max-lg:hidden")}
               />
             )}
             <p className="text-sm text-muted-foreground">
@@ -626,7 +621,6 @@ export function ListingDetails({
             </p>
           </div>
         )}
-
         {(hasContactDetails || applicationRows.length > 0) && (
           <div className="space-y-5 border-t pt-5">
             {hasContactDetails && (
@@ -707,28 +701,30 @@ export function ListingDetails({
   );
 
   const body = (
-    <div className={cn("mx-auto flex w-full flex-col gap-8", pageWidths.content)}>
-      {header}
-      {images.length > 0 && <ListingImageCarousel images={images} altPrefix={address} />}
+    <div className={cn("mx-auto flex w-full flex-col gap-6 sm:gap-8", pageWidths.content)}>
+      <div className="flex flex-col gap-2">
+        {backLink}
+        {header}
+      </div>
+      {hasPhotos && (
+        // Phones show the photos first, edge to edge, by cancelling the page shell's padding.
+        <div
+          className={cn("relative", !embedded && "max-sm:order-first max-sm:-mx-4 max-sm:-mt-8")}
+        >
+          <ListingImageCarousel images={images} altPrefix={address} edgeToEdge={!embedded} />
+          {!embedded && (
+            <BackToResults variant="overlay" className="absolute top-1.5 left-1.5 z-10 sm:hidden" />
+          )}
+        </div>
+      )}
       <div
         className={cn(
-          "flex flex-col gap-8",
-          twoColumns && "lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-x-14",
+          "flex flex-col",
+          twoColumns && "lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-x-14",
         )}
       >
         {mainColumn}
-        <div
-          className={cn(
-            "contents",
-            twoColumns &&
-              // Sticky on desktop, so rent and Apply follow the reader down the page. Only on
-              // screens tall enough to show the whole column, or its end would stay out of reach.
-              "lg:flex lg:flex-col lg:gap-6 lg:[@media(min-height:52rem)]:sticky lg:[@media(min-height:52rem)]:top-22",
-          )}
-        >
-          {contactCard}
-          {location}
-        </div>
+        {contactCard}
       </div>
     </div>
   );

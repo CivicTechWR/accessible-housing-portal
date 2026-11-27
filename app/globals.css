@@ -260,17 +260,17 @@
 
 @layer base {
   /*
-   * The listing form has a sticky Save bar (about 72px) at the bottom at every width, and
-   * below lg a sticky tab bar (about 69px) at the top. Scroll padding keeps a focused field
-   * from landing under either one (WCAG 2.4.11). Scoped to pages that render the tabs, so
+   * The listing form has a sticky Save bar (about 72px) at the bottom and a sticky section
+   * strip at the top (about 56px, plus the Form/Preview tabs below lg). Scroll padding keeps a
+   * focused field or a jumped-to section from landing under either one (WCAG 2.4.11). Scoped to pages that render the tabs, so
    * anchor links elsewhere don't move.
    */
   html:has([data-listing-form-tabs]) {
-    scroll-padding-block: 1rem 5.5rem;
+    scroll-padding-block: 4.5rem 5.5rem;
   }
   @media (width < 64rem) {
     html:has([data-listing-form-tabs]) {
-      scroll-padding-block: 5rem 5.5rem;
+      scroll-padding-block: 8rem 5.5rem;
     }
   }
   * {

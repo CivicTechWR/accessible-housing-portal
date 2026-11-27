@@ -20,10 +20,9 @@ export type SortKey =
   | "required";
 export type SortDirection = "asc" | "desc";
 
-// Drag handle, field, applies to, description, status (visibility, filterable, required), menu.
+// Drag handle, field (with its exception badges), applies to, description, menu.
 // Fits the 1024px page width without scrolling; narrower screens scroll sideways.
-export const TABLE_COLUMNS =
-  "grid-cols-[48px_minmax(180px,1.1fr)_112px_minmax(240px,2fr)_148px_56px]";
+export const TABLE_COLUMNS = "grid-cols-[48px_minmax(220px,1.3fr)_112px_minmax(240px,2fr)_56px]";
 
 export const TABLE_MIN_WIDTH = "min-w-[840px]";
 

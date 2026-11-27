@@ -4,16 +4,13 @@ import { type DragEvent, type MouseEvent, useRef } from "react";
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
-  AsteriskIcon,
   Delete02Icon,
   DragDropVerticalIcon,
-  FilterRemoveIcon,
   MoreHorizontalIcon,
   PencilEdit02Icon,
   Tick02Icon,
-  ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCustomListingFieldCategoryLabel } from "@/lib/custom-listing-fields/custom-listing-field-ordering";
 import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
@@ -56,10 +54,10 @@ export function CategoryTab({
       type="button"
       aria-pressed={isActive}
       className={cn(
-        "flex h-11 shrink-0 items-center gap-2 border-b-2 px-1 text-sm font-medium whitespace-nowrap transition-colors",
+        "flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors",
         isActive
-          ? "border-primary-text text-foreground"
-          : "border-transparent text-muted-foreground hover:text-foreground",
+          ? "border-foreground bg-foreground text-background"
+          : "border-input bg-background text-foreground hover:bg-muted",
       )}
       onClick={onClick}
     >
@@ -67,8 +65,8 @@ export function CategoryTab({
       {count !== undefined ? (
         <span
           className={cn(
-            "rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
-            isActive ? "bg-primary/10 text-primary-text" : "bg-muted text-muted-foreground",
+            "text-sm font-normal tabular-nums",
+            isActive ? "text-background/75" : "text-muted-foreground",
           )}
         >
           {count}
@@ -188,7 +186,7 @@ export function FieldRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid min-h-16 cursor-pointer items-start border-b border-border text-sm transition-colors last:border-b-0 hover:bg-muted/40",
+        "grid min-h-13 cursor-pointer items-start border-b border-border text-sm transition-colors last:border-b-0 hover:bg-muted/40",
         TABLE_COLUMNS,
         isSelected && "bg-primary/5 hover:bg-primary/10",
         isPending && "pointer-events-none opacity-60",
@@ -199,40 +197,47 @@ export function FieldRow({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      <div className="flex justify-center pt-3.5">
-        <button
-          type="button"
-          draggable={!isPending}
-          className={cn(
-            "flex size-8 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors active:cursor-grabbing",
-            "hover:border-border hover:bg-background hover:text-foreground",
-            isSelected && "border-primary/30 bg-primary/10 text-primary-text",
-          )}
-          aria-label={`Select or drag ${label} to reorder`}
-          aria-pressed={isSelected}
-          title={`Drag to reorder within ${toSentenceCase(
-            formatCustomListingFieldCategoryLabel(field.category),
-          )}, or click to select`}
-          disabled={isPending}
-          onClick={(event) => {
-            event.stopPropagation();
-            onSelectToggle(event);
-          }}
-          onDragStart={(event) => onDragStart(event, rowRef.current)}
-          onDragEnd={onDragEnd}
-        >
-          <HugeiconsIcon
-            icon={isSelected ? Tick02Icon : DragDropVerticalIcon}
-            strokeWidth={2}
-            className="size-4"
-            aria-hidden
-          />
-        </button>
+      <div className="flex justify-center pt-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              draggable={!isPending}
+              className={cn(
+                "flex size-8 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors active:cursor-grabbing",
+                "hover:border-border hover:bg-background hover:text-foreground",
+                isSelected && "border-primary/30 bg-primary/10 text-primary-text",
+              )}
+              aria-label={`Select or drag ${label} to reorder`}
+              aria-pressed={isSelected}
+              disabled={isPending}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectToggle(event);
+              }}
+              onDragStart={(event) => onDragStart(event, rowRef.current)}
+              onDragEnd={onDragEnd}
+            >
+              <HugeiconsIcon
+                icon={isSelected ? Tick02Icon : DragDropVerticalIcon}
+                strokeWidth={2}
+                className="size-4"
+                aria-hidden
+              />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            Drag to reorder within{" "}
+            {toSentenceCase(formatCustomListingFieldCategoryLabel(field.category))}. Click to select
+            rows for bulk edit.
+          </TooltipContent>
+        </Tooltip>
       </div>
-      <div className="min-w-0 px-3 py-4">
+      {/* The name, then only the exceptions: a field is public and filterable unless marked. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-3 py-3.5">
         <button
           type="button"
-          className="rounded-sm text-left font-medium text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+          className="rounded-sm text-left font-semibold text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
           disabled={isPending}
           onClick={(event) => {
             event.stopPropagation();
@@ -242,30 +247,19 @@ export function FieldRow({
           <span className="sr-only">Edit </span>
           {label}
         </button>
+        {!field.publicOnly ? <ExceptionBadge>Internal</ExceptionBadge> : null}
+        {!field.filterableOnly ? <ExceptionBadge>Not filterable</ExceptionBadge> : null}
+        {field.required ? <ExceptionBadge>Required</ExceptionBadge> : null}
       </div>
-      <div className="px-3 py-4">
-        <Badge variant="secondary" className="-my-0.5">
-          {field.appliesTo === "building" ? "Building" : "Unit"}
-        </Badge>
+      <div className="px-3 py-3.5">
+        <Badge variant="secondary">{field.appliesTo === "building" ? "Building" : "Unit"}</Badge>
       </div>
-      <div className="min-w-0 px-3 py-4">
-        {field.description ? (
-          <p className="line-clamp-2 text-foreground" title={field.description}>
-            {field.description}
-          </p>
-        ) : (
-          <p className="text-muted-foreground">No description</p>
-        )}
+      <div className="min-w-0 px-3 py-3.5">
+        <p className="line-clamp-2 text-muted-foreground" title={field.description || undefined}>
+          {field.description || "No description"}
+        </p>
       </div>
-      {/* Only the exceptions: a field is public and filterable unless marked. */}
-      <ul className="flex flex-col gap-1 px-3 py-4 text-sm">
-        {!field.publicOnly ? <StatusIndicator icon={ViewOffSlashIcon} label="Internal" /> : null}
-        {!field.filterableOnly ? (
-          <StatusIndicator icon={FilterRemoveIcon} label="Not filterable" />
-        ) : null}
-        {field.required ? <StatusIndicator icon={AsteriskIcon} label="Required" /> : null}
-      </ul>
-      <div className="flex justify-center pt-3">
+      <div className="flex justify-center pt-2">
         {/* Not modal, so the delete dialog opened from it doesn't leave the page inert. */}
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
@@ -312,16 +306,10 @@ export function FieldRow({
   );
 }
 
-function StatusIndicator({ icon, label }: { icon: IconSvgElement; label: string }) {
+function ExceptionBadge({ children }: { children: string }) {
   return (
-    <li className="flex items-center gap-1.5 whitespace-nowrap text-foreground">
-      <HugeiconsIcon
-        icon={icon}
-        strokeWidth={2}
-        className="size-4 shrink-0 text-muted-foreground"
-        aria-hidden
-      />
-      {label}
-    </li>
+    <Badge variant="outline" className="font-normal text-muted-foreground">
+      {children}
+    </Badge>
   );
 }

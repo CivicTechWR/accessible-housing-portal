@@ -1,0 +1,41 @@
+/* The map attribution's (i) button, restyled as an outlined stroke icon on a bordered chip so it
+   matches the zoom buttons and the site's icons instead of maplibre's filled black circle. The
+   selectors carry an extra class so they win over maplibre's and the dark theme's rules in
+   app/globals.css, whatever order the stylesheets load in. */
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact {
+  border: 1px solid rgb(15 23 42 / 20%);
+  background-color: #fff;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 12%);
+  border-radius: 14px;
+}
+
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show) {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+}
+
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button {
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f262c' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.25'/%3E%3Cpath d='M12 16.5v-5'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E");
+}
+
+.dark .maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact {
+  border-color: rgb(255 255 255 / 25%);
+  background-color: #1f262b;
+  color: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 60%);
+}
+
+.dark .maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button {
+  background-color: transparent;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.25'/%3E%3Cpath d='M12 16.5v-5'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E");
+}

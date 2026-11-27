@@ -53,6 +53,8 @@ jest.mock("@vis.gl/react-maplibre", () => ({
 }));
 
 jest.mock("../listings-card/ListingsCard", () => ({ ListingsCard: () => null }));
+// Jest has no CSS transform; the stylesheet only restyles maplibre's controls.
+jest.mock("./mapControls.css", () => ({}));
 
 const LISTING: Listing = {
   id: "11111111-1111-4111-8111-111111111111",

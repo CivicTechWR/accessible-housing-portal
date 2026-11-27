@@ -51,7 +51,16 @@ function FieldRenderer({
   def: CoreFieldDefinition;
   control: ListingFormControl;
 }) {
-  const label = `${def.displayName}${def.isRequired ? " *" : ""}`;
+  // The asterisk stays in the accessible name ("Title *"), which the form's "* Required" note
+  // explains, but reads quieter than the label.
+  const label = (
+    <>
+      {def.displayName}
+      {def.isRequired ? (
+        <span className="-ml-1.5 font-normal text-muted-foreground"> *</span>
+      ) : null}
+    </>
+  );
 
   if (def.fieldType === "select") {
     return (
@@ -172,7 +181,8 @@ function FieldRenderer({
         name={def.key}
         render={({ field }) => (
           <FormItem className={fieldSpan(def)} data-field-name={def.key}>
-            <div className="flex items-center gap-1">
+            {/* Fixed to the label's height so the info button doesn't push this field below the one beside it. */}
+            <div className="flex h-5 items-center gap-1">
               <FormLabel>{label}</FormLabel>
               {isLeaseTerm && def.helpText && (
                 <InfoPopover

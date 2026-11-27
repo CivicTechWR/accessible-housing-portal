@@ -199,10 +199,11 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                 {visible.map((account) => (
                   <tr
                     key={account.id}
-                    className="h-14 cursor-pointer hover:bg-muted/40"
+                    // Top-aligned like the invitations table, so the two line up.
+                    className="cursor-pointer align-top transition-colors hover:bg-muted/60"
                     onClick={() => setManagingId(account.id)}
                   >
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-3.5">
                       <div className="flex min-w-0 flex-col">
                         <ManageButton
                           account={account}
@@ -216,29 +217,26 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-3.5">
                       <div className="flex min-w-0 flex-col">
                         {account.role ? <RoleLabel role={account.role} /> : "—"}
                         {account.organization ? (
-                          <span
-                            className="truncate text-sm text-muted-foreground"
-                            title={account.organization}
-                          >
+                          <span className="line-clamp-2 text-sm break-words text-muted-foreground">
                             {account.organization}
                           </span>
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-3.5">
                       <AccountStatusText status={account.status} />
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">
+                    <td className="px-4 py-3.5 text-muted-foreground">
                       <DateText value={account.createdAt} />
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">
+                    <td className="px-4 py-3.5 text-muted-foreground">
                       <DateText value={account.lastLoginAt} />
                     </td>
-                    <td className="py-2 pr-3">
+                    <td className="py-2.5 pr-3">
                       {/* Sized like the invitations' menu button so the two columns line up. */}
                       <div className="ml-auto flex size-10 items-center justify-center">
                         <RowChevron />
@@ -254,7 +252,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
             {visible.map((account) => (
               <li
                 key={account.id}
-                className="flex min-w-0 cursor-pointer items-center gap-3 px-4 py-3 hover:bg-muted/40"
+                className="flex min-w-0 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60"
                 onClick={() => setManagingId(account.id)}
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
