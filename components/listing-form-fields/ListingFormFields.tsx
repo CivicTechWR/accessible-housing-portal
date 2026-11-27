@@ -37,10 +37,10 @@ export interface ListingFormFieldsProps {
 /** The field's columns in its section's two-column grid, or in its row of three. */
 function fieldSpan(def: CoreFieldDefinition) {
   if (def.rowOfThree) return "col-span-1";
-  // Emails and links are too long to read in half of the form column beside the preview.
-  if (def.colSpan === 2 || def.fieldType === "email" || def.fieldType === "url") {
-    return "col-span-2";
-  }
+  // Links are too long to read in half of the form column beside the preview.
+  if (def.colSpan === 2 || def.fieldType === "url") return "col-span-2";
+  // An email pairs with the phone number after it from sm, so neither sits alone at half width.
+  if (def.fieldType === "email" || def.fieldType === "tel") return "col-span-2 sm:col-span-1";
   return def.pairOnMobile ? "col-span-1" : "col-span-2 md:col-span-1";
 }
 

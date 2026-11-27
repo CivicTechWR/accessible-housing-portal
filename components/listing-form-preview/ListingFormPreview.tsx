@@ -112,7 +112,7 @@ export function ListingFormPreview({
   const hasCardFacts = rentCents !== null && bedrooms !== null && bathrooms !== null;
 
   return (
-    <div className="flex flex-col items-center gap-3 lg:items-stretch">
+    <div className="flex flex-col items-center lg:items-stretch">
       {hasCardFacts ? (
         <ListingsCard
           id={listingId ?? "preview"}
@@ -151,9 +151,6 @@ export function ListingFormPreview({
           onClick={onOpenDetails}
         />
       )}
-      <p className="px-1 text-sm text-muted-foreground">
-        Select the card to preview the full listing page.
-      </p>
     </div>
   );
 }

@@ -203,7 +203,7 @@ export function AccountSecurity() {
                 Name it after the device, such as "Work laptop".
               </p>
             </div>
-            <Button variant="outline" disabled={pending}>
+            <Button variant="tinted" disabled={pending}>
               Add passkey
             </Button>
           </form>
@@ -237,7 +237,10 @@ export function AccountSecurity() {
                 required
               />
             </div>
-            <Button variant="outline" disabled={pending || !!setup}>
+            <Button
+              variant={session?.user.twoFactorEnabled ? "outline" : "tinted"}
+              disabled={pending || !!setup}
+            >
               {session?.user.twoFactorEnabled ? "Disable authenticator" : "Set up authenticator"}
             </Button>
           </form>
@@ -413,7 +416,7 @@ export function AccountSecurity() {
                 </p>
               )}
             </div>
-            <Button variant="outline" disabled={pending}>
+            <Button variant="tinted" disabled={pending}>
               Change password
             </Button>
           </form>

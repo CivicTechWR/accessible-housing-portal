@@ -16,7 +16,7 @@ export interface FormSectionProps {
 
 /**
  * One card in the listing form, with an 18px heading and a one-line description. On phones it
- * drops the card and the visible heading for a full-width block with a divider underneath.
+ * drops the card for a full-width block with a 20px heading and a divider underneath.
  */
 export function FormSection({ id, title, description, headerAside, children }: FormSectionProps) {
   const headingId = id ? `${id}-heading` : undefined;
@@ -29,24 +29,25 @@ export function FormSection({ id, title, description, headerAside, children }: F
       // to the page's scroll padding in globals.css (5rem below lg, 1rem from lg).
       className={cn(
         "text-card-foreground",
-        "border-b border-border py-6 sm:rounded-xl sm:border-0 sm:bg-card sm:p-6 sm:shadow-xs sm:ring-1 sm:ring-foreground/10",
+        "border-b border-border pt-9 pb-8 last-of-type:border-b-0 sm:rounded-xl sm:border-0 sm:bg-card sm:p-6 sm:shadow-xs sm:ring-1 sm:ring-foreground/10",
       )}
     >
       <div className="mb-5 flex items-start justify-between gap-4">
-        <div className="min-w-0 space-y-1">
-          {/* tabIndex lets the section nav move focus here after scrolling. On phones the
-              pinned section strip right above already names the section, so the heading is
-              only for screen readers there. */}
+        <div className="min-w-0 flex-1 space-y-2 sm:space-y-1">
+          {/* tabIndex lets the section nav move focus here after scrolling. */}
           <h2
             id={headingId}
             tabIndex={-1}
-            className="text-lg font-semibold outline-none max-sm:sr-only"
+            className="text-xl font-semibold outline-none sm:text-lg"
           >
             {title}
           </h2>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          {description && (
+            <p className="text-[15px] text-muted-foreground sm:text-sm">{description}</p>
+          )}
         </div>
-        {headerAside}
+        {/* A count beside the heading keeps to one line and leaves the rest to the description. */}
+        {headerAside ? <div className="shrink-0 whitespace-nowrap">{headerAside}</div> : null}
       </div>
       {/* Two columns at every width, so short fields can pair up on phones. Children set their
           own span: col-span-2 for a full row, "col-span-2 md:col-span-1" for half a row from md. */}
@@ -169,14 +170,14 @@ function usePaneSwitcher() {
 }
 
 /**
- * The bar pinned to the bottom of the screen. The bar spans the page, but its contents sit on the
- * same grid as the panes, so the save state and button line up with the form column.
+ * The bar pinned to the bottom of the screen. The bar spans the page, and its contents span the
+ * editor's column: save state at the left edge, actions at the right edge of the preview.
  */
-function StickyFooter({ gridClassName, children }: { gridClassName: string; children: ReactNode }) {
+function StickyFooter({ children }: { children: ReactNode }) {
   return (
     <div className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-border bg-background px-4 py-3 sm:-mx-6 sm:px-6">
-      <div className={gridClassName}>
-        <div className="flex min-w-0 items-center justify-end gap-3">{children}</div>
+      <div className={cn(PAGE_COLUMN, "flex min-w-0 items-center justify-end gap-3")}>
+        {children}
       </div>
     </div>
   );
@@ -205,9 +206,7 @@ export function ListingFormLayout({
         ? "lg:grid-cols-[20rem_minmax(0,1fr)]"
         : "lg:grid-cols-[minmax(0,1fr)_20rem]"),
   );
-  const footerBar = footer ? (
-    <StickyFooter gridClassName={gridClassName}>{footer}</StickyFooter>
-  ) : null;
+  const footerBar = footer ? <StickyFooter>{footer}</StickyFooter> : null;
 
   const panes = (
     <div className={cn(gridClassName, "lg:items-start")}>
@@ -218,17 +217,16 @@ export function ListingFormLayout({
       {previewContent && (
         // Sits below the sticky section strip at lg.
         <PaneSection value="preview" hasTabs className="min-w-0 lg:sticky lg:top-20">
-          {/* On phones the pane is the whole screen, so it drops the card frame. */}
-          <div className="sm:overflow-hidden sm:rounded-xl sm:bg-card sm:shadow-xs sm:ring-1 sm:ring-foreground/10">
+          {/* On phones the pane is the whole screen, so it drops the card frame. At lg the card
+              ends 16px above the sticky save bar (65px tall): 5rem top + 65px + 1rem. */}
+          <div className="sm:overflow-hidden sm:rounded-xl sm:bg-card sm:shadow-xs sm:ring-1 sm:ring-foreground/10 lg:flex lg:max-h-[calc(100vh-10rem-1px)] lg:flex-col">
             {previewPaneHeader && (
-              <div className="border-b border-foreground/10 pb-3 sm:px-4 sm:pt-3">
+              <div className="shrink-0 border-b border-foreground/10 pt-4 pb-3 sm:px-4 sm:pt-3">
                 {previewPaneHeader}
               </div>
             )}
             {/* Scrolls on its own at lg, so the preview stays beside the field being edited. */}
-            <div className="pt-4 sm:p-4 lg:max-h-[calc(100vh-16rem)] lg:overflow-y-auto">
-              {previewContent}
-            </div>
+            <div className="pt-4 sm:p-4 lg:min-h-0 lg:overflow-y-auto">{previewContent}</div>
           </div>
         </PaneSection>
       )}

@@ -127,7 +127,11 @@ function SelectedChips({ names }: { names: string[] }) {
 function SelectedCount({ count, total }: { count: number; total?: number }) {
   const text = total === undefined ? `${count} selected` : `${count} of ${total} selected`;
   if (count === 0) {
-    return <span className="shrink-0 text-sm font-normal text-muted-foreground">{text}</span>;
+    return (
+      <span className="shrink-0 text-sm font-normal whitespace-nowrap text-muted-foreground">
+        {text}
+      </span>
+    );
   }
   return (
     <Badge variant="default" className="shrink-0 font-medium">

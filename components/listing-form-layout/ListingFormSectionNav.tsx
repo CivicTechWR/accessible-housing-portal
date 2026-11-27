@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkCircle02Icon, CircleIcon, MinusSignCircleIcon } from "@hugeicons/core-free-icons";
+import { CheckmarkCircle02Icon, CircleIcon } from "@hugeicons/core-free-icons";
 
 import { cn } from "@/lib/utils";
 import { useEdgeFade } from "@/lib/useEdgeFade";
@@ -57,10 +57,12 @@ function useActiveSection(ids: string[]) {
   return [activeId, setActiveId] as const;
 }
 
+// An untouched section is an empty ring whether or not it's required; the text under the label
+// says "Optional" for the ones that are.
 const STATUS_ICONS = {
   complete: CheckmarkCircle02Icon,
   incomplete: CircleIcon,
-  optional: MinusSignCircleIcon,
+  optional: CircleIcon,
 } as const satisfies Record<ListingFormSectionStatus, unknown>;
 
 /**

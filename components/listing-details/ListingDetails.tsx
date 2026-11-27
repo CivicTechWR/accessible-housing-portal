@@ -106,9 +106,9 @@ const contactCardClassName =
 
 function Price({ price, className }: { price: number; className?: string }) {
   return (
-    <span className={cn("font-semibold tracking-tight text-foreground", className)}>
+    <span className={cn("text-xl font-bold whitespace-nowrap text-foreground", className)}>
       {formatRent(price)}
-      <span className="text-[0.7em] font-normal text-muted-foreground">{RENT_PERIOD}</span>
+      <span className="text-[15px] font-normal text-muted-foreground">{RENT_PERIOD}</span>
     </span>
   );
 }
@@ -292,12 +292,24 @@ export function ListingDetails({
   // Rent is in the contact card on desktop and in the bottom bar on phones. The embedded preview
   // has neither, so rent joins the facts there.
   const keyFacts = [
-    { icon: BedDoubleIcon, label: formatBeds(beds) },
-    { icon: Bathtub01Icon, label: formatBaths(baths) },
-    ...(sqft !== null ? [{ icon: FloorPlanIcon, label: formatArea(sqft) }] : []),
-    // Too long for half a phone's width, so it takes a row of its own there.
+    { key: "beds", icon: BedDoubleIcon, label: formatBeds(beds) },
+    { key: "baths", icon: Bathtub01Icon, label: formatBaths(baths) },
+    ...(sqft !== null ? [{ key: "area", icon: FloorPlanIcon, label: formatArea(sqft) }] : []),
+    // Phones show only the date beside the calendar icon, so it fits half the width; screen
+    // readers still hear "Available".
     ...(availableDate
-      ? [{ icon: Calendar03Icon, label: `Available ${availableDate}`, className: "col-span-2" }]
+      ? [
+          {
+            key: "available",
+            icon: Calendar03Icon,
+            label: (
+              <>
+                <span className="max-sm:sr-only">Available </span>
+                {availableDate}
+              </>
+            ),
+          },
+        ]
       : []),
   ];
   const trimmedDeposit = depositInfo?.trim();
@@ -410,7 +422,7 @@ export function ListingDetails({
         description={
           title || posted ? (
             // On phones the posting date drops its dot and wraps under the address as a whole.
-            <span className="flex flex-wrap items-baseline gap-x-2 wrap-anywhere sm:gap-x-0">
+            <span className="mt-0.5 flex flex-wrap items-baseline gap-x-2 wrap-anywhere sm:gap-x-0">
               {title && <span>{address}</span>}
               {posted && (
                 <span className="whitespace-nowrap max-sm:text-sm">
@@ -432,7 +444,7 @@ export function ListingDetails({
           ) : undefined
         }
       />
-      {/* Two equal columns of facts on phones, so a long fact never wraps onto a line by itself. */}
+      {/* A 2×2 grid of facts on phones, so a long fact never wraps onto a line by itself. */}
       <ul
         role="list"
         aria-label="Key facts"
@@ -440,18 +452,18 @@ export function ListingDetails({
       >
         {embedded && (
           <li className="col-span-2">
-            <Price price={price} className="text-2xl" />
+            <Price price={price} />
           </li>
         )}
         {keyFacts.map((fact) => (
-          <li key={fact.label} className={cn("flex min-w-0 items-center gap-2", fact.className)}>
+          <li key={fact.key} className="flex min-w-0 items-center gap-2">
             <HugeiconsIcon
               icon={fact.icon}
               strokeWidth={2}
               className="size-5 shrink-0 text-foreground/70"
               aria-hidden
             />
-            {fact.label}
+            <span>{fact.label}</span>
           </li>
         ))}
       </ul>
@@ -557,9 +569,7 @@ export function ListingDetails({
       <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
         {/* Desktop leads with rent, over Apply; it is the only place rent shows there. Phones
             have it in the bottom bar. */}
-        {twoColumns && (
-          <Price price={price} className="block text-2xl leading-8 font-bold max-lg:hidden" />
-        )}
+        {twoColumns && <Price price={price} className="block leading-8 max-lg:hidden" />}
         <h2
           id={`${CONTACT_SECTION_ID}-heading`}
           className={cn("text-xl font-semibold tracking-tight", twoColumns && "lg:sr-only")}
@@ -662,11 +672,12 @@ export function ListingDetails({
   const body = (
     <div className={cn("mx-auto flex w-full flex-col gap-6 sm:gap-8", pageWidths.content)}>
       {/* On phones this wrapper dissolves, so the back link can sit above the photos, which come
-          before the title there. */}
+          before the title there. Its row is just the link's 44px: the negative margins cancel the
+          page's top padding and the gap before the photos. */}
       <div className={cn("flex flex-col gap-2", hasPhotos && !embedded && "max-sm:contents")}>
         {!embedded && (
           <BackToResults
-            className={cn(hasPhotos && "max-sm:order-first max-sm:-mt-5 max-sm:-mb-4")}
+            className={cn(hasPhotos && "max-sm:order-first max-sm:-mt-8 max-sm:-mb-6")}
           />
         )}
         {header}
@@ -700,9 +711,9 @@ export function ListingDetails({
       {/* Keeps the price and the main action in reach while scrolling on phones. Sticky rather than
           fixed, so it takes its own space at the end of the page (nothing is left hidden under it)
           and stops above the site footer. Solid, so text scrolling underneath doesn't show through. */}
-      <div className="sticky bottom-0 z-20 -mx-4 mt-6 -mb-8 border-t bg-background px-4 py-3 sm:-mx-6 sm:-mb-10 sm:px-6 lg:hidden">
+      <div className="sticky bottom-0 z-20 -mx-4 mt-4 -mb-8 border-t bg-background px-4 py-3 sm:-mx-6 sm:-mb-10 sm:px-6 lg:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <Price price={price} className="min-w-0 text-xl" />
+          <Price price={price} className="min-w-0" />
           {applyUrl ? (
             <ListingApplyButton applicationUrl={applyUrl} className="px-8" />
           ) : canReachLister ? (

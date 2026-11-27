@@ -71,8 +71,10 @@ describe("ListingDetails rental details", () => {
     ]) {
       screen.getByText(text);
     }
+    // Phones hide the word "Available" visually, so it is in its own element.
     within(screen.getByRole("list", { name: "Key facts" })).getByText(
-      "Available September 1, 2026",
+      (_, element) =>
+        element?.tagName === "LI" && element.textContent === "Available September 1, 2026",
     );
     // The lease term's info button sits inside its label; leave it out to read the label text.
     const labels = screen.getAllByRole("term").map((node) => {

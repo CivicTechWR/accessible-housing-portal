@@ -54,9 +54,10 @@ export function CategoryTab({
       type="button"
       aria-pressed={isActive}
       className={cn(
-        "flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors",
+        "flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+        // The same tinted "selected" style as the rest of the app's chips.
         isActive
-          ? "border-foreground bg-foreground text-background"
+          ? "border-primary/30 bg-primary/10 text-primary-text dark:border-primary-text/30 dark:bg-primary-text/15"
           : "border-input bg-background text-foreground hover:bg-muted",
       )}
       onClick={onClick}
@@ -66,7 +67,7 @@ export function CategoryTab({
         <span
           className={cn(
             "text-sm font-normal tabular-nums",
-            isActive ? "text-background/75" : "text-muted-foreground",
+            isActive ? "text-primary-text/80" : "text-muted-foreground",
           )}
         >
           {count}

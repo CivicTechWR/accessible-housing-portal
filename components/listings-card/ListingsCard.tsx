@@ -91,16 +91,16 @@ function AccessibilitySummary({ count, className }: { count: number; className?:
 }
 
 /**
- * Items joined by " · ". Each separator stays with the item after it, so a wrapped line never
- * starts or ends on a lone dot.
+ * Items joined by " · ". Each separator stays with the item before it, so a wrapped line can end
+ * on a dot but never starts with one.
  */
 function DotSeparated({ items }: { items: ReactNode[] }) {
   return items.map((item, index) => (
     <Fragment key={index}>
       {index > 0 && " "}
       <span className="whitespace-nowrap">
-        {index > 0 && "· "}
         {item}
+        {index < items.length - 1 && " ·"}
       </span>
     </Fragment>
   ));
@@ -153,7 +153,6 @@ export function ListingsCard({
   // address takes its place and the grey line starts with the city instead.
   const heading = title || address;
   const place = title ? displayAddress : city;
-  const metaItems = [place, posted].filter(Boolean);
 
   return (
     <article
@@ -183,23 +182,31 @@ export function ListingsCard({
         <h3 className="line-clamp-2 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground md:text-[17px]">
           {heading}
         </h3>
-        <p className="mt-0.5 text-[15px] leading-snug text-foreground">
-          <DotSeparated
-            items={[
-              <>
-                <span className="text-lg font-bold tabular-nums">{formatRent(price)}</span>
-                {RENT_PERIOD}
-              </>,
-              formatBeds(beds),
-              formatBaths(baths),
-              ...(sqft === null ? [] : [formatArea(sqft)]),
-            ]}
-          />
+        {/* Rent and rooms share a line when they fit. Otherwise the rooms move under the rent as a
+            whole, so no line starts with a separator. */}
+        <p className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[15px] leading-snug text-foreground">
+          <span className="whitespace-nowrap">
+            <span className="text-lg font-bold">{formatRent(price)}</span>
+            <span className="text-muted-foreground">{RENT_PERIOD}</span>
+          </span>
+          <span>
+            <DotSeparated
+              items={[
+                formatBeds(beds),
+                formatBaths(baths),
+                ...(sqft === null ? [] : [formatArea(sqft)]),
+              ]}
+            />
+          </span>
         </p>
-        {metaItems.length > 0 && (
-          <p className="text-sm leading-snug text-muted-foreground md:text-[15px]">
-            <DotSeparated items={metaItems} />
+        {/* The place and the date get a line each, so neither wraps onto the other's line. */}
+        {place && (
+          <p className="text-sm leading-snug wrap-anywhere text-muted-foreground md:text-[15px]">
+            {place}
           </p>
+        )}
+        {posted && (
+          <p className="text-sm leading-snug text-muted-foreground md:text-[15px]">{posted}</p>
         )}
         <AccessibilitySummary
           count={featureCount}

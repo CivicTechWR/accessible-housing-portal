@@ -157,12 +157,12 @@ export function ListingImageCarousel({
                   alt={image.caption || `${altPrefix} image ${index + 1}`}
                   className="aspect-[4/3] w-full object-cover md:aspect-[2/1] lg:aspect-auto lg:h-100"
                 />
-                {/* Over the bottom of the photo, so it reads as the photo's caption. Hidden from
-                    screen readers, which get it as the photo's alt text. */}
+                {/* A solid strip over the bottom of the photo, so the caption stays readable on a
+                    bright photo. Hidden from screen readers, which get it as the photo's alt text. */}
                 {image.caption && (
                   <span
                     aria-hidden
-                    className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent px-4 pt-10 pb-3 text-left text-sm text-white"
+                    className="absolute inset-x-0 bottom-0 bg-black/72 px-3 py-2 text-left text-sm text-white"
                   >
                     {image.caption}
                   </span>

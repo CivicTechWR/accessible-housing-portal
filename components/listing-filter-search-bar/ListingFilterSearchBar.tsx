@@ -160,6 +160,11 @@ export function ListingFilterSearchBar({
 
       {/* Phones get these as a row of chips under the search field instead. */}
       <div className="hidden items-center gap-2 sm:flex">
+        {/* First, as on phones: it is the filter this portal exists for. Below `lg` there's no
+            room for it, and the features stay in the Filters panel. */}
+        {accessibilityFilter && accessibilityFilter.groups.length > 0 && (
+          <AccessibilityPopover {...accessibilityFilter} />
+        )}
         <FilterPopover label="Price" value={priceSummary(priceRangeProps.min, priceRangeProps.max)}>
           <PriceRangeInput {...priceRangeProps} className="w-72 gap-3" />
         </FilterPopover>
@@ -169,10 +174,6 @@ export function ListingFilterSearchBar({
         <FilterPopover label="Baths" value={roomSummary(bathroomToggleProps.value, "bath")}>
           <ToggleField {...bathroomToggleProps} allowEmpty />
         </FilterPopover>
-        {/* Below `lg` there's no room for it, and the features stay in the Filters panel. */}
-        {accessibilityFilter && accessibilityFilter.groups.length > 0 && (
-          <AccessibilityPopover {...accessibilityFilter} />
-        )}
       </div>
 
       {filterButton}

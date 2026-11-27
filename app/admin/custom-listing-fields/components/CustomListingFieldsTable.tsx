@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toSentenceCase } from "@/lib/listing-format";
 import { cn } from "@/lib/utils";
-import { useEdgeFade } from "@/lib/useEdgeFade";
 import type { AdminCustomListingField } from "@/shared/schemas/custom-listing-fields";
 import {
   FIELD_HELP_TEXT,
@@ -88,19 +87,11 @@ export function CustomListingFieldsTable({
   onDeleteField: (field: AdminCustomListingField) => void;
 }) {
   const hasFilters = search !== "" || categoryFilter !== "all" || visibilityFilter !== "all";
-  const categoryRow = useEdgeFade<HTMLDivElement>();
 
   return (
     <div className="space-y-4">
-      {/* One row that scrolls sideways, with faded edges while more chips sit past them. */}
-      <div
-        ref={categoryRow.ref}
-        onScroll={categoryRow.onScroll}
-        style={categoryRow.style}
-        role="group"
-        aria-label="Category"
-        className="hidden gap-2 overflow-x-auto [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden"
-      >
+      {/* Wraps onto a second line rather than hiding chips past the edge. Phones get a select. */}
+      <div role="group" aria-label="Category" className="hidden flex-wrap gap-2 md:flex">
         <CategoryTab
           isActive={categoryFilter === "all"}
           label="All fields"

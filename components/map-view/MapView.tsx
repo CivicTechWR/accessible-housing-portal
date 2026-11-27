@@ -89,15 +89,16 @@ export function groupOverlappingPins(
 
 /**
  * Price pins are light in both themes, so they read the same way on the pale and the dark basemap.
+ * In light mode a dark hairline keeps a white pin visible on the near-white ground.
  * Clusters are brand blue with white text, so "3 homes" never looks like a price. The hovered,
  * highlighted or selected price turns brand blue in light mode, and gets a white ring in dark mode,
  * where a blue pill would sink into the dark ground.
  */
 const pillClassName =
-  "flex h-8 items-center rounded-full border px-3 text-sm font-bold whitespace-nowrap tabular-nums transition-[transform,background-color,color,border-color,box-shadow] group-focus-visible:ring-3 group-focus-visible:ring-ring";
+  "flex h-8 items-center rounded-full border px-3 text-sm font-semibold whitespace-nowrap transition-[transform,background-color,color,border-color,box-shadow] group-focus-visible:ring-3 group-focus-visible:ring-ring";
 
 const restingPrice =
-  "border-black/14 bg-white text-[#09090B] shadow-[0_2px_8px_rgba(0,0,0,0.18)] dark:border-transparent dark:bg-[#F4F4F5] dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
+  "border-[rgba(17,24,39,0.35)] bg-white text-[#09090B] shadow-[0_2px_8px_rgba(0,0,0,0.18)] dark:border-transparent dark:bg-[#F4F4F5] dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]";
 
 const emphasisedPrice =
   "scale-105 border-primary bg-primary text-white dark:scale-110 dark:border-transparent dark:bg-[#F4F4F5] dark:text-[#09090B] dark:ring-2 dark:ring-white";

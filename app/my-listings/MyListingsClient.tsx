@@ -312,8 +312,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                     <>
                       {listing.status === "published" ? (
                         // Edit leads, but "New listing" holds the page's one filled button, so
-                        // Edit is outlined and View drops to ghost. On phones the three
-                        // buttons share a row, so View takes the same outline as Edit and "…".
+                        // Edit is tinted and View drops to ghost. On phones the three buttons
+                        // share a row, so View takes the same outline as "…".
                         <Button
                           asChild
                           variant="ghost"
@@ -322,7 +322,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                           <Link href={listing.viewUrl}>View</Link>
                         </Button>
                       ) : null}
-                      <Button asChild variant="outline" className="max-sm:h-11 max-sm:flex-1">
+                      <Button asChild variant="tinted" className="max-sm:h-11 max-sm:flex-1">
                         <Link href={listing.editUrl}>
                           {listing.status === "draft" ? "Resume draft" : "Edit"}
                         </Link>

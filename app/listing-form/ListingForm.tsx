@@ -305,7 +305,13 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
     const filled = required.filter((definition) => hasValue(values[definition.key])).length;
     const id = listingFormSectionId(category.key);
     if (required.length === 0) {
-      return { id, label: category.displayName, meta: "Optional", status: "optional" };
+      // An optional section counts as done once anything in it is filled in.
+      const hasContent = CORE_FIELD_DEFINITIONS.some(
+        (definition) => definition.category === category.key && hasValue(values[definition.key]),
+      );
+      return hasContent
+        ? { id, label: category.displayName, meta: "Filled in", status: "complete" }
+        : { id, label: category.displayName, meta: "Optional", status: "optional" };
     }
     return {
       id,
@@ -331,9 +337,9 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
     {
       id: listingFormSectionId("features"),
       label: "Features and accessibility",
-      meta: `${featureCount} selected`,
-      count: String(featureCount),
-      status: "optional",
+      meta: featureCount === 0 ? "Optional" : `${featureCount} selected`,
+      count: featureCount === 0 ? undefined : String(featureCount),
+      status: featureCount === 0 ? "optional" : "complete",
     },
   ];
 }
