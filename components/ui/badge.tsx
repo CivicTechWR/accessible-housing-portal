@@ -70,7 +70,7 @@ function StatusBadge({
 }) {
   return (
     <Badge
-      className={cn("rounded-[4px] px-2 text-xs font-medium", statusToneClasses[tone], className)}
+      className={cn("rounded-[4px] px-2 text-xs font-semibold", statusToneClasses[tone], className)}
     >
       {children}
     </Badge>

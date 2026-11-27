@@ -70,16 +70,15 @@ function FeatureSwitch({
           {label}
         </span>
         {definition || quotesPublicText ? (
-          <span
-            id={descriptionId}
-            className="block space-y-1 text-sm leading-relaxed text-foreground/80"
-          >
-            {definition ? <span className="block">{definition}</span> : null}
+          <span id={descriptionId} className="block space-y-0.5 text-sm leading-relaxed">
+            {definition ? <span className="block text-foreground/80">{definition}</span> : null}
+            {/* One quiet line, so switching a feature on doesn't make its row much taller. */}
             {quotesPublicText ? (
-              <span className="block">
-                <span className="font-medium text-foreground">Listing shows:</span> &ldquo;
-                {publicText}
-                &rdquo;
+              <span
+                className="block truncate text-muted-foreground"
+                title={`Listing shows: “${publicText}”`}
+              >
+                Listing shows: &ldquo;{publicText}&rdquo;
               </span>
             ) : null}
           </span>

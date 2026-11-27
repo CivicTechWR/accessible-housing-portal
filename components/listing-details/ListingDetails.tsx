@@ -131,7 +131,9 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
       <div className="min-w-0">
         <p className="text-base font-semibold text-foreground">{toSentenceCase(feature.name)}</p>
         {hasDescription && (
-          <p className="mt-0.5 max-w-prose text-sm text-muted-foreground">{featureDescription}</p>
+          <p className="mt-0.5 max-w-prose text-[15px] leading-6 text-foreground/85">
+            {featureDescription}
+          </p>
         )}
       </div>
     </li>
@@ -141,7 +143,7 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
 /**
  * The most important block after the photos, and the page's signature: a card with the dotted
  * tactile strip along its top edge and the accessibility mark by its heading. Features sit under
- * a small muted label for their category, with a rule between them.
+ * a label for their category, with a rule between them.
  */
 function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
   const count = categories.reduce((total, category) => total + category.features.length, 0);
@@ -172,7 +174,7 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
             .filter((category) => category.features.length > 0)
             .map((category) => (
               <div key={category.categoryName}>
-                <h3 className="mb-3 text-sm font-medium tracking-normal text-muted-foreground">
+                <h3 className="mb-3 text-[15px] font-semibold tracking-normal text-foreground">
                   {toSentenceCase(category.categoryName)}
                 </h3>
                 {/* Safari drops list semantics from a list without markers unless the role is set. */}
@@ -431,10 +433,13 @@ export function ListingDetails({
           ) : undefined
         }
       />
-      {/* Also in the sticky Apply card on desktop and the bottom bar on phones. */}
-      <p>
-        <Price price={price} className="text-2xl leading-8" />
-      </p>
+      {/* The page shows rent once: in the sticky Apply card on desktop and the bottom bar on
+          phones. The form preview has neither, so it shows rent here. */}
+      {embedded && (
+        <p>
+          <Price price={price} className="text-2xl leading-8" />
+        </p>
+      )}
       {/* A 2×2 grid of facts on phones, so a long fact never wraps onto a line by itself. */}
       <ul
         role="list"
@@ -461,10 +466,12 @@ export function ListingDetails({
   // the left column's wrapper and `order` puts contact straight after the accessibility panel.
   const twoColumns = !embedded;
 
+  // Below both columns at the full content width, so the map has room; its text keeps the reading
+  // measure of the sections above.
   const location = (coordinates || walkScore) && (
-    <Section id="listing-location" title="Location" className="order-6">
+    <Section id="listing-location" title="Location" className="pt-4 sm:pt-2">
       <div className="space-y-4">
-        <p className="flex items-start gap-2.5 text-base wrap-anywhere text-foreground">
+        <p className="flex max-w-[40rem] items-start gap-2.5 text-base wrap-anywhere text-foreground">
           <HugeiconsIcon
             icon={Location01Icon}
             strokeWidth={2}
@@ -477,10 +484,10 @@ export function ListingDetails({
           <ListingLocationMap
             lat={coordinates.lat}
             lng={coordinates.lng}
-            className="aspect-[4/3] sm:aspect-[2/1]"
+            className="aspect-[4/3] sm:aspect-auto sm:h-[360px]"
           />
         )}
-        {walkScore}
+        {walkScore && <div className="max-w-[40rem]">{walkScore}</div>}
       </div>
     </Section>
   );
@@ -513,7 +520,7 @@ export function ListingDetails({
               </dt>
               <dd
                 className={cn(
-                  "text-base font-medium wrap-anywhere text-foreground",
+                  "text-base wrap-anywhere text-foreground",
                   row.preserveWhitespace && "whitespace-pre-line",
                 )}
               >
@@ -536,8 +543,6 @@ export function ListingDetails({
           </figure>
         </Section>
       )}
-
-      {location}
     </div>
   );
 
@@ -681,6 +686,7 @@ export function ListingDetails({
         {mainColumn}
         {contactCard}
       </div>
+      {location}
     </div>
   );
 

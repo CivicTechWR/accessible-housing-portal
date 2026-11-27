@@ -63,8 +63,8 @@ function useActiveSection(ids: string[]) {
 }
 
 /**
- * A step's circle. The current step is solid blue with its number, a finished one is green with
- * a check, and the rest are outlined with their number.
+ * A section's circle: green with a check once it's finished, otherwise outlined with its number.
+ * It doesn't mark the current section; the label's weight and the blue underline do that.
  */
 function StepCircle({
   number,
@@ -80,14 +80,15 @@ function StepCircle({
       aria-hidden
       className={cn(
         "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums",
-        isActive
-          ? "bg-primary text-primary-foreground"
-          : isComplete
-            ? "bg-emerald-600 text-white dark:bg-emerald-600"
-            : "bg-card text-muted-foreground ring-1 ring-input ring-inset",
+        isComplete
+          ? "bg-emerald-600 text-white dark:bg-emerald-600"
+          : cn(
+              "bg-card ring-1 ring-input ring-inset",
+              isActive ? "text-foreground" : "text-muted-foreground",
+            ),
       )}
     >
-      {isComplete && !isActive ? (
+      {isComplete ? (
         <HugeiconsIcon icon={Tick02Icon} strokeWidth={2.5} className="size-3.5" />
       ) : (
         number
@@ -97,9 +98,9 @@ function StepCircle({
 }
 
 /**
- * Phones: one full-width button naming the current step ("Step 1 of 5 · Listing details") that
- * opens a menu of every section, and a five-part bar underneath that fills in blue as sections are
- * finished.
+ * Phones: one full-width button naming the current section ("Section 1 of 5 · Listing details")
+ * that opens a menu of every section, and a five-part bar underneath: finished sections are solid
+ * blue, the current one is outlined in blue, and the rest are grey.
  */
 function SectionMenu({
   sections,
@@ -125,7 +126,7 @@ function SectionMenu({
         <DropdownMenuTrigger className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-input bg-card px-3 text-left text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <span className="min-w-0 flex-1 truncate">
             <span className="text-muted-foreground">
-              Step {activeIndex + 1} of {sections.length} ·{" "}
+              Section {activeIndex + 1} of {sections.length} ·{" "}
             </span>
             <span className="font-medium text-foreground">{active?.label}</span>
           </span>
@@ -150,8 +151,8 @@ function SectionMenu({
           {sections.map((section, index) => (
             <DropdownMenuItem
               key={section.id}
-              className="min-h-12 gap-3 py-2"
-              aria-current={section.id === activeId ? "step" : undefined}
+              className="min-h-12 gap-3 py-2 aria-[current=location]:bg-muted"
+              aria-current={section.id === activeId ? "location" : undefined}
               onSelect={() => {
                 pendingId.current = section.id;
               }}
@@ -183,8 +184,13 @@ function SectionMenu({
           <span
             key={section.id}
             className={cn(
-              "h-1 flex-1 rounded-full",
-              section.status === "complete" ? "bg-primary" : "bg-muted dark:bg-foreground/15",
+              "h-1.5 flex-1 rounded-full",
+              // The outline marks where you are even when every section is finished.
+              section.id === activeId
+                ? "ring-2 ring-primary ring-inset dark:ring-primary-text"
+                : section.status === "complete"
+                  ? "bg-primary"
+                  : "bg-muted dark:bg-foreground/15",
             )}
           />
         ))}

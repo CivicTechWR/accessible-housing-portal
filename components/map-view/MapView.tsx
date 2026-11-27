@@ -88,40 +88,35 @@ export function groupOverlappingPins(
 }
 
 /**
- * Price pins are white on the light basemap and card-coloured on the dark one, with a hairline
- * edge and a small shadow, since they float over the map. Clusters are the same pill in signage
- * blue with white text, so "3 homes" never looks like a price. The hovered or selected price turns
- * solid blue. The pin of the card being hovered in the list keeps its colours and gains a 2px blue
- * ring.
+ * Pins are small sign plates: solid signage blue with white text and a 2px white edge on the light
+ * basemap, white with near-black text and a dark edge on the dark one. Clusters are the same plate
+ * in a deeper blue (primary blue in dark mode), so "3 homes" never looks like a price. The hovered
+ * or selected pin, and the pin of the card hovered in the list, swap the edge for tactile yellow.
+ * Focus shows as an outline, since the ring is the plate's edge.
  */
 const pillClassName =
-  "relative flex h-8 items-center rounded-full border px-3 text-sm font-semibold whitespace-nowrap shadow-[0_1px_3px_rgb(0_0_0/0.2)] transition-[transform,background-color,color,border-color,box-shadow] group-focus-visible:ring-3 group-focus-visible:ring-ring";
+  "relative flex h-8 items-center rounded-md px-2.5 text-sm font-semibold whitespace-nowrap shadow-[0_2px_6px_rgb(0_0_0/0.3)] ring-2 transition-[transform,box-shadow] group-focus-visible:outline-3 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring";
 
-const restingPrice = "border-black/15 bg-card text-foreground dark:border-white/15";
+const restingPrice =
+  "bg-primary text-primary-foreground ring-white dark:bg-white dark:text-background dark:ring-background";
 
-const selectedPrice = "scale-105 border-primary bg-primary text-primary-foreground";
+/** Hovered, selected or matching the hovered card. */
+const emphasisedPin = "scale-105 ring-signal dark:ring-signal";
 
-const highlightedPrice = "scale-105 ring-2 ring-primary dark:ring-primary-text";
+const hoverPin = "group-hover:scale-105 group-hover:ring-signal dark:group-hover:ring-signal";
 
-const hoverPrice =
-  "group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground";
-
-const clusterPill =
-  "border-black/15 bg-primary text-primary-foreground group-hover:scale-105 dark:border-white/15";
-
-/** A cluster holding the hovered card's listing grows and gets a ring in the text colour. */
-const emphasisedCluster = "scale-110 ring-2 ring-foreground";
+const clusterPill = "bg-[#08397a] text-white ring-white dark:bg-primary dark:ring-background";
 
 /**
  * The yellow accessibility dot at a pin's top-right corner, shown while the Accessibility filter is
- * on: every result then has the selected features. The ring in the card colour separates it from
- * the pill and the map.
+ * on: every result then has the selected features. A ring in the plate's edge colour separates it
+ * from the plate.
  */
 function AccessibilityDot() {
   return (
     <span
       aria-hidden
-      className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-signal ring-[1.5px] ring-card"
+      className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-signal ring-2 ring-white dark:ring-background"
     />
   );
 }
@@ -220,7 +215,6 @@ function SelectedListing({
         sqft={listing.sqft}
         availableOn={listing.availableOn}
         imageUrl={listing.imageUrl}
-        photoCount={listing.photoCount}
         variant={variant}
       />
       {/* A 44px touch target around a smaller visible circle. */}
@@ -458,7 +452,8 @@ export const MapView = memo(function MapView({
                       className={cn(
                         pillClassName,
                         clusterPill,
-                        containsHighlighted && emphasisedCluster,
+                        hoverPin,
+                        containsHighlighted && emphasisedPin,
                       )}
                     >
                       {count} homes
@@ -470,7 +465,6 @@ export const MapView = memo(function MapView({
             }
             const listing = group.listings[0] as MappableListing;
             const selected = selectedId === listing.id;
-            const highlighted = !selected && highlightedId === listing.id;
             return (
               <Marker
                 key={listing.id}
@@ -507,9 +501,9 @@ export const MapView = memo(function MapView({
                   <span
                     className={cn(
                       pillClassName,
-                      selected
-                        ? selectedPrice
-                        : cn(restingPrice, hoverPrice, highlighted && highlightedPrice),
+                      restingPrice,
+                      hoverPin,
+                      (selected || highlightedId === listing.id) && emphasisedPin,
                     )}
                   >
                     {formatRent(listing.price)}

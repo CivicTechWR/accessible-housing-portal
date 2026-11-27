@@ -37,7 +37,7 @@ export default async function Home() {
           <HomeScopeSection />
         </div>
       </HomeBand>
-      <HomeBand tone="card">
+      <HomeBand tone="card" strip>
         <HomeContactSection />
       </HomeBand>
     </main>

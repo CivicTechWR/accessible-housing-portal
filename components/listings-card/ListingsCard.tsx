@@ -25,8 +25,6 @@ interface ListingsCardProps {
   baths: number;
   sqft: number | null;
   imageUrl?: string;
-  /** How many photos the listing has. The card shows "1 / 3" on the photo when it has more than one. */
-  photoCount?: number;
   /** The move-in date (YYYY-MM-DD), shown as "Available May 15" after the address. */
   availableOn?: string;
   /**
@@ -153,7 +151,6 @@ export function ListingsCard({
   baths,
   sqft,
   imageUrl,
-  photoCount = 0,
   availableOn,
   timeAgo,
   variant = "vertical",
@@ -213,14 +210,6 @@ export function ListingsCard({
       >
         {photo}
         {imageUrl && <PhotoEdge />}
-        {!isHorizontal && photoCount > 1 && (
-          <span
-            aria-hidden
-            className="absolute right-2.5 bottom-2.5 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white"
-          >
-            1 / {photoCount}
-          </span>
-        )}
       </div>
 
       <div
@@ -247,7 +236,7 @@ export function ListingsCard({
           />
         </p>
         {(place || posted) && (
-          <p className="text-sm leading-snug wrap-anywhere text-muted-foreground">
+          <p className="text-[15px] leading-snug wrap-anywhere text-muted-foreground">
             <PlaceAndPosted place={place} posted={posted} />
           </p>
         )}

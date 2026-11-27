@@ -10,22 +10,19 @@ const lists = [
   { title: `${siteConfig.name} is not`, items: homeContent.scope.isNot, included: false },
 ];
 
-/** What the service is and isn't, side by side in one card so the two lists read as a comparison. */
+/** What the service is and isn't, side by side so the two lists read as a comparison. */
 export function HomeScopeSection() {
   return (
     <section
       aria-label={`What ${siteConfig.name} is and is not`}
-      className="grid overflow-hidden rounded-xl border bg-card md:grid-cols-2"
+      className="grid gap-10 md:grid-cols-2 md:gap-12"
     >
-      {lists.map((list, index) => (
-        <div
-          key={list.title}
-          className={cn("p-6 sm:p-8", index > 0 && "border-t md:border-t-0 md:border-l")}
-        >
+      {lists.map((list) => (
+        <div key={list.title}>
           <h2 className="text-2xl">{list.title}</h2>
           <ul role="list" className="mt-4 divide-y">
             {list.items.map((item) => (
-              <li key={item} className="flex gap-3 py-3.5 text-base leading-relaxed">
+              <li key={item} className="flex gap-3 py-3.5 text-[1.0625rem] leading-relaxed">
                 <HugeiconsIcon
                   icon={list.included ? Tick02Icon : Cancel01Icon}
                   strokeWidth={2.5}

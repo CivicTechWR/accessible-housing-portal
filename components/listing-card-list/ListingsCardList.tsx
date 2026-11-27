@@ -57,7 +57,7 @@ export const ListingCardGallery = memo(function ListingCardGallery({
       )}
       <div
         // Below `md`, leave room at the end for the floating List / Map button.
-        className={`grid gap-x-5 gap-y-6 px-4 pt-3 pb-4 max-md:pb-20 sm:px-6 sm:pt-4 ${
+        className={`grid gap-x-5 gap-y-6 px-4 pt-3 pb-4 max-md:pb-24 sm:px-6 sm:pt-4 ${
           isFullscreen ? "grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))]" : "grid-cols-1"
         }`}
       >
@@ -83,7 +83,6 @@ export const ListingCardGallery = memo(function ListingCardGallery({
               sqft={listing.sqft}
               availableOn={listing.availableOn}
               imageUrl={listing.imageUrl}
-              photoCount={listing.photoCount}
               variant={isFullscreen ? "vertical" : "horizontal"}
             />
           </div>

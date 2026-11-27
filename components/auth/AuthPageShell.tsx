@@ -15,11 +15,12 @@ export function AuthPageShell({ children, withPanel = true, className }: AuthPag
   return (
     <main
       className={cn(
-        "flex items-start justify-center bg-background px-4 pt-8 pb-16 sm:pt-20 sm:pb-24",
+        "flex flex-col items-center bg-background px-4 pt-8 pb-16 sm:flex-row sm:items-start sm:justify-center sm:pt-20 sm:pb-24",
         className,
       )}
     >
       <div data-compact-footer hidden />
+      {withPanel ? <AuthSignBand /> : null}
       {withPanel ? (
         // On wide screens the panel and the card join into one box of equal height; the card
         // drops its own border there. Below lg only the card shows.
@@ -34,6 +35,21 @@ export function AuthPageShell({ children, withPanel = true, className }: AuthPag
         children
       )}
     </main>
+  );
+}
+
+/** Phones: a slim version of the sign panel above the card, so signing in still looks like Home Hub. */
+function AuthSignBand() {
+  return (
+    <div
+      aria-hidden="true"
+      className="-mx-4 -mt-8 mb-8 self-stretch overflow-hidden bg-primary text-primary-foreground sm:hidden dark:bg-[#17478f]"
+    >
+      <p className="px-4 pt-4 pb-3.5 text-[0.9375rem] font-medium">
+        Affordable, accessible rentals in {siteConfig.region}
+      </p>
+      <div className="tactile-strip h-2.5" />
+    </div>
   );
 }
 

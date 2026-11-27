@@ -320,7 +320,8 @@ export function QuickFilterChips({
 
 /**
  * The phone List / Map switch: one pill floating at the bottom centre that names the other view,
- * so the whole screen goes to listings or the map.
+ * so the whole screen goes to listings or the map. A ring in the page colour and a deep shadow
+ * keep it reading as floating over the cards and photos beneath.
  */
 export function FloatingViewToggle({
   value,
@@ -337,7 +338,7 @@ export function FloatingViewToggle({
       onClick={() => onChange(showsMap ? DisplayMode.LIST : DisplayMode.MAP)}
       aria-label={showsMap ? "Show list" : "Show map"}
       className={cn(
-        "h-11 gap-2 rounded-full border border-white/20 bg-[#1f262c] px-5 text-white shadow-[0_6px_20px_rgba(0,0,0,0.35)] hover:bg-[#1f262c]/90 dark:border-black/15 dark:bg-white dark:text-[#1f262c] dark:hover:bg-white/90",
+        "h-11 gap-2 rounded-full bg-[#1f262c] px-5 text-white shadow-[0_10px_28px_rgb(0_0_0/0.45),0_2px_6px_rgb(0_0_0/0.3)] ring-3 ring-background hover:bg-[#1f262c]/90 dark:bg-white dark:text-[#1f262c] dark:hover:bg-white/90",
         className,
       )}
     >

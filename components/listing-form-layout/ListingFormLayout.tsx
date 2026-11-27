@@ -61,7 +61,7 @@ export interface ListingFormLayoutProps {
   formContent: ReactNode;
   previewContent?: ReactNode;
   /** The left of the sticky bar at the bottom of the screen, such as the save state. On phones
-   * it sits on its own line above the buttons, so keep it to one short line. */
+   * it shares the row with the buttons when it fits, so keep it to one short line. */
   footer?: ReactNode;
   /** The sticky bar's main action, at its right edge. Below lg the Preview button sits before it. */
   footerAction?: ReactNode;
@@ -103,7 +103,8 @@ function usePaneSwitcher() {
 /**
  * The bar pinned to the bottom of the screen. The bar spans the page, and its contents span the
  * editor's column: save state at the left edge, actions at the right edge of the preview. On
- * phones the save state gets its own line above two equal-width buttons.
+ * phones the buttons share the rest of the row equally, and the save state wraps onto its own
+ * line above them only when both won't fit at their natural widths.
  */
 function StickyFooter({ status, actions }: { status: ReactNode; actions: ReactNode }) {
   return (
@@ -111,11 +112,13 @@ function StickyFooter({ status, actions }: { status: ReactNode; actions: ReactNo
       <div
         className={cn(
           PAGE_COLUMN,
-          "flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3",
+          "flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:gap-x-3",
         )}
       >
         {status}
-        <div className="grid auto-cols-fr grid-flow-col gap-3 sm:flex sm:shrink-0">{actions}</div>
+        <div className="flex grow gap-2 *:flex-1 sm:shrink-0 sm:grow-0 sm:gap-3 sm:*:flex-none">
+          {actions}
+        </div>
       </div>
     </div>
   );
@@ -185,7 +188,10 @@ export function ListingFormLayout({
           // Sits below the sticky section strip at lg.
           <section
             aria-label="Preview"
-            className={cn("min-w-0 lg:sticky lg:top-20", !isPreviewing && "max-lg:hidden")}
+            className={cn(
+              "min-w-0 lg:sticky lg:top-20 lg:self-start",
+              !isPreviewing && "max-lg:hidden",
+            )}
           >
             {/* On phones the pane is the whole screen, so it drops the card frame. At lg the card
                 ends 16px above the sticky save bar (65px tall): 5rem top + 65px + 1rem. */}
