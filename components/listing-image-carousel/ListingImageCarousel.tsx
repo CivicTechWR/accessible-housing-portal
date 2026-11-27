@@ -10,6 +10,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { Lightbox } from "@/components/lightbox/Lightbox";
+import { PhotoEdge } from "@/components/listings-card/ListingsCard";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GridViewIcon } from "@hugeicons/core-free-icons";
@@ -115,6 +116,7 @@ export function ListingImageCarousel({
                 alt={image.caption || `${altPrefix} image ${index + 1}`}
                 className="size-full object-cover transition duration-300 group-hover:brightness-90"
               />
+              <PhotoEdge />
             </button>
           ))}
           <button
@@ -123,7 +125,7 @@ export function ListingImageCarousel({
             className="absolute right-4 bottom-4 inline-flex h-10 items-center gap-2 rounded-lg border border-foreground/15 bg-background px-3.5 text-sm font-medium text-foreground shadow-md hover:bg-muted"
           >
             <HugeiconsIcon icon={GridViewIcon} strokeWidth={2} className="size-4" aria-hidden />
-            Show all photos
+            Show all {images.length} photos
           </button>
         </div>
       )}
@@ -157,6 +159,7 @@ export function ListingImageCarousel({
                   alt={image.caption || `${altPrefix} image ${index + 1}`}
                   className="aspect-[4/3] w-full object-cover md:aspect-[2/1] lg:aspect-auto lg:h-100"
                 />
+                <PhotoEdge />
                 {/* A solid strip over the bottom of the photo, so the caption stays readable on a
                     bright photo. Hidden from screen readers, which get it as the photo's alt text. */}
                 {image.caption && (

@@ -49,12 +49,12 @@ const TIME_UNITS: Record<string, string> = {
 };
 
 /**
- * Shortens date-fns' "about 6 hours ago" to "Posted 6h ago". The listing form preview passes the
- * move-in date ("2026-05-15", or "Now") instead, because a draft hasn't been posted yet; that shows
- * as "Available May 15, 2026". Any other text is returned unchanged.
+ * Shortens date-fns' "about 6 hours ago" to "6h ago". The listing form preview passes the move-in
+ * date ("2026-05-15", or "Now") instead, because a draft hasn't been posted yet; that shows as
+ * "Available May 15, 2026". Any other text is returned unchanged.
  */
 export function formatPostedLabel(timeAgo: string) {
-  if (/^less than a minute ago$/.test(timeAgo)) return "Posted just now";
+  if (/^less than a minute ago$/.test(timeAgo)) return "Just now";
   if (/^\d{4}-\d{2}-\d{2}$/.test(timeAgo)) return `Available ${formatListingDate(timeAgo)}`;
   if (timeAgo === "Now") return "Available now";
   const match =
@@ -62,7 +62,17 @@ export function formatPostedLabel(timeAgo: string) {
   if (!match) return timeAgo;
   const [, amount, unit] = match;
   const count = amount === "a" || amount === "an" ? "1" : amount;
-  return `Posted ${count}${TIME_UNITS[unit as keyof typeof TIME_UNITS]} ago`;
+  return `${count}${TIME_UNITS[unit as keyof typeof TIME_UNITS]} ago`;
+}
+
+/** A thin inner edge over a photo, so a bright photo keeps its shape on a white or dark page. */
+export function PhotoEdge() {
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-black/5 ring-inset dark:ring-white/8"
+    />
+  );
 }
 
 /**
@@ -104,6 +114,24 @@ function DotSeparated({ items }: { items: ReactNode[] }) {
       </span>
     </Fragment>
   ));
+}
+
+/**
+ * "90 Queen St S, Kitchener · 6h ago". The place's last word, the dot and the time never break
+ * apart, so a wrapped line neither starts with the dot nor leaves the time on its own.
+ */
+function PlaceAndPosted({ place, posted }: { place: string; posted: string }) {
+  if (!place) return posted;
+  if (!posted) return place;
+  const lastSpace = place.lastIndexOf(" ");
+  return (
+    <>
+      {place.slice(0, lastSpace + 1)}
+      <span className="whitespace-nowrap">
+        {place.slice(lastSpace + 1)} · {posted}
+      </span>
+    </>
+  );
 }
 
 export function ListingsCard({
@@ -170,6 +198,7 @@ export function ListingsCard({
         )}
       >
         {photo}
+        {imageUrl && <PhotoEdge />}
       </div>
 
       <div
@@ -179,38 +208,30 @@ export function ListingsCard({
         )}
       >
         {/* The name gets its own lines, so it is never cut short by the rent. */}
-        <h3 className="line-clamp-2 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground md:text-[17px]">
+        <h3 className="line-clamp-2 text-[17px] leading-snug font-semibold tracking-normal wrap-anywhere text-foreground">
           {heading}
         </h3>
-        {/* Rent and rooms share a line when they fit. Otherwise the rooms move under the rent as a
-            whole, so no line starts with a separator. */}
-        <p className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[15px] leading-snug text-foreground">
-          <span className="whitespace-nowrap">
-            <span className="text-lg font-bold">{formatRent(price)}</span>
-            <span className="text-muted-foreground">{RENT_PERIOD}</span>
-          </span>
-          <span>
-            <DotSeparated
-              items={[
-                formatBeds(beds),
-                formatBaths(baths),
-                ...(sqft === null ? [] : [formatArea(sqft)]),
-              ]}
-            />
-          </span>
+        <p className="mt-0.5 text-xl leading-snug font-bold whitespace-nowrap text-foreground">
+          {formatRent(price)}
+          <span className="text-[15px] font-normal text-muted-foreground">{RENT_PERIOD}</span>
         </p>
-        {/* The place and the date get a line each, so neither wraps onto the other's line. */}
-        {place && (
+        <p className="text-[15px] leading-snug text-foreground/80">
+          <DotSeparated
+            items={[
+              formatBeds(beds),
+              formatBaths(baths),
+              ...(sqft === null ? [] : [formatArea(sqft)]),
+            ]}
+          />
+        </p>
+        {(place || posted) && (
           <p className="text-sm leading-snug wrap-anywhere text-muted-foreground md:text-[15px]">
-            {place}
+            <PlaceAndPosted place={place} posted={posted} />
           </p>
-        )}
-        {posted && (
-          <p className="text-sm leading-snug text-muted-foreground md:text-[15px]">{posted}</p>
         )}
         <AccessibilitySummary
           count={featureCount}
-          className={isHorizontal ? "mt-2 hidden sm:flex" : "mt-3"}
+          className={isHorizontal ? "mt-2 hidden sm:flex" : "mt-2.5"}
         />
       </div>
 

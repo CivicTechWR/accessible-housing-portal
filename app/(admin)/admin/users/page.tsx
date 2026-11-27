@@ -85,7 +85,8 @@ async function getAllAccounts() {
 
 const inviteLifecycle: Record<AccountInviteRow["lifecycle"], { label: string; tone: StatusTone }> =
   {
-    pending: { label: "Pending", tone: "warning" },
+    // The same word the All users table uses for the account the invite created.
+    pending: { label: "Invited", tone: "warning" },
     accepted: { label: "Accepted", tone: "success" },
     expired: { label: "Expired", tone: "neutral" },
     revoked: { label: "Revoked", tone: "neutral" },
@@ -238,6 +239,7 @@ export default async function AdminUsersPage() {
   // Loaded only after `getAllAccounts` has confirmed an administrator.
   const invites = await findAccountInvites();
   const accounts = result.value.data;
+  const hasInvitedAccounts = accounts.some((account) => account.status === "invited");
 
   return (
     <AppPageShell>
@@ -265,8 +267,19 @@ export default async function AdminUsersPage() {
           <Invitations invites={invites} />
         </section>
 
-        <section className="space-y-3" aria-labelledby="directory-heading">
-          <SectionHeading id="directory-heading" title="All users" count={accounts.length} />
+        <section
+          className="space-y-3"
+          aria-labelledby="directory-heading"
+          aria-describedby={hasInvitedAccounts ? "directory-note" : undefined}
+        >
+          <div className="space-y-1">
+            <SectionHeading id="directory-heading" title="All users" count={accounts.length} />
+            {hasInvitedAccounts ? (
+              <p id="directory-note" className="text-sm text-muted-foreground">
+                Includes people who haven't accepted their invite yet.
+              </p>
+            ) : null}
+          </div>
           <UserDirectory accounts={accounts} />
         </section>
       </div>

@@ -29,7 +29,7 @@ export function SortOptions({
         aria-label="Sort listings"
         className={cn("h-11 w-auto gap-1.5 md:h-10", className)}
       >
-        <span className="text-muted-foreground max-sm:sr-only">Sort:</span>
+        <span className="text-muted-foreground">Sort:</span>
         <SelectValue placeholder="Newest" />
       </SelectTrigger>
       <SelectContent position="popper" align="end">

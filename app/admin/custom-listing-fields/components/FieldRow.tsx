@@ -38,45 +38,6 @@ import {
   type SortKey,
 } from "../custom-listing-fields-dashboard-utils";
 
-export function CategoryTab({
-  isActive,
-  label,
-  count,
-  onClick,
-}: {
-  isActive: boolean;
-  label: string;
-  count?: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={isActive}
-      className={cn(
-        "flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-        // The same tinted "selected" style as the rest of the app's chips.
-        isActive
-          ? "border-primary/30 bg-primary/10 text-primary-text dark:border-primary-text/30 dark:bg-primary-text/15"
-          : "border-input bg-background text-foreground hover:bg-muted",
-      )}
-      onClick={onClick}
-    >
-      {label}
-      {count !== undefined ? (
-        <span
-          className={cn(
-            "text-sm font-normal tabular-nums",
-            isActive ? "text-primary-text/80" : "text-muted-foreground",
-          )}
-        >
-          {count}
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
 export function FilterSelect({
   ariaLabel,
   options,
@@ -187,7 +148,7 @@ export function FieldRow({
     <div
       ref={rowRef}
       className={cn(
-        "grid min-h-13 cursor-pointer items-start border-b border-border text-sm transition-colors last:border-b-0 hover:bg-muted/40",
+        "grid min-h-13 cursor-pointer items-center border-b border-border text-sm transition-colors last:border-b-0 hover:bg-muted/40",
         TABLE_COLUMNS,
         isSelected && "bg-primary/5 hover:bg-primary/10",
         isPending && "pointer-events-none opacity-60",
@@ -198,7 +159,7 @@ export function FieldRow({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      <div className="flex justify-center pt-3">
+      <div className="flex justify-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -222,7 +183,7 @@ export function FieldRow({
               <HugeiconsIcon
                 icon={isSelected ? Tick02Icon : DragDropVerticalIcon}
                 strokeWidth={2}
-                className="size-4"
+                className="size-5"
                 aria-hidden
               />
             </button>
@@ -235,7 +196,7 @@ export function FieldRow({
         </Tooltip>
       </div>
       {/* The name, then only the exceptions: a field is public and filterable unless marked. */}
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-3 py-3.5">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5">
         <button
           type="button"
           className="rounded-sm text-left font-semibold text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
@@ -252,15 +213,15 @@ export function FieldRow({
         {!field.filterableOnly ? <ExceptionBadge>Not filterable</ExceptionBadge> : null}
         {field.required ? <ExceptionBadge>Required</ExceptionBadge> : null}
       </div>
-      <div className="px-3 py-3.5">
+      <div className="px-3 py-2.5">
         <Badge variant="secondary">{field.appliesTo === "building" ? "Building" : "Unit"}</Badge>
       </div>
-      <div className="min-w-0 px-3 py-3.5">
+      <div className="min-w-0 px-3 py-2.5">
         <p className="line-clamp-2 text-muted-foreground" title={field.description || undefined}>
           {field.description || "No description"}
         </p>
       </div>
-      <div className="flex justify-center pt-2">
+      <div className="flex justify-center">
         {/* Not modal, so the delete dialog opened from it doesn't leave the page inert. */}
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>

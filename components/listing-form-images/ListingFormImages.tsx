@@ -59,9 +59,9 @@ async function uploadFile(
   return uploadImageResponseSchema.parse(await response.json()).data;
 }
 
-/** A ghost icon button on the photo's dark scrim. */
-const SCRIM_BUTTON =
-  "text-white hover:bg-white/15 hover:text-white disabled:opacity-40 dark:hover:bg-white/15";
+/** An icon button in the photo's control pill: 40px, 44px on phones. */
+const PHOTO_BUTTON =
+  "rounded-md text-inherit hover:bg-neutral-900/5 hover:text-inherit disabled:opacity-35 dark:hover:bg-white/10";
 
 export function ListingFormImages({
   control,
@@ -229,19 +229,20 @@ export function ListingFormImages({
                             alt={image.caption || position}
                             className="size-full object-cover"
                           />
-                          {/* Both overlays share one dark scrim, so they read on any photo in
-                              either theme. */}
+                          {/* The Cover badge keeps a dark scrim so it reads on any photo. */}
                           {index === 0 ? (
                             <Badge className="absolute top-2 left-2 h-7 border-white/15 bg-zinc-950/80 px-3 text-white backdrop-blur dark:bg-zinc-950/80">
                               Cover
                             </Badge>
                           ) : null}
-                          <div className="absolute top-2 right-2 flex gap-1 rounded-lg border border-white/15 bg-zinc-950/80 p-0.5 text-white backdrop-blur">
+                          {/* A solid pill rather than the scrim: white in light mode, near-black in
+                              dark, so the controls read on any photo. */}
+                          <div className="absolute top-2 right-2 flex rounded-lg border border-transparent bg-white/95 p-0.5 text-neutral-900 shadow-sm backdrop-blur dark:border-white/15 dark:bg-neutral-900/90 dark:text-white">
                             <Button
                               type="button"
                               variant="ghost"
-                              size="icon-sm"
-                              className={SCRIM_BUTTON}
+                              size="icon"
+                              className={PHOTO_BUTTON}
                               aria-label={`Move ${position} earlier`}
                               title="Move earlier"
                               disabled={index === 0}
@@ -252,8 +253,8 @@ export function ListingFormImages({
                             <Button
                               type="button"
                               variant="ghost"
-                              size="icon-sm"
-                              className={SCRIM_BUTTON}
+                              size="icon"
+                              className={PHOTO_BUTTON}
                               aria-label={`Move ${position} later`}
                               title="Move later"
                               disabled={index === images.length - 1}
@@ -264,8 +265,11 @@ export function ListingFormImages({
                             <Button
                               type="button"
                               variant="ghost"
-                              size="icon-sm"
-                              className={cn(SCRIM_BUTTON, "text-[#F87171] hover:text-[#F87171]")}
+                              size="icon"
+                              className={cn(
+                                PHOTO_BUTTON,
+                                "text-red-600 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400",
+                              )}
                               aria-label={`Remove ${position}`}
                               title="Remove"
                               onClick={() => {

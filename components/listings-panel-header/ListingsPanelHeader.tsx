@@ -35,8 +35,9 @@ export function listingsSummary({
 }
 
 /**
- * The heading over the results: the match count, and the sort menu on wider screens. Phones sort
- * in the filter sheet, so there it's just the count, tight above the first card.
+ * The heading over the results: the match count, and the sort menu. Phones get a compact,
+ * borderless sort trigger that keeps the 44px tap height, so the row stays tight above the first
+ * card.
  */
 export function ListingsPanelHeader({
   shown,
@@ -56,7 +57,10 @@ export function ListingsPanelHeader({
       <p className="min-w-0 truncate text-[15px] font-semibold text-foreground sm:text-lg">
         {listingsSummary({ shown, total, isPartial, isLoading })}
       </p>
-      <SortOptionsComponent {...sortOptionProps} className="max-sm:hidden" />
+      <SortOptionsComponent
+        {...sortOptionProps}
+        className="max-sm:-my-2 max-sm:-mr-2 max-sm:border-0 max-sm:bg-transparent max-sm:px-2 max-sm:text-sm max-sm:shadow-none dark:max-sm:bg-transparent"
+      />
     </div>
   );
 }

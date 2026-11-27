@@ -285,7 +285,7 @@ export function ListingFormFields({ control }: ListingFormFieldsProps) {
             Array.isArray(item) ? (
               <div
                 key={item[0].key}
-                className="col-span-2 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3"
+                className="col-span-2 grid grid-cols-3 gap-x-3 gap-y-5 sm:gap-x-4"
               >
                 {item.map((def) => (
                   <FieldRenderer key={def.key} def={def} control={control} />

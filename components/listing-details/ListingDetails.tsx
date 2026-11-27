@@ -33,7 +33,6 @@ import {
   formatArea,
   formatBaths,
   formatBeds,
-  formatListingDate,
   formatRent,
   toSentenceCase,
 } from "@/lib/listing-format";
@@ -104,13 +103,32 @@ const CONTACT_SECTION_ID = "listing-contact";
 const contactCardClassName =
   "lg:rounded-xl lg:border lg:bg-card lg:p-6 lg:text-card-foreground lg:shadow-sm lg:dark:border-white/12";
 
+/** Rent at 28px in the contact card; `className` can size it down, as the phone bottom bar does. */
 function Price({ price, className }: { price: number; className?: string }) {
   return (
-    <span className={cn("text-xl font-bold whitespace-nowrap text-foreground", className)}>
+    <span
+      className={cn("text-[28px] leading-9 font-bold whitespace-nowrap text-foreground", className)}
+    >
       {formatRent(price)}
-      <span className="text-[15px] font-normal text-muted-foreground">{RENT_PERIOD}</span>
+      <span className="text-base font-normal text-muted-foreground">{RENT_PERIOD}</span>
     </span>
   );
+}
+
+/**
+ * "Available May 15", so the date reads as a move-in date even in a half-width cell. The year
+ * shows only when it is neither this year nor next.
+ */
+function availableLabel(isoDate: string) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return `Available ${isoDate}`;
+  const thisYear = new Date().getFullYear();
+  return `Available ${new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-CA", {
+    month: "long",
+    day: "numeric",
+    ...(year === thisYear || year === thisYear + 1 ? {} : { year: "numeric" }),
+    timeZone: "UTC",
+  })}`;
 }
 
 function FeatureItem({ feature }: { feature: ListingFeature }) {
@@ -152,7 +170,7 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-5" aria-hidden />
         </span>
-        <h2 id={headingId} className="min-w-0 text-xl font-semibold tracking-tight">
+        <h2 id={headingId} className="min-w-0 text-[22px] leading-7 font-semibold tracking-tight">
           Accessibility features
         </h2>
         {count > 0 && (
@@ -199,8 +217,8 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className={cn("border-t py-8", className)}>
-      <h2 id={id} className="mb-4 text-xl font-semibold tracking-tight">
+    <section aria-labelledby={id} className={cn("border-t pt-10 pb-8", className)}>
+      <h2 id={id} className="mb-3 text-[22px] leading-7 font-semibold tracking-tight">
         {title}
       </h2>
       {children}
@@ -286,7 +304,6 @@ export function ListingDetails({
 }: ListingDetailProps) {
   const address = buildAddress({ unitNumber, street1, street2, city, postalCode });
   const heading = title || address;
-  const availableDate = availableOn ? formatListingDate(availableOn) : undefined;
   const trimmedDescription = description?.trim();
 
   // Rent is in the contact card on desktop and in the bottom bar on phones. The embedded preview
@@ -295,21 +312,8 @@ export function ListingDetails({
     { key: "beds", icon: BedDoubleIcon, label: formatBeds(beds) },
     { key: "baths", icon: Bathtub01Icon, label: formatBaths(baths) },
     ...(sqft !== null ? [{ key: "area", icon: FloorPlanIcon, label: formatArea(sqft) }] : []),
-    // Phones show only the date beside the calendar icon, so it fits half the width; screen
-    // readers still hear "Available".
-    ...(availableDate
-      ? [
-          {
-            key: "available",
-            icon: Calendar03Icon,
-            label: (
-              <>
-                <span className="max-sm:sr-only">Available </span>
-                {availableDate}
-              </>
-            ),
-          },
-        ]
+    ...(availableOn
+      ? [{ key: "available", icon: Calendar03Icon, label: availableLabel(availableOn) }]
       : []),
   ];
   const trimmedDeposit = depositInfo?.trim();
@@ -452,7 +456,7 @@ export function ListingDetails({
       >
         {embedded && (
           <li className="col-span-2">
-            <Price price={price} />
+            <Price price={price} className="text-[22px] leading-7" />
           </li>
         )}
         {keyFacts.map((fact) => (
@@ -560,7 +564,7 @@ export function ListingDetails({
       id={CONTACT_SECTION_ID}
       aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
       className={cn(
-        "order-2 min-w-0 scroll-mt-6 border-t py-8",
+        "order-2 min-w-0 scroll-mt-6 border-t pt-10 pb-8",
         // Sticky on desktop, so rent and Apply follow the reader down the page. The site header
         // isn't sticky, so the card can stick close to the top.
         twoColumns && "lg:sticky lg:top-6 lg:border-t-0 lg:py-0",
@@ -569,10 +573,13 @@ export function ListingDetails({
       <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
         {/* Desktop leads with rent, over Apply; it is the only place rent shows there. Phones
             have it in the bottom bar. */}
-        {twoColumns && <Price price={price} className="block leading-8 max-lg:hidden" />}
+        {twoColumns && <Price price={price} className="block max-lg:hidden" />}
         <h2
           id={`${CONTACT_SECTION_ID}-heading`}
-          className={cn("text-xl font-semibold tracking-tight", twoColumns && "lg:sr-only")}
+          className={cn(
+            "text-[22px] leading-7 font-semibold tracking-tight",
+            twoColumns && "lg:sr-only",
+          )}
         >
           Contact and applications
         </h2>
@@ -713,7 +720,7 @@ export function ListingDetails({
           and stops above the site footer. Solid, so text scrolling underneath doesn't show through. */}
       <div className="sticky bottom-0 z-20 -mx-4 mt-4 -mb-8 border-t bg-background px-4 py-3 sm:-mx-6 sm:-mb-10 sm:px-6 lg:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <Price price={price} className="min-w-0" />
+          <Price price={price} className="min-w-0 text-[22px] leading-7" />
           {applyUrl ? (
             <ListingApplyButton applicationUrl={applyUrl} className="px-8" />
           ) : canReachLister ? (

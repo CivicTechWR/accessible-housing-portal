@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkCircle02Icon, CircleIcon } from "@hugeicons/core-free-icons";
+import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 
 import { cn } from "@/lib/utils";
 import { useEdgeFade } from "@/lib/useEdgeFade";
@@ -12,6 +12,8 @@ export type ListingFormSectionStatus = "complete" | "incomplete" | "optional";
 export type ListingFormSectionLink = {
   id: string;
   label: string;
+  /** A one-word label for the phone strip, such as "Details". Falls back to `label`. */
+  shortLabel?: string;
   /** Progress in words for wide screens, such as "2 of 5 required" or "3 photos". */
   meta: string;
   /** The same progress as a short count for the phone strip, such as "2/5" or "3". */
@@ -57,19 +59,12 @@ function useActiveSection(ids: string[]) {
   return [activeId, setActiveId] as const;
 }
 
-// An untouched section is an empty ring whether or not it's required; the text under the label
-// says "Optional" for the ones that are.
-const STATUS_ICONS = {
-  complete: CheckmarkCircle02Icon,
-  incomplete: CircleIcon,
-  optional: CircleIcon,
-} as const satisfies Record<ListingFormSectionStatus, unknown>;
-
 /**
  * A horizontal strip of the form's sections, pinned above the form: where you are, and what's
  * left to fill in. On phones each tab is one line with its count as a badge, and the strip
- * scrolls sideways with faded edges. From sm every tab has the same 20px status icon slot, so
- * the labels line up, with its progress in words underneath.
+ * scrolls sideways with faded edges. From sm every tab has the same 20px status slot, a green
+ * check once the section is done and its step number until then, with progress in words
+ * underneath. Optional sections that are still empty keep their number; the text says "Optional".
  */
 export function ListingFormSectionNav({ sections }: { sections: ListingFormSectionLink[] }) {
   const [activeId, setActiveId] = useActiveSection(sections.map((section) => section.id));
@@ -95,7 +90,7 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
         style={style}
         className="relative -mb-px flex snap-x snap-mandatory gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {sections.map((section) => {
+        {sections.map((section, index) => {
           const isActive = section.id === activeId;
           return (
             <li key={section.id} data-section-id={section.id} className="shrink-0 snap-start">
@@ -114,19 +109,32 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                     : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
-                <HugeiconsIcon
-                  icon={STATUS_ICONS[section.status]}
-                  strokeWidth={2}
-                  className={cn(
-                    "size-5 shrink-0 max-sm:hidden",
-                    section.status === "complete"
-                      ? "text-emerald-700 dark:text-emerald-400"
-                      : "text-muted-foreground/70",
-                  )}
-                  aria-hidden
-                />
+                {section.status === "complete" ? (
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle02Icon}
+                    strokeWidth={2}
+                    className="size-5 shrink-0 text-emerald-700 max-sm:hidden dark:text-emerald-400"
+                    aria-hidden
+                  />
+                ) : (
+                  <span
+                    aria-hidden
+                    className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground tabular-nums max-sm:hidden"
+                  >
+                    {index + 1}
+                  </span>
+                )}
                 <span className="flex flex-col leading-tight">
-                  <span className="font-medium">{section.label}</span>
+                  {section.shortLabel ? (
+                    <>
+                      <span aria-hidden className="font-medium sm:hidden">
+                        {section.shortLabel}
+                      </span>
+                      <span className="font-medium max-sm:sr-only">{section.label}</span>
+                    </>
+                  ) : (
+                    <span className="font-medium">{section.label}</span>
+                  )}
                   {/* Read by screen readers at every width; the phone badge is only visual. */}
                   <span className="text-sm text-muted-foreground max-sm:sr-only">
                     {section.meta}

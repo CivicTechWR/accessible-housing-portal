@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ComponentProps,
-  type ReactNode,
-  type Ref,
-} from "react";
+import { type ComponentProps, type ReactNode, type Ref } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   WheelchairIcon,
@@ -29,6 +21,7 @@ import type { DynamicFilterGroup } from "../feature-accordian/FeatureAccordian";
 import { LabelledCheckbox } from "../labelled-checkbox/LabelledCheckbox";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toSentenceCase } from "@/lib/listing-format";
+import { useEdgeFade } from "@/lib/useEdgeFade";
 
 export enum DisplayMode {
   LIST = "list",
@@ -74,8 +67,8 @@ function roomSummary(value: string | null | undefined, noun: string) {
 export const activeFilterClassName =
   "border-transparent bg-primary/10 font-medium text-primary-text hover:bg-primary/15 hover:text-primary-text aria-expanded:bg-primary/15 aria-expanded:text-primary-text dark:border-transparent dark:bg-primary-text/15 dark:hover:bg-primary-text/20";
 
-/** The phone quick-filter chips: fully rounded, so the row reads as chips, and 44px to tap. */
-const chipClassName = "h-11 shrink-0 rounded-full px-4";
+/** The phone quick-filter chips: fully rounded, so the row reads as chips, and 40px tall. */
+const chipClassName = "h-10 shrink-0 rounded-full px-3.5 text-sm";
 
 /** The number of selected options, on a filter button. */
 function CountBadge({ count }: { count: number }) {
@@ -236,40 +229,6 @@ function AccessibilityPopover({ groups, getCheckboxProps, count }: Accessibility
   );
 }
 
-/** How wide the fade is on an edge of the chip row that has more chips past it. */
-const FADE_WIDTH = "24px";
-
-/**
- * Fades whichever ends of a sideways-scrolling row have more content past them, so a clipped chip
- * reads as "scroll for more" rather than as a cut-off word.
- */
-function useScrollFade<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [edges, setEdges] = useState({ start: false, end: false });
-  const update = useCallback(() => {
-    const node = ref.current;
-    if (!node) return;
-    const start = node.scrollLeft > 1;
-    const end = node.scrollLeft + node.clientWidth < node.scrollWidth - 1;
-    setEdges((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
-  }, []);
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [update]);
-  const maskImage =
-    edges.start || edges.end
-      ? `linear-gradient(to right, ${edges.start ? `transparent, black ${FADE_WIDTH}` : "black"}, ${
-          edges.end ? `black calc(100% - ${FADE_WIDTH}), transparent` : "black"
-        })`
-      : undefined;
-  return { ref, onScroll: update, style: { maskImage } };
-}
-
 /**
  * The phone filter row under the search field: one chip per common filter, scrolling sideways.
  * Accessibility comes first, as the filter this portal exists for, and opens the filter sheet at
@@ -295,14 +254,14 @@ export function QuickFilterChips({
   accessibilityRef?: Ref<HTMLButtonElement>;
   className?: string;
 }) {
-  const fade = useScrollFade<HTMLDivElement>();
+  const fade = useEdgeFade<HTMLDivElement>();
   return (
     <div
       {...fade}
       role="group"
       aria-label="Quick filters"
       className={cn(
-        "flex gap-3 overflow-x-auto overflow-y-hidden px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "flex gap-2 overflow-x-auto overflow-y-hidden px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className,
       )}
     >

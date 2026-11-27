@@ -200,7 +200,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                   <tr
                     key={account.id}
                     // Top-aligned like the invitations table, so the two line up.
-                    className="cursor-pointer align-top transition-colors hover:bg-muted/60"
+                    className="cursor-pointer align-top transition-colors hover:bg-muted"
                     onClick={() => setManagingId(account.id)}
                   >
                     <td className="px-4 py-3.5">
@@ -254,7 +254,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
             {visible.map((account) => (
               <li
                 key={account.id}
-                className="flex min-w-0 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60"
+                className="flex min-w-0 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-muted"
                 onClick={() => setManagingId(account.id)}
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">

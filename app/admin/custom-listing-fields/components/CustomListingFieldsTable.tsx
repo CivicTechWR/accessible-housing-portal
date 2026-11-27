@@ -19,7 +19,7 @@ import {
   type SortKey,
   type VisibilityFilter,
 } from "../custom-listing-fields-dashboard-utils";
-import { CategoryTab, DropIndicatorLine, FieldRow, FilterSelect, SortHeader } from "./FieldRow";
+import { DropIndicatorLine, FieldRow, FilterSelect, SortHeader } from "./FieldRow";
 
 type CategoryStat = {
   category: string;
@@ -90,24 +90,6 @@ export function CustomListingFieldsTable({
 
   return (
     <div className="space-y-4">
-      {/* Wraps onto a second line rather than hiding chips past the edge. Phones get a select. */}
-      <div role="group" aria-label="Category" className="hidden flex-wrap gap-2 md:flex">
-        <CategoryTab
-          isActive={categoryFilter === "all"}
-          label="All fields"
-          onClick={() => onCategoryFilterChange("all")}
-        />
-        {categories.map((category) => (
-          <CategoryTab
-            key={category.category}
-            isActive={categoryFilter === category.category}
-            label={toSentenceCase(category.label)}
-            count={category.count}
-            onClick={() => onCategoryFilterChange(category.category)}
-          />
-        ))}
-      </div>
-
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <label className="relative block w-full md:w-72">
@@ -128,10 +110,9 @@ export function CustomListingFieldsTable({
           </label>
 
           <div className="grid grid-cols-2 gap-3 md:flex">
-            {/* The category chips pick a category on wider screens. */}
             <FilterSelect
               ariaLabel="Filter by category"
-              className="md:hidden"
+              className="md:w-52"
               value={categoryFilter}
               onChange={onCategoryFilterChange}
               options={[
@@ -232,8 +213,8 @@ export function CustomListingFieldsTable({
               displayGroups.map((group) => {
                 return (
                   <div key={group.category}>
-                    <div className="flex h-10 items-center gap-2 border-b border-border bg-muted/30 px-4">
-                      <h2 className="text-sm font-semibold text-foreground">
+                    <div className="flex h-11 items-center gap-2 border-b border-border bg-muted/60 px-4">
+                      <h2 className="text-[15px] font-semibold text-foreground">
                         {toSentenceCase(group.label)}
                       </h2>
                       <span className="text-sm text-muted-foreground">

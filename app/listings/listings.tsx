@@ -16,7 +16,6 @@ import { createSerializer } from "nuqs";
 import { rememberListingSearch } from "@/components/listing-details/BackToResults";
 import { ListingsPanel } from "@/components/listings-panel/ListingsPanel";
 import { ListingsPanelHeader } from "@/components/listings-panel-header/ListingsPanelHeader";
-import { SortOptions } from "@/components/sort-options/SortOptions";
 import type { ListingListResponse, ListingSummary } from "@/shared/schemas/listings";
 import dynamic from "next/dynamic";
 import { toListingSearchFilters } from "./query";
@@ -134,9 +133,8 @@ export default function ListingsDashboard({
     <div data-fullscreen className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <h1 className="sr-only">Search listings</h1>
       {/* The toolbar holds the search, the filters and the view switch; the count and sort sit
-          over the results. Phones get the search field and a row of quick-filter chips, sort in
-          the filter sheet, and the view switch as a floating button, to keep the first listing
-          photo high on the screen. */}
+          over the results. Phones get the search field and a row of quick-filter chips, and the
+          view switch as a floating button, to keep the first listing photo high on the screen. */}
       <header className="flex shrink-0 flex-col border-b bg-background">
         <div className="flex items-center gap-3 px-4 pt-3 pb-2 sm:h-16 sm:px-6 sm:py-0">
           <ListingFilterSearchBar
@@ -207,7 +205,7 @@ export default function ListingsDashboard({
           <div
             // In split view, CSS hides the map below `lg`, so the server HTML is right at every width.
             className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${
-              isSplitView ? "hidden lg:block lg:basis-[44%]" : ""
+              isSplitView ? "hidden lg:block lg:basis-[44%] lg:border-l" : ""
             }`}
           >
             {/* Server and hydration renders both take the placeholder branch, so they match, and
@@ -266,7 +264,6 @@ export default function ListingsDashboard({
                   dynamicGroups={dynamicGroups}
                   showActions={false}
                   initialSection={filterSection}
-                  sort={<SortOptions {...sortOptionProps} className="w-full justify-between" />}
                   className="max-w-none border-0"
                 />
               </div>

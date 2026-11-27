@@ -27,6 +27,8 @@ export function AccountSecurity() {
     confirmPassword?: string;
   }>({});
   const [pending, setPending] = useState(false);
+  // The authenticator card asks for the password only once setup (or disabling) is started.
+  const [twoFactorPasswordOpen, setTwoFactorPasswordOpen] = useState(false);
   const [setup, setSetup] = useState<{ totpURI: string; backupCodes: string[] } | null>(null);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [sessions, setSessions] = useState<(typeof authClient.$Infer.Session.session)[] | null>(
@@ -139,6 +141,7 @@ export function AccountSecurity() {
         }
       }
       form.reset();
+      setTwoFactorPasswordOpen(false);
     });
   }
 
@@ -174,7 +177,7 @@ export function AccountSecurity() {
                     <span className="truncate">{key.name || "Passkey"}</span>
                   </span>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     disabled={pending}
                     onClick={() =>
@@ -203,9 +206,7 @@ export function AccountSecurity() {
                 Name it after the device, such as "Work laptop".
               </p>
             </div>
-            <Button variant="tinted" disabled={pending}>
-              Add passkey
-            </Button>
+            <Button disabled={pending}>Add passkey</Button>
           </form>
           {passkeyMessage && (
             <p role="status" className="text-sm">
@@ -226,24 +227,46 @@ export function AccountSecurity() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 max-sm:px-0">
-          <form onSubmit={configureTwoFactor} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="two-factor-password">Current password</Label>
-              <Input
-                id="two-factor-password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-              />
-            </div>
+          {twoFactorPasswordOpen ? (
+            <form onSubmit={configureTwoFactor} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="two-factor-password">Current password</Label>
+                <Input
+                  id="two-factor-password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant={session?.user.twoFactorEnabled ? "destructive" : "default"}
+                  disabled={pending}
+                >
+                  {session?.user.twoFactorEnabled ? "Disable authenticator" : "Continue"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => setTwoFactorPasswordOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : (
             <Button
-              variant={session?.user.twoFactorEnabled ? "outline" : "tinted"}
+              type="button"
+              variant={session?.user.twoFactorEnabled ? "outline" : "default"}
               disabled={pending || !!setup}
+              onClick={() => setTwoFactorPasswordOpen(true)}
             >
               {session?.user.twoFactorEnabled ? "Disable authenticator" : "Set up authenticator"}
             </Button>
-          </form>
+          )}
           {setup && (
             <div className="space-y-4 border-t pt-6">
               <p className="text-sm">
@@ -416,9 +439,7 @@ export function AccountSecurity() {
                 </p>
               )}
             </div>
-            <Button variant="tinted" disabled={pending}>
-              Change password
-            </Button>
+            <Button disabled={pending}>Change password</Button>
           </form>
         </CardContent>
       </Card>

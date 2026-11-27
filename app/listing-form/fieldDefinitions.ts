@@ -41,7 +41,7 @@ interface BaseCoreFieldDefinition {
   pairOnMobile?: true;
   /**
    * Puts this short field in a row of three with the neighbouring fields that also set it
-   * (two to a row on phones). Set it on consecutive fields.
+   * (at every width, so keep them short). Set it on consecutive fields.
    */
   rowOfThree?: true;
 }
@@ -80,16 +80,20 @@ export const CORE_FIELD_CATEGORIES = [
   {
     key: "listing_details",
     displayName: "Listing details",
+    /** The section strip's label on phones. */
+    shortName: "Details",
     description: "The unit, its rent and what's included.",
   },
   {
     key: "property_info",
     displayName: "Property and contact",
+    shortName: "Property",
     description: "Where the building is and who navigators can contact.",
   },
   {
     key: "application",
     displayName: "How to apply",
+    shortName: "Apply",
     description:
       "Applications happen outside the portal. Add application contacts and any other information applicants should know.",
   },
