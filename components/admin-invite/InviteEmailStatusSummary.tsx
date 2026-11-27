@@ -78,23 +78,34 @@ function explain(status: InviteEmailStatus): string {
   }
 }
 
-/** One invitation's email status as a label and a sentence on what it means or what to do. */
+/**
+ * One invitation's email status as a label and a sentence on what it means or what to do.
+ * `compact` is for table rows: one line, with the sentence kept only when the admin has to act.
+ */
 export function InviteEmailStatusSummary({
   status,
+  compact = false,
   className,
 }: {
   status: InviteEmailStatus;
+  compact?: boolean;
   className?: string;
 }) {
   const needsAction = status.state === "failed" || status.state === "complained";
+  const explanation = explain(status);
 
   return (
     <div className={cn("space-y-1", className)}>
       <p
         className={cn(
-          "flex items-start gap-1.5 text-sm font-medium",
-          needsAction ? "text-destructive" : "text-foreground",
+          "flex items-start gap-1.5 text-sm",
+          needsAction
+            ? "font-medium text-destructive"
+            : compact
+              ? "text-muted-foreground"
+              : "font-medium text-foreground",
         )}
+        title={compact && !needsAction ? explanation : undefined}
       >
         <HugeiconsIcon
           icon={icons[status.state]}
@@ -104,9 +115,11 @@ export function InviteEmailStatusSummary({
         />
         {labels[status.state]}
       </p>
-      <p className={cn("text-sm", needsAction ? "text-foreground" : "text-muted-foreground")}>
-        {explain(status)}
-      </p>
+      {!compact || needsAction ? (
+        <p className={cn("text-sm", needsAction ? "text-foreground" : "text-muted-foreground")}>
+          {explanation}
+        </p>
+      ) : null}
     </div>
   );
 }

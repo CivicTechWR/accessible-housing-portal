@@ -78,8 +78,8 @@ export function groupOverlappingPins(
 }
 
 /**
- * Price pins are white with near-black text in both themes, so they read the same on either
- * basemap. The hovered, highlighted or selected pin flips to a dark fill in light mode and to
+ * Price pins are light with near-black text in both themes, so they read the same on either
+ * basemap; dark mode uses a soft grey rather than pure white, which glares. The hovered, highlighted or selected pin flips to a dark fill in light mode and to
  * brand blue in dark mode, where a near-black pill would sink into the map.
  */
 const pillClassName =
@@ -91,7 +91,7 @@ const emphasisedPill =
 function pillTone(emphasised: boolean) {
   return emphasised
     ? cn("scale-110", emphasisedPill)
-    : "bg-white text-[#1f262c] ring-black/10 group-hover:bg-[#1f262c] group-hover:text-white group-hover:ring-[#1f262c] dark:ring-black/30 dark:group-hover:bg-primary dark:group-hover:text-primary-foreground dark:group-hover:ring-primary";
+    : "bg-white text-[#1f262c] ring-black/10 dark:bg-[#e6eaec] group-hover:bg-[#1f262c] group-hover:text-white group-hover:ring-[#1f262c] dark:ring-black/30 dark:group-hover:bg-primary dark:group-hover:text-primary-foreground dark:group-hover:ring-primary";
 }
 
 /**
@@ -206,6 +206,21 @@ export const MapView = memo(function MapView({
     [listings],
   );
 
+  // Opens on the results, with room around the outermost pins so none sits against an edge.
+  // Read once, when the map mounts.
+  const [initialView] = useState(() => {
+    if (mappableListings.length === 0) return DEFAULT_VIEW;
+    const lngs = mappableListings.map((l) => l.lng);
+    const lats = mappableListings.map((l) => l.lat);
+    return {
+      bounds: [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ] as [[number, number], [number, number]],
+      fitBoundsOptions: { padding: 80, maxZoom: 14 },
+    };
+  });
+
   const selectedListing = useMemo(
     () => mappableListings.find((l) => l.id === selectedId) ?? null,
     [mappableListings, selectedId],
@@ -310,7 +325,7 @@ export const MapView = memo(function MapView({
           ref={mapRef}
           workerUrl="/maplibre/maplibre-gl-worker.mjs"
           mapStyle={isDark ? MAP_STYLE_URLS.dark : MAP_STYLE_URLS.light}
-          initialViewState={DEFAULT_VIEW}
+          initialViewState={initialView}
           style={{ width: "100%", height: "100%" }}
           scrollZoom={true}
           attributionControl={{ compact: true }}

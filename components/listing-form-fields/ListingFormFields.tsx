@@ -34,8 +34,9 @@ export interface ListingFormFieldsProps {
   control: ListingFormControl;
 }
 
-/** The field's columns in its section's two-column grid. */
+/** The field's columns in its section's two-column grid, or in its row of three. */
 function fieldSpan(def: CoreFieldDefinition) {
+  if (def.rowOfThree) return "col-span-1";
   // Emails and links are too long to read in half of the form column beside the preview.
   if (def.colSpan === 2 || def.fieldType === "email" || def.fieldType === "url") {
     return "col-span-2";
@@ -151,12 +152,7 @@ function FieldRenderer({
           <FormItem className={fieldSpan(def)} data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <FormControl>
-              <Textarea
-                placeholder={def.placeholder}
-                rows={4}
-                {...field}
-                value={field.value ?? ""}
-              />
+              <Textarea rows={4} {...field} value={field.value ?? ""} />
             </FormControl>
             {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
             <FormMessage />
@@ -190,7 +186,6 @@ function FieldRenderer({
                 type="number"
                 min={def.key === "squareFeet" ? 1 : 0}
                 step={def.key === "bathrooms" ? 0.5 : undefined}
-                placeholder={def.placeholder}
                 name={field.name}
                 ref={field.ref}
                 // Autosave only clears a stored optional number once its field is touched.
@@ -238,12 +233,7 @@ function FieldRenderer({
         <FormItem className={fieldSpan(def)} data-field-name={def.key}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input
-              type={inputType}
-              placeholder={def.placeholder}
-              {...field}
-              value={field.value ?? ""}
-            />
+            <Input type={inputType} {...field} value={field.value ?? ""} />
           </FormControl>
           {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
           <FormMessage />
@@ -251,6 +241,17 @@ function FieldRenderer({
       )}
     />
   );
+}
+
+/** Collects consecutive `rowOfThree` fields into one array so they can share a row. */
+function groupRowsOfThree(fields: CoreFieldDefinition[]) {
+  const items: (CoreFieldDefinition | [CoreFieldDefinition, ...CoreFieldDefinition[]])[] = [];
+  for (const def of fields) {
+    const last = items.at(-1);
+    if (def.rowOfThree && Array.isArray(last)) last.push(def);
+    else items.push(def.rowOfThree ? [def] : def);
+  }
+  return items;
 }
 
 export function ListingFormFields({ control }: ListingFormFieldsProps) {
@@ -270,9 +271,20 @@ export function ListingFormFields({ control }: ListingFormFieldsProps) {
           title={cat.displayName}
           description={cat.description}
         >
-          {cat.fields.map((def) => (
-            <FieldRenderer key={def.key} def={def} control={control} />
-          ))}
+          {groupRowsOfThree(cat.fields).map((item) =>
+            Array.isArray(item) ? (
+              <div
+                key={item[0].key}
+                className="col-span-2 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3"
+              >
+                {item.map((def) => (
+                  <FieldRenderer key={def.key} def={def} control={control} />
+                ))}
+              </div>
+            ) : (
+              <FieldRenderer key={item.key} def={item} control={control} />
+            ),
+          )}
         </FormSection>
       ))}
     </>

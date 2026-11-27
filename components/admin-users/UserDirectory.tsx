@@ -4,6 +4,7 @@ import { useDeferredValue, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 
+import { AccountTableColumns } from "@/components/admin-users/AccountTableColumns";
 import { ManageAccountDialog } from "@/components/admin-users/ManageAccountDialog";
 import {
   accountStatusLabels,
@@ -14,7 +15,7 @@ import {
 } from "@/components/admin-users/account-display";
 import { RoleLabel } from "@/components/admin-invite/RoleLabel";
 import { inviteRoleOptions, type InviteRole } from "@/components/admin-invite/types";
-import { StatusBadge } from "@/components/ui/badge";
+import { StatusLabel } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -38,11 +39,9 @@ function DateText({ value }: { value: string | null }) {
   );
 }
 
-/** Active is the normal state, so it shows nothing and the exceptions stand out. */
 function AccountStatusText({ status }: { status: AccountStatus | null }) {
-  if (!status) return <span className="text-sm text-muted-foreground">Unknown</span>;
-  if (status === "active") return <span className="sr-only">Active</span>;
-  return <StatusBadge tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusBadge>;
+  if (!status) return <StatusLabel tone="neutral">Unknown</StatusLabel>;
+  return <StatusLabel tone={accountStatusTones[status]}>{accountStatusLabels[status]}</StatusLabel>;
 }
 
 function accountName(account: AccountListItem) {
@@ -183,14 +182,7 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
           <div className="hidden lg:block">
             <table className="w-full table-fixed border-collapse text-left text-sm">
               <caption className="sr-only">Users</caption>
-              <colgroup>
-                <col />
-                <col className="w-56" />
-                <col className="w-32" />
-                <col className="w-28" />
-                <col className="w-28" />
-                <col className="w-12" />
-              </colgroup>
+              <AccountTableColumns />
               <thead className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">User</th>
@@ -246,8 +238,9 @@ export function UserDirectory({ accounts }: { accounts: AccountListItem[] }) {
                     <td className="px-4 py-2 text-muted-foreground">
                       <DateText value={account.lastLoginAt} />
                     </td>
-                    <td className="py-2 pr-4">
-                      <div className="flex justify-end">
+                    <td className="py-2 pr-3">
+                      {/* Sized like the invitations' menu button so the two columns line up. */}
+                      <div className="ml-auto flex size-10 items-center justify-center">
                         <RowChevron />
                       </div>
                     </td>

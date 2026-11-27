@@ -26,7 +26,7 @@ export function CustomListingFieldsDashboard({
       <div className={cn("mx-auto space-y-6", pageWidths.content)}>
         <PageHeader
           title="Custom listing fields"
-          description="Fields that appear on listings and in search filters. Navigators and housing providers see them in the order shown here. Select a row to edit it. Drag the handle to reorder, or click it to select rows for bulk edit."
+          description="Fields that appear on listings and in search filters, in the order shown here. Fields are public and filterable unless marked. Select a row to edit it. Drag the handle to reorder, or click it to select rows for bulk edit."
           actions={
             <Button
               type="button"

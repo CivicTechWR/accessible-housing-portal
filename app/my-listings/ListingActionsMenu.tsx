@@ -70,6 +70,7 @@ export function ListingActionsMenu({
         ref={buttonRef}
         type="button"
         variant="outline"
+        className="max-sm:h-11"
         disabled={isMutating}
         onClick={onRestore}
       >
@@ -86,8 +87,9 @@ export function ListingActionsMenu({
           <Button
             ref={buttonRef}
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
+            className="max-sm:size-11"
             aria-label={`More actions for ${listingTitle}`}
             disabled={isMutating}
           >

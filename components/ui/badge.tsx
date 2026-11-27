@@ -72,4 +72,37 @@ function StatusBadge({
   );
 }
 
-export { Badge, badgeVariants, StatusBadge };
+const statusDotClasses = {
+  success: "bg-emerald-600 dark:bg-emerald-400",
+  warning: "bg-amber-500 dark:bg-amber-400",
+  danger: "bg-destructive",
+  neutral: "bg-muted-foreground/60",
+} as const satisfies Record<StatusTone, string>;
+
+/**
+ * A status as a coloured dot and plain text, for table rows where most rows share the same status:
+ * every row says something, but a column of chips would shout.
+ */
+function StatusLabel({
+  tone,
+  className,
+  children,
+}: {
+  tone: StatusTone;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 text-sm whitespace-nowrap text-foreground",
+        className,
+      )}
+    >
+      <span aria-hidden className={cn("size-2 shrink-0 rounded-full", statusDotClasses[tone])} />
+      {children}
+    </span>
+  );
+}
+
+export { Badge, badgeVariants, StatusBadge, StatusLabel };

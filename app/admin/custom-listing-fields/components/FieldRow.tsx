@@ -7,8 +7,6 @@ import {
   AsteriskIcon,
   Delete02Icon,
   DragDropVerticalIcon,
-  EyeIcon,
-  FilterIcon,
   FilterRemoveIcon,
   MoreHorizontalIcon,
   PencilEdit02Icon,
@@ -259,17 +257,12 @@ export function FieldRow({
           <p className="text-muted-foreground">No description</p>
         )}
       </div>
+      {/* Only the exceptions: a field is public and filterable unless marked. */}
       <ul className="flex flex-col gap-1 px-3 py-4 text-sm">
-        <StatusIndicator
-          icon={field.publicOnly ? EyeIcon : ViewOffSlashIcon}
-          label={field.publicOnly ? "Public" : "Internal"}
-          muted={!field.publicOnly}
-        />
-        <StatusIndicator
-          icon={field.filterableOnly ? FilterIcon : FilterRemoveIcon}
-          label={field.filterableOnly ? "Filterable" : "Not filterable"}
-          muted={!field.filterableOnly}
-        />
+        {!field.publicOnly ? <StatusIndicator icon={ViewOffSlashIcon} label="Internal" /> : null}
+        {!field.filterableOnly ? (
+          <StatusIndicator icon={FilterRemoveIcon} label="Not filterable" />
+        ) : null}
         {field.required ? <StatusIndicator icon={AsteriskIcon} label="Required" /> : null}
       </ul>
       <div className="flex justify-center pt-3">
@@ -281,6 +274,7 @@ export function FieldRow({
               type="button"
               variant="ghost"
               size="icon"
+              className="max-sm:size-11"
               aria-label={`More actions for ${label}`}
               disabled={isPending}
               onClick={(event) => event.stopPropagation()}
@@ -318,23 +312,15 @@ export function FieldRow({
   );
 }
 
-function StatusIndicator({
-  icon,
-  label,
-  muted = false,
-}: {
-  icon: IconSvgElement;
-  label: string;
-  muted?: boolean;
-}) {
+function StatusIndicator({ icon, label }: { icon: IconSvgElement; label: string }) {
   return (
-    <li
-      className={cn(
-        "flex items-center gap-1.5 whitespace-nowrap",
-        muted ? "text-muted-foreground" : "text-foreground",
-      )}
-    >
-      <HugeiconsIcon icon={icon} strokeWidth={2} className="size-4 shrink-0" aria-hidden />
+    <li className="flex items-center gap-1.5 whitespace-nowrap text-foreground">
+      <HugeiconsIcon
+        icon={icon}
+        strokeWidth={2}
+        className="size-4 shrink-0 text-muted-foreground"
+        aria-hidden
+      />
       {label}
     </li>
   );

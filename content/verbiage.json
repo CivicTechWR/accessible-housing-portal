@@ -7,11 +7,8 @@
     "formTitle": "Invitation details",
     "fields": {
       "nameLabel": "Name",
-      "namePlaceholder": "Jane Doe",
       "emailLabel": "Email",
-      "emailPlaceholder": "name@example.com",
-      "organizationLabel": "Organization",
-      "organizationPlaceholder": "Optional",
+      "organizationLabel": "Organization (optional)",
       "roleLabel": "Invite as",
       "rolePlaceholder": "Select a role"
     },

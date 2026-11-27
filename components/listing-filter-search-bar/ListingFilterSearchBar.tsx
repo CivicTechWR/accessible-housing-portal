@@ -17,6 +17,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { PriceRangeInput, PriceRangeInputProps } from "../price-range-input/PriceRangeInput";
 import { ToggleField, ToggleFieldProps } from "../toggle-field/ToggleField";
+import type { DynamicFilterGroup } from "../feature-accordian/FeatureAccordian";
+import { LabelledCheckbox } from "../labelled-checkbox/LabelledCheckbox";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toSentenceCase } from "@/lib/listing-format";
 
 export enum DisplayMode {
   LIST = "list",
@@ -31,6 +35,15 @@ export interface ListingFilterSearchBarProps {
   bathroomToggleProps: ToggleFieldProps;
   /** The "Filters" button that opens every filter. */
   filterButton?: ReactNode;
+  /** The accessibility feature filters, for the desktop Accessibility popover. */
+  accessibilityFilter?: AccessibilityFilterProps;
+}
+
+interface AccessibilityFilterProps {
+  groups: DynamicFilterGroup[];
+  getCheckboxProps: (id: string) => ComponentProps<typeof Checkbox>;
+  /** How many accessibility features are selected. */
+  count: number;
 }
 
 function formatPrice(value: number) {
@@ -51,8 +64,24 @@ function roomSummary(value: string | null | undefined, noun: string) {
 
 const activeFilterClassName = "border-primary-text/60 bg-primary/5 font-medium dark:bg-primary/15";
 
-/** The phone quick-filter chips: shorter and fully rounded, so the row reads as chips. */
-const chipClassName = "h-10 shrink-0 rounded-full px-3.5";
+/** The phone quick-filter chips: fully rounded, so the row reads as chips, and 44px to tap. */
+const chipClassName = "h-11 shrink-0 rounded-full px-4";
+
+/** The number of selected options, on a filter button. */
+function CountBadge({ count }: { count: number }) {
+  return (
+    <span
+      aria-hidden
+      className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
+    >
+      {count}
+    </span>
+  );
+}
+
+function accessibilityLabel(count: number) {
+  return count > 0 ? `Accessibility, ${count} selected` : "Accessibility";
+}
 
 /** A compact filter button that opens one filter in a popover, like "Price" or "Beds". */
 function FilterPopover({
@@ -101,10 +130,11 @@ export function ListingFilterSearchBar({
   bedroomToggleProps,
   bathroomToggleProps,
   filterButton,
+  accessibilityFilter,
 }: ListingFilterSearchBarProps) {
   return (
     <div className="flex w-full items-center gap-2">
-      <div className="relative min-w-0 flex-1 sm:max-w-sm sm:min-w-40">
+      <div className="relative min-w-0 flex-1 sm:max-w-75 sm:min-w-40">
         <HugeiconsIcon
           icon={Search01Icon}
           strokeWidth={2}
@@ -129,10 +159,69 @@ export function ListingFilterSearchBar({
         <FilterPopover label="Baths" value={roomSummary(bathroomToggleProps.value, "bath")}>
           <ToggleField {...bathroomToggleProps} allowEmpty />
         </FilterPopover>
+        {/* Below `lg` there's no room for it, and the features stay in the Filters panel. */}
+        {accessibilityFilter && accessibilityFilter.groups.length > 0 && (
+          <AccessibilityPopover {...accessibilityFilter} />
+        )}
       </div>
 
       {filterButton}
     </div>
+  );
+}
+
+/** Every accessibility feature filter, grouped by category, in one scrolling popover. */
+function AccessibilityPopover({ groups, getCheckboxProps, count }: AccessibilityFilterProps) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          aria-label={accessibilityLabel(count)}
+          className={cn("gap-1.5 font-normal max-lg:hidden", count > 0 && activeFilterClassName)}
+        >
+          <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-4" aria-hidden />
+          Accessibility
+          {count > 0 ? (
+            <CountBadge count={count} />
+          ) : (
+            <HugeiconsIcon
+              icon={ArrowDown01Icon}
+              strokeWidth={2}
+              className="size-4 text-muted-foreground"
+              aria-hidden
+            />
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        collisionPadding={16}
+        className="max-h-[min(32rem,var(--radix-popover-content-available-height))] w-80 overflow-y-auto p-0"
+      >
+        <div className="space-y-5 p-4">
+          {groups.map((group) => (
+            <fieldset key={group.groupId} className="space-y-3">
+              <legend className="mb-3 text-sm font-semibold">
+                {toSentenceCase(group.groupLabel)}
+              </legend>
+              {group.options.map((option) => {
+                const checkboxProps = getCheckboxProps(option.id);
+                return (
+                  <LabelledCheckbox
+                    key={option.id}
+                    label={toSentenceCase(option.label)}
+                    {...checkboxProps}
+                    // The Filters panel can be open at the same time with the same checkboxes.
+                    id={`popover-${checkboxProps.id}`}
+                  />
+                );
+              })}
+            </fieldset>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -149,7 +238,10 @@ export function QuickFilterChips({
   onAccessibilityClick,
   accessibilityRef,
   className,
-}: Omit<ListingFilterSearchBarProps, "searchInputProps" | "filterButton"> & {
+}: Omit<
+  ListingFilterSearchBarProps,
+  "searchInputProps" | "filterButton" | "accessibilityFilter"
+> & {
   /** How many accessibility features are selected. */
   accessibilityCount: number;
   onAccessibilityClick: () => void;
@@ -183,9 +275,7 @@ export function QuickFilterChips({
         ref={accessibilityRef}
         variant="outline"
         onClick={onAccessibilityClick}
-        aria-label={
-          accessibilityCount > 0 ? `Accessibility, ${accessibilityCount} selected` : "Accessibility"
-        }
+        aria-label={accessibilityLabel(accessibilityCount)}
         className={cn(
           "gap-1.5 font-normal",
           chipClassName,
@@ -194,14 +284,7 @@ export function QuickFilterChips({
       >
         <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-4" aria-hidden />
         Accessibility
-        {accessibilityCount > 0 && (
-          <span
-            aria-hidden
-            className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
-          >
-            {accessibilityCount}
-          </span>
-        )}
+        {accessibilityCount > 0 && <CountBadge count={accessibilityCount} />}
       </Button>
     </div>
   );

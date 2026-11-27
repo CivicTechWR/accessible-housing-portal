@@ -49,7 +49,7 @@ describe("ListingFormFields", () => {
   it("stores typed deposit information on the form", () => {
     const form = renderForm();
 
-    fireEvent.change(screen.getByPlaceholderText("E.g. First and last month's rent, refundable"), {
+    fireEvent.change(screen.getByLabelText("Deposit information"), {
       target: { value: "First and last month's rent, refundable" },
     });
 

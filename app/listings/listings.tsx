@@ -139,6 +139,11 @@ export default function ListingsDashboard({
             bedroomToggleProps={bedroomToggleProps}
             bathroomToggleProps={bathroomToggleProps}
             filterButton={<FilterButton {...filterButtonProps} />}
+            accessibilityFilter={{
+              groups: dynamicGroups,
+              getCheckboxProps: getFeatureCheckboxProps,
+              count: filters.features.length,
+            }}
           />
         </div>
         <QuickFilterChips

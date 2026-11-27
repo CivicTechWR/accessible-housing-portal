@@ -87,7 +87,8 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                 )}
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate">{section.label}</span>
+                  {/* Wraps rather than truncates: the rail is narrow at xl. */}
+                  <span className="block text-pretty">{section.label}</span>
                   {section.meta ? (
                     <span className="block text-sm font-normal text-muted-foreground">
                       {section.meta}

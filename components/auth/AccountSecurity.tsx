@@ -191,13 +191,14 @@ export function AccountSecurity() {
           {passkeys?.length === 0 && (
             <p className="text-sm text-muted-foreground">No passkeys added yet.</p>
           )}
-          <form className="flex flex-col gap-3 sm:flex-row" onSubmit={addPasskey}>
-            <Input
-              name="name"
-              aria-label="Passkey name"
-              placeholder="Passkey name, e.g. laptop"
-              className="sm:flex-1"
-            />
+          <form className="space-y-4" onSubmit={addPasskey}>
+            <div className="space-y-2">
+              <Label htmlFor="passkey-name">Passkey name (optional)</Label>
+              <Input id="passkey-name" name="name" aria-describedby="passkey-name-hint" />
+              <p id="passkey-name-hint" className="text-sm text-muted-foreground">
+                Name it after the device, such as "Work laptop".
+              </p>
+            </div>
             <Button variant="outline" disabled={pending}>
               Add passkey
             </Button>
@@ -253,7 +254,7 @@ export function AccountSecurity() {
                 </code>
               </details>
               <form
-                className="flex flex-col gap-3 sm:flex-row"
+                className="flex flex-col items-start gap-3 sm:flex-row"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const code = String(new FormData(event.currentTarget).get("code"));
@@ -271,7 +272,7 @@ export function AccountSecurity() {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   pattern="[0-9]{6}"
-                  className="sm:max-w-48"
+                  className="max-w-48"
                   required
                 />
                 <Button disabled={pending}>Verify and enable</Button>

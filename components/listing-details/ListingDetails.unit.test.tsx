@@ -67,7 +67,6 @@ describe("ListingDetails rental details", () => {
       "First and last month's rent, refundable",
       "Electric heat pump",
       "Water",
-      "Initial lease term",
       "12-month lease",
     ]) {
       screen.getByText(text);
@@ -75,8 +74,12 @@ describe("ListingDetails rental details", () => {
     within(screen.getByRole("list", { name: "Key facts" })).getByText(
       "Available September 1, 2026",
     );
-    // The first child is the label text; the lease term's info button follows it.
-    const labels = screen.getAllByRole("term").map((node) => node.firstChild?.textContent);
+    // The lease term's info button sits inside its label; leave it out to read the label text.
+    const labels = screen.getAllByRole("term").map((node) => {
+      const label = node.cloneNode(true) as Element;
+      label.querySelector("button")?.remove();
+      return label.textContent;
+    });
     expect(labels).toEqual([
       "Deposit",
       "Building type",

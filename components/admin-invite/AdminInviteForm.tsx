@@ -60,7 +60,6 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
           name="name"
           autoComplete="name"
           required
-          placeholder={copy.namePlaceholder}
           value={name}
           onChange={(event) => setName(event.target.value)}
           disabled={pending}
@@ -75,7 +74,6 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
           type="email"
           autoComplete="email"
           required
-          placeholder={copy.emailPlaceholder}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           disabled={pending}
@@ -88,7 +86,6 @@ export function AdminInviteForm({ onResult }: AdminInviteFormProps) {
           id="invite-organization"
           name="organization"
           autoComplete="organization"
-          placeholder={copy.organizationPlaceholder}
           value={organization}
           onChange={(event) => setOrganization(event.target.value)}
           disabled={pending}

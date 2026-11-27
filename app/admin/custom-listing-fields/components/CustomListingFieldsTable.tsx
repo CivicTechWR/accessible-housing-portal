@@ -227,7 +227,7 @@ export function CustomListingFieldsTable({
             <SortHeader
               label="Status"
               sortKey="visibility"
-              helperText="Visibility, whether renters can filter by it, and whether it's required."
+              helperText="Fields are public and filterable unless marked Internal or Not filterable."
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
@@ -336,8 +336,15 @@ function ScrollFadeRow({ className, children }: { className?: string; children: 
     element.scrollBy({ left: direction * element.clientWidth * 0.6, behavior: "smooth" });
   };
 
-  const fade = "4rem";
-  const maskImage = `linear-gradient(to right, ${edges.start ? "transparent" : "black"}, black ${fade}, black calc(100% - ${fade}), ${edges.end ? "transparent" : "black"})`;
+  // Content under a scroll button is fully hidden, then fades in over the next 3rem, so the
+  // button never sits on top of a tab or its count.
+  const button = "2.5rem";
+  const fade = "5.5rem";
+  const startMask = edges.start ? `transparent ${button}, black ${fade}` : "black 0";
+  const endMask = edges.end
+    ? `black calc(100% - ${fade}), transparent calc(100% - ${button})`
+    : "black 100%";
+  const maskImage = `linear-gradient(to right, ${startMask}, ${endMask})`;
 
   return (
     <div className={cn("relative", className)}>

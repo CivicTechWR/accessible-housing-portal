@@ -16,6 +16,7 @@ const DARK_MINOR_LABELS = [
   "place_village",
 ];
 const DARK_MAJOR_LABELS = ["place_town", "place_city", "place_city_large"];
+const DARK_MINOR_PLACE_LABELS = ["place_other", "place_suburb", "place_village"];
 
 /**
  * OpenFreeMap's dark style draws water, parks and labels in near-black on black. These paint
@@ -24,26 +25,28 @@ const DARK_MAJOR_LABELS = ["place_town", "place_city", "place_city_large"];
  */
 const DARK_PAINT: PaintOverrides = [
   [["background"], "background-color", "#14181c"],
-  [["water"], "fill-color", "#1d2d3a"],
-  [["waterway"], "line-color", "#1d2d3a"],
+  [["water"], "fill-color", "#213649"],
+  [["waterway"], "line-color", "#213649"],
   [["landuse_residential"], "fill-color", "#171b1f"],
   [["landcover_wood", "landuse_park"], "fill-color", "#18241e"],
   [["building"], "fill-color", "#1b2025"],
   [["building"], "fill-outline-color", "#232a30"],
-  [["highway_path"], "line-color", "#21262b"],
-  [["highway_minor"], "line-color", "#252b31"],
+  [["highway_path"], "line-color", "#272d33"],
+  [["highway_minor"], "line-color", "#2d343b"],
   [
     ["highway_major_inner", "highway_major_subtle", "highway_motorway_subtle"],
     "line-color",
-    "#2f353c",
+    "#384048",
   ],
-  [["highway_major_casing", "highway_motorway_inner"], "line-color", "#373f47"],
-  [["highway_motorway_casing"], "line-color", "#424b54"],
-  [["railway", "railway_minor", "railway_transit"], "line-color", "#30373e"],
+  [["highway_major_casing", "highway_motorway_inner"], "line-color", "#424b54"],
+  [["highway_motorway_casing"], "line-color", "#4d5761"],
+  [["railway", "railway_minor", "railway_transit"], "line-color", "#363d44"],
+  [["aeroway-area"], "fill-color", "#1b2025"],
+  [["aeroway-runway", "aeroway-taxiway"], "line-color", "#2d343b"],
   [["water_name"], "text-color", "#7f9bb3"],
   [["water_name"], "text-halo-color", "#14181c"],
   [DARK_MINOR_LABELS, "text-color", "#aab3bc"],
-  [DARK_MAJOR_LABELS, "text-color", "#c4ccd3"],
+  [DARK_MAJOR_LABELS, "text-color", "#c8d0d4"],
   [[...DARK_MINOR_LABELS, ...DARK_MAJOR_LABELS], "text-halo-color", "#14181c"],
 ];
 
@@ -81,15 +84,36 @@ const LIGHT_PAINT: PaintOverrides = [
 
 type LayoutProperty = Parameters<MaplibreMap["setLayoutProperty"]>[1];
 type LayoutValue = Parameters<MaplibreMap["setLayoutProperty"]>[2];
+type LayoutOverrides = Array<[layerIds: string[], property: LayoutProperty, value: LayoutValue]>;
 
 /**
  * Neighbourhood names are 10px at the search map's default zoom, too small to orient by, so they
  * grow a step. City and town names sit higher above their point, which is where listings bunch
  * up, so a price pin there is less likely to cover the name.
  */
-const LIGHT_LAYOUT: Array<[layerIds: string[], property: LayoutProperty, value: LayoutValue]> = [
+const LIGHT_LAYOUT: LayoutOverrides = [
   [["label_other"], "text-size", ["interpolate", ["linear"], ["zoom"], 8, 10, 12, 12, 15, 14]],
   [["label_city", "label_city_capital", "label_town"], "text-offset", [0, -1.6]],
+];
+
+/**
+ * The dark style sets place names in 10px capitals. These match the light style instead: city
+ * names grow to 18px and neighbourhood names to 14px, in normal case.
+ */
+const DARK_LAYOUT: LayoutOverrides = [
+  [[...DARK_MINOR_PLACE_LABELS, ...DARK_MAJOR_LABELS], "text-transform", "none"],
+  [
+    DARK_MINOR_PLACE_LABELS,
+    "text-size",
+    ["interpolate", ["linear"], ["zoom"], 8, 10, 12, 12, 15, 14],
+  ],
+  [["place_town"], "text-size", ["interpolate", ["linear"], ["zoom"], 7, 12, 11, 16]],
+  [
+    ["place_city", "place_city_large"],
+    "text-size",
+    ["interpolate", ["linear"], ["zoom"], 4, 11, 7, 13, 11, 18],
+  ],
+  [DARK_MAJOR_LABELS, "text-offset", [0, -1.6]],
 ];
 
 /** Place names, hidden on the listing page's map, where the pin marks the only place that matters. */
@@ -152,6 +176,14 @@ function hideDarkMinorStreetNames(map: MaplibreMap) {
   ]);
 }
 
+function applyLayout(map: MaplibreMap, overrides: LayoutOverrides) {
+  for (const [layerIds, property, value] of overrides) {
+    for (const layerId of layerIds) {
+      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, property, value);
+    }
+  }
+}
+
 function hide(map: MaplibreMap, layerIds: string[]) {
   for (const layerId of layerIds) {
     if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", "none");
@@ -171,17 +203,14 @@ export function applyMapStyleOverrides(
   if (hidePlaceLabels) hide(map, PLACE_LABELS);
   if (isDark) {
     applyPaint(map, DARK_PAINT);
+    applyLayout(map, DARK_LAYOUT);
     hideDarkMinorStreetNames(map);
     return;
   }
   applyPaint(map, LIGHT_PAINT);
   quietLightRoads(map);
   hide(map, LIGHT_HIDDEN);
-  for (const [layerIds, property, value] of LIGHT_LAYOUT) {
-    for (const layerId of layerIds) {
-      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, property, value);
-    }
-  }
+  applyLayout(map, LIGHT_LAYOUT);
 }
 
 /**

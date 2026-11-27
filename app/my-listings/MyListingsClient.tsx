@@ -264,7 +264,7 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                 </div>
 
                 <div className="col-span-2 min-w-0 space-y-1 sm:col-span-1 sm:col-start-2 sm:self-start">
-                  <p className="flex flex-wrap gap-x-1.5 text-sm text-foreground">
+                  <p className="text-sm text-foreground">
                     {[
                       facts.rent === null ? (
                         <span key="rent" className="text-muted-foreground">
@@ -282,17 +282,19 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                         </span>,
                       ]),
                     ].map((fact, index, all) => (
-                      // Each fact keeps its trailing dot and never splits, so a wrapped line
-                      // starts with a fact rather than a dot or an orphaned unit. The dot's
-                      // margin matches the row's gap, so it sits centred between facts.
-                      <span key={index} className="whitespace-nowrap">
-                        {fact}
-                        {index < all.length - 1 ? (
-                          <span className="ml-1.5 text-muted-foreground">
-                            <span aria-hidden>·</span>
-                            <span className="sr-only">,</span>
-                          </span>
-                        ) : null}
+                      // Each fact keeps its trailing " ·" and never splits, so a wrapped line
+                      // starts with a fact rather than a dot or an orphaned unit. The spaces
+                      // match the " · " on search cards.
+                      <span key={index}>
+                        <span className="whitespace-nowrap">
+                          {fact}
+                          {index < all.length - 1 ? (
+                            <span className="text-muted-foreground">
+                              <span aria-hidden> ·</span>
+                              <span className="sr-only">,</span>
+                            </span>
+                          ) : null}
+                        </span>{" "}
                       </span>
                     ))}
                   </p>
@@ -309,17 +311,11 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   ) : (
                     <>
                       {listing.status === "published" ? (
-                        <Button asChild variant="outline" className="max-sm:flex-1">
+                        <Button asChild variant="outline" className="max-sm:h-11 max-sm:flex-1">
                           <Link href={listing.viewUrl}>View</Link>
                         </Button>
                       ) : null}
-                      {/* The row's main action: tinted so it leads without competing with the
-                          page's one filled button, New listing. */}
-                      <Button
-                        asChild
-                        variant="secondary"
-                        className="bg-primary/10 text-primary-text hover:bg-primary/15 max-sm:flex-1 dark:bg-primary-text/15 dark:hover:bg-primary-text/25"
-                      >
+                      <Button asChild variant="outline" className="max-sm:h-11 max-sm:flex-1">
                         <Link href={listing.editUrl}>
                           {listing.status === "draft" ? "Resume draft" : "Edit"}
                         </Link>

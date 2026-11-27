@@ -224,15 +224,16 @@ export function ListingFormLayout({
   const gridClassName = cn(
     PAGE_COLUMN,
     "grid grid-cols-1 gap-6",
+    // At xl the rail and preview stay narrow so the form column keeps about 530px.
     !hasPreview
-      ? showsRail && "xl:grid-cols-[12.5rem_minmax(0,1fr)]"
+      ? showsRail && "xl:grid-cols-[11rem_minmax(0,1fr)]"
       : isExpandedWithPreview
         ? "lg:grid-cols-[20rem_minmax(0,1fr)]"
         : cn(
             "lg:grid-cols-[minmax(0,1fr)_18.75rem]",
             showsRail
-              ? "xl:grid-cols-[12.5rem_minmax(0,1fr)_18.75rem]"
-              : "xl:grid-cols-[minmax(0,1fr)_18.75rem]",
+              ? "xl:grid-cols-[11rem_minmax(0,1fr)_17rem]"
+              : "xl:grid-cols-[minmax(0,1fr)_17rem]",
           ),
   );
   const footerBar = footer ? (

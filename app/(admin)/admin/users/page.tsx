@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Add01Icon } from "@hugeicons/core-free-icons";
 
+import { AccountTableColumns } from "@/components/admin-users/AccountTableColumns";
 import { AdminInviteActions } from "@/components/admin-users/AdminInviteActions";
 import { UserDirectory } from "@/components/admin-users/UserDirectory";
 import { formatAccountDate } from "@/components/admin-users/account-display";
@@ -15,7 +16,7 @@ import {
   pageWidths,
 } from "@/components/page-shell/AppPageShell";
 import { Button } from "@/components/ui/button";
-import { Badge, StatusBadge, type StatusTone } from "@/components/ui/badge";
+import { Badge, StatusLabel, type StatusTone } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { findAccountInvites, type AccountInviteRow } from "@/lib/auth/invite-store";
@@ -92,7 +93,7 @@ const inviteLifecycle: Record<AccountInviteRow["lifecycle"], { label: string; to
 
 function InviteStatus({ lifecycle }: { lifecycle: AccountInviteRow["lifecycle"] }) {
   const { label, tone } = inviteLifecycle[lifecycle];
-  return <StatusBadge tone={tone}>{label}</StatusBadge>;
+  return <StatusLabel tone={tone}>{label}</StatusLabel>;
 }
 
 function DateText({ value }: { value: Date }) {
@@ -127,14 +128,7 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
       <div className="hidden lg:block">
         <table className="w-full table-fixed border-collapse text-left text-sm">
           <caption className="sr-only">Invitations</caption>
-          <colgroup>
-            <col />
-            <col className="w-48" />
-            <col className="w-[28%]" />
-            <col className="w-32" />
-            <col className="w-32" />
-            <col className="w-20" />
-          </colgroup>
+          <AccountTableColumns />
           <thead className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Invitee</th>
@@ -164,11 +158,11 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
                 <td className="px-4 py-3.5">
                   <RoleLabel role={invite.role} />
                 </td>
-                <td className="space-y-2 px-4 py-3.5">
-                  <div>
-                    <InviteStatus lifecycle={invite.lifecycle} />
-                  </div>
-                  {invite.emailStatus && <InviteEmailStatusSummary status={invite.emailStatus} />}
+                <td className="space-y-1 px-4 py-3.5">
+                  <InviteStatus lifecycle={invite.lifecycle} />
+                  {invite.emailStatus && (
+                    <InviteEmailStatusSummary status={invite.emailStatus} compact />
+                  )}
                 </td>
                 <td className="px-4 py-3.5 text-muted-foreground">
                   <DateText value={invite.invitedAt} />
@@ -176,7 +170,7 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
                 <td className="px-4 py-3.5 text-muted-foreground">
                   <DateText value={invite.expiresAt} />
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="py-2.5 pr-3 text-right">
                   <AdminInviteActions
                     inviteId={invite.id}
                     inviteeLabel={invite.name || invite.email}
@@ -203,11 +197,16 @@ function Invitations({ invites }: { invites: AccountInviteRow[] }) {
                 <InviteStatus lifecycle={invite.lifecycle} />
               </div>
               {invite.emailStatus && (
-                <InviteEmailStatusSummary status={invite.emailStatus} className="pt-1" />
+                <InviteEmailStatusSummary status={invite.emailStatus} compact />
               )}
               <p className="text-sm text-muted-foreground">
-                Invited <DateText value={invite.invitedAt} /> · Expires{" "}
-                <DateText value={invite.expiresAt} />
+                {/* Each half stays whole, so a wrapped line starts with "Expires". */}
+                <span className="whitespace-nowrap">
+                  Invited <DateText value={invite.invitedAt} /> ·
+                </span>{" "}
+                <span className="whitespace-nowrap">
+                  Expires <DateText value={invite.expiresAt} />
+                </span>
               </p>
             </div>
             <AdminInviteActions

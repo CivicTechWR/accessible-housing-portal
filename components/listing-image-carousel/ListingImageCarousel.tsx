@@ -26,6 +26,10 @@ function gridTileClassName(index: number, total: number) {
   return "";
 }
 
+/** A 36px circle over the photo, with an invisible 44px hit area around it for touch. */
+const arrowClassName =
+  "pointer-events-auto size-9 border-0 bg-white/95 text-neutral-900 shadow-md after:absolute after:-inset-1 hover:bg-white hover:text-neutral-900 dark:bg-white/95 dark:hover:bg-white";
+
 interface ListingImageCarouselProps {
   images: Array<{ url: string; caption: string }>;
   altPrefix: string;
@@ -77,8 +81,10 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
 
   return (
     <div className="relative w-full">
+      {/* Desktop caps the photos at 400px tall, so Apply and the accessibility heading stay on
+          the first screen. */}
       {showsGrid && (
-        <div className="relative hidden aspect-[2/1] grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-xl md:grid">
+        <div className="relative hidden aspect-[2/1] grid-cols-4 lg:aspect-auto lg:h-100 grid-rows-2 gap-2 overflow-hidden rounded-xl md:grid">
           {images.slice(0, GRID_MAX_PHOTOS).map((image, index, shown) => (
             <button
               key={`${image.url}-${index}`}
@@ -132,7 +138,7 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
                 <img
                   src={image.url}
                   alt={image.caption || `${altPrefix} image ${index + 1}`}
-                  className="aspect-[4/3] w-full object-cover md:aspect-[2/1]"
+                  className="aspect-[4/3] w-full object-cover md:aspect-[2/1] lg:aspect-auto lg:h-100"
                 />
               </button>
               {image.caption && (
@@ -143,18 +149,12 @@ export function ListingImageCarousel({ images, altPrefix }: ListingImageCarousel
         </CarouselContent>
         {images.length > 1 && (
           // An overlay the size of the photo, so the arrows centre on the photo, not the caption.
-          <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[4/3] md:aspect-[2/1]">
+          <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[4/3] md:aspect-[2/1] lg:aspect-auto lg:h-100">
             <span className="absolute top-3 right-3 rounded-full bg-black/65 px-2.5 py-1 text-[13px] font-medium text-white tabular-nums">
               {current + 1} / {images.length}
             </span>
-            <CarouselPrevious
-              size="icon"
-              className="pointer-events-auto left-3 size-10 border-0 bg-white/95 text-neutral-900 shadow-md hover:bg-white hover:text-neutral-900 dark:bg-white/95 dark:hover:bg-white"
-            />
-            <CarouselNext
-              size="icon"
-              className="pointer-events-auto right-3 size-10 border-0 bg-white/95 text-neutral-900 shadow-md hover:bg-white hover:text-neutral-900 dark:bg-white/95 dark:hover:bg-white"
-            />
+            <CarouselPrevious size="icon" className={cn("left-3", arrowClassName)} />
+            <CarouselNext size="icon" className={cn("right-3", arrowClassName)} />
           </div>
         )}
       </Carousel>

@@ -201,7 +201,13 @@ export function ListingsCard({
         {subheading && <p className="truncate text-sm text-muted-foreground">{subheading}</p>}
         <p className="text-sm text-foreground">
           {formatRooms(beds, baths, sqft)}
-          {posted && <span className="text-muted-foreground"> · {posted}</span>}
+          {/* The separator stays with the date, so a wrapped line never ends in a stray "·". */}
+          {posted && (
+            <>
+              {" "}
+              <span className="whitespace-nowrap text-muted-foreground">· {posted}</span>
+            </>
+          )}
         </p>
         <FeatureChips
           features={features}

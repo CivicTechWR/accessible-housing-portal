@@ -97,6 +97,10 @@ export interface ListingDetailProps {
 
 const CONTACT_SECTION_ID = "listing-contact";
 
+/** The cards in the desktop sidebar: contact and location. */
+const sideCardClassName =
+  "rounded-xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6 dark:border-white/12";
+
 function Price({ price, className }: { price: number; className?: string }) {
   return (
     <span className={cn("font-semibold tracking-tight text-foreground", className)}>
@@ -129,7 +133,7 @@ function FeatureItem({ feature, category }: { feature: ListingFeature; category?
           </p>
         )}
         {category && (
-          <p className="mt-1 text-[13px] font-medium text-muted-foreground">
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
             {toSentenceCase(category)}
           </p>
         )}
@@ -176,7 +180,7 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
           <div className="space-y-7">
             {categories.map((category) => (
               <div key={category.categoryName}>
-                <h3 className="mb-3 flex items-center gap-2 text-[13px] font-medium tracking-normal text-muted-foreground">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-medium tracking-normal text-muted-foreground">
                   <HugeiconsIcon
                     icon={featureIcon(category.categoryName)}
                     strokeWidth={2}
@@ -231,6 +235,28 @@ function Section({
       </h2>
       {children}
     </section>
+  );
+}
+
+/** Keeps the info button on the same line as the label's last word when the label wraps. */
+function LabelWithInfo({
+  label,
+  info,
+}: {
+  label: string;
+  info: { label: string; description: string };
+}) {
+  const lastSpace = label.lastIndexOf(" ");
+  return (
+    <>
+      {label.slice(0, lastSpace + 1)}
+      <span className="whitespace-nowrap">
+        {label.slice(lastSpace + 1)}
+        <span className="ml-1 inline-flex align-middle">
+          <InfoPopover {...info} />
+        </span>
+      </span>
+    </>
   );
 }
 
@@ -293,13 +319,22 @@ export function ListingDetails({
   const availableDate = availableOn ? formatListingDate(availableOn) : undefined;
   const trimmedDescription = description?.trim();
 
-  // Rent leads the contact card on desktop and the bottom bar on phones, so the key facts stay
-  // with the home itself. The embedded preview has neither, so rent joins the facts there.
+  // Rent sits beside the title on desktop and in the bottom bar on phones. The embedded preview
+  // has neither, so rent joins the facts there. On desktop the move-in date leads the contact
+  // card instead, beside Apply.
   const keyFacts = [
     { icon: BedDoubleIcon, label: formatBeds(beds) },
     { icon: Bathtub01Icon, label: formatBaths(baths) },
     ...(sqft !== null ? [{ icon: FloorPlanIcon, label: formatArea(sqft) }] : []),
-    ...(availableDate ? [{ icon: Calendar03Icon, label: `Available ${availableDate}` }] : []),
+    ...(availableDate
+      ? [
+          {
+            icon: Calendar03Icon,
+            label: `Available ${availableDate}`,
+            className: embedded ? undefined : "lg:hidden",
+          },
+        ]
+      : []),
   ];
   const trimmedDeposit = depositInfo?.trim();
   // The form preview passes the move-in date here, because a draft hasn't been posted.
@@ -417,28 +452,45 @@ export function ListingDetails({
           ) : undefined
         }
         actions={
-          editUrl ? (
-            <Button asChild variant="outline">
-              <Link href={editUrl}>
-                <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
-                Edit listing
-              </Link>
-            </Button>
+          !embedded || editUrl ? (
+            <>
+              {/* Phones and tablets show rent in the bottom bar instead. pt-1 lines its baseline
+                  up with the title's. */}
+              {!embedded && (
+                <p className="pt-1 text-2xl leading-8 font-bold tracking-tight whitespace-nowrap max-lg:hidden">
+                  {formatRent(price)}
+                  <span className="text-base font-normal text-muted-foreground">
+                    {" "}
+                    {RENT_PERIOD}
+                  </span>
+                </p>
+              )}
+              {editUrl && (
+                <Button asChild variant="outline">
+                  <Link href={editUrl}>
+                    <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} aria-hidden />
+                    Edit listing
+                  </Link>
+                </Button>
+              )}
+            </>
           ) : null
         }
       />
+      {/* Two columns of facts on phones, so a long fact never wraps onto a line by itself. The
+          first column takes its content's width, leaving the second room for the move-in date. */}
       <ul
         role="list"
         aria-label="Key facts"
-        className="flex flex-wrap items-center gap-x-5 gap-y-2 text-base text-foreground"
+        className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-base text-foreground sm:flex sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-2"
       >
         {embedded && (
-          <li>
+          <li className="col-span-2">
             <Price price={price} className="text-2xl" />
           </li>
         )}
         {keyFacts.map((fact) => (
-          <li key={fact.label} className="flex items-center gap-2">
+          <li key={fact.label} className={cn("flex items-center gap-2", fact.className)}>
             <HugeiconsIcon
               icon={fact.icon}
               strokeWidth={2}
@@ -458,20 +510,14 @@ export function ListingDetails({
   // contact comes straight after the accessibility panel.
   const twoColumns = !embedded;
 
+  // A card like the contact card, so the two stack as one column on desktop.
   const location = (coordinates || walkScore) && (
-    <Section
-      id="listing-location"
-      title="Location"
-      className={cn("order-5", twoColumns && "lg:border-t-0 lg:pt-0")}
-    >
-      <div className="space-y-3">
-        {/* The address is under the page title, which sits just above the sidebar on desktop. */}
-        <p
-          className={cn(
-            "flex items-start gap-2.5 text-base wrap-anywhere text-foreground",
-            twoColumns && "lg:sr-only",
-          )}
-        >
+    <section aria-labelledby="listing-location" className="order-5 min-w-0">
+      <div className={cn(sideCardClassName, "space-y-3")}>
+        <h2 id="listing-location" className="text-xl font-semibold tracking-tight">
+          Location
+        </h2>
+        <p className="flex items-start gap-2.5 text-base wrap-anywhere text-foreground">
           <HugeiconsIcon
             icon={Location01Icon}
             strokeWidth={2}
@@ -483,7 +529,7 @@ export function ListingDetails({
         {coordinates && <ListingLocationMap lat={coordinates.lat} lng={coordinates.lng} />}
         {walkScore}
       </div>
-    </Section>
+    </section>
   );
 
   const mainColumn = (
@@ -510,13 +556,7 @@ export function ListingDetails({
               className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-baseline gap-4 py-3"
             >
               <dt className="text-[15px] text-muted-foreground">
-                {row.label}
-                {row.info && (
-                  // Inline, so it follows the label's last word when the label wraps.
-                  <span className="ml-1 inline-flex align-middle">
-                    <InfoPopover {...row.info} />
-                  </span>
-                )}
+                {row.info ? <LabelWithInfo label={row.label} info={row.info} /> : row.label}
               </dt>
               <dd
                 className={cn(
@@ -552,12 +592,19 @@ export function ListingDetails({
       aria-labelledby={`${CONTACT_SECTION_ID}-heading`}
       className="order-2 min-w-0 scroll-mt-24"
     >
-      <div className="space-y-5 rounded-xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6 dark:border-white/12">
-        {/* Phones get the price from the bottom bar, so it shows here on desktop only. */}
-        {!embedded && (
-          <div className="hidden lg:block">
-            <Price price={price} className="text-[1.75rem]" />
-          </div>
+      <div className={cn(sideCardClassName, "space-y-5")}>
+        {/* Rent is beside the title on desktop, in the same screen, so the card leads with the
+            move-in date and Apply. */}
+        {!embedded && availableDate && (
+          <p className="hidden items-center gap-2.5 text-lg font-semibold tracking-tight lg:flex">
+            <HugeiconsIcon
+              icon={Calendar03Icon}
+              strokeWidth={2}
+              className="size-5 shrink-0 text-foreground/70"
+              aria-hidden
+            />
+            Available {availableDate}
+          </p>
         )}
         <h2
           id={`${CONTACT_SECTION_ID}-heading`}

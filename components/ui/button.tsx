@@ -23,13 +23,13 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          "h-10 gap-2 px-4 text-[0.9375rem] has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+          "h-11 gap-2 px-4 text-[0.9375rem] md:h-10 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
         xs: "h-7 gap-1 rounded-md px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
-        sm: "h-9 gap-1.5 rounded-md px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
+        sm: "h-11 gap-1.5 rounded-md px-3 md:h-9 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
         lg: "h-11 gap-2 px-5 text-base has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4 [&_svg:not([class*='size-'])]:size-5",
-        icon: "size-10 [&_svg:not([class*='size-'])]:size-5",
+        icon: "size-11 md:size-10 [&_svg:not([class*='size-'])]:size-5",
         "icon-xs": "size-7 rounded-md [&_svg:not([class*='size-'])]:size-3.5",
-        "icon-sm": "size-9 rounded-md",
+        "icon-sm": "size-11 rounded-md md:size-9",
         "icon-lg": "size-11 [&_svg:not([class*='size-'])]:size-5",
       },
     },

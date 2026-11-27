@@ -68,8 +68,9 @@ export function AdminInviteActions({
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
+            className="max-sm:size-11"
             aria-label={`Actions for the invitation to ${inviteeLabel}`}
             disabled={pending}
           >
