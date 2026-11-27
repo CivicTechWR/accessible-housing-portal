@@ -19,7 +19,7 @@ type HeaderAccountMenuProps = {
 };
 
 const triggerClass =
-  "inline-flex h-10 max-w-60 cursor-pointer items-center gap-2 rounded-full border border-border bg-background py-1 pr-3 pl-1 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-muted";
+  "inline-flex h-10 max-w-72 cursor-pointer items-center gap-2 rounded-full border border-border bg-card py-1 pr-3 pl-1 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-muted";
 
 const menuItemClass =
   "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors";

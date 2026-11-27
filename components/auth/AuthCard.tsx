@@ -1,11 +1,8 @@
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
 type AuthCardProps = {
-  /** Shown above the title, for states such as an expired link. */
-  icon?: IconSvgElement;
   title: ReactNode;
   description?: ReactNode;
   children?: ReactNode;
@@ -14,24 +11,17 @@ type AuthCardProps = {
 };
 
 /** The card every sign-in, reset and invite screen uses. */
-export function AuthCard({ icon, title, description, children, footer, className }: AuthCardProps) {
+export function AuthCard({ title, description, children, footer, className }: AuthCardProps) {
   return (
     <div
       className={cn(
         "flex h-fit w-full max-w-[400px] flex-col gap-6 text-card-foreground sm:rounded-xl sm:border sm:bg-card sm:p-8 dark:sm:border-white/20",
+        // Beside the sign panel (AuthPageShell), the shared box supplies the border.
+        "lg:group-data-[auth-panel]/auth:h-full lg:group-data-[auth-panel]/auth:max-w-none lg:group-data-[auth-panel]/auth:justify-center lg:group-data-[auth-panel]/auth:rounded-none lg:group-data-[auth-panel]/auth:border-0 lg:group-data-[auth-panel]/auth:p-10",
         className,
       )}
     >
       <div className="space-y-2">
-        {icon ? (
-          <HugeiconsIcon
-            icon={icon}
-            strokeWidth={2}
-            size={32}
-            aria-hidden="true"
-            className="mb-4 text-muted-foreground"
-          />
-        ) : null}
         <h1 className="text-2xl">{title}</h1>
         {description ? <p className="text-base text-muted-foreground">{description}</p> : null}
       </div>

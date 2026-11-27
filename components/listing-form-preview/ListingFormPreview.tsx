@@ -1,20 +1,13 @@
 import { Image01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
-import { Fragment, type ReactNode } from "react";
 import type { ListingFormInput } from "@/app/listing-form/types";
 import { ListingDetails } from "@/components/listing-details/ListingDetails";
-import { ListingsCard, formatPostedLabel } from "@/components/listings-card/ListingsCard";
-import { AccessibilityBadge } from "@/components/ui/accessibility-mark";
+import { AccessibilityChips } from "@/components/listings-card/AccessibilityChips";
+import { ListingsCard, formatAvailability } from "@/components/listings-card/ListingsCard";
 import { formatListingAddress } from "@/lib/address";
-import {
-  RENT_PERIOD,
-  formatArea,
-  formatBaths,
-  formatBeds,
-  formatRent,
-  toSentenceCase,
-} from "@/lib/listing-format";
+import { RENT_PERIOD, formatArea, formatBaths, formatBeds, formatRent } from "@/lib/listing-format";
+import { cn } from "@/lib/utils";
 import { LISTING_BUILDING_TYPE_VALUES, listingSquareFeetSchema } from "@/shared/schemas/listings";
 
 export type ListingFormPreviewMode = "card" | "details";
@@ -131,7 +124,7 @@ export function ListingFormPreview({
           baths={bathrooms}
           sqft={previewSquareFeet}
           // Without a move-in date the card shows no availability rather than "Available now".
-          timeAgo={formData.availableOn || ""}
+          availableOn={formData.availableOn || undefined}
           imageUrl={formData.images?.[0]?.url}
           variant="vertical"
           onClick={onOpenDetails}
@@ -161,32 +154,23 @@ export function ListingFormPreview({
   );
 }
 
-/** The one style for a missing fact on the preview card, wherever it sits on the card. */
-function Prompt({ children }: { children: string }) {
+/**
+ * A grey bar standing in for a missing fact, as in a loading card, so an empty draft keeps the
+ * card's shape without a row of prompts. Screen readers hear what's missing instead.
+ */
+function MissingBar({ width, label }: { width: string; label: string }) {
   return (
-    <span className="text-[15px] font-normal tracking-normal text-muted-foreground">
-      {children}
+    <span className="flex h-[1.4em] items-center">
+      <span aria-hidden className={cn("h-3 rounded-sm bg-foreground/10", width)} />
+      <span className="sr-only">{label}</span>
     </span>
   );
 }
 
-/** Items joined by " · ", each separator kept with the item after it, as on the search card. */
-function DotSeparated({ items }: { items: ReactNode[] }) {
-  return items.map((item, index) => (
-    <Fragment key={index}>
-      {index > 0 && " "}
-      <span className="whitespace-nowrap">
-        {index > 0 && "· "}
-        {item}
-      </span>
-    </Fragment>
-  ));
-}
-
 /**
- * The search card's structure (title, then price and rooms, then place and date, then the
- * accessibility pill) for a listing still missing its rent or rooms, with a muted prompt such as
- * "Add rent" in place of each missing fact.
+ * The search card's layout (title, price, rooms, place and availability, accessibility chips)
+ * for a listing still missing its rent or rooms. A missing title or rent is a grey bar, and
+ * missing rooms are left out.
  */
 function IncompletePreviewCard({
   title,
@@ -211,33 +195,18 @@ function IncompletePreviewCard({
   imageUrl?: string;
   onClick: () => void;
 }) {
-  const firstFeature = featureNames[0];
-  const missingRooms = [bedrooms === null && "bedrooms", bathrooms === null && "bathrooms"].filter(
-    Boolean,
-  );
-  const facts: ReactNode[] = [
-    rentCents === null ? (
-      <Prompt>Add rent</Prompt>
-    ) : (
-      <>
-        <span className="text-lg font-bold tabular-nums">
-          {formatRent(Math.round(rentCents / 100))}
-        </span>
-        {RENT_PERIOD}
-      </>
-    ),
+  const rooms = [
     ...(bedrooms === null ? [] : [formatBeds(bedrooms)]),
     ...(bathrooms === null ? [] : [formatBaths(bathrooms)]),
     ...(squareFeet === null ? [] : [formatArea(squareFeet)]),
-    ...(missingRooms.length > 0 ? [<Prompt>{`Add ${missingRooms.join(" and ")}`}</Prompt>] : []),
   ];
-  const meta = [place, availableOn ? formatPostedLabel(availableOn) : null].filter(
-    (item): item is string => Boolean(item),
-  );
+  const meta = [place, availableOn ? formatAvailability(availableOn) : null]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <article className="group relative flex w-full flex-col gap-3">
-      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-xl bg-muted">
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted sm:aspect-[3/2]">
         {imageUrl ? (
           // A draft's photo is readable only with the owner's session, so it skips the optimizer.
           <Image
@@ -255,27 +224,26 @@ function IncompletePreviewCard({
         )}
       </div>
       <div className="flex min-w-0 flex-col gap-1">
-        <h3 className="line-clamp-2 text-base leading-snug font-bold tracking-normal wrap-anywhere text-foreground md:text-[17px]">
-          {title || <Prompt>Add a title</Prompt>}
+        <h3 className="line-clamp-2 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground">
+          {title || <MissingBar width="w-3/5" label="No title yet" />}
         </h3>
-        <p className="mt-0.5 text-[15px] leading-snug text-foreground">
-          <DotSeparated items={facts} />
-        </p>
-        {meta.length > 0 ? (
-          <p className="text-sm leading-snug text-muted-foreground md:text-[15px]">
-            <DotSeparated items={meta} />
+        {rentCents === null ? (
+          <div className="text-xl leading-snug">
+            <MissingBar width="w-2/5" label="No rent yet" />
+          </div>
+        ) : (
+          <p className="text-xl leading-snug font-bold whitespace-nowrap text-foreground">
+            {formatRent(Math.round(rentCents / 100))}
+            <span className="text-[15px] font-normal text-muted-foreground">{RENT_PERIOD}</span>
           </p>
+        )}
+        {rooms.length > 0 ? (
+          <p className="text-[15px] leading-snug text-foreground/80">{rooms.join(" · ")}</p>
         ) : null}
-        <div className="mt-3 flex min-w-0">
-          {firstFeature ? (
-            <AccessibilityBadge>
-              {toSentenceCase(firstFeature)}
-              {featureNames.length > 1 ? ` +${featureNames.length - 1}` : null}
-            </AccessibilityBadge>
-          ) : (
-            <AccessibilityBadge empty>No accessibility info</AccessibilityBadge>
-          )}
-        </div>
+        {meta ? (
+          <p className="text-sm leading-snug wrap-anywhere text-muted-foreground">{meta}</p>
+        ) : null}
+        <AccessibilityChips features={featureNames} className="mt-1" />
       </div>
       <button
         type="button"

@@ -3,7 +3,7 @@
 import { type ComponentProps, type ReactNode, type Ref } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  WheelchairIcon,
+  UniversalAccessIcon,
   ArrowDown01Icon,
   LayoutTwoColumnIcon,
   ListViewIcon,
@@ -89,12 +89,12 @@ function CountBadge({ count }: { count: number }) {
   );
 }
 
-/** The wheelchair icon, which turns into the yellow mark once features are selected. */
+/** The accessibility icon, which turns into the yellow mark once features are selected. */
 function AccessibilityIcon({ active }: { active: boolean }) {
   return active ? (
     <AccessibilityMark size="sm" />
   ) : (
-    <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2} className="size-4" aria-hidden />
+    <HugeiconsIcon icon={UniversalAccessIcon} strokeWidth={2} className="size-4" aria-hidden />
   );
 }
 

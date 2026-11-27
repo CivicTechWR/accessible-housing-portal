@@ -33,7 +33,7 @@ export function HomeScopeSection() {
                   aria-hidden="true"
                   className={cn(
                     "mt-1 shrink-0",
-                    list.included ? "text-foreground" : "text-muted-foreground",
+                    list.included ? "text-primary-text" : "text-muted-foreground",
                   )}
                 />
                 <span>{item}</span>

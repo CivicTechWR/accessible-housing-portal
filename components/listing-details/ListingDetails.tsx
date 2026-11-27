@@ -104,7 +104,7 @@ const CONTACT_SECTION_ID = "listing-contact";
 const contactCardClassName =
   "lg:rounded-xl lg:border lg:bg-card lg:p-6 lg:text-card-foreground lg:dark:border-white/12";
 
-/** Rent at 28px; `className` can size it down, as the phone bottom bar does. */
+/** Rent at 28px; `className` can size it down, as the header and the phone bottom bar do. */
 function Price({ price, className }: { price: number; className?: string }) {
   return (
     <span
@@ -121,7 +121,7 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
   const featureDescription = feature.description.trim();
   const hasDescription = featureDescription !== "" && featureDescription !== feature.name;
   return (
-    <li className="flex gap-3 wrap-anywhere">
+    <li className="flex gap-3 py-3 wrap-anywhere first:pt-0 last:pb-0">
       <HugeiconsIcon
         icon={Tick02Icon}
         strokeWidth={2}
@@ -129,9 +129,9 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
         aria-hidden
       />
       <div className="min-w-0">
-        <p className="text-base font-medium text-foreground">{toSentenceCase(feature.name)}</p>
+        <p className="text-base font-semibold text-foreground">{toSentenceCase(feature.name)}</p>
         {hasDescription && (
-          <p className="mt-0.5 max-w-prose text-base text-foreground">{featureDescription}</p>
+          <p className="mt-0.5 max-w-prose text-sm text-muted-foreground">{featureDescription}</p>
         )}
       </div>
     </li>
@@ -139,9 +139,9 @@ function FeatureItem({ feature }: { feature: ListingFeature }) {
 }
 
 /**
- * The most important block after the photos, and the page's signature: a card with a strip of
- * tactile yellow along its top edge and the accessibility mark by its heading. Features sit under
- * a small muted label for their category.
+ * The most important block after the photos, and the page's signature: a card with the dotted
+ * tactile strip along its top edge and the accessibility mark by its heading. Features sit under
+ * a small muted label for their category, with a rule between them.
  */
 function AccessibilityFeatures({ categories }: { categories: ListingFeatureCategory[] }) {
   const count = categories.reduce((total, category) => total + category.features.length, 0);
@@ -150,9 +150,9 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
   return (
     <section
       aria-labelledby={headingId}
-      className="relative overflow-hidden rounded-xl border bg-card p-5 pt-[26px] text-card-foreground sm:p-6 sm:pt-[30px] dark:border-white/12"
+      className="relative overflow-hidden rounded-xl border bg-card p-4 pt-6 text-card-foreground sm:p-6 sm:pt-8 dark:border-white/12"
     >
-      <span aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-signal" />
+      <span aria-hidden className="tactile-strip absolute inset-x-0 top-0 h-2" />
       <div className="mb-5 flex items-center gap-3">
         <AccessibilityMark size="lg" />
         <h2 id={headingId} className="min-w-0 text-[22px] leading-7 font-bold">
@@ -176,7 +176,7 @@ function AccessibilityFeatures({ categories }: { categories: ListingFeatureCateg
                   {toSentenceCase(category.categoryName)}
                 </h3>
                 {/* Safari drops list semantics from a list without markers unless the role is set. */}
-                <ul role="list" className="space-y-4">
+                <ul role="list" className="divide-y">
                   {category.features.map((feature) => (
                     <FeatureItem key={feature.name} feature={feature} />
                   ))}
@@ -291,8 +291,6 @@ export function ListingDetails({
   const heading = title || address;
   const trimmedDescription = description?.trim();
 
-  // Rent is in the contact card on desktop and in the bottom bar below `lg`. The embedded preview
-  // has neither, so rent joins the facts there.
   const keyFacts = [
     { key: "beds", icon: BedDoubleIcon, label: formatBeds(beds) },
     { key: "baths", icon: Bathtub01Icon, label: formatBaths(baths) },
@@ -433,17 +431,16 @@ export function ListingDetails({
           ) : undefined
         }
       />
+      {/* Also in the sticky Apply card on desktop and the bottom bar on phones. */}
+      <p>
+        <Price price={price} className="text-2xl leading-8" />
+      </p>
       {/* A 2×2 grid of facts on phones, so a long fact never wraps onto a line by itself. */}
       <ul
         role="list"
         aria-label="Key facts"
-        className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-base text-foreground sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2"
+        className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-lg font-medium text-foreground sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2"
       >
-        {embedded && (
-          <li className="col-span-2">
-            <Price price={price} className="text-[22px] leading-7" />
-          </li>
-        )}
         {keyFacts.map((fact) => (
           <li key={fact.key} className="flex min-w-0 items-center gap-2">
             <HugeiconsIcon
@@ -509,7 +506,7 @@ export function ListingDetails({
           {rentalDetailRows.map((row) => (
             <div
               key={row.label}
-              className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-baseline gap-4 py-3 first:pt-0 last:pb-0"
+              className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] items-baseline gap-4 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]"
             >
               <dt className="text-[15px] text-muted-foreground">
                 {row.info ? <LabelWithInfo label={row.label} info={row.info} /> : row.label}
@@ -556,8 +553,8 @@ export function ListingDetails({
       )}
     >
       <div className={cn("space-y-5", twoColumns && contactCardClassName)}>
-        {/* The page's one rent on desktop, over Apply, so it stays in view as the reader scrolls.
-            Phones have it in the bottom bar. */}
+        {/* Rent over Apply on desktop, so it stays in view as the reader scrolls. Phones have it
+            in the bottom bar. */}
         {twoColumns && <Price price={price} className="block max-lg:hidden" />}
         <h2
           id={`${CONTACT_SECTION_ID}-heading`}
@@ -703,7 +700,7 @@ export function ListingDetails({
           {applyUrl ? (
             <ListingApplyButton applicationUrl={applyUrl} className="px-8" />
           ) : canReachLister ? (
-            <Button asChild size="lg" className="px-8">
+            <Button asChild size="lg" className="h-12 px-8">
               <a href={`#${CONTACT_SECTION_ID}`}>Contact</a>
             </Button>
           ) : null}

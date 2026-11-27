@@ -160,16 +160,6 @@ export function ListingImageCarousel({
                   className="aspect-[4/3] w-full object-cover md:aspect-[2/1] lg:aspect-auto lg:h-100"
                 />
                 <PhotoEdge />
-                {/* A solid strip over the bottom of the photo, so the caption stays readable on a
-                    bright photo. Hidden from screen readers, which get it as the photo's alt text. */}
-                {image.caption && (
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-0 bottom-0 bg-black/72 px-3 py-2 text-left text-sm text-white"
-                  >
-                    {image.caption}
-                  </span>
-                )}
               </button>
             </CarouselItem>
           ))}
@@ -177,7 +167,7 @@ export function ListingImageCarousel({
         {images.length > 1 && (
           // Phones swipe between photos, so they get only the counter.
           <div className="pointer-events-none absolute inset-0">
-            <span className="absolute top-3 right-3 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+            <span className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
               {current + 1} / {images.length}
             </span>
             <CarouselPrevious size="icon" className={cn("left-3 max-sm:hidden", arrowClassName)} />
@@ -185,6 +175,20 @@ export function ListingImageCarousel({
           </div>
         )}
       </Carousel>
+      {/* The shown photo's caption, under the photo rather than over it. Hidden from screen
+          readers, which get it as the photo's alt text. */}
+      {images[current]?.caption && (
+        <p
+          aria-hidden
+          className={cn(
+            "mt-2 text-sm text-muted-foreground",
+            edgeToEdge && "max-sm:px-4",
+            showsGrid && "md:hidden",
+          )}
+        >
+          {images[current].caption}
+        </p>
+      )}
       <Lightbox
         images={images}
         startIndex={lightboxStart}

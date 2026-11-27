@@ -214,7 +214,9 @@ export function FieldRow({
         {field.required ? <ExceptionBadge>Required</ExceptionBadge> : null}
       </div>
       <div className="px-3 py-2.5">
-        <Badge variant="secondary">{field.appliesTo === "building" ? "Building" : "Unit"}</Badge>
+        <span className="text-sm text-muted-foreground">
+          {field.appliesTo === "building" ? "Building" : "Unit"}
+        </span>
       </div>
       <div className="min-w-0 px-3 py-2.5">
         <p className="line-clamp-2 text-muted-foreground" title={field.description || undefined}>

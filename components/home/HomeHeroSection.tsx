@@ -30,7 +30,7 @@ export function HomeHeroSection() {
             <div className="px-6 pt-7 pb-8 sm:px-10 sm:pt-10 sm:pb-10">
               <h1
                 id="home-title"
-                className="text-[2.125rem] leading-[1.05] font-extrabold tracking-[-0.03em] sm:text-[3.5rem]"
+                className="text-[2.125rem] leading-[1.05] font-bold tracking-[-0.03em] sm:text-[3.5rem]"
               >
                 Affordable, accessible rentals in {siteConfig.region}
               </h1>
@@ -42,7 +42,7 @@ export function HomeHeroSection() {
                 <Button
                   asChild
                   size="lg"
-                  className="bg-white text-primary hover:bg-white/90 dark:bg-white dark:text-[#17478f] dark:hover:bg-white/90"
+                  className="h-12 px-6 bg-white text-primary hover:bg-white/90 dark:bg-white dark:text-[#17478f] dark:hover:bg-white/90"
                 >
                   <Link href="/sign-in">Sign in to browse listings</Link>
                 </Button>
@@ -50,7 +50,7 @@ export function HomeHeroSection() {
                   asChild
                   size="lg"
                   variant="outline"
-                  className="border-white/80 bg-transparent text-white hover:bg-white/10 hover:text-white dark:border-white/80 dark:bg-transparent dark:hover:bg-white/10"
+                  className="h-12 px-6 border-white/80 bg-transparent text-white hover:bg-white/10 hover:text-white dark:border-white/80 dark:bg-transparent dark:hover:bg-white/10"
                 >
                   <a href={`mailto:${siteConfig.contactEmail}`}>Request access</a>
                 </Button>

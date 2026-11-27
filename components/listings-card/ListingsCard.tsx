@@ -25,7 +25,7 @@ interface ListingsCardProps {
   baths: number;
   sqft: number | null;
   imageUrl?: string;
-  /** How many photos the listing has. The card shows "1/3" on the photo when it has more than one. */
+  /** How many photos the listing has. The card shows "1 / 3" on the photo when it has more than one. */
   photoCount?: number;
   /** The move-in date (YYYY-MM-DD), shown as "Available May 15" after the address. */
   availableOn?: string;
@@ -208,7 +208,7 @@ export function ListingsCard({
       <div
         className={cn(
           "relative shrink-0 overflow-hidden bg-muted",
-          isHorizontal ? "w-28 sm:w-32" : "aspect-[3/2] w-full rounded-xl",
+          isHorizontal ? "w-28 sm:w-32" : "aspect-video w-full rounded-xl sm:aspect-[3/2]",
         )}
       >
         {photo}
@@ -218,7 +218,7 @@ export function ListingsCard({
             aria-hidden
             className="absolute right-2.5 bottom-2.5 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white"
           >
-            1/{photoCount}
+            1 / {photoCount}
           </span>
         )}
       </div>
@@ -230,14 +230,14 @@ export function ListingsCard({
         )}
       >
         {/* The name gets its own lines, so it is never cut short by the rent. */}
-        <h3 className="line-clamp-2 text-[17px] leading-snug font-bold tracking-[-0.01em] wrap-anywhere text-foreground">
+        <h3 className="line-clamp-2 text-base leading-snug font-semibold tracking-normal wrap-anywhere text-foreground">
           {heading}
         </h3>
         <p className="text-xl leading-snug font-bold whitespace-nowrap text-foreground">
           {formatRent(price)}
           <span className="text-[15px] font-normal text-muted-foreground">{RENT_PERIOD}</span>
         </p>
-        <p className="text-[15px] leading-snug font-medium text-foreground">
+        <p className="text-[15px] leading-snug text-foreground/80">
           <DotSeparated
             items={[
               formatBeds(beds),

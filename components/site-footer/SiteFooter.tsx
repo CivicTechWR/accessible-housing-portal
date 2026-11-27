@@ -97,7 +97,10 @@ export function SiteFooter({ className }: { className?: string }) {
             <p>
               © {new Date().getFullYear()} {siteConfig.operator.name}
             </p>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <span aria-hidden>Theme</span>
+              <ThemeToggle />
+            </div>
           </div>
           <p>
             Location scores:{" "}

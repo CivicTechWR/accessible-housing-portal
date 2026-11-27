@@ -1,8 +1,6 @@
-import { Tick02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
 
-import { AccessibilityMark } from "@/components/ui/accessibility-mark";
+import { AccessibilityChips } from "@/components/listings-card/AccessibilityChips";
 import { formatRent, formatRooms, RENT_PERIOD } from "@/lib/listing-format";
 
 const features = [
@@ -43,35 +41,16 @@ function ExampleListing() {
           Example listing
         </span>
       </div>
-      <div className="space-y-4 p-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-lg font-bold">Maple Court Apartments</p>
-          <p className="shrink-0 text-lg font-bold">
-            {formatRent(1450)}
-            <span className="text-sm font-normal text-muted-foreground">{RENT_PERIOD}</span>
-          </p>
-        </div>
-        <p className="-mt-3 text-sm text-muted-foreground">{formatRooms(1, 1, 620)}</p>
-        <div className="border-t pt-4">
-          <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <AccessibilityMark size="sm" />
-            Accessibility
-          </p>
-          <ul role="list" className="mt-3 space-y-2">
-            {exampleFeatures.map((feature) => (
-              <li key={feature} className="flex items-center gap-2.5 text-base">
-                <HugeiconsIcon
-                  icon={Tick02Icon}
-                  strokeWidth={2.5}
-                  size={18}
-                  aria-hidden="true"
-                  className="shrink-0"
-                />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* The same order and styles as a search result card. */}
+      <div className="space-y-1 p-5">
+        <p className="text-base font-semibold">Maple Court Apartments</p>
+        <p className="text-xl font-bold">
+          {formatRent(1450)}
+          <span className="text-sm font-normal text-muted-foreground">{RENT_PERIOD}</span>
+        </p>
+        <p className="text-[0.9375rem] text-foreground/80">{formatRooms(1, 1, 620)}</p>
+        <p className="text-sm text-muted-foreground">King St W, Kitchener · Available now</p>
+        <AccessibilityChips features={exampleFeatures} className="pt-2" />
       </div>
       <figcaption className="sr-only">
         An example of how a listing appears to navigators.

@@ -70,7 +70,10 @@ function FeatureSwitch({
           {label}
         </span>
         {definition || quotesPublicText ? (
-          <span id={descriptionId} className="block space-y-1 text-sm text-muted-foreground">
+          <span
+            id={descriptionId}
+            className="block space-y-1 text-sm leading-relaxed text-foreground/80"
+          >
             {definition ? <span className="block">{definition}</span> : null}
             {quotesPublicText ? (
               <span className="block">

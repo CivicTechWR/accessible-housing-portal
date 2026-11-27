@@ -4,16 +4,18 @@ import { communityAgreement } from "@/content/community-agreement";
  * reader agrees with an explicit checkbox instead. */
 export function CommunityAgreementTerms({ showClosing = true }: { showClosing?: boolean }) {
   return (
-    <div className="space-y-8 text-base leading-relaxed">
+    <div className="max-w-[68ch] space-y-10 text-base leading-relaxed">
       <p>{communityAgreement.introduction}</p>
 
       {communityAgreement.sections.map((section) => (
-        <section key={section.title} className="space-y-4">
-          <h2 className="text-xl text-foreground">{section.title}</h2>
-          <ul role="list" className="space-y-4">
+        <section key={section.title} className="space-y-5">
+          <h2 className="text-[1.375rem] text-foreground">{section.title}</h2>
+          <ul role="list" className="space-y-6">
             {section.items.map((item) => (
               <li key={item.title}>
-                <span className="block font-medium text-foreground">{item.title}</span>
+                <span className="mb-1 block text-[1.0625rem] font-semibold text-foreground">
+                  {item.title}
+                </span>
                 {item.body}
                 {item.link && (
                   <>

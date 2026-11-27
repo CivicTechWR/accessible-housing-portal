@@ -212,7 +212,10 @@ export function ListingFormLayout({
                 <Button
                   type="button"
                   variant="outline"
-                  className="max-sm:h-11 lg:hidden"
+                  // A tap leaves the hover fill on touch screens, which made the button look
+                  // disabled after switching panes. It only shows below lg, so it keeps the card
+                  // fill and darkens only while pressed.
+                  className="hover:bg-card active:bg-muted max-sm:h-11 lg:hidden"
                   onClick={() => switchPane(isPreviewing ? "form" : "preview")}
                 >
                   {isPreviewing ? "Edit" : "Preview"}

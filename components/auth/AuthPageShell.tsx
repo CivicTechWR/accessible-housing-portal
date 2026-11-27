@@ -21,7 +21,12 @@ export function AuthPageShell({ children, withPanel = true, className }: AuthPag
     >
       <div data-compact-footer hidden />
       {withPanel ? (
-        <div className="flex w-full max-w-5xl items-start justify-center gap-16 lg:justify-between">
+        // On wide screens the panel and the card join into one box of equal height; the card
+        // drops its own border there. Below lg only the card shows.
+        <div
+          data-auth-panel
+          className="group/auth flex w-full justify-center lg:max-w-[880px] lg:overflow-hidden lg:rounded-xl lg:border lg:bg-card dark:lg:border-white/20 lg:[&>:last-child]:max-w-none lg:[&>:last-child]:flex-1"
+        >
           <AuthSignPanel />
           {children}
         </div>
@@ -38,10 +43,10 @@ function AuthSignPanel() {
   return (
     <div
       aria-hidden="true"
-      className="hidden max-w-md flex-1 overflow-hidden rounded-xl bg-primary text-primary-foreground lg:block dark:bg-[#17478f]"
+      className="hidden w-[420px] shrink-0 flex-col justify-between bg-primary text-primary-foreground lg:flex dark:bg-[#17478f]"
     >
       <div className="px-10 pt-10 pb-12">
-        <p className="text-[2.5rem] leading-[1.05] font-extrabold tracking-[-0.03em]">
+        <p className="text-[2rem] leading-[1.1] font-bold tracking-[-0.02em] text-balance">
           Affordable, accessible rentals in {siteConfig.region}
         </p>
         <p className="mt-5 text-lg leading-relaxed text-white/90">

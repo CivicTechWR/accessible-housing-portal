@@ -187,7 +187,7 @@
   --accent: #1c2634;
   --accent-foreground: oklch(0.987 0.002 197.1);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: #263243;
+  --border: #303d52;
   --input: oklch(1 0 0 / 45%);
   --ring: #93b8f5;
   --chart-1: oklch(0.828 0.111 230.318);
@@ -300,7 +300,7 @@
   h1,
   h2,
   h3 {
-    @apply font-heading tracking-[-0.02em];
+    @apply font-heading tracking-[-0.02em] text-balance;
   }
   h1 {
     @apply text-[1.75rem] leading-tight font-bold sm:text-[2rem];

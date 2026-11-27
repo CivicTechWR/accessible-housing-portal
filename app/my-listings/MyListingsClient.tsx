@@ -226,10 +226,10 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
             <li key={listing.id}>
               <Card
                 className={cn(
-                  // Phones: photo and title side by side with the menu in the top-right corner,
-                  // then facts and Edit on full-width rows so the facts line has room. From sm:
-                  // photo, details, actions in a row.
-                  "relative grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4",
+                  // Phones: photo and title side by side, the title and address using the full
+                  // width to wrap, then facts and the actions (Edit and the menu) on full-width
+                  // rows. From sm: photo, details, actions in a row.
+                  "grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 p-3 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4",
                   isArchived && "bg-muted/40",
                 )}
               >
@@ -253,11 +253,11 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                   )}
                 </div>
 
-                <div className={cn("min-w-0 space-y-1 sm:self-end", !isArchived && "max-sm:pr-12")}>
+                <div className="min-w-0 space-y-1 sm:self-end">
                   {/* The chip gets its own line so the title can use the full width to wrap. */}
                   <ListingStatusBadge status={listing.status} className="mb-1.5" />
                   <h2 className="text-base text-pretty break-words">{listing.title}</h2>
-                  <p className="truncate text-sm text-muted-foreground">
+                  <p className="text-sm break-words text-muted-foreground sm:truncate">
                     {listingLocation(listing) ?? "Address not set"}
                   </p>
                 </div>
@@ -321,9 +321,8 @@ export function MyListingsClient({ initialListings, renderedAt }: MyListingsClie
                       </Link>
                     </Button>
                   )}
-                  {/* On phones the menu sits in the card's top-right corner, leaving Edit the
-                      full width. Restore stays in the row. */}
-                  <div className={cn(!isArchived && "max-sm:absolute max-sm:top-3 max-sm:right-3")}>
+                  {/* Beside Edit, which takes the rest of the row on phones. */}
+                  <div className="shrink-0">
                     <ListingActionsMenu
                       listingTitle={listing.title}
                       viewUrl={listing.status === "published" ? listing.viewUrl : undefined}

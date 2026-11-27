@@ -106,7 +106,8 @@ describe("ListingForm hydration", () => {
     const title = await screen.findByRole("textbox", { name: (name) => name.startsWith("Title") });
     await waitFor(() => expect(title).toHaveValue("123 Main St Apartments"));
     const publish = () => screen.queryByRole("button", { name: "Publish changes" });
-    const viewListing = () => screen.queryByRole("link", { name: "View listing" });
+    const viewListing = () =>
+      screen.queryByRole("link", { name: "View listing (opens in a new tab)" });
 
     expect(screen.getByRole("status")).toHaveTextContent("Up to date");
     expect(publish()).toBeNull();

@@ -1,4 +1,4 @@
-import { WheelchairIcon } from "@hugeicons/core-free-icons";
+import { UniversalAccessIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { cn } from "@/lib/utils";
@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils";
  * transit platforms. Yellow is reserved for this: actions and links stay blue.
  */
 
-/** The wheelchair symbol on a yellow square, like an accessibility sign. Decorative. */
+/** The universal access symbol on a yellow square, like an accessibility sign. Decorative. The
+ * wheelchair symbol would stand for mobility only; listings also describe vision, hearing and
+ * other features. */
 export function AccessibilityMark({
   size = "default",
   className,
@@ -27,7 +29,7 @@ export function AccessibilityMark({
         className,
       )}
     >
-      <HugeiconsIcon icon={WheelchairIcon} strokeWidth={2.25} />
+      <HugeiconsIcon icon={UniversalAccessIcon} strokeWidth={2.25} />
     </span>
   );
 }
@@ -47,7 +49,7 @@ export function AccessibilityBadge({
   children: React.ReactNode;
   empty?: boolean;
   tone?: "soft" | "solid";
-  /** Show the wheelchair symbol. In a row of chips, only the first needs it. */
+  /** Show the accessibility symbol. */
   icon?: boolean;
   className?: string;
 }) {
@@ -65,7 +67,7 @@ export function AccessibilityBadge({
     >
       {icon && (
         <HugeiconsIcon
-          icon={WheelchairIcon}
+          icon={UniversalAccessIcon}
           strokeWidth={2.25}
           className="size-4 shrink-0"
           aria-hidden

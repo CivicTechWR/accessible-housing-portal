@@ -1,4 +1,3 @@
-import { Unlink01Icon } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 
 import { AccountActivationFlow } from "@/components/auth/AccountActivationFlow";
@@ -38,7 +37,6 @@ function InvalidInviteState() {
   return (
     <AuthPageShell>
       <AuthCard
-        icon={Unlink01Icon}
         title="Invite unavailable"
         description="This invite link is missing, expired, or has already been used."
         footer={

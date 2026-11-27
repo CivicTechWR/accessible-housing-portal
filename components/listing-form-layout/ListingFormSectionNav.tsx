@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowDown01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { useEdgeFade } from "@/lib/useEdgeFade";
 import { AccessibilityMark } from "@/components/ui/accessibility-mark";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 /** "recommended" is an empty section that listings should still fill in: accessibility. */
 export type ListingFormSectionStatus = "complete" | "incomplete" | "optional" | "recommended";
@@ -11,9 +19,7 @@ export type ListingFormSectionStatus = "complete" | "incomplete" | "optional" | 
 export type ListingFormSectionLink = {
   id: string;
   label: string;
-  /** A one-word label for the phone strip, such as "Details". Falls back to `label`. */
-  shortLabel?: string;
-  /** Progress in words, such as "2 of 5 required" or "3 photos". Visible from sm. */
+  /** Progress in words, such as "2 of 5 required" or "3 photos". */
   meta: string;
   status: ListingFormSectionStatus;
 };
@@ -57,15 +63,150 @@ function useActiveSection(ids: string[]) {
 }
 
 /**
- * A horizontal strip of the form's sections, pinned above the form: where you are, and what's
- * left to fill in. Every tab carries its step number, tinted green once the section is done. From
- * sm the progress shows in words under the label, and an empty accessibility section adds the
- * yellow accessibility mark after its label. On phones each tab is the number and a one-word
- * label, and the strip scrolls sideways with faded edges.
+ * A step's circle. The current step is solid blue with its number, a finished one is green with
+ * a check, and the rest are outlined with their number.
+ */
+function StepCircle({
+  number,
+  isActive,
+  isComplete,
+}: {
+  number: number;
+  isActive: boolean;
+  isComplete: boolean;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums",
+        isActive
+          ? "bg-primary text-primary-foreground"
+          : isComplete
+            ? "bg-emerald-600 text-white dark:bg-emerald-600"
+            : "bg-card text-muted-foreground ring-1 ring-input ring-inset",
+      )}
+    >
+      {isComplete && !isActive ? (
+        <HugeiconsIcon icon={Tick02Icon} strokeWidth={2.5} className="size-3.5" />
+      ) : (
+        number
+      )}
+    </span>
+  );
+}
+
+/**
+ * Phones: one full-width button naming the current step ("Step 1 of 5 · Listing details") that
+ * opens a menu of every section, and a five-part bar underneath that fills in blue as sections are
+ * finished.
+ */
+function SectionMenu({
+  sections,
+  activeId,
+  onSelect,
+}: {
+  sections: ListingFormSectionLink[];
+  activeId: string | undefined;
+  onSelect: (id: string) => void;
+}) {
+  const activeIndex = Math.max(
+    0,
+    sections.findIndex((section) => section.id === activeId),
+  );
+  const active = sections[activeIndex];
+  // Radix keeps the page from scrolling while the menu is open and then returns focus to the
+  // trigger, so the jump waits until the menu has closed.
+  const pendingId = useRef<string | null>(null);
+
+  return (
+    <div className="flex flex-col gap-2 py-2 sm:hidden">
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-input bg-card px-3 text-left text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          <span className="min-w-0 flex-1 truncate">
+            <span className="text-muted-foreground">
+              Step {activeIndex + 1} of {sections.length} ·{" "}
+            </span>
+            <span className="font-medium text-foreground">{active?.label}</span>
+          </span>
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            strokeWidth={2}
+            className="size-5 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="w-(--radix-dropdown-menu-trigger-width)"
+          onCloseAutoFocus={(event) => {
+            const id = pendingId.current;
+            if (!id) return;
+            pendingId.current = null;
+            event.preventDefault();
+            onSelect(id);
+          }}
+        >
+          {sections.map((section, index) => (
+            <DropdownMenuItem
+              key={section.id}
+              className="min-h-12 gap-3 py-2"
+              aria-current={section.id === activeId ? "step" : undefined}
+              onSelect={() => {
+                pendingId.current = section.id;
+              }}
+            >
+              <StepCircle
+                number={index + 1}
+                isActive={section.id === activeId}
+                isComplete={section.status === "complete"}
+              />
+              <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                <span
+                  className={cn(
+                    "text-base",
+                    section.id === activeId ? "font-semibold" : "font-medium",
+                  )}
+                >
+                  {section.label}
+                </span>
+                <span className="text-sm text-muted-foreground">{section.meta}</span>
+              </span>
+              {section.status === "recommended" ? <AccessibilityMark size="sm" /> : null}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {/* The counts are in the menu; this repeats them as a picture. */}
+      <div aria-hidden className="flex gap-1">
+        {sections.map((section) => (
+          <span
+            key={section.id}
+            className={cn(
+              "h-1 flex-1 rounded-full",
+              section.status === "complete" ? "bg-primary" : "bg-muted dark:bg-foreground/15",
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The form's sections, pinned above the form: where you are, and what's left to fill in. From sm
+ * a strip of numbered steps with their progress in words underneath; an empty accessibility
+ * section adds the yellow accessibility mark after its label. On phones a menu button and a
+ * progress bar take its place.
  */
 export function ListingFormSectionNav({ sections }: { sections: ListingFormSectionLink[] }) {
   const [activeId, setActiveId] = useActiveSection(sections.map((section) => section.id));
   const { ref: listRef, onScroll, style } = useEdgeFade<HTMLUListElement>();
+
+  const goTo = (id: string) => {
+    setActiveId(id);
+    scrollToSection(id);
+  };
 
   // Keep the current section in view when the strip scrolls sideways. Sets scrollLeft rather
   // than calling scrollIntoView, which could also scroll the page.
@@ -81,11 +222,12 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
 
   return (
     <nav aria-label="Form sections">
+      <SectionMenu sections={sections} activeId={activeId} onSelect={goTo} />
       <ul
         ref={listRef}
         onScroll={onScroll}
         style={style}
-        className="relative -mb-px flex snap-x snap-mandatory gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative -mb-px flex snap-x snap-mandatory gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] max-sm:hidden [&::-webkit-scrollbar]:hidden"
       >
         {sections.map((section, index) => {
           const isActive = section.id === activeId;
@@ -96,49 +238,28 @@ export function ListingFormSectionNav({ sections }: { sections: ListingFormSecti
                 aria-current={isActive ? "location" : undefined}
                 onClick={(event) => {
                   event.preventDefault();
-                  setActiveId(section.id);
-                  scrollToSection(section.id);
+                  goTo(section.id);
                 }}
                 className={cn(
-                  "flex min-h-11 items-center gap-2 rounded-t-md border-b-2 px-3 py-1.5 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "flex min-h-11 items-center gap-2.5 rounded-t-md border-b-2 px-3 py-1.5 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   isActive
-                    ? "border-foreground text-foreground"
+                    ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
-                <span
-                  aria-hidden
-                  className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-medium tabular-nums",
-                    section.status === "complete"
-                      ? "bg-emerald-600/15 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300"
-                      : isActive
-                        ? "bg-foreground text-background"
-                        : "bg-card text-muted-foreground ring-1 ring-border ring-inset",
-                  )}
-                >
-                  {index + 1}
-                </span>
+                <StepCircle
+                  number={index + 1}
+                  isActive={isActive}
+                  isComplete={section.status === "complete"}
+                />
                 <span className="flex flex-col leading-tight">
                   <span className="flex items-center gap-1.5">
-                    {section.shortLabel ? (
-                      <>
-                        <span aria-hidden className="font-medium sm:hidden">
-                          {section.shortLabel}
-                        </span>
-                        <span className="font-medium max-sm:sr-only">{section.label}</span>
-                      </>
-                    ) : (
-                      <span className="font-medium">{section.label}</span>
-                    )}
-                    {section.status === "recommended" ? (
-                      <AccessibilityMark size="sm" className="max-sm:hidden" />
-                    ) : null}
+                    <span className={isActive ? "font-semibold" : "font-medium"}>
+                      {section.label}
+                    </span>
+                    {section.status === "recommended" ? <AccessibilityMark size="sm" /> : null}
                   </span>
-                  {/* Read by screen readers at every width; phones show only the step. */}
-                  <span className="text-sm text-muted-foreground max-sm:sr-only">
-                    {section.meta}
-                  </span>
+                  <span className="text-sm text-muted-foreground">{section.meta}</span>
                 </span>
               </a>
             </li>

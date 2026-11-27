@@ -16,9 +16,6 @@ import { Key01Icon } from "@hugeicons/core-free-icons";
  * A card from sm up. On phones, a full-width block with a divider underneath, except the last,
  * where the footer's top border already divides.
  */
-const SECTION_CARD =
-  "max-sm:gap-4 max-sm:rounded-none max-sm:border-b max-sm:border-border max-sm:bg-transparent max-sm:py-6 max-sm:shadow-none max-sm:ring-0 max-sm:last:border-b-0";
-
 /** Whether a sign-in method is set up, beside its section title. Nothing while it loads. */
 function SetupStatus({ isOn }: { isOn: boolean | undefined }) {
   if (isOn === undefined) return null;
@@ -167,14 +164,14 @@ export function AccountSecurity() {
   }
 
   return (
-    <div className="space-y-6 max-sm:space-y-0">
+    <div className="space-y-6">
       {message && (
         <AlertBanner variant="info" role="status">
           {message}
         </AlertBanner>
       )}
-      <Card className={SECTION_CARD}>
-        <CardHeader className="max-sm:px-0">
+      <Card>
+        <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h2 className="text-lg">Passkeys</h2>
             <SetupStatus isOn={passkeys ? passkeys.length > 0 : undefined} />
@@ -184,7 +181,7 @@ export function AccountSecurity() {
             only on the domain where you add them.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 max-sm:px-0">
+        <CardContent className="space-y-4">
           {passkeys && passkeys.length > 0 ? (
             <ul className="divide-y rounded-lg border">
               {passkeys.map((key) => (
@@ -263,8 +260,8 @@ export function AccountSecurity() {
           )}
         </CardContent>
       </Card>
-      <Card className={SECTION_CARD}>
-        <CardHeader className="max-sm:px-0">
+      <Card>
+        <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h2 className="text-lg">Authenticator app</h2>
             <SetupStatus isOn={session ? Boolean(session.user.twoFactorEnabled) : undefined} />
@@ -272,10 +269,10 @@ export function AccountSecurity() {
           <CardDescription>
             {session?.user.twoFactorEnabled
               ? "Password sign-in requires an authenticator or recovery code. Passkey sign-in uses your device's verification."
-              : "Use an authenticator app to verify password sign-ins."}
+              : "Use an app to confirm it's you when you sign in with a password."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6 max-sm:px-0">
+        <CardContent className="space-y-6">
           {twoFactorPasswordOpen ? (
             <form onSubmit={configureTwoFactor} className="space-y-4">
               <div className="space-y-2">
@@ -416,14 +413,14 @@ export function AccountSecurity() {
           )}
         </CardContent>
       </Card>
-      <Card className={SECTION_CARD}>
-        <CardHeader className="max-sm:px-0">
+      <Card>
+        <CardHeader>
           <CardTitle>
             <h2 className="text-lg">Password</h2>
           </CardTitle>
           <CardDescription>Changing your password signs out your other devices.</CardDescription>
         </CardHeader>
-        <CardContent className="max-sm:px-0">
+        <CardContent>
           <form onSubmit={changePassword} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="current-password">Current password</Label>
@@ -492,8 +489,8 @@ export function AccountSecurity() {
           </form>
         </CardContent>
       </Card>
-      <Card className={SECTION_CARD}>
-        <CardHeader className="max-sm:px-0">
+      <Card>
+        <CardHeader>
           <CardTitle>
             <h2 className="text-lg">Signed-in devices</h2>
           </CardTitle>
@@ -501,7 +498,7 @@ export function AccountSecurity() {
             See where your account is signed in, and sign out devices you don't recognize.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 max-sm:px-0">
+        <CardContent className="space-y-4">
           {sessions ? (
             <ul className="divide-y rounded-lg border">
               {sessions.map((item) => (

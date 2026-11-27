@@ -42,7 +42,8 @@ export function PageHeader({ title, description, actions, className }: PageHeade
         className,
       )}
     >
-      <div className="min-w-0 space-y-1.5">
+      {/* The blue rule along the title block echoes the home page's sign panel. */}
+      <div className="min-w-0 space-y-1.5 border-l-4 border-primary pl-4 dark:border-primary-text">
         <h1 className="text-[1.75rem] sm:text-[2rem]">{title}</h1>
         {description ? (
           <p className="max-w-2xl text-base text-muted-foreground">{description}</p>

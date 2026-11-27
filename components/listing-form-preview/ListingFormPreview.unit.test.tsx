@@ -43,7 +43,7 @@ describe("ListingFormPreview card", () => {
     expect(screen.getByRole("img").getAttribute("src")).toBe(photoUrl);
   });
 
-  it("prompts for missing rent and rooms instead of showing zeros", () => {
+  it("marks missing rent instead of showing zeros", () => {
     render(
       <ListingFormPreview
         mode="card"
@@ -52,9 +52,9 @@ describe("ListingFormPreview card", () => {
       />,
     );
 
-    expect(screen.getByText("Add rent")).toBeInTheDocument();
-    expect(screen.getByText("Add bathrooms")).toBeInTheDocument();
-    expect(screen.getByText(/2 beds/)).toBeInTheDocument();
+    expect(screen.getByText("No rent yet")).toBeInTheDocument();
+    expect(screen.getByText("2 beds")).toBeInTheDocument();
+    expect(screen.queryByText(/bath/)).toBeNull();
     expect(screen.queryByText(/\$0/)).toBeNull();
   });
 });

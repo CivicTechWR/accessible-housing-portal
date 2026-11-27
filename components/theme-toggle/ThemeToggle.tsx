@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DarkModeIcon, Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
+import { ComputerIcon, Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useTheme } from "next-themes";
 
@@ -12,7 +12,7 @@ const surfaceClasses = {
   // The site header, mobile menu and popover menus such as the account menu.
   default: {
     group: "bg-muted",
-    item: "text-muted-foreground hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm dark:data-[state=on]:bg-white/15 dark:data-[state=on]:ring-1 dark:data-[state=on]:ring-white/25",
+    item: "text-muted-foreground hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm",
   },
 };
 
@@ -68,8 +68,7 @@ export function ThemeToggle({ surface = "default" }: ThemeToggleProps) {
         aria-label="Auto theme: match this device"
         className={itemClass}
       >
-        {/* A half-filled circle: follows the device's light or dark setting. */}
-        <HugeiconsIcon icon={DarkModeIcon} strokeWidth={2} size={16} />
+        <HugeiconsIcon icon={ComputerIcon} strokeWidth={2} size={16} />
       </ToggleGroupItem>
     </ToggleGroup>
   );

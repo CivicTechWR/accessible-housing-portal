@@ -9,6 +9,7 @@ import {
   ArrowExpand01Icon,
   ArrowShrink02Icon,
   CheckmarkCircle02Icon,
+  LinkSquare02Icon,
   Loading03Icon,
   PencilEdit02Icon,
 } from "@hugeicons/core-free-icons";
@@ -284,10 +285,22 @@ export default function ListingForm({ listingId }: ListingFormProps) {
       footerAction={
         <>
           {isUpToDate && activeListingId ? (
-            // A link to the public page, not the bar's main action, so it reads as a link.
-            <Button asChild variant="ghost" className="text-primary-text max-sm:h-11">
-              <Link ref={viewListingRef} href={`/listings/${activeListingId}`}>
+            // Opens the public page in a new tab, so the editor stays where it was.
+            <Button asChild variant="outline" className="max-sm:h-11">
+              <Link
+                ref={viewListingRef}
+                href={`/listings/${activeListingId}`}
+                target="_blank"
+                rel="noopener"
+              >
                 View listing
+                <span className="sr-only"> (opens in a new tab)</span>
+                <HugeiconsIcon
+                  icon={LinkSquare02Icon}
+                  strokeWidth={2}
+                  data-icon="inline-end"
+                  aria-hidden
+                />
               </Link>
             </Button>
           ) : (
@@ -314,7 +327,7 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
     );
     const filled = required.filter((definition) => hasValue(values[definition.key])).length;
     const id = listingFormSectionId(category.key);
-    const labels = { label: category.displayName, shortLabel: category.shortName };
+    const labels = { label: category.displayName };
     if (required.length === 0) {
       // An optional section counts as done once anything in it is filled in.
       const hasContent = CORE_FIELD_DEFINITIONS.some(
@@ -340,7 +353,6 @@ function listingFormSections(values: ListingFormInput): ListingFormSectionLink[]
     {
       id: listingFormSectionId("features"),
       label: "Features and accessibility",
-      shortLabel: "Features",
       meta: featureCount === 0 ? "Recommended" : `${featureCount} selected`,
       status: featureCount === 0 ? "recommended" : "complete",
     },

@@ -167,7 +167,7 @@ function FieldRenderer({
           <FormItem className={spanClassName} data-field-name={def.key}>
             <FormLabel>{label}</FormLabel>
             <FormControl>
-              <Textarea rows={4} className="min-h-32" {...field} value={field.value ?? ""} />
+              <Textarea rows={5} className="min-h-36" {...field} value={field.value ?? ""} />
             </FormControl>
             {def.helpText && <FormDescription>{def.helpText}</FormDescription>}
             <FormMessage />

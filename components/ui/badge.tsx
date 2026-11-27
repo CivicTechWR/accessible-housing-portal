@@ -47,16 +47,17 @@ const statusToneClasses = {
   warning: "bg-amber-500/15 text-amber-900 dark:bg-amber-400/15 dark:text-amber-200",
   danger: "bg-destructive/10 text-destructive dark:bg-destructive/20",
   // A grey from the text colour rather than the blue-tinted muted fill, so it reads the same
-  // neutral on cards and the page, in light and dark.
-  neutral: "bg-foreground/[0.07] text-muted-foreground dark:bg-foreground/10",
+  // neutral on cards and the page. Dark text is about #d0d3d6 on #272f3a (over 9:1).
+  neutral:
+    "bg-foreground/[0.07] text-muted-foreground dark:bg-foreground/[0.08] dark:text-foreground/80",
 } as const;
 
 export type StatusTone = keyof typeof statusToneClasses;
 
 /**
  * The one chip for any status (listings, accounts, invitations, in tables and headers alike): a
- * tinted fill and a dot, with only the hue changing, so the word carries the meaning and colour
- * only reinforces it.
+ * small sign with square-ish corners and a tinted fill, with only the hue changing, so the word
+ * carries the meaning and colour only reinforces it.
  */
 function StatusBadge({
   tone,
@@ -68,8 +69,9 @@ function StatusBadge({
   children: React.ReactNode;
 }) {
   return (
-    <Badge className={cn(statusToneClasses[tone], className)}>
-      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
+    <Badge
+      className={cn("rounded-[4px] px-2 text-xs font-medium", statusToneClasses[tone], className)}
+    >
       {children}
     </Badge>
   );
